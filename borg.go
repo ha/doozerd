@@ -1,5 +1,3 @@
-// Borg.
+// Borg
 
 package borg
-
-
