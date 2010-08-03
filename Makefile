@@ -1,11 +1,11 @@
-include $(GOROOT)/src/Make.$(GOARCH)
+all: install.cmd
+clean: clean.cmd
+test: test.pkg
+bench: bench.pkg
 
-TARG=borg
-GOFILES=\
-	borg.go\
+%.cmd: %.pkg
+	cd cmd && make $*
 
-include $(GOROOT)/src/Make.pkg
+%.pkg:
+	cd pkg && make $*
 
-server: server.go
-	$(GC) $<
-	$(LD) server.$(O) -o $@

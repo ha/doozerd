@@ -2,3 +2,5 @@ _go_.*
 _gotest_.*
 _obj
 _test
+*.out
+cmd/borgd/borgd
