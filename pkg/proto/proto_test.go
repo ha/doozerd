@@ -89,6 +89,15 @@ func TestOneRequestWithError(t *testing.T) {
     "*1\na",
     "*1\n$a",
     "*1\n$1a",
+    "a\n",
+    "$a\n",
+    "$1a\n",
+    "$1\n",
+    "*a\n",
+    "*1a\n",
+    "*1\na\n",
+    "*1\n$a\n",
+    "*1\n$1a\n",
   }
 
   for _, data := range(testCases) {
@@ -100,5 +109,26 @@ func TestOneRequestWithError(t *testing.T) {
 
     assertEqual(t, ProtocolError, req.Err, fmt.Sprintf("%q", data))
     if req.Parts != nil { t.Fatalf("expected %#v to be nil", req.Err) }
+  }
+}
+
+func TestScanNumberWithError(t *testing.T) {
+  testCases := []string{
+    "a\n",
+    "$a\n",
+    "$1a\n",
+    "a",
+    "$a",
+    "$1a",
+  }
+
+  for _, data := range(testCases) {
+    buf, _ := setupPipe(data)
+    n, err := scanNumber(buf, '$')
+
+    assertEqual(t, uint64(0), n, fmt.Sprintf("%q", data))
+    if err == nil {
+        t.Errorf("expected error for %q, got nil", data)
+    }
   }
 }

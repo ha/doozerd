@@ -31,7 +31,8 @@ func scanNumber(data *bufio.Reader, after byte) (n uint64, err os.Error) {
     case '\r', '\n':
       continue
     case after:
-      sn, err := data.ReadString('\n')
+      var sn string
+      sn, err = data.ReadString('\n')
       if err != nil { return }
 
       return strconv.Btoui64(strings.TrimSpace(sn), 10)
