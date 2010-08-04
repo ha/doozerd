@@ -8,4 +8,5 @@ bench: bench.pkg
 
 %.pkg:
 	cd pkg && make $*
+	cd pkg/proto && make $*
 
