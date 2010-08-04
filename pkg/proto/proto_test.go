@@ -4,6 +4,7 @@ import(
   "bufio"
   "reflect"
   "bytes"
+  "fmt"
   "testing"
 )
 
@@ -97,7 +98,7 @@ func TestOneRequestWithError(t *testing.T) {
     var req *Request
     req = <- ch
 
-    assertEqual(t, ProtocolError, req.Err, data)
+    assertEqual(t, ProtocolError, req.Err, fmt.Sprintf("%q", data))
     if req.Parts != nil { t.Fatalf("expected %#v to be nil", req.Err) }
   }
 }
