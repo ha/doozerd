@@ -37,8 +37,8 @@ func New(addr string) *Paxos {
 	}
 }
 
-func (p *Paxos) RunForever(errs chan os.Error) {
-	go p.pump(errs)
+func (p *Paxos) RunForever() {
+	go p.pump()
 
 	listener, err := net.Listen("tcp", p.laddr)
 	if err != nil {

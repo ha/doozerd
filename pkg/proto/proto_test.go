@@ -2,6 +2,7 @@ package proto
 
 import (
 	"bufio"
+	"os"
 	"reflect"
 	"bytes"
 	"fmt"
@@ -80,10 +81,6 @@ func TestOneRequestTwoParts(t *testing.T) {
 	}
 }
 
-func TestScanNumber(t *testing.T) {
-
-}
-
 func TestOneRequestWithError(t *testing.T) {
 	testCases := []string{
 		"a",
@@ -140,5 +137,17 @@ func TestScanNumberWithError(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected error for %q, got nil", data)
 		}
+	}
+}
+
+func TestScanErrorOnSeveredConnection(t *testing.T) {
+	buf, ch := setupPipe("*1\r\n")
+	go Scan(buf, ch)
+
+	var req *Request
+
+	req = <-ch
+	if req.Err != os.EOF {
+		t.Errorf("expected EOF, but got %v", req.Err)
 	}
 }

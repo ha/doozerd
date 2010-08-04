@@ -52,6 +52,9 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 		count, err := scanNumber(data, '*')
 		if err != nil {
 			ch <- &Request{Err: err}
+			if err == os.EOF {
+				return
+			}
 		}
 
 		parts := make([][]byte, count)
@@ -60,6 +63,9 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 			size, err := scanNumber(data, '$')
 			if err != nil {
 				ch <- &Request{Err: err}
+				if err == os.EOF {
+					return
+				}
 			}
 
 			// Read the data
@@ -67,6 +73,9 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 			_, err = data.Read(bytes)
 			if err != nil {
 				ch <- &Request{Err: err}
+				if err == os.EOF {
+					return
+				}
 			}
 
 			parts[len(parts)-int(count)] = bytes
