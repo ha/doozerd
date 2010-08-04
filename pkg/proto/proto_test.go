@@ -79,7 +79,7 @@ func TestScanNumber(t *testing.T) {
 }
 
 func TestOneRequestWithError(t *testing.T) {
-  stuff := []string{
+  testCases := []string{
     "a",
     "$a",
     "$1a",
@@ -91,7 +91,7 @@ func TestOneRequestWithError(t *testing.T) {
     "*1\n$1a",
   }
 
-  for _, data := range(stuff) {
+  for _, data := range(testCases) {
     buf, ch := setupPipe(data)
     go Scan(buf, ch);
 
