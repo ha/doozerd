@@ -45,8 +45,6 @@ func scanNumber(data *bufio.Reader, after byte) (n uint64, err os.Error) {
 func Scan(data *bufio.Reader, ch chan *Request) {
 
   for {
-    var err os.Error
-
     count, err := scanNumber(data, '*')
     if err != nil { ch <- &Request{Err:err} }
 
