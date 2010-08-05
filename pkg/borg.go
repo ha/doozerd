@@ -23,13 +23,32 @@ func (r *Request) Respond(parts ... []byte) {
 	fmt.Fprintf(buf, "*%d\r\n", len(parts))
 	for _, part := range(parts) {
 		if part == nil {
-			buf.WriteString("$-1")
+			buf.WriteString("$-1\r\n")
 		} else {
 			fmt.Fprintf(buf, "$%d\r\n", len(part))
 			buf.Write(part)
 		}
 	}
 
+	r.Resp <-buf
+}
+
+func (r *Request) RespondNil() {
+	r.Respond(nil)
+}
+
+func (r *Request) RespondOk() {
+	r.RespondOkMsg("OK")
+}
+
+func (r *Request) RespondOkMsg(msg string) {
+	r.Resp <-bytes.NewBufferString("+" + msg)
+}
+
+func (r *Request) RespondErrf(format string, a ... interface {}) {
+	buf := bytes.NewBufferString("-ERR: ")
+	fmt.Fprintf(buf, format, a)
+	buf.WriteString("\r\n")
 	r.Resp <-buf
 }
 

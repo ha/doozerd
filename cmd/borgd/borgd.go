@@ -28,25 +28,23 @@ func main() {
 
 			switch string(req.Parts[0]) {
 			default:
-				fmt.Printf("OTHER! %v\n", req)
 			case "set":
-				fmt.Printf("SET!\n")
 				if arity < 2 {
-					fmt.Printf("-ERR: %d for 2 arguments\n", arity)
+					req.RespondErrf("%d for 2 arguments", arity)
 					break
 				}
 				values[string(req.Parts[1])] = req.Parts[2]
+				req.RespondOk()
 			case "get":
-				fmt.Printf("GET!\n")
 				if arity < 1 {
-					fmt.Printf("-ERR: %d for 1 arguments\n", arity)
+					req.RespondErrf("%d for 1 arguments", arity)
 					break
 				}
 
 				got, ok := values[string(req.Parts[1])]
 				switch ok {
 					case true:  req.Respond(got)
-					case false: req.Respond(nil)
+					case false: req.RespondNil()
 				}
 			}
 		}
