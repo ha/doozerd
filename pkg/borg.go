@@ -13,7 +13,7 @@ import (
 
 type Request struct {
 	*proto.Request
-	Resp chan Response
+	resp chan Response
 }
 
 type Response io.Reader
@@ -30,7 +30,7 @@ func (r *Request) Respond(parts ... []byte) {
 		}
 	}
 
-	r.Resp <-buf
+	r.resp <-buf
 }
 
 func (r *Request) RespondNil() {
@@ -42,14 +42,14 @@ func (r *Request) RespondOk() {
 }
 
 func (r *Request) RespondOkMsg(msg string) {
-	r.Resp <-bytes.NewBufferString("+" + msg)
+	r.resp <-bytes.NewBufferString("+" + msg)
 }
 
 func (r *Request) RespondErrf(format string, a ... interface {}) {
 	buf := bytes.NewBufferString("-ERR: ")
 	fmt.Fprintf(buf, format, a)
 	buf.WriteString("\r\n")
-	r.Resp <-buf
+	r.resp <-buf
 }
 
 func Relay(conn net.Conn, bus chan *Request) {
