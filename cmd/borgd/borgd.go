@@ -4,8 +4,6 @@ import (
 	"borg"
 	"fmt"
 	"net"
-	"strings"
-	"bytes"
 )
 
 var values = make(map[string][]byte)
@@ -47,8 +45,8 @@ func main() {
 
 				got, ok := values[string(req.Parts[1])]
 				switch ok {
-					case true:  req.Resp <- bytes.NewBuffer(got)
-					case false: req.Resp <- strings.NewReader("$-1")
+					case true:  req.Respond(got)
+					case false: req.Respond(nil)
 				}
 			}
 		}

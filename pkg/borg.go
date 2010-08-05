@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"io"
 	"net"
+	"fmt"
+	"bytes"
 )
 
 type Request struct {
@@ -15,6 +17,21 @@ type Request struct {
 }
 
 type Response io.Reader
+
+func (r *Request) Respond(parts ... []byte) {
+	buf := bytes.NewBufferString("")
+	fmt.Fprintf(buf, "*%d\r\n", len(parts))
+	for _, part := range(parts) {
+		if part == nil {
+			buf.WriteString("$-1")
+		} else {
+			fmt.Fprintf(buf, "$%d\r\n", len(part))
+			buf.Write(part)
+		}
+	}
+
+	r.Resp <-buf
+}
 
 func Relay(conn net.Conn, bus chan *Request) {
 	reqs := make(chan *proto.Request)
