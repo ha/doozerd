@@ -11,7 +11,7 @@ import (
 
 type Request struct {
 	*proto.Request
-	resp chan Response
+	Resp chan Response
 }
 
 type Response io.Reader

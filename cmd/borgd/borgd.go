@@ -4,6 +4,8 @@ import (
 	"borg"
 	"fmt"
 	"net"
+	"strings"
+	"bytes"
 )
 
 var values = make(map[string][]byte)
@@ -42,8 +44,12 @@ func main() {
 					fmt.Printf("-ERR: %d for 1 arguments\n", arity)
 					break
 				}
-				got := values[string(req.Parts[1])]
-				fmt.Printf("got: %v\n", got)
+
+				got, ok := values[string(req.Parts[1])]
+				switch ok {
+					case true:  req.Resp <- bytes.NewBuffer(got)
+					case false: req.Resp <- strings.NewReader("$-1")
+				}
 			}
 		}
 	}()
