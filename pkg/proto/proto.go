@@ -60,7 +60,7 @@ func skipBytes(buf *bufio.Reader, delim byte) os.Error {
 
 func Scan(data *bufio.Reader, ch chan *Request) {
 
-	for {
+	scanner: for {
 		count, err := scanNumber(data, '*')
 		if err != nil {
 			ch <- &Request{Err: err}
@@ -83,8 +83,11 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 			size, err := scanNumber(data, '$')
 			if err != nil {
 				ch <- &Request{Err: err}
-				if err == os.EOF {
-					return
+				switch err {
+				case os.EOF: return
+				case ProtocolError:
+					skipBytes(data, '\n')
+					continue scanner
 				}
 			}
 

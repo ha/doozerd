@@ -166,7 +166,7 @@ func TestScanIgnoresZeroParts(t *testing.T) {
 	}
 }
 
-func TestScanSendsOneErrorPerLine(t *testing.T) {
+func TestScanSkipsBadLeadingChars(t *testing.T) {
 	buf, ch := setupPipe("asdf\r\n$G\r\n*1\r\n$3\r\nfoo\r\n")
 	go Scan(buf, ch)
 
@@ -174,12 +174,37 @@ func TestScanSendsOneErrorPerLine(t *testing.T) {
 
 	req = <-ch
 	if req.Err == nil {
-		t.Fatalf("expected error for: 'asdf'")
+		t.Fatalf("expected error for: 'asdf\r\n'")
 	}
 
 	req = <-ch
 	if req.Err == nil {
-		t.Fatalf("expected error for: '$G'")
+		t.Fatalf("expected error for: '$G\r\n'")
+	}
+
+	req = <-ch
+	if req.Err != nil {
+		t.Fatalf("got an unexpected error: %v", req.Err)
+	}
+
+	assertEqual(t, 1, len(req.Parts), "")
+	assertEqual(t, "foo", string(req.Parts[0]), "")
+}
+
+func TestScanSkipsBadTrailingChars(t *testing.T) {
+	buf, ch := setupPipe("*1\r\nasdf\r\n$G\r\n*1\r\n$3\r\nfoo\r\n")
+	go Scan(buf, ch)
+
+	var req *Request
+
+	req = <-ch
+	if req.Err == nil {
+		t.Fatalf("expected error for: '*1\r\nasdf'")
+	}
+
+	req = <-ch
+	if req.Err == nil {
+		t.Fatalf("expected error for: '$G\r\n'")
 	}
 
 	req = <-ch
