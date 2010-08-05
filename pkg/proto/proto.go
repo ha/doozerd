@@ -52,8 +52,12 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 		count, err := scanNumber(data, '*')
 		if err != nil {
 			ch <- &Request{Err: err}
-			if err == os.EOF {
+			switch err {
+			case os.EOF:
 				return
+			case ProtocolError:
+				data.ReadString('\n')
+				continue
 			}
 		}
 
