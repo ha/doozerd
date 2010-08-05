@@ -46,6 +46,18 @@ func scanNumber(data *bufio.Reader, after byte) (n uint64, err os.Error) {
 	panic("This should never be reached!")
 }
 
+func skipBytes(buf *bufio.Reader, delim byte) os.Error {
+	for {
+		c, err := buf.ReadByte()
+		switch {
+			case err != nil: return err
+			case c == delim: return nil
+		}
+	}
+
+	panic("can't happen")
+}
+
 func Scan(data *bufio.Reader, ch chan *Request) {
 
 	for {
@@ -56,7 +68,7 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 			case os.EOF:
 				return
 			case ProtocolError:
-				data.ReadString('\n')
+				skipBytes(data, '\n')
 				continue
 			}
 		}
