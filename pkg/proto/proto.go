@@ -57,6 +57,10 @@ func Scan(data *bufio.Reader, ch chan *Request) {
 			}
 		}
 
+		if count == 0 {
+			continue
+		}
+
 		parts := make([][]byte, count)
 
 		for count > 0 {

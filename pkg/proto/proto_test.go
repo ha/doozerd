@@ -151,3 +151,17 @@ func TestScanErrorOnSeveredConnection(t *testing.T) {
 		t.Errorf("expected EOF, but got %v", req.Err)
 	}
 }
+
+func TestScanIgnoresZeroParts(t *testing.T) {
+	buf, ch := setupPipe("*0\r\n*1\r\n$3\r\nfoo\r\n")
+	go Scan(buf, ch)
+
+	var req *Request
+	req = <-ch
+
+	assertEqual(t, 1, len(req.Parts), "")
+	assertEqual(t, "foo", string(req.Parts[0]), "")
+	if req.Err != nil {
+		t.Fatalf("expected %#v to be nil", req.Err)
+	}
+}
