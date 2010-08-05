@@ -1,8 +1,7 @@
 package main
 
 import (
-	"borg/proto"
-	"bufio"
+	"borg"
 	"fmt"
 	"net"
 )
@@ -15,11 +14,11 @@ func main() {
 		panic(err)
 	}
 
-	ch := make(chan *proto.Request)
+	bus := make(chan *borg.Request)
 	go func() {
 		//PAXOS!
 		var arity int
-		for req := range ch {
+		for req := range bus {
 			if req.Err != nil {
 				fmt.Printf("Err:%v | Parts:%v\n", req.Err, req.Parts)
 				continue
@@ -28,6 +27,8 @@ func main() {
 			arity = len(req.Parts) - 1
 
 			switch string(req.Parts[0]) {
+			default:
+				fmt.Printf("OTHER! %v\n", req)
 			case "set":
 				fmt.Printf("SET!\n")
 				if arity < 2 {
@@ -53,7 +54,7 @@ func main() {
 			panic(err)
 		}
 
-		go proto.Scan(bufio.NewReader(conn), ch)
+		go borg.Relay(conn, bus)
 	}
 
 }
