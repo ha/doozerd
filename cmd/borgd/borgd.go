@@ -1,62 +1,71 @@
 package main
 
 import (
-	"borg"
-	"fmt"
-	"net"
+	//"borg"
+	"flag"
+	"log"
+	"os"
 )
 
-var values = make(map[string][]byte)
+// Flags
+var (
+	listenAddr *string = flag.String("l", ":8046", "The address to bind to.")
+	attachAddr *string = flag.String("a", "", "The address to bind to.")
+)
+
+// Globals
+var (
+	logger *log.Logger = log.New(os.Stderr, nil, "borgd: ", log.Lok)
+)
 
 func main() {
-	listener, err := net.Listen("tcp", "0.0.0.0:9999")
-	if err != nil {
-		panic(err)
+	flag.Parse()
+
+	logger.Logf("attempting to listen on %s\n", *listenAddr)
+
+	if *attachAddr != "" {
+		logger.Logf("attempting to attach to %s\n", *attachAddr)
 	}
 
-	bus := make(chan *borg.Request)
-	go func() {
-		//PAXOS!
-		var arity int
-		for req := range bus {
-			if req.Err != nil {
-				fmt.Printf("Err:%v | Parts:%v\n", req.Err, req.Parts)
-				continue
-			}
-
-			arity = len(req.Parts) - 1
-
-			switch string(req.Parts[0]) {
-			default:
-			case "set":
-				if arity < 2 {
-					req.RespondErrf("%d for 2 arguments", arity)
-					break
-				}
-				values[string(req.Parts[1])] = req.Parts[2]
-				req.RespondOk()
-			case "get":
-				if arity < 1 {
-					req.RespondErrf("%d for 1 arguments", arity)
-					break
-				}
-
-				got, ok := values[string(req.Parts[1])]
-				switch ok {
-					case true:  req.Respond(got)
-					case false: req.RespondNil()
-				}
-			}
-		}
-	}()
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			panic(err)
-		}
-
-		go borg.Relay(conn, bus)
-	}
-
+	// Think of borg events like inotify events.  We're interested in changes to
+	// them all.  All events are sent to your instance of borg.  The filtering
+	// is done once they've arrived.  Let's make keys look like directories to
+	// aid this comparison.
+	//
+	// Example spec:
+	//
+	//     /<slug_id>/proc/<type>/<upid>/...
+	//
+	// Example interactive session:
+	//
+	//     $ borgd -i -a :9999
+	//     >> ls /proc/123_a3c_a12b3c45/beanstalkd/12345/
+	//     cmd
+	//     env
+	//     lock
+	//     >> cat /proc/123_a3c_a12b3c45/beanstalkd/12345/*
+	//     beanstalkd -l 0.0.0.0 -p 4563
+	//     PORT=4563
+	//     123.4.5.678:9999
+	//     >>
+	//
+	// Example code:
+	//
+	//     me, err := borg.ListenAndServe(*listenAddr)
+	//     if err != nil {
+	//         log.Exitf("listen failed: %v", err)
+	//     }
+	//
+	//     // Handle a specific type of key notification.
+	//     // The : signals a named variable part.
+	//     me.HandleFunc(
+	//         "/proc/:slug/beanstalkd/:upid/lock",
+	//         func (msg *borg.Message) {
+	//             if msg.Value == myId {
+	//                 cmd := beanstalkd ....
+	//                 ... launch beanstalkd ...
+	//                 me.Echo(cmd, "/proc/<slug>/beanstalkd/<upid>/cmd")
+	//             }
+	//         },
+	//     )
 }

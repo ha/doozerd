@@ -1,0 +1,23 @@
+* implement acceptor
+* implement proposer
+
+* implement router:
+  - recvs udp packets, introspects, routes to P A & L accordingly.
+
+* learned values
+  - store
+  - get
+
+* assimiliation
+  - start blank
+  - attach
+    a) get nodes from collective
+
+* acceptors
+  - max #?  (prime #?)
+  - on death, elect successor
+
+* leader
+  - who?
+  - how?
+  - on death, elect successor

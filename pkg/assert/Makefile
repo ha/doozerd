@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=borg/paxos
+TARG=borg/assert
 GOFILES=\
-	learn.go\
+	assert.go\
 
 include $(GOROOT)/src/Make.pkg
