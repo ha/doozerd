@@ -16,15 +16,21 @@ Package Responsibility and Collaboration
     + .Route
     + Msg
 * mgmt (aka extra shit that we don't know where it goes)
+    ^ auth
     + applying paxos outputs to the data store
     + becoming the leader
     + learning about any other leader there might be
     + adding/removing acceptors/learners
     + fault detection
+* auth
+    ^ sasl (??)
+    + .Auth
 * borg
+    ^ tls (??)
     ^ net
     ^ proto
     ^ router (use Msg)
+    ^ mgmt
     + .ListenAndServe
 * borgd (cli)
     + borg
