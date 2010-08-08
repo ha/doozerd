@@ -18,7 +18,7 @@ const (
     iNumParts
 )
 
-func accept(me int, ins, outs chan string) {
+func accept(me uint64, ins, outs chan string) {
     var rnd, vrnd uint64
     var vval string
 
@@ -28,6 +28,13 @@ func accept(me int, ins, outs chan string) {
         if len(parts) != iNumParts {
             continue
         }
+
+        inTo, _ := strconv.Btoui64(parts[iTo], 10)
+        if inTo != me && parts[iTo] != "*" {
+            continue
+        }
+
+
         switch parts[iCmd] {
         case "INVITE":
             i, _ := strconv.Btoui64(parts[iRnd], 10)
@@ -108,6 +115,8 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         "x:x:x:x:x", // too many separators
         "1:*:INVITE:x", // invalid round number
         "1:*:x:1", // unknown command
+        "1:x:INVITE:1", // invalid to address
+        "1:7:INVITE:1", // valid but incorrect to address
     }
     for _, msg := range(totest) {
         ins := make(chan string)
