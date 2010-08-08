@@ -23,6 +23,9 @@ func accept(quorum int, ins, outs chan string) {
     ch, sent := make(chan int), 0
     for in := range ins {
         parts := strings.Split(in, ":", 3)
+        if len(parts) != iNumParts {
+            continue
+        }
         i, _ := strconv.Btoui64(parts[iRnd], 10)
         switch {
             case i <= rnd:
@@ -62,3 +65,31 @@ func TestIgnoresStaleInvites(t *testing.T) {
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, got, "")
 }
+
+func TestIgnoresMalformedMessageWithTooFewSeparators(t *testing.T) {
+    totest := []string{
+        "x",
+        "x:x",
+        "x:x:x:x",
+    }
+    for _, msg := range(totest) {
+        ins := make(chan string)
+        outs := make(chan string)
+
+        exp := ""
+
+        go accept(2, ins, outs)
+        // Send a message with no senderId
+        ins <- msg
+        close(ins)
+
+        got := ""
+        for x := range outs {
+            got += x
+        }
+
+        // outs was closed; therefore all messages have been processed
+        assert.Equal(t, exp, got, "")
+    }
+}
+
