@@ -49,6 +49,15 @@ func accept(quorum int, ins, outs chan string) {
     close(outs)
 }
 
+
+
+// TESTING
+
+func slurp(ch chan string) (got string) {
+    for x := range ch { got += x }
+    return
+}
+
 func TestAcceptsInvite(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
@@ -60,13 +69,8 @@ func TestAcceptsInvite(t *testing.T) {
     ins <- "1:INVITE:1"
     close(ins)
 
-    got := ""
-    for x := range outs {
-        got += x
-    }
-
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, got, "")
+    assert.Equal(t, exp, slurp(outs), "")
 }
 
 func TestIgnoresStaleInvites(t *testing.T) {
@@ -81,20 +85,17 @@ func TestIgnoresStaleInvites(t *testing.T) {
     ins <- "1:INVITE:1"
     close(ins)
 
-    got := ""
-    for x := range outs {
-        got += x
-    }
-
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, got, "")
+    assert.Equal(t, exp, slurp(outs), "")
 }
 
-func TestIgnoresMalformedMessageWithTooFewSeparators(t *testing.T) {
+func TestIgnoresMalformedMessages(t *testing.T) {
     totest := []string{
-        "x",
-        "x:x",
-        "x:x:x:x",
+        "x", // too few separators
+        "x:x", // too few separators
+        "x:x:x:x", // too many separators
+        "1:INVITE:x", // invalid round number
+        "1:x:1", // unknown command
     }
     for _, msg := range(totest) {
         ins := make(chan string)
@@ -107,53 +108,8 @@ func TestIgnoresMalformedMessageWithTooFewSeparators(t *testing.T) {
         ins <- msg
         close(ins)
 
-        got := ""
-        for x := range outs {
-            got += x
-        }
-
         // outs was closed; therefore all messages have been processed
-        assert.Equal(t, exp, got, "")
+        assert.Equal(t, exp, slurp(outs), "")
     }
-}
-
-func TestIgnoresMalformedMessageWithInvalidRound(t *testing.T) {
-    ins := make(chan string)
-    outs := make(chan string)
-
-    exp := ""
-
-    go accept(2, ins, outs)
-    // Send a message with no senderId
-    ins <- "1:INVITE:x"
-    close(ins)
-
-    got := ""
-    for x := range outs {
-        got += x
-    }
-
-    // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, got, "")
-}
-
-func TestIgnoresUnknownCommands(t *testing.T) {
-    ins := make(chan string)
-    outs := make(chan string)
-
-    exp := ""
-
-    go accept(2, ins, outs)
-    // Send a message with no senderId
-    ins <- "1:x:1"
-    close(ins)
-
-    got := ""
-    for x := range outs {
-        got += x
-    }
-
-    // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, got, "")
 }
 
