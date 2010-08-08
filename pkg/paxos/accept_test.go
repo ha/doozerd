@@ -101,7 +101,7 @@ func accept(me uint64, ins, outs chan string) {
 
 // TESTING
 
-func slurp(ch chan string) (got []string) {
+func gather(ch chan string) (got []string) {
     for x := range ch { (*vector.StringVector)(&got).Push(x) }
     return
 }
@@ -117,7 +117,7 @@ func TestAcceptsInvite(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestInvitesAfterNewInvitesAreStaleAndIgnored(t *testing.T) {
@@ -132,7 +132,7 @@ func TestInvitesAfterNewInvitesAreStaleAndIgnored(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestIgnoresMalformedMessages(t *testing.T) {
@@ -162,7 +162,7 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         close(ins)
 
         // outs was closed; therefore all messages have been processed
-        assert.Equal(t, exp, slurp(outs), "")
+        assert.Equal(t, exp, gather(outs), "")
     }
 }
 
@@ -180,7 +180,7 @@ func TestItVotes(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestItVotesWithAnotherValue(t *testing.T) {
@@ -197,7 +197,7 @@ func TestItVotesWithAnotherValue(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
@@ -214,7 +214,7 @@ func TestItVotesWithAnotherRound(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
@@ -231,7 +231,7 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestItIgnoresOldNominations(t *testing.T) {
@@ -250,7 +250,7 @@ func TestItIgnoresOldNominations(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
 
 func TestInvitesAfterNewNominationsAreStaleAndIgnored(t *testing.T) {
@@ -266,5 +266,5 @@ func TestInvitesAfterNewNominationsAreStaleAndIgnored(t *testing.T) {
     close(ins)
 
     // outs was closed; therefore all messages have been processed
-    assert.Equal(t, exp, slurp(outs), "")
+    assert.Equal(t, exp, gather(outs), "")
 }
