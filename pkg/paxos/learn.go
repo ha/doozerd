@@ -6,7 +6,8 @@ import (
 )
 
 const (
-    lSender = iota
+    lFrom = iota
+    lTo
     lCmd
     lRnd
     lValue
@@ -30,7 +31,7 @@ func learn(quorum int, messages, taught chan string, ack func()) {
             continue
         }
 
-        sender, err := strconv.Btoui64(parts[lSender], 10)
+        sender, err := strconv.Btoui64(parts[lFrom], 10)
         if err != nil {
             continue
         }

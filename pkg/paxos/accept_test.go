@@ -10,7 +10,8 @@ import (
 )
 
 const (
-    iSender = iota
+    iFrom = iota
+    iTo
     iCmd
     iRnd
     iNumParts
@@ -22,7 +23,7 @@ func accept(ins, outs chan string) {
 
     ch, sent := make(chan int), 0
     for in := range ins {
-        parts := strings.Split(in, ":", 3)
+        parts := strings.Split(in, ":", iNumParts)
         if len(parts) != iNumParts {
             continue
         }
@@ -66,7 +67,7 @@ func TestAcceptsInvite(t *testing.T) {
 
     go accept(ins, outs)
     // Send a message with no senderId
-    ins <- "1:INVITE:1"
+    ins <- "1:*:INVITE:1"
     close(ins)
 
     // outs was closed; therefore all messages have been processed
@@ -81,8 +82,8 @@ func TestIgnoresStaleInvites(t *testing.T) {
 
     go accept(ins, outs)
     // Send a message with no senderId
-    ins <- "1:INVITE:2"
-    ins <- "1:INVITE:1"
+    ins <- "1:*:INVITE:2"
+    ins <- "1:*:INVITE:1"
     close(ins)
 
     // outs was closed; therefore all messages have been processed
@@ -93,9 +94,10 @@ func TestIgnoresMalformedMessages(t *testing.T) {
     totest := []string{
         "x", // too few separators
         "x:x", // too few separators
-        "x:x:x:x", // too many separators
-        "1:INVITE:x", // invalid round number
-        "1:x:1", // unknown command
+        "x:x:x", // too few separators
+        "x:x:x:x:x", // too many separators
+        "1:*:INVITE:x", // invalid round number
+        "1:*:x:1", // unknown command
     }
     for _, msg := range(totest) {
         ins := make(chan string)
