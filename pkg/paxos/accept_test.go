@@ -26,16 +26,19 @@ func accept(quorum int, ins, outs chan string) {
         if len(parts) != iNumParts {
             continue
         }
-        i, _ := strconv.Btoui64(parts[iRnd], 10)
-        // If parts[iRnd] is invalid, i is 0 and the message will be ignored
-        switch {
-            case i <= rnd:
-            case i > rnd:
-                rnd = i
+        switch parts[iCmd] {
+        case "INVITE":
+            i, _ := strconv.Btoui64(parts[iRnd], 10)
+            // If parts[iRnd] is invalid, i is 0 and the message will be ignored
+            switch {
+                case i <= rnd:
+                case i > rnd:
+                    rnd = i
 
-                sent++
-                msg := fmt.Sprintf("ACCEPT:%d:%d:%s", i, vrnd, vval)
-                go func(msg string) { outs <- msg ; ch <- 1 }(msg)
+                    sent++
+                    msg := fmt.Sprintf("ACCEPT:%d:%d:%s", i, vrnd, vval)
+                    go func(msg string) { outs <- msg ; ch <- 1 }(msg)
+            }
         }
     }
 
@@ -123,6 +126,26 @@ func TestIgnoresMalformedMessageWithInvalidRound(t *testing.T) {
     go accept(2, ins, outs)
     // Send a message with no senderId
     ins <- "1:INVITE:x"
+    close(ins)
+
+    got := ""
+    for x := range outs {
+        got += x
+    }
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, got, "")
+}
+
+func TestIgnoresUnknownCommands(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    exp := ""
+
+    go accept(2, ins, outs)
+    // Send a message with no senderId
+    ins <- "1:x:1"
     close(ins)
 
     got := ""
