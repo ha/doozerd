@@ -16,7 +16,7 @@ const (
     iNumParts
 )
 
-func accept(quorum int, ins, outs chan string) {
+func accept(ins, outs chan string) {
     var rnd, vrnd uint64
     var vval string
 
@@ -64,7 +64,7 @@ func TestAcceptsInvite(t *testing.T) {
 
     exp := "ACCEPT:1:0:"
 
-    go accept(2, ins, outs)
+    go accept(ins, outs)
     // Send a message with no senderId
     ins <- "1:INVITE:1"
     close(ins)
@@ -79,7 +79,7 @@ func TestIgnoresStaleInvites(t *testing.T) {
 
     exp := "ACCEPT:2:0:"
 
-    go accept(2, ins, outs)
+    go accept(ins, outs)
     // Send a message with no senderId
     ins <- "1:INVITE:2"
     ins <- "1:INVITE:1"
@@ -103,7 +103,7 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 
         exp := ""
 
-        go accept(2, ins, outs)
+        go accept(ins, outs)
         // Send a message with no senderId
         ins <- msg
         close(ins)
