@@ -27,6 +27,7 @@ func accept(quorum int, ins, outs chan string) {
             continue
         }
         i, _ := strconv.Btoui64(parts[iRnd], 10)
+        // If parts[iRnd] is invalid, i is 0 and the message will be ignored
         switch {
             case i <= rnd:
             case i > rnd:
@@ -91,5 +92,25 @@ func TestIgnoresMalformedMessageWithTooFewSeparators(t *testing.T) {
         // outs was closed; therefore all messages have been processed
         assert.Equal(t, exp, got, "")
     }
+}
+
+func TestIgnoresMalformedMessageWithInvalidRound(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    exp := ""
+
+    go accept(2, ins, outs)
+    // Send a message with no senderId
+    ins <- "1:INVITE:x"
+    close(ins)
+
+    got := ""
+    for x := range outs {
+        got += x
+    }
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, got, "")
 }
 
