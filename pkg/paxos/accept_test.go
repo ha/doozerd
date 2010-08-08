@@ -14,8 +14,14 @@ const (
     iFrom = iota
     iTo
     iCmd
-    iRnd
+    iBody
     iNumParts
+)
+
+const (
+    nRnd = iota
+    nVal
+    nNumParts
 )
 
 func accept(me uint64, ins, outs chan string) {
@@ -37,18 +43,18 @@ func accept(me uint64, ins, outs chan string) {
 
         switch parts[iCmd] {
         case "INVITE":
-            i, err := strconv.Btoui64(parts[iRnd], 10)
+            i, err := strconv.Btoui64(parts[iBody], 10)
             if err != nil { continue }
 
             inFrom, err := strconv.Btoui64(parts[iFrom], 10)
             if err != nil { continue }
+
 
             switch {
                 case i <= rnd:
                 case i > rnd:
                     rnd = i
 
-                    sent++
                     outTo := inFrom // reply to the sender
                     msg := fmt.Sprintf("%d:%d:ACCEPT:%d:%d:%s",
                         me,
@@ -58,7 +64,28 @@ func accept(me uint64, ins, outs chan string) {
                         vval,
                     )
                     go func(msg string) { outs <- msg ; ch <- 1 }(msg)
+                    sent++
             }
+        case "NOMINATE":
+            nominateParts := strings.Split(parts[iBody], ":", nNumParts)
+            if len(nominateParts) != nNumParts {
+                continue
+            }
+
+            i, err := strconv.Btoui64(nominateParts[nRnd], 10)
+            if err != nil {
+                continue
+            }
+
+            if i < rnd {
+                continue
+            }
+
+            val := nominateParts[nVal]
+
+            msg := fmt.Sprintf("%d:*:VOTE:%d:%s", me, i, val)
+            go func(msg string) { outs <- msg ; ch <- 1 }(msg)
+            sent++
         }
     }
 
@@ -118,6 +145,9 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         "1:x:INVITE:1", // invalid to address
         "1:7:INVITE:1", // valid but incorrect to address
         "X:*:INVITE:1", // invalid from address
+
+        "1:*:NOMINATE:x", // too few separators in nominate body
+        "1:*:NOMINATE:x:foo", // invalid round number
     }
 
     for _, msg := range(totest) {
@@ -134,3 +164,91 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         assert.Equal(t, exp, slurp(outs), "")
     }
 }
+
+func TestItVotes(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    val := "foo"
+
+    exp := []string{"2:*:VOTE:1:" + val}
+
+    go accept(2, ins, outs)
+    // According to paxos, we can omit Phase 1 in round 1
+    ins <- "1:*:NOMINATE:1:" + val
+    close(ins)
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, slurp(outs), "")
+}
+
+func TestItVotesWithAnotherValue(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    val := "bar"
+
+    exp := []string{"2:*:VOTE:1:" + val}
+
+    go accept(2, ins, outs)
+    // According to paxos, we can omit Phase 1 in round 1
+    ins <- "1:*:NOMINATE:1:" + val
+    close(ins)
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, slurp(outs), "")
+}
+
+func TestItVotesWithAnotherRound(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    val := "bar"
+
+    exp := []string{"2:*:VOTE:2:" + val}
+
+    go accept(2, ins, outs)
+    // According to paxos, we can omit Phase 1 in the first round
+    ins <- "1:*:NOMINATE:2:" + val
+    close(ins)
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, slurp(outs), "")
+}
+
+func TestItVotesWithAnotherSelf(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    val := "bar"
+
+    exp := []string{"3:*:VOTE:2:" + val}
+
+    go accept(3, ins, outs)
+    // According to paxos, we can omit Phase 1 in the first round
+    ins <- "1:*:NOMINATE:2:" + val
+    close(ins)
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, slurp(outs), "")
+}
+
+func TestItIgnoresOldNominations(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    val := "bar"
+
+    exp := []string{}
+
+    go accept(3, ins, outs)
+    // According to paxos, we can omit Phase 1 in the first round
+    ins <- "1:*:INVITE:2"
+    <-outs // throw away ACCEPT message
+    ins <- "1:*:NOMINATE:1:" + val
+    close(ins)
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, slurp(outs), "")
+}
+
