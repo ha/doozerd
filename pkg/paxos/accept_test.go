@@ -14,7 +14,7 @@ func TestAcceptsInvite(t *testing.T) {
 	ins <- m("1:*:INVITE:1")
 	close(ins)
 
-	exp := msgs("2:1:ACCEPT:1:0:")
+	exp := msgs("2:1:RSVP:1:0:")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, gather(outs), "")
@@ -29,7 +29,7 @@ func TestInvitesAfterNewInvitesAreStaleAndIgnored(t *testing.T) {
 	ins <- m("1:*:INVITE:1")
 	close(ins)
 
-	exp := msgs("2:1:ACCEPT:2:0:")
+	exp := msgs("2:1:RSVP:2:0:")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, gather(outs), "")
@@ -144,7 +144,7 @@ func TestItIgnoresOldNominations(t *testing.T) {
 	go accept(3, ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- m("1:*:INVITE:2")
-	<-outs // throw away ACCEPT message
+	<-outs // throw away RSVP message
 	ins <- m("1:*:NOMINATE:1:"+val)
 	close(ins)
 
@@ -180,7 +180,7 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ins <- m("1:*:INVITE:2")
 	close(ins)
 
-	exp := msgs("2:1:ACCEPT:2:1:v")
+	exp := msgs("2:1:RSVP:2:1:v")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, gather(outs), "")

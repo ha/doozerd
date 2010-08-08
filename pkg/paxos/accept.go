@@ -45,7 +45,7 @@ func accept(me uint64, ins, outs chan msg) {
 				rnd = i
 
 				reply := msg{
-					cmd: "ACCEPT",
+					cmd: "RSVP",
 					to: in.from, // reply to the sender
 					from: me,
 					body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
