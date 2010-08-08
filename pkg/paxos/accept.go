@@ -2,24 +2,7 @@ package paxos
 
 import (
 	"fmt"
-	"strings"
 	"strconv"
-	"os"
-)
-
-type msg struct {
-	cmd string
-	from uint64
-	to uint64
-	body string
-}
-
-const (
-	mFrom = iota
-	mTo
-	mCmd
-	mBody
-	mNumParts
 )
 
 const (
@@ -32,18 +15,6 @@ const (
 	nVal
 	nNumParts
 )
-
-var (
-	InvalidArgumentsError = os.NewError("Invalid Arguments")
-)
-
-func splitBody(body string, n int) ([]string, os.Error){
-	bodyParts := strings.Split(body, ":", n)
-	if len(bodyParts) != n {
-		return nil, InvalidArgumentsError
-	}
-	return bodyParts, nil
-}
 
 func accept(me uint64, ins, outs chan msg) {
 	var rnd, vrnd uint64
