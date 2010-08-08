@@ -46,6 +46,26 @@ func accept(quorum int, ins, outs chan string) {
     close(outs)
 }
 
+func TestAcceptsInvite(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    exp := "ACCEPT:1:0:"
+
+    go accept(2, ins, outs)
+    // Send a message with no senderId
+    ins <- "1:INVITE:1"
+    close(ins)
+
+    got := ""
+    for x := range outs {
+        got += x
+    }
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, got, "")
+}
+
 func TestIgnoresStaleInvites(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
