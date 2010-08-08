@@ -112,11 +112,11 @@ func TestAcceptsInvite(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{"2:1:ACCEPT:1:0:"}
-
     go accept(2, ins, outs)
     ins <- "1:*:INVITE:1"
     close(ins)
+
+    exp := []string{"2:1:ACCEPT:1:0:"}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -126,12 +126,12 @@ func TestInvitesAfterNewInvitesAreStaleAndIgnored(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{"2:1:ACCEPT:2:0:"}
-
     go accept(2, ins, outs)
     ins <- "1:*:INVITE:2"
     ins <- "1:*:INVITE:1"
     close(ins)
+
+    exp := []string{"2:1:ACCEPT:2:0:"}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -157,14 +157,14 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         ins := make(chan string)
         outs := make(chan string)
 
-        exp := []string{}
-
         go accept(2, ins, outs)
         ins <- msg
         close(ins)
 
+        exp := []string{}
+
         // outs was closed; therefore all messages have been processed
-        assert.Equal(t, exp, gather(outs), "")
+        assert.Equal(t, exp, gather(outs), msg)
     }
 }
 
@@ -174,12 +174,12 @@ func TestItVotes(t *testing.T) {
 
     val := "foo"
 
-    exp := []string{"2:*:VOTE:1:" + val}
-
     go accept(2, ins, outs)
     // According to paxos, we can omit Phase 1 in round 1
     ins <- "1:*:NOMINATE:1:" + val
     close(ins)
+
+    exp := []string{"2:*:VOTE:1:" + val}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -191,12 +191,12 @@ func TestItVotesWithAnotherValue(t *testing.T) {
 
     val := "bar"
 
-    exp := []string{"2:*:VOTE:1:" + val}
-
     go accept(2, ins, outs)
     // According to paxos, we can omit Phase 1 in round 1
     ins <- "1:*:NOMINATE:1:" + val
     close(ins)
+
+    exp := []string{"2:*:VOTE:1:" + val}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -208,12 +208,12 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 
     val := "bar"
 
-    exp := []string{"2:*:VOTE:2:" + val}
-
     go accept(2, ins, outs)
     // According to paxos, we can omit Phase 1 in the first round
     ins <- "1:*:NOMINATE:2:" + val
     close(ins)
+
+    exp := []string{"2:*:VOTE:2:" + val}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -225,12 +225,12 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 
     val := "bar"
 
-    exp := []string{"3:*:VOTE:2:" + val}
-
     go accept(3, ins, outs)
     // According to paxos, we can omit Phase 1 in the first round
     ins <- "1:*:NOMINATE:2:" + val
     close(ins)
+
+    exp := []string{"3:*:VOTE:2:" + val}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -242,14 +242,14 @@ func TestItIgnoresOldNominations(t *testing.T) {
 
     val := "bar"
 
-    exp := []string{}
-
     go accept(3, ins, outs)
     // According to paxos, we can omit Phase 1 in the first round
     ins <- "1:*:INVITE:2"
     <-outs // throw away ACCEPT message
     ins <- "1:*:NOMINATE:1:" + val
     close(ins)
+
+    exp := []string{}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -259,13 +259,13 @@ func TestInvitesAfterNewNominationsAreStaleAndIgnored(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{}
-
     go accept(2, ins, outs)
     ins <- "1:*:NOMINATE:2:v"
     <-outs // throw away VOTE message
     ins <- "1:*:INVITE:1"
     close(ins)
+
+    exp := []string{}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -275,13 +275,13 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{"2:1:ACCEPT:2:1:v"}
-
     go accept(2, ins, outs)
     ins <- "1:*:NOMINATE:1:v"
     <-outs // throw away VOTE message
     ins <- "1:*:INVITE:2"
     close(ins)
+
+    exp := []string{"2:1:ACCEPT:2:1:v"}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
@@ -291,12 +291,12 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{"2:*:VOTE:1:v"}
-
     go accept(2, ins, outs)
     ins <- "1:*:NOMINATE:1:v"
     ins <- "1:*:NOMINATE:1:v"
     close(ins)
+
+    exp := []string{"2:*:VOTE:1:v"}
 
     // outs was closed; therefore all messages have been processed
     assert.Equal(t, exp, gather(outs), "")
