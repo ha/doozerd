@@ -18,7 +18,7 @@ const (
     iNumParts
 )
 
-func accept(ins, outs chan string) {
+func accept(me int, ins, outs chan string) {
     var rnd, vrnd uint64
     var vval string
 
@@ -31,6 +31,7 @@ func accept(ins, outs chan string) {
         switch parts[iCmd] {
         case "INVITE":
             i, _ := strconv.Btoui64(parts[iRnd], 10)
+            inFrom, _ := strconv.Btoui64(parts[iFrom], 10)
             // If parts[iRnd] is invalid, i is 0 and the message will be ignored
             switch {
                 case i <= rnd:
@@ -38,7 +39,15 @@ func accept(ins, outs chan string) {
                     rnd = i
 
                     sent++
-                    msg := fmt.Sprintf("ACCEPT:%d:%d:%s", i, vrnd, vval)
+                    outTo := inFrom // reply to the sender
+                    msg := fmt.Sprintf(
+                        "%d:%d:ACCEPT:%d:%d:%s",
+                        me,
+                        outTo,
+                        i,
+                        vrnd,
+                        vval,
+                    )
                     go func(msg string) { outs <- msg ; ch <- 1 }(msg)
             }
         }
@@ -64,9 +73,9 @@ func TestAcceptsInvite(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{"ACCEPT:1:0:"}
+    exp := []string{"2:1:ACCEPT:1:0:"}
 
-    go accept(ins, outs)
+    go accept(2, ins, outs)
     // Send a message with no senderId
     ins <- "1:*:INVITE:1"
     close(ins)
@@ -79,9 +88,9 @@ func TestIgnoresStaleInvites(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := []string{"ACCEPT:2:0:"}
+    exp := []string{"2:1:ACCEPT:2:0:"}
 
-    go accept(ins, outs)
+    go accept(2, ins, outs)
     // Send a message with no senderId
     ins <- "1:*:INVITE:2"
     ins <- "1:*:INVITE:1"
@@ -106,7 +115,7 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 
         exp := []string{}
 
-        go accept(ins, outs)
+        go accept(2, ins, outs)
         // Send a message with no senderId
         ins <- msg
         close(ins)
