@@ -85,7 +85,6 @@ func TestAcceptsInvite(t *testing.T) {
     exp := []string{"2:1:ACCEPT:1:0:"}
 
     go accept(2, ins, outs)
-    // Send a message with no senderId
     ins <- "1:*:INVITE:1"
     close(ins)
 
@@ -100,7 +99,6 @@ func TestIgnoresStaleInvites(t *testing.T) {
     exp := []string{"2:1:ACCEPT:2:0:"}
 
     go accept(2, ins, outs)
-    // Send a message with no senderId
     ins <- "1:*:INVITE:2"
     ins <- "1:*:INVITE:1"
     close(ins)
@@ -129,7 +127,6 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         exp := []string{}
 
         go accept(2, ins, outs)
-        // Send a message with no senderId
         ins <- msg
         close(ins)
 
