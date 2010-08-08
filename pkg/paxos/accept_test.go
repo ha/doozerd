@@ -50,8 +50,7 @@ func accept(me uint64, ins, outs chan string) {
 
                     sent++
                     outTo := inFrom // reply to the sender
-                    msg := fmt.Sprintf(
-                        "%d:%d:ACCEPT:%d:%d:%s",
+                    msg := fmt.Sprintf("%d:%d:ACCEPT:%d:%d:%s",
                         me,
                         outTo,
                         i,
