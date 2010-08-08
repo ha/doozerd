@@ -81,10 +81,11 @@ func accept(me uint64, ins, outs chan string) {
                 continue
             }
 
-            val := nominateParts[nVal]
             rnd = i
+            vrnd = i
+            vval = nominateParts[nVal]
 
-            msg := fmt.Sprintf("%d:*:VOTE:%d:%s", me, i, val)
+            msg := fmt.Sprintf("%d:*:VOTE:%d:%s", me, i, vval)
             go func(msg string) { outs <- msg ; ch <- 1 }(msg)
             sent++
         }
@@ -263,6 +264,22 @@ func TestInvitesAfterNewNominationsAreStaleAndIgnored(t *testing.T) {
     ins <- "1:*:NOMINATE:2:v"
     <-outs // throw away VOTE message
     ins <- "1:*:INVITE:1"
+    close(ins)
+
+    // outs was closed; therefore all messages have been processed
+    assert.Equal(t, exp, gather(outs), "")
+}
+
+func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
+    ins := make(chan string)
+    outs := make(chan string)
+
+    exp := []string{"2:1:ACCEPT:2:1:v"}
+
+    go accept(2, ins, outs)
+    ins <- "1:*:NOMINATE:1:v"
+    <-outs // throw away VOTE message
+    ins <- "1:*:INVITE:2"
     close(ins)
 
     // outs was closed; therefore all messages have been processed
