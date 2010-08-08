@@ -37,9 +37,12 @@ func accept(me uint64, ins, outs chan string) {
 
         switch parts[iCmd] {
         case "INVITE":
-            i, _ := strconv.Btoui64(parts[iRnd], 10)
-            inFrom, _ := strconv.Btoui64(parts[iFrom], 10)
-            // If parts[iRnd] is invalid, i is 0 and the message will be ignored
+            i, err := strconv.Btoui64(parts[iRnd], 10)
+            if err != nil { continue }
+
+            inFrom, err := strconv.Btoui64(parts[iFrom], 10)
+            if err != nil { continue }
+
             switch {
                 case i <= rnd:
                 case i > rnd:
@@ -117,7 +120,9 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         "1:*:x:1", // unknown command
         "1:x:INVITE:1", // invalid to address
         "1:7:INVITE:1", // valid but incorrect to address
+        "X:*:INVITE:1", // invalid from address
     }
+
     for _, msg := range(totest) {
         ins := make(chan string)
         outs := make(chan string)
