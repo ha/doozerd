@@ -63,4 +63,3 @@ func learn(quorum int, messages, taught chan string, ack func()) {
 
     }
 }
-
