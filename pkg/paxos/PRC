@@ -1,0 +1,30 @@
+Package Responsibility and Collaboration
+========================================
+
+* paxos
+    + .NewInstance
+    + .learn
+    + .accept
+    + .coordinate
+    + Node
+    + msg(s)
+* proto
+    + .Encode(parts ... interface{})
+    + .Decode
+* router
+    ^ paxos (instances)
+    + .Route
+    + Msg
+* mgmt (aka extra shit that we don't know where it goes)
+    + applying paxos outputs to the data store
+    + becoming the leader
+    + learning about any other leader there might be
+    + adding/removing acceptors/learners
+    + fault detection
+* borg
+    ^ net
+    ^ proto
+    ^ router (use Msg)
+    + .ListenAndServe
+* borgd (cli)
+    + borg
