@@ -7,6 +7,7 @@ import (
 
     "borg/assert"
     "testing"
+    "container/vector"
 )
 
 const (
@@ -54,8 +55,8 @@ func accept(ins, outs chan string) {
 
 // TESTING
 
-func slurp(ch chan string) (got string) {
-    for x := range ch { got += x }
+func slurp(ch chan string) (got []string) {
+    for x := range ch { (*vector.StringVector)(&got).Push(x) }
     return
 }
 
@@ -63,7 +64,7 @@ func TestAcceptsInvite(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := "ACCEPT:1:0:"
+    exp := []string{"ACCEPT:1:0:"}
 
     go accept(ins, outs)
     // Send a message with no senderId
@@ -78,7 +79,7 @@ func TestIgnoresStaleInvites(t *testing.T) {
     ins := make(chan string)
     outs := make(chan string)
 
-    exp := "ACCEPT:2:0:"
+    exp := []string{"ACCEPT:2:0:"}
 
     go accept(ins, outs)
     // Send a message with no senderId
@@ -103,7 +104,7 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         ins := make(chan string)
         outs := make(chan string)
 
-        exp := ""
+        exp := []string{}
 
         go accept(ins, outs)
         // Send a message with no senderId
@@ -114,4 +115,3 @@ func TestIgnoresMalformedMessages(t *testing.T) {
         assert.Equal(t, exp, slurp(outs), "")
     }
 }
-
