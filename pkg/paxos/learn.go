@@ -22,6 +22,10 @@ func learn(quorum int, messages, taught chan string, ack func()) {
     for m := range messages {
         parts := strings.Split(m, ":", lNumParts) // e.g. VOTE:1:xxx
 
+        if len(parts) != lNumParts {
+            continue
+        }
+
         if parts[lCmd] != "VOTE" {
             continue
         }

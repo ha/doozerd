@@ -90,6 +90,22 @@ func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
     assert.Equal(t, 1, acks, "")
 }
 
+func TestIgnoresMessageWithIncorrectArity(t *testing.T) {
+    msgs := make(chan string)
+    taught := make(chan string)
+    acks := 0
+
+
+    go learn(1, msgs, taught, func() { acks++ })
+
+    // Send a message with no senderId
+    msgs <- "1:*:VOTE"
+    msgs <- "1:*:VOTE:1:foo"
+
+    assert.Equal(t, "foo", <-taught, "")
+    assert.Equal(t, 1, acks, "")
+}
+
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
     msgs := make(chan string)
     taught := make(chan string)
