@@ -45,12 +45,14 @@ func TestAcceptsInvite(t *testing.T) {
 
 func TestIgnoresMalformedMessages(t *testing.T) {
 	totest := msgs(
+		// TODO: Move to router tests
 		//m("x"),            // too few separators
 		//m("x:x"),          // too few separators
 		//m("x:x:x"),        // too few separators
 		//m("x:x:x:x:x"),    // too many separators
 		//m("1:x:INVITE:1"), // invalid to address
 		//m("X:*:INVITE:1"), // invalid from address
+		// TODO: END
 
 		"1:*:INVITE:x", // invalid round number
 		"1:*:x:1",      // unknown command
@@ -71,42 +73,27 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 		exp := []msg{}
 
 		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, exp, gather(outs), fmt.Sprintf("#v", test))
+		assert.Equal(t, exp, gather(outs), fmt.Sprintf("%v", test))
 	}
 }
 
 func TestItVotes(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	totest := [][]msg{
+		msgs("1:*:NOMINATE:1:foo", "2:*:VOTE:1:foo"),
+		msgs("1:*:NOMINATE:1:bar", "2:*:VOTE:1:bar"),
+	}
 
-	val := "foo"
+	for _, test := range totest {
+		ins := make(chan msg)
+		outs := make(chan msg)
 
-	go acceptor(2, ins, outs)
-	// According to paxos, we can omit Phase 1 in round 1
-	ins <- m("1:*:NOMINATE:1:"+val)
-	close(ins)
+		go acceptor(2, ins, outs)
+		ins <- test[0]
+		close(ins)
 
-	exp := msgs("2:*:VOTE:1:" + val)
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
-}
-
-func TestItVotesWithAnotherValue(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
-
-	val := "bar"
-
-	go acceptor(2, ins, outs)
-	// According to paxos, we can omit Phase 1 in round 1
-	ins <- m("1:*:NOMINATE:1:"+val)
-	close(ins)
-
-	exp := msgs("2:*:VOTE:1:" + val)
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
+		// outs was closed; therefore all messages have been processed
+		assert.Equal(t, []msg{test[1]}, gather(outs), fmt.Sprintf("%v", test))
+	}
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
