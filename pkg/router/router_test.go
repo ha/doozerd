@@ -41,11 +41,33 @@ func TestStartNewPaxos(t *testing.T) {
 
     propIns <- val
 
-    // expect:
-    //  - new paxos id generated -- how to test?
-
     assert.Equal(t, val, <-cTarget, "")
     assert.Equal(t, 1, <-aStarted, "")
     assert.Equal(t, 1, <-lStarted, "")
+}
+
+func TestSomethingElse(t *testing.T) {
+    exp := "1:*:INVITE:1"
+    cTarget := make(chan string)
+    aStarted := make(chan int)
+    lStarted := make(chan int)
+    propIns := make(chan string)
+
+    c := func(me, nNodes uint64, target string, ins, outs chan paxos.Msg, clock chan int) {
+        cTarget <- target
+        outs <- m(exp)
+    }
+
+    a := func(me uint64, ins, outs chan paxos.Msg) {
+        aStarted <- 1
+    }
+
+    l := func(quorum int, ins chan paxos.Msg, taught chan string, ack func()) {
+        lStarted <- 1
+    }
+
+    go router(propIns, nil, packetOuts, c, a, l)
+
+    assert.Equal(t, "1--" + exp, packetOuts, "")
 }
 
