@@ -24,7 +24,11 @@ func coordinator(me, nNodes uint64, target string, ins, outs chan msg, clock cha
 		panic(IdOutOfRange)
 	}
 
+	var sent int
+	var ch = make(chan int)
+
 	var crnd uint64 = me
+	var cval string
 
 Start:
 	start := msg{
@@ -45,8 +49,7 @@ Start:
 		select {
 		case in := <-ins:
 			if closed(ins) {
-				close(outs)
-				return
+				goto Done
 			}
 			switch in.cmd {
 			case "RSVP":
@@ -54,6 +57,10 @@ Start:
 				i := dtoui64(bodyParts[rRnd])
 				vrnd := dtoui64(bodyParts[rVrnd])
 				vval := bodyParts[rVval]
+
+				if cval != "" {
+					continue
+				}
 
 				if i < crnd {
 					continue
@@ -73,6 +80,7 @@ Start:
 					} else {
 						v = target
 					}
+					cval = v
 
 					choosen := msg{
 						cmd:  "NOMINATE",
@@ -80,7 +88,8 @@ Start:
 						from: me,
 						body: fmt.Sprintf("%d:%s", crnd, v),
 					}
-					go func() { outs <- choosen }()
+					go func() { outs <- choosen ; ch <- 1 }()
+					sent++
 				}
 			}
 		case <-clock:
@@ -88,6 +97,14 @@ Start:
 			goto Start
 		}
 	}
+
+Done:
+	for x := 0; x < sent; x++ {
+		<-ch
+	}
+
+	close(outs)
+	return
 }
 
 
@@ -223,4 +240,26 @@ func TestPhase2aUsesValueFromAcceptors(t *testing.T) {
 
 	exp := m("1:*:NOMINATE:1:bar")
 	assert.Equal(t, exp, <-outs, "")
+}
+
+func TestPhase2aSimpleX(t *testing.T) {
+	ins := make(chan msg)
+	outs := make(chan msg)
+	clock := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	<-outs //discard INVITE
+
+	ins <- m("1:1:RSVP:1:0:")
+	ins <- m("2:1:RSVP:1:0:")
+	ins <- m("3:1:RSVP:1:0:")
+	ins <- m("4:1:RSVP:1:0:")
+	ins <- m("5:1:RSVP:1:0:")
+	ins <- m("6:1:RSVP:1:0:")
+	ins <- m("7:1:RSVP:1:0:")
+	close(ins)
+
+	exp := msgs("1:*:NOMINATE:1:foo")
+	assert.Equal(t, exp, gather(outs), "")
 }
