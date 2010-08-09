@@ -51,8 +51,13 @@ Start:
 			switch in.cmd {
 			case "RSVP":
 				bodyParts := splitExactly(in.body, rNumParts)
+				i := dtoui64(bodyParts[rRnd])
 				vrnd := dtoui64(bodyParts[rVrnd])
 				vval := bodyParts[rVval]
+
+				if i < crnd {
+					continue
+				}
 
 				if vrnd > vr {
 					vr = vrnd
@@ -87,6 +92,31 @@ Start:
 
 
 // Testing
+
+func TestCoordinatorIgnoreOldMessages(t *testing.T) {
+	ins := make(chan msg)
+	outs := make(chan msg)
+	clock := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	<-outs //discard INVITE:1
+
+	clock <- 1 // force the start of a new round
+	<-outs //discard INVITE:11
+
+	ins <- m("1:1:RSVP:1:0:")
+	ins <- m("2:1:RSVP:1:0:")
+	ins <- m("3:1:RSVP:1:0:")
+	ins <- m("4:1:RSVP:1:0:")
+	ins <- m("5:1:RSVP:1:0:")
+	ins <- m("6:1:RSVP:1:0:")
+
+	close(ins)
+
+	exp := []msg{}
+	assert.Equal(t, exp, gather(outs), "")
+}
 
 // This is here mainly for triangulation.  It ensures we're not
 // hardcoding crnd.
