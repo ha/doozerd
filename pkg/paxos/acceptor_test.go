@@ -6,6 +6,29 @@ import (
 	"fmt"
 )
 
+func TestIgnoreOldMessages(t *testing.T) {
+	tests := [][]msg{
+		msgs("1:*:INVITE:11", "1:*:NOMINATE:1:v"),
+		msgs("1:*:NOMINATE:11:v", "1:*:INVITE:1"),
+		msgs("1:*:INVITE:11", "1:*:INVITE:1"),
+		msgs("1:*:NOMINATE:11:v", "1:*:NOMINATE:1:v"),
+	}
+
+	for _, test := range tests {
+		ins := make(chan msg)
+		outs := make(chan msg)
+
+		go acceptor(2, ins, outs)
+		ins <- test[0]
+		<-outs // throw away first reply
+		ins <- test[1]
+		close(ins)
+
+		// outs was closed; therefore all messages have been processed
+		assert.Equal(t, []msg{}, gather(outs), fmt.Sprintf("%v", test))
+	}
+}
+
 func TestAcceptsInvite(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
@@ -15,21 +38,6 @@ func TestAcceptsInvite(t *testing.T) {
 	close(ins)
 
 	exp := msgs("2:1:RSVP:1:0:")
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
-}
-
-func TestInvitesAfterNewInvitesAreStaleAndIgnored(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
-
-	go acceptor(2, ins, outs)
-	ins <- m("1:*:INVITE:2")
-	ins <- m("1:*:INVITE:1")
-	close(ins)
-
-	exp := msgs("2:1:RSVP:2:0:")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, gather(outs), "")
@@ -130,41 +138,6 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 	close(ins)
 
 	exp := msgs("3:*:VOTE:2:" + val)
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
-}
-
-func TestItIgnoresOldNominations(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
-
-	val := "bar"
-
-	go acceptor(3, ins, outs)
-	// According to paxos, we can omit Phase 1 in the first round
-	ins <- m("1:*:INVITE:2")
-	<-outs // throw away RSVP message
-	ins <- m("1:*:NOMINATE:1:"+val)
-	close(ins)
-
-	exp := []msg{}
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
-}
-
-func TestInvitesAfterNewNominationsAreStaleAndIgnored(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
-
-	go acceptor(2, ins, outs)
-	ins <- m("1:*:NOMINATE:2:v")
-	<-outs // throw away VOTE message
-	ins <- m("1:*:INVITE:1")
-	close(ins)
-
-	exp := []msg{}
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, gather(outs), "")
