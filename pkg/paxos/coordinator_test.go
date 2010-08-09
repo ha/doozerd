@@ -8,11 +8,18 @@ import (
 	"os"
 )
 
+const (
+	rRnd = iota
+	rVrnd
+	rVval
+	rNumParts
+)
+
 var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-func coordinator(me, nNodes uint64, v string, ins, outs chan msg, clock chan int) {
+func coordinator(me, nNodes uint64, target string, ins, outs chan msg, clock chan int) {
 	if me > nNodes {
 		panic(IdOutOfRange)
 	}
@@ -29,6 +36,8 @@ Start:
 	outs <- start
 
 	var rsvps uint64
+	var vr uint64
+	var vv string
 
 	quorum := nNodes/2 + 1
 
@@ -41,8 +50,25 @@ Start:
 			}
 			switch in.cmd {
 			case "RSVP":
+				bodyParts := splitExactly(in.body, rNumParts)
+				vrnd := dtoui64(bodyParts[rVrnd])
+				vval := bodyParts[rVval]
+
+				if vrnd > vr {
+					vr = vrnd
+					vv = vval
+				}
+
 				rsvps++
 				if rsvps >= quorum {
+					var v string
+
+					if vr > 0 {
+						v = vv
+					} else {
+						v = target
+					}
+
 					choosen := msg{
 						cmd:  "NOMINATE",
 						to:   0, // send to all acceptors
@@ -147,4 +173,24 @@ func TestShutdown(t *testing.T) {
 
 	exp := msgs("1:*:INVITE:1")
 	assert.Equal(t, exp, gather(outs), "")
+}
+
+func TestPhase2aUsesValueFromAcceptors(t *testing.T) {
+	ins := make(chan msg)
+	outs := make(chan msg)
+	clock := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	<-outs //discard INVITE
+
+	ins <- m("1:1:RSVP:1:0:")
+	ins <- m("2:1:RSVP:1:0:")
+	ins <- m("3:1:RSVP:1:0:")
+	ins <- m("4:1:RSVP:1:0:")
+	ins <- m("5:1:RSVP:1:0:")
+	ins <- m("6:1:RSVP:1:1:bar")
+
+	exp := m("1:*:NOMINATE:1:bar")
+	assert.Equal(t, exp, <-outs, "")
 }
