@@ -6,7 +6,7 @@ const (
     lNumParts
 )
 
-func learn(quorum int, ins chan msg, taught chan string, ack func()) {
+func learner(quorum int, ins chan msg, taught chan string, ack func()) {
     var round uint64 = 0
     votes := make(map[string]int) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes

@@ -10,7 +10,7 @@ func TestAcceptsInvite(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	ins <- m("1:*:INVITE:1")
 	close(ins)
 
@@ -24,7 +24,7 @@ func TestInvitesAfterNewInvitesAreStaleAndIgnored(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	ins <- m("1:*:INVITE:2")
 	ins <- m("1:*:INVITE:1")
 	close(ins)
@@ -56,7 +56,7 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 		ins := make(chan msg)
 		outs := make(chan msg)
 
-		go accept(2, ins, outs)
+		go acceptor(2, ins, outs)
 		ins <- test
 		close(ins)
 
@@ -73,7 +73,7 @@ func TestItVotes(t *testing.T) {
 
 	val := "foo"
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	// According to paxos, we can omit Phase 1 in round 1
 	ins <- m("1:*:NOMINATE:1:"+val)
 	close(ins)
@@ -90,7 +90,7 @@ func TestItVotesWithAnotherValue(t *testing.T) {
 
 	val := "bar"
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	// According to paxos, we can omit Phase 1 in round 1
 	ins <- m("1:*:NOMINATE:1:"+val)
 	close(ins)
@@ -107,7 +107,7 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 
 	val := "bar"
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- m("1:*:NOMINATE:2:"+val)
 	close(ins)
@@ -124,7 +124,7 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 
 	val := "bar"
 
-	go accept(3, ins, outs)
+	go acceptor(3, ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- m("1:*:NOMINATE:2:"+val)
 	close(ins)
@@ -141,7 +141,7 @@ func TestItIgnoresOldNominations(t *testing.T) {
 
 	val := "bar"
 
-	go accept(3, ins, outs)
+	go acceptor(3, ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- m("1:*:INVITE:2")
 	<-outs // throw away RSVP message
@@ -158,7 +158,7 @@ func TestInvitesAfterNewNominationsAreStaleAndIgnored(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:2:v")
 	<-outs // throw away VOTE message
 	ins <- m("1:*:INVITE:1")
@@ -174,7 +174,7 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:1:v")
 	<-outs // throw away VOTE message
 	ins <- m("1:*:INVITE:2")
@@ -190,7 +190,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 
-	go accept(2, ins, outs)
+	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:1:v")
 	ins <- m("1:*:NOMINATE:1:v")
 	close(ins)

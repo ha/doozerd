@@ -15,7 +15,7 @@ const (
 	nNumParts
 )
 
-func accept(me uint64, ins, outs chan msg) {
+func acceptor(me uint64, ins, outs chan msg) {
 	var rnd, vrnd uint64
 	var vval string
 
