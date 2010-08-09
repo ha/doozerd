@@ -111,7 +111,7 @@ Done:
 
 // Testing
 
-func TestCoordinatorIgnoreOldMessages(t *testing.T) {
+func TestCoordIgnoreOldMessages(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -138,7 +138,7 @@ func TestCoordinatorIgnoreOldMessages(t *testing.T) {
 
 // This is here mainly for triangulation.  It ensures we're not
 // hardcoding crnd.
-func TestStartsRoundAtMe(t *testing.T) {
+func TestCoordStart(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -156,7 +156,7 @@ func TestStartsRoundAtMe(t *testing.T) {
 	assert.Equal(t, exp, res, "")
 }
 
-func TestPanicWhenMeIsOutOfRange(t *testing.T) {
+func TestCoordIdOutOfRange(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -167,7 +167,7 @@ func TestPanicWhenMeIsOutOfRange(t *testing.T) {
 	})
 }
 
-func TestPhase2aSimple(t *testing.T) {
+func TestCoordTargetNomination(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -187,7 +187,7 @@ func TestPhase2aSimple(t *testing.T) {
 	assert.Equal(t, exp, <-outs, "")
 }
 
-func TestPhase2aTimeoutStartsNewRound(t *testing.T) {
+func TestCoordRestart(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -209,7 +209,7 @@ func TestPhase2aTimeoutStartsNewRound(t *testing.T) {
 	assert.Equal(t, exp, <-outs, "")
 }
 
-func TestShutdown(t *testing.T) {
+func TestCoordShutdown(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -223,7 +223,7 @@ func TestShutdown(t *testing.T) {
 	assert.Equal(t, exp, gather(outs), "")
 }
 
-func TestPhase2aUsesValueFromAcceptors(t *testing.T) {
+func TestCoordNonTargetNomination(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -243,7 +243,7 @@ func TestPhase2aUsesValueFromAcceptors(t *testing.T) {
 	assert.Equal(t, exp, <-outs, "")
 }
 
-func TestPhase2aSimpleX(t *testing.T) {
+func TestCoordOneNominationPerRound(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
@@ -265,7 +265,7 @@ func TestPhase2aSimpleX(t *testing.T) {
 	assert.Equal(t, exp, gather(outs), "")
 }
 
-func TestPhase2aXX(t *testing.T) {
+func TestCoordEachRoundResetsCval(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
 	clock := make(chan int)
