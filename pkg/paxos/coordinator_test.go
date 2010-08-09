@@ -31,6 +31,7 @@ func coordinator(me, nNodes uint64, target string, ins, outs chan msg, clock cha
 	var cval string
 
 Start:
+	cval = ""
 	start := msg{
 		cmd:  "INVITE",
 		to:   0, // send to all acceptors
@@ -261,5 +262,38 @@ func TestPhase2aSimpleX(t *testing.T) {
 	close(ins)
 
 	exp := msgs("1:*:NOMINATE:1:foo")
+	assert.Equal(t, exp, gather(outs), "")
+}
+
+func TestPhase2aXX(t *testing.T) {
+	ins := make(chan msg)
+	outs := make(chan msg)
+	clock := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	<-outs //discard INVITE
+
+	ins <- m("1:1:RSVP:1:0:")
+	ins <- m("2:1:RSVP:1:0:")
+	ins <- m("3:1:RSVP:1:0:")
+	ins <- m("4:1:RSVP:1:0:")
+	ins <- m("5:1:RSVP:1:0:")
+	ins <- m("6:1:RSVP:1:0:")
+	<-outs //discard NOMINATE
+
+	clock <- 1 // force the start of a new round
+	<-outs //discard INVITE:11
+
+	ins <- m("1:1:RSVP:11:0:")
+	ins <- m("2:1:RSVP:11:0:")
+	ins <- m("3:1:RSVP:11:0:")
+	ins <- m("4:1:RSVP:11:0:")
+	ins <- m("5:1:RSVP:11:0:")
+	ins <- m("6:1:RSVP:11:0:")
+
+	close(ins)
+
+	exp := msgs("1:*:NOMINATE:11:foo")
 	assert.Equal(t, exp, gather(outs), "")
 }
