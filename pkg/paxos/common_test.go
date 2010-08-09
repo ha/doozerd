@@ -6,22 +6,22 @@ import (
 	"strconv"
 )
 
-func gather(ch chan msg) (got []msg) {
+func gather(ch chan Msg) (got []Msg) {
 	var stuff vector.Vector = make([]interface{}, 0)
 
 	for x := range ch {
 		stuff.Push(x)
 	}
 
-	got = make([]msg, len(stuff))
+	got = make([]Msg, len(stuff))
 	for i, v := range stuff {
-		got[i] = v.(msg)
+		got[i] = v.(Msg)
 	}
 
 	return
 }
 
-func m(s string) msg {
+func m(s string) Msg {
 	parts := strings.Split(s, ":", mNumParts)
 	if len(parts) != mNumParts {
 		panic(s)
@@ -42,11 +42,11 @@ func m(s string) msg {
 		}
 	}
 
-	return msg{parts[mCmd], from, to, parts[mBody]}
+	return Msg{parts[mCmd], from, to, parts[mBody]}
 }
 
-func msgs(ss ... string) (messages []msg) {
-	messages = make([]msg, len(ss))
+func msgs(ss ... string) (messages []Msg) {
+	messages = make([]Msg, len(ss))
 	for i, s := range ss {
 		messages[i] = m(s)
 	}

@@ -6,8 +6,8 @@ import (
 )
 
 func TestCoordIgnoreOldMessages(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -26,20 +26,20 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 
 	close(ins)
 
-	exp := []msg{}
+	exp := []Msg{}
 	assert.Equal(t, exp, gather(outs), "")
 }
 
 // This is here mainly for triangulation.  It ensures we're not
 // hardcoding crnd.
 func TestCoordStart(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
 
-	res := make([]msg, 2)
+	res := make([]Msg, 2)
 	go coordinator(1, nNodes, "foo", ins, outs, clock)
 	res[0] = <-outs
 	go coordinator(2, nNodes, "foo", ins, outs, clock)
@@ -51,8 +51,8 @@ func TestCoordStart(t *testing.T) {
 }
 
 func TestCoordIdOutOfRange(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -62,8 +62,8 @@ func TestCoordIdOutOfRange(t *testing.T) {
 }
 
 func TestCoordTargetNomination(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -82,8 +82,8 @@ func TestCoordTargetNomination(t *testing.T) {
 }
 
 func TestCoordRestart(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -104,8 +104,8 @@ func TestCoordRestart(t *testing.T) {
 }
 
 func TestCoordShutdown(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -118,8 +118,8 @@ func TestCoordShutdown(t *testing.T) {
 }
 
 func TestCoordNonTargetNomination(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -138,8 +138,8 @@ func TestCoordNonTargetNomination(t *testing.T) {
 }
 
 func TestCoordOneNominationPerRound(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
@@ -160,8 +160,8 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 }
 
 func TestCoordEachRoundResetsCval(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary

@@ -15,13 +15,13 @@ const (
 	nNumParts
 )
 
-func acceptor(me uint64, ins, outs chan msg) {
+func acceptor(me uint64, ins, outs chan Msg) {
 	var rnd, vrnd uint64
 	var vval string
 
 	ch, sent := make(chan int), 0
 
-	update := func(in msg) {
+	update := func(in Msg) {
 		defer swallowContinue()
 
 		if in.to != me && in.to != 0 {
@@ -39,13 +39,13 @@ func acceptor(me uint64, ins, outs chan msg) {
 			case i > rnd:
 				rnd = i
 
-				reply := msg{
+				reply := Msg{
 					cmd: "RSVP",
 					to: in.from, // reply to the sender
 					from: me,
 					body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
 				}
-				go func(reply msg) { outs <- reply; ch <- 1 }(reply)
+				go func(reply Msg) { outs <- reply; ch <- 1 }(reply)
 				sent++
 			}
 		case "NOMINATE":
@@ -62,13 +62,13 @@ func acceptor(me uint64, ins, outs chan msg) {
 			vrnd = i
 			vval = bodyParts[nVal]
 
-			broadcast := msg{
+			broadcast := Msg{
 				cmd: "VOTE",
 				from: me,
 				to: 0,
 				body: fmt.Sprintf("%d:%s", i, vval),
 			}
-			go func(broadcast msg) { outs <- broadcast; ch <- 1 }(broadcast)
+			go func(broadcast Msg) { outs <- broadcast; ch <- 1 }(broadcast)
 			sent++
 		}
 	}

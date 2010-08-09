@@ -7,7 +7,7 @@ import (
 )
 
 func TestIgnoreOldMessages(t *testing.T) {
-	tests := [][]msg{
+	tests := [][]Msg{
 		msgs("1:*:INVITE:11", "1:*:NOMINATE:1:v"),
 		msgs("1:*:NOMINATE:11:v", "1:*:INVITE:1"),
 		msgs("1:*:INVITE:11", "1:*:INVITE:1"),
@@ -15,8 +15,8 @@ func TestIgnoreOldMessages(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ins := make(chan msg)
-		outs := make(chan msg)
+		ins := make(chan Msg)
+		outs := make(chan Msg)
 
 		go acceptor(2, ins, outs)
 		ins <- test[0]
@@ -25,13 +25,13 @@ func TestIgnoreOldMessages(t *testing.T) {
 		close(ins)
 
 		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, []msg{}, gather(outs), fmt.Sprintf("%v", test))
+		assert.Equal(t, []Msg{}, gather(outs), fmt.Sprintf("%v", test))
 	}
 }
 
 func TestAcceptsInvite(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 
 	go acceptor(2, ins, outs)
 	ins <- m("1:*:INVITE:1")
@@ -63,14 +63,14 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 	)
 
 	for _, test := range totest {
-		ins := make(chan msg)
-		outs := make(chan msg)
+		ins := make(chan Msg)
+		outs := make(chan Msg)
 
 		go acceptor(2, ins, outs)
 		ins <- test
 		close(ins)
 
-		exp := []msg{}
+		exp := []Msg{}
 
 		// outs was closed; therefore all messages have been processed
 		assert.Equal(t, exp, gather(outs), fmt.Sprintf("%v", test))
@@ -78,27 +78,27 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 }
 
 func TestItVotes(t *testing.T) {
-	totest := [][]msg{
+	totest := [][]Msg{
 		msgs("1:*:NOMINATE:1:foo", "2:*:VOTE:1:foo"),
 		msgs("1:*:NOMINATE:1:bar", "2:*:VOTE:1:bar"),
 	}
 
 	for _, test := range totest {
-		ins := make(chan msg)
-		outs := make(chan msg)
+		ins := make(chan Msg)
+		outs := make(chan Msg)
 
 		go acceptor(2, ins, outs)
 		ins <- test[0]
 		close(ins)
 
 		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, []msg{test[1]}, gather(outs), fmt.Sprintf("%v", test))
+		assert.Equal(t, []Msg{test[1]}, gather(outs), fmt.Sprintf("%v", test))
 	}
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 
 	val := "bar"
 
@@ -114,8 +114,8 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 
 	val := "bar"
 
@@ -131,8 +131,8 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 
 	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:1:v")
@@ -147,8 +147,8 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
-	ins := make(chan msg)
-	outs := make(chan msg)
+	ins := make(chan Msg)
+	outs := make(chan Msg)
 
 	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:1:v")

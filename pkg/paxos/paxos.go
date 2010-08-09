@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-type msg struct {
+type Msg struct {
 	cmd string
 	from uint64
 	to uint64

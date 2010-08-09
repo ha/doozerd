@@ -16,7 +16,7 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-func coordinator(me, nNodes uint64, target string, ins, outs chan msg, clock chan int) {
+func coordinator(me, nNodes uint64, target string, ins, outs chan Msg, clock chan int) {
 	if me > nNodes {
 		panic(IdOutOfRange)
 	}
@@ -29,7 +29,7 @@ func coordinator(me, nNodes uint64, target string, ins, outs chan msg, clock cha
 
 Start:
 	cval = ""
-	start := msg{
+	start := Msg{
 		cmd:  "INVITE",
 		to:   0, // send to all acceptors
 		from: me,
@@ -80,7 +80,7 @@ Start:
 					}
 					cval = v
 
-					choosen := msg{
+					choosen := Msg{
 						cmd:  "NOMINATE",
 						to:   0, // send to all acceptors
 						from: me,
