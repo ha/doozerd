@@ -93,6 +93,26 @@ func TestPanicWhenMeIsOutOfRange(t *testing.T) {
 	})
 }
 
+func TestPhase2aSimple(t *testing.T) {
+	ins := make(chan msg)
+	outs := make(chan msg)
+	clock := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	<-outs //discard INVITE
+
+	ins <- m("2:1:RSVP:1:0:")
+	ins <- m("3:1:RSVP:1:0:")
+	ins <- m("4:1:RSVP:1:0:")
+	ins <- m("5:1:RSVP:1:0:")
+	ins <- m("6:1:RSVP:1:0:")
+	ins <- m("7:1:RSVP:1:0:")
+
+	exp := m("1:*:NOMINATE:1:foo")
+	assert.Equal(t, exp, <-outs, "")
+}
+
 func TestPhase2aTimeoutStartsNewRound(t *testing.T) {
 	ins := make(chan msg)
 	outs := make(chan msg)
