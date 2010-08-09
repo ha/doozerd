@@ -1,9 +1,5 @@
 package paxos
 
-import (
-    "strconv"
-)
-
 const (
     lRnd = iota
     lValue
@@ -15,24 +11,16 @@ func learn(quorum int, ins chan msg, taught chan string, ack func()) {
     votes := make(map[string]int) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes
 
-    for in := range ins {
-        parts, err := splitBody(in.body, lNumParts) // e.g. VOTE:1:xxx
-        if err != nil {
-            continue
-        }
+    update := func(in msg) {
+        defer swallowContinue()
 
-        if len(parts) != lNumParts {
-            continue
-        }
+        parts := splitExactly(in.body, lNumParts) // e.g. 1:xxx
 
         if in.cmd != "VOTE" {
-            continue
+            return
         }
 
-        mRound, err := strconv.Btoui64(parts[lRnd], 10)
-        if err != nil {
-            continue
-        }
+        mRound := dtoui64(parts[lRnd])
 
         v := parts[lValue]
 
@@ -40,7 +28,7 @@ func learn(quorum int, ins chan msg, taught chan string, ack func()) {
 
         switch {
         case mRound < round:
-            continue
+            return
         case mRound > round:
             round = mRound
             votes = make(map[string]int)
@@ -48,7 +36,7 @@ func learn(quorum int, ins chan msg, taught chan string, ack func()) {
             fallthrough
         case mRound == round:
             if voted[in.from] {
-                continue
+                return
             }
             votes[v]++
             voted[in.from] = true
@@ -59,5 +47,9 @@ func learn(quorum int, ins chan msg, taught chan string, ack func()) {
             }
         }
 
+    }
+
+    for in := range ins {
+        update(in)
     }
 }

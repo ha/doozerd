@@ -2,7 +2,6 @@ package paxos
 
 import (
 	"fmt"
-	"strconv"
 )
 
 const (
@@ -21,23 +20,19 @@ func accept(me uint64, ins, outs chan msg) {
 	var vval string
 
 	ch, sent := make(chan int), 0
-	for in := range ins {
+
+	update := func(in msg) {
+		defer swallowContinue()
 
 		if in.to != me && in.to != 0 {
-			continue
+			return
 		}
 
 		switch in.cmd {
 		case "INVITE":
-			bodyParts, err := splitBody(in.body, iNumParts)
-			if err != nil {
-				continue
-			}
+			bodyParts := splitExactly(in.body, iNumParts)
 
-			i, err := strconv.Btoui64(bodyParts[iRnd], 10)
-			if err != nil {
-				continue
-			}
+			i := dtoui64(bodyParts[iRnd])
 
 			switch {
 			case i <= rnd:
@@ -54,23 +49,13 @@ func accept(me uint64, ins, outs chan msg) {
 				sent++
 			}
 		case "NOMINATE":
-			bodyParts, err := splitBody(in.body, nNumParts)
-			if err != nil {
-				continue
-			}
+			bodyParts := splitExactly(in.body, nNumParts)
 
-			if len(bodyParts) != nNumParts {
-				continue
-			}
-
-			i, err := strconv.Btoui64(bodyParts[nRnd], 10)
-			if err != nil {
-				continue
-			}
+			i := dtoui64(bodyParts[nRnd])
 
 			// SUPER IMPT MAD PAXOS
 			if i < rnd || i == vrnd {
-				continue
+				return
 			}
 
 			rnd = i
@@ -86,6 +71,10 @@ func accept(me uint64, ins, outs chan msg) {
 			go func(broadcast msg) { outs <- broadcast; ch <- 1 }(broadcast)
 			sent++
 		}
+	}
+
+	for in := range ins {
+		update(in)
 	}
 
 	for x := 0; x < sent; x++ {

@@ -3,6 +3,7 @@ package paxos
 import (
 	"os"
 	"strings"
+	"strconv"
 )
 
 type msg struct {
@@ -22,6 +23,7 @@ const (
 
 var (
 	InvalidArgumentsError = os.NewError("Invalid Arguments")
+	Continue = os.NewError("continue")
 )
 
 func splitBody(body string, n int) ([]string, os.Error){
@@ -31,3 +33,33 @@ func splitBody(body string, n int) ([]string, os.Error){
 	}
 	return bodyParts, nil
 }
+
+func splitExactly(body string, n int) []string {
+	parts, err := splitBody(body, n)
+	if err != nil {
+		panic(Continue)
+	}
+	return parts
+}
+
+func dtoui64(s string) uint64 {
+	i, err := strconv.Btoui64(s, 10)
+	if err != nil {
+		panic(Continue)
+	}
+	return i
+}
+
+func swallowContinue() {
+	p := recover()
+	switch v := p.(type) {
+	default: panic(p)
+	case nil: return // didn't panic at all
+	case os.Error:
+		switch v {
+		default: panic(v)
+		case Continue: return
+		}
+	}
+}
+
