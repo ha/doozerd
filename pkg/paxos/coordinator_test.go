@@ -35,6 +35,10 @@ Start:
 	for {
 		select {
 		case in := <-ins:
+			if closed(ins) {
+				close(outs)
+				return
+			}
 			switch in.cmd {
 			case "RSVP":
 				rsvps++
@@ -109,4 +113,18 @@ func TestPhase2aTimeoutStartsNewRound(t *testing.T) {
 
 	exp := m("1:*:INVITE:11")
 	assert.Equal(t, exp, <-outs, "")
+}
+
+func TestShutdown(t *testing.T) {
+	ins := make(chan msg)
+	outs := make(chan msg)
+	clock := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go coordinator(1, nNodes, "foo", ins, outs, clock)
+
+	close(ins)
+
+	exp := msgs("1:*:INVITE:1")
+	assert.Equal(t, exp, gather(outs), "")
 }
