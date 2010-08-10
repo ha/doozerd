@@ -24,7 +24,6 @@ type Instance struct {
 	// Learner
 	lIns  chan Msg
 	lOuts chan string
-
 }
 
 func (ins *Instance) Put(m Msg) {
@@ -38,7 +37,7 @@ func (ins *Instance) Value() string {
 	return <-ins.lOuts
 }
 
-func NewInstance(p Putter, target string) *Instance {
+func NewInstance() *Instance {
 	ins := Instance{
 		cIns:  make(chan Msg),
 		cOuts: make(chan Msg),
@@ -47,39 +46,34 @@ func NewInstance(p Putter, target string) *Instance {
 		lIns:  make(chan Msg),
 		lOuts: make(chan string),
 	}
-	if target != "" {
-		go coordinator(1, 1, 3, target, ins.cIns, ins.cOuts, make(chan int))
-	}
+	return &ins
+}
+
+func (ins *Instance) Go(p Putter) {
 	go acceptor(2, ins.aIns, ins.aOuts)
 	go learner(1, ins.lIns, ins.lOuts, func() {})
-	go func() {
-		for m := range ins.cOuts {
-			p.Put(m)
-		}
-	}()
 	go func() {
 		for m := range ins.aOuts {
 			p.Put(m)
 		}
 	}()
-	return &ins
+	go func() {
+		for m := range ins.cOuts {
+			p.Put(m)
+		}
+	}()
+}
+
+func (ins *Instance) Propose(v string) {
+	go coordinator(1, 1, 3, v, ins.cIns, ins.cOuts, make(chan int))
 }
 
 
 // Testing
 
-type FakeManager struct {
-	p Putter
-}
-
-func (fm *FakeManager) Put(m Msg) {
-	fm.p.Put(m)
-}
-
 func TestStartAtLearn(t *testing.T) {
-	fm := &FakeManager{}
-	ins := NewInstance(fm, "")
-	fm.p = ins
+	ins := NewInstance()
+	ins.Go(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
@@ -87,9 +81,8 @@ func TestStartAtLearn(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	fm := &FakeManager{}
-	ins := NewInstance(fm, "")
-	fm.p = ins
+	ins := NewInstance()
+	ins.Go(ins)
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
@@ -97,8 +90,8 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	fm := &FakeManager{}
-	ins := NewInstance(fm, "foo")
-	fm.p = ins
+	ins := NewInstance()
+	ins.Go(ins)
+	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
 }
