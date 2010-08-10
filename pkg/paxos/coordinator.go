@@ -16,7 +16,7 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-func coordinator(me, nNodes uint64, target string, ins, outs chan Msg, clock chan int) {
+func coordinator(me, quorum, nNodes uint64, target string, ins, outs chan Msg, clock chan int) {
 	if me > nNodes {
 		panic(IdOutOfRange)
 	}
@@ -41,26 +41,29 @@ Start:
 	var vr uint64
 	var vv string
 
-	quorum := nNodes/2 + 1
-
 	for {
+		fmt.Printf("coord: waiting for message or clock tick\n")
 		select {
 		case in := <-ins:
+			fmt.Printf("coord: got message %#v\n", in)
 			if closed(ins) {
 				goto Done
 			}
 			switch in.cmd {
 			case "RSVP":
+				fmt.Printf("coord: got RSVP\n")
 				bodyParts := splitExactly(in.body, rNumParts)
 				i := dtoui64(bodyParts[rRnd])
 				vrnd := dtoui64(bodyParts[rVrnd])
 				vval := bodyParts[rVval]
 
 				if cval != "" {
+					fmt.Printf("coord: cval is empty\n")
 					continue
 				}
 
 				if i < crnd {
+					fmt.Printf("coord: i < crnd === %d < %d\n", i, crnd)
 					continue
 				}
 
@@ -70,7 +73,9 @@ Start:
 				}
 
 				rsvps++
+				fmt.Printf("coord: rsvps=%d quorum=%d\n", rsvps, quorum)
 				if rsvps >= quorum {
+					fmt.Printf("got quorum of RSVPs\n")
 					var v string
 
 					if vr > 0 {

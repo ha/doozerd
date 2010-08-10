@@ -1,0 +1,33 @@
+
+Invite:
+  seqn
+  from
+  to
+  INVITE
+  roundnumber
+
+Rsvp:
+  seqn
+  from
+  to
+  RSVP
+  rnd
+  vrnd
+  vval
+
+Nominate:
+  seqn
+  from
+  to
+  NOMINATE
+  rnd
+  value
+
+Vote:
+  seqn
+  from
+  to
+  VOTE
+  rnd
+  value
+

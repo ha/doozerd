@@ -11,7 +11,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	<-outs //discard INVITE:1
 
 	clock <- 1 // force the start of a new round
@@ -40,9 +40,9 @@ func TestCoordStart(t *testing.T) {
 	nNodes := uint64(10) // this is arbitrary
 
 	res := make([]Msg, 2)
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	res[0] = <-outs
-	go coordinator(2, nNodes, "foo", ins, outs, clock)
+	go coordinator(2, 6, nNodes, "foo", ins, outs, clock)
 	res[1] = <-outs
 
 	exp := msgs("1:*:INVITE:1", "2:*:INVITE:2")
@@ -57,7 +57,7 @@ func TestCoordIdOutOfRange(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 	assert.Panic(t, IdOutOfRange, func() {
-		coordinator(11, nNodes, "foo", ins, outs, clock)
+		coordinator(11, 6, nNodes, "foo", ins, outs, clock)
 	})
 }
 
@@ -67,7 +67,7 @@ func TestCoordTargetNomination(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	<-outs //discard INVITE
 
 	ins <- m("2:1:RSVP:1:0:")
@@ -87,7 +87,7 @@ func TestCoordRestart(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	<-outs //discard INVITE
 
 	// never reach majority (force timeout)
@@ -109,7 +109,7 @@ func TestCoordShutdown(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 
 	close(ins)
 
@@ -123,7 +123,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	<-outs //discard INVITE
 
 	ins <- m("1:1:RSVP:1:0:")
@@ -143,7 +143,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	<-outs //discard INVITE
 
 	ins <- m("1:1:RSVP:1:0:")
@@ -165,7 +165,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	clock := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, nNodes, "foo", ins, outs, clock)
+	go coordinator(1, 6, nNodes, "foo", ins, outs, clock)
 	<-outs //discard INVITE
 
 	ins <- m("1:1:RSVP:1:0:")
