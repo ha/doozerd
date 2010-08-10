@@ -2,7 +2,6 @@ package paxos
 
 import (
 	"borg/assert"
-	"fmt"
 	"testing"
 )
 
@@ -27,7 +26,6 @@ type Instance struct {
 }
 
 func (ins *Instance) Put(m Msg) {
-	fmt.Printf("receiving message %#v\n", m)
 	go func() { ins.cIns <- m }()
 	go func() { ins.aIns <- m }()
 	go func() { ins.lIns <- m }()
