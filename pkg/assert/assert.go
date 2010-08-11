@@ -14,12 +14,7 @@ func Equal(t *testing.T, expected, result interface{}, message string) {
 
 func Panic(t *testing.T, p interface {},  f func()) {
 	defer func() {
-		e := recover()
-		if e == nil {
-			t.Fatal("expected panic but did not\n")
-		} else {
-			Equal(t, p, e, "panic test")
-		}
+		Equal(t, p, recover(), "panic test")
 	}()
 	f()
 }
