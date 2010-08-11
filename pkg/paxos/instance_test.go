@@ -10,7 +10,6 @@ type Putter interface {
 }
 
 type Instance struct {
-	msgs chan Msg
 	vin  chan string
 	vout chan string
 
@@ -39,7 +38,6 @@ func NewInstance() *Instance {
 	return &Instance{
 		vin: make(chan string),
 		vout: make(chan string),
-		msgs:  make(chan Msg),
 		cIns:  make(chan Msg),
 		aIns:  make(chan Msg),
 		lIns:  make(chan Msg),
@@ -47,11 +45,12 @@ func NewInstance() *Instance {
 }
 
 func (ins *Instance) Init(p Putter) {
-	go coordinator(1, 1, 3, ins.vin, ins.cIns, ins.msgs, make(chan int))
-	go acceptor(2, ins.aIns, ins.msgs)
+	msgs := make(chan Msg)
+	go coordinator(1, 1, 3, ins.vin, ins.cIns, msgs, make(chan int))
+	go acceptor(2, ins.aIns, msgs)
 	go learner(1, ins.lIns, ins.vout, func() {})
 	go func() {
-		for m := range ins.msgs {
+		for m := range msgs {
 			p.Put(m)
 		}
 	}()
