@@ -10,6 +10,8 @@ type Putter interface {
 }
 
 type Instance struct {
+	quorum uint64
+
 	vin  chan string
 	vout chan string
 
@@ -34,8 +36,9 @@ func (ins *Instance) Value() string {
 	return <-ins.vout
 }
 
-func NewInstance() *Instance {
+func NewInstance(quorum uint64) *Instance {
 	return &Instance{
+		quorum: quorum,
 		vin: make(chan string),
 		vout: make(chan string),
 		cIns:  make(chan Msg),
@@ -46,7 +49,7 @@ func NewInstance() *Instance {
 
 func (ins *Instance) Init(p Putter) {
 	msgs := make(chan Msg)
-	go coordinator(1, 1, 3, ins.vin, ins.cIns, msgs, make(chan int))
+	go coordinator(1, ins.quorum, 3, ins.vin, ins.cIns, msgs, make(chan int))
 	go acceptor(2, ins.aIns, msgs)
 	go learner(1, ins.lIns, ins.vout, func() {})
 	go func() {
@@ -64,7 +67,7 @@ func (ins *Instance) Propose(v string) {
 // Testing
 
 func TestStartAtLearn(t *testing.T) {
-	ins := NewInstance()
+	ins := NewInstance(1)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
@@ -73,7 +76,7 @@ func TestStartAtLearn(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	ins := NewInstance()
+	ins := NewInstance(1)
 	ins.Init(ins)
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
@@ -82,8 +85,29 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	ins := NewInstance()
+	ins := NewInstance(1)
 	ins.Init(ins)
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
+}
+
+type FakePutter []Putter
+
+func (fp FakePutter) Put(m Msg) {
+	for _, p := range fp {
+		p.Put(m)
+	}
+}
+
+func TestMultipleInstances(t *testing.T) {
+	insA := NewInstance(2)
+	insB := NewInstance(2)
+	insC := NewInstance(2)
+	ps := []Putter{insA, insB, insC}
+	insA.Init(FakePutter(ps))
+	insB.Init(FakePutter(ps))
+	insC.Init(FakePutter(ps))
+
+	insA.Propose("bar")
+	assert.Equal(t, "bar", insA.Value(), "")
 }
