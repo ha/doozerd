@@ -10,19 +10,19 @@ type Putter interface {
 }
 
 type Instance struct {
-	msgs  chan Msg
+	msgs chan Msg
+	vin  chan string
+	vout chan string
+
 
 	// Coordinator
-	cIns  chan Msg
-	cOuts chan Msg
+	cIns chan Msg
 
 	// Acceptor
-	aIns  chan Msg
-	aOuts chan Msg
+	aIns chan Msg
 
 	// Learner
 	lIns  chan Msg
-	lOuts chan string
 }
 
 func (ins *Instance) Put(m Msg) {
@@ -32,38 +32,33 @@ func (ins *Instance) Put(m Msg) {
 }
 
 func (ins *Instance) Value() string {
-	return <-ins.lOuts
+	return <-ins.vout
 }
 
 func NewInstance() *Instance {
-	ins := Instance{
+	return &Instance{
+		vin: make(chan string),
+		vout: make(chan string),
+		msgs:  make(chan Msg),
 		cIns:  make(chan Msg),
-		cOuts: make(chan Msg),
 		aIns:  make(chan Msg),
-		aOuts: make(chan Msg),
 		lIns:  make(chan Msg),
-		lOuts: make(chan string),
 	}
-	return &ins
 }
 
-func (ins *Instance) Go(p Putter) {
-	go acceptor(2, ins.aIns, ins.aOuts)
-	go learner(1, ins.lIns, ins.lOuts, func() {})
+func (ins *Instance) Init(p Putter) {
+	go coordinator(1, 1, 3, ins.vin, ins.cIns, ins.msgs, make(chan int))
+	go acceptor(2, ins.aIns, ins.msgs)
+	go learner(1, ins.lIns, ins.vout, func() {})
 	go func() {
-		for m := range ins.aOuts {
-			p.Put(m)
-		}
-	}()
-	go func() {
-		for m := range ins.cOuts {
+		for m := range ins.msgs {
 			p.Put(m)
 		}
 	}()
 }
 
 func (ins *Instance) Propose(v string) {
-	go coordinator(1, 1, 3, v, ins.cIns, ins.cOuts, make(chan int))
+	ins.vin <- v
 }
 
 
@@ -71,7 +66,7 @@ func (ins *Instance) Propose(v string) {
 
 func TestStartAtLearn(t *testing.T) {
 	ins := NewInstance()
-	ins.Go(ins)
+	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
@@ -80,7 +75,7 @@ func TestStartAtLearn(t *testing.T) {
 
 func TestStartAtAccept(t *testing.T) {
 	ins := NewInstance()
-	ins.Go(ins)
+	ins.Init(ins)
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
@@ -89,7 +84,7 @@ func TestStartAtAccept(t *testing.T) {
 
 func TestStartAtCoord(t *testing.T) {
 	ins := NewInstance()
-	ins.Go(ins)
+	ins.Init(ins)
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
 }

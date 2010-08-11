@@ -16,7 +16,7 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-func coordinator(me, quorum, nNodes uint64, target string, ins, outs chan Msg, clock chan int) {
+func coordinator(me, quorum, nNodes uint64, tCh chan string, ins, outs chan Msg, clock chan int) {
 	if me > nNodes {
 		panic(IdOutOfRange)
 	}
@@ -26,6 +26,8 @@ func coordinator(me, quorum, nNodes uint64, target string, ins, outs chan Msg, c
 
 	var crnd uint64 = me
 	var cval string
+
+	target := <-tCh
 
 Start:
 	cval = ""
