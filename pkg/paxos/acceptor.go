@@ -15,11 +15,9 @@ const (
 	nNumParts
 )
 
-func acceptor(me uint64, ins, outs chan Msg) {
+func acceptor(me uint64, ins chan Msg, outs Putter) {
 	var rnd, vrnd uint64
 	var vval string
-
-	ch, sent := make(chan int), 0
 
 	update := func(in Msg) {
 		defer swallowContinue()
@@ -45,8 +43,7 @@ func acceptor(me uint64, ins, outs chan Msg) {
 					from: me,
 					body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
 				}
-				go func(reply Msg) { outs <- reply; ch <- 1 }(reply)
-				sent++
+				outs.Put(reply)
 			}
 		case "NOMINATE":
 			bodyParts := splitExactly(in.body, nNumParts)
@@ -68,18 +65,11 @@ func acceptor(me uint64, ins, outs chan Msg) {
 				to: 0,
 				body: fmt.Sprintf("%d:%s", i, vval),
 			}
-			go func(broadcast Msg) { outs <- broadcast; ch <- 1 }(broadcast)
-			sent++
+			outs.Put(broadcast)
 		}
 	}
 
 	for in := range ins {
 		update(in)
 	}
-
-	for x := 0; x < sent; x++ {
-		<-ch
-	}
-
-	close(outs)
 }

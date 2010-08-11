@@ -6,6 +6,12 @@ import (
 	"fmt"
 )
 
+type SyncPutter chan Msg
+
+func (sp SyncPutter) Put(m Msg) {
+	sp <- m
+}
+
 func TestIgnoreOldMessages(t *testing.T) {
 	tests := [][]Msg{
 		msgs("1:*:INVITE:11", "1:*:NOMINATE:1:v"),
@@ -16,31 +22,35 @@ func TestIgnoreOldMessages(t *testing.T) {
 
 	for _, test := range tests {
 		ins := make(chan Msg)
-		outs := make(chan Msg)
+		outs := SyncPutter(make(chan Msg))
 
 		go acceptor(2, ins, outs)
 		ins <- test[0]
 		<-outs // throw away first reply
 		ins <- test[1]
-		close(ins)
 
-		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, []Msg{}, gather(outs), fmt.Sprintf("%v", test))
+		// We want to check that it didn't try to send a response.
+		// If it didn't, it will continue to read the next input message and
+		// this will work fine. If it did, this will deadlock.
+		ins <- test[1]
+		// If we get here, it passes.
+
+		close(ins)
 	}
 }
 
 func TestAcceptsInvite(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	go acceptor(2, ins, outs)
 	ins <- m("1:*:INVITE:1")
 	close(ins)
 
-	exp := msgs("2:1:RSVP:1:0:")
+	exp := m("2:1:RSVP:1:0:")
 
 	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
+	assert.Equal(t, exp, <-outs, "")
 }
 
 func TestIgnoresMalformedMessages(t *testing.T) {
@@ -64,16 +74,17 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 
 	for _, test := range totest {
 		ins := make(chan Msg)
-		outs := make(chan Msg)
+		outs := SyncPutter(make(chan Msg))
 
 		go acceptor(2, ins, outs)
 		ins <- test
+
+		// We want to check that it didn't try to send a response.
+		// If it didn't, it will continue to read the next input message and
+		// this will work fine. If it did, this will deadlock.
+		ins <- test
+
 		close(ins)
-
-		exp := []Msg{}
-
-		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, exp, gather(outs), fmt.Sprintf("%v", test))
 	}
 }
 
@@ -85,20 +96,20 @@ func TestItVotes(t *testing.T) {
 
 	for _, test := range totest {
 		ins := make(chan Msg)
-		outs := make(chan Msg)
+		outs := SyncPutter(make(chan Msg))
 
 		go acceptor(2, ins, outs)
 		ins <- test[0]
 		close(ins)
 
 		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, []Msg{test[1]}, gather(outs), fmt.Sprintf("%v", test))
+		assert.Equal(t, test[1], <-outs, fmt.Sprintf("%v", test))
 	}
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	val := "bar"
 
@@ -107,15 +118,15 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 	ins <- m("1:*:NOMINATE:2:"+val)
 	close(ins)
 
-	exp := msgs("2:*:VOTE:2:" + val)
+	exp := m("2:*:VOTE:2:" + val)
 
 	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
+	assert.Equal(t, exp, <-outs, "")
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	val := "bar"
 
@@ -124,15 +135,15 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 	ins <- m("1:*:NOMINATE:2:"+val)
 	close(ins)
 
-	exp := msgs("3:*:VOTE:2:" + val)
+	exp := m("3:*:VOTE:2:" + val)
 
 	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
+	assert.Equal(t, exp, <-outs, "")
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:1:v")
@@ -140,23 +151,30 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ins <- m("1:*:INVITE:2")
 	close(ins)
 
-	exp := msgs("2:1:RSVP:2:1:v")
+	exp := m("2:1:RSVP:2:1:v")
 
 	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
+	assert.Equal(t, exp, <-outs, "")
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	go acceptor(2, ins, outs)
 	ins <- m("1:*:NOMINATE:1:v")
+	got := <-outs
 	ins <- m("1:*:NOMINATE:1:v")
+
+	// We want to check that it didn't try to send a response.
+	// If it didn't, it will continue to read the next input message and
+	// this will work fine. If it did, this will deadlock.
+	ins <- m("1:*::")
+
 	close(ins)
 
-	exp := msgs("2:*:VOTE:1:v")
+	exp := m("2:*:VOTE:1:v")
 
 	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, gather(outs), "")
+	assert.Equal(t, exp, got, "")
 }

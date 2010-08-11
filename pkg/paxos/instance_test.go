@@ -50,7 +50,7 @@ func NewInstance(quorum uint64) *Instance {
 func (ins *Instance) Init(p Putter) {
 	msgs := make(chan Msg)
 	go coordinator(1, ins.quorum, 3, ins.vin, ins.cIns, msgs, make(chan int))
-	go acceptor(2, ins.aIns, msgs)
+	go acceptor(2, ins.aIns, p)
 	go learner(1, ins.lIns, ins.vout, func() {})
 	go func() {
 		for m := range msgs {
