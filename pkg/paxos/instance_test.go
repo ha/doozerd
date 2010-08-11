@@ -59,6 +59,12 @@ func (ins *Instance) Init(p Putter) {
 	}()
 }
 
+func (ins *Instance) Close() {
+	close(ins.cIns)
+	close(ins.aIns)
+	close(ins.lIns)
+}
+
 func (ins *Instance) Propose(v string) {
 	ins.vin <- v
 }
@@ -73,6 +79,7 @@ func TestStartAtLearn(t *testing.T) {
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
 }
 
 func TestStartAtAccept(t *testing.T) {
@@ -82,6 +89,7 @@ func TestStartAtAccept(t *testing.T) {
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
 }
 
 func TestStartAtCoord(t *testing.T) {
@@ -89,6 +97,7 @@ func TestStartAtCoord(t *testing.T) {
 	ins.Init(ins)
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
 }
 
 type FakePutter []Putter
@@ -110,4 +119,7 @@ func TestMultipleInstances(t *testing.T) {
 
 	insA.Propose("bar")
 	assert.Equal(t, "bar", insA.Value(), "")
+	insA.Close()
+	insB.Close()
+	insC.Close()
 }
