@@ -47,9 +47,9 @@ func NewInstance(quorum uint64) *Instance {
 	}
 }
 
-func (ins *Instance) Init(p Putter) {
-	go coordinator(1, ins.quorum, 3, ins.vin, ins.cIns, p, make(chan int))
-	go acceptor(2, ins.aIns, p)
+func (ins *Instance) Init(outs Putter) {
+	go coordinator(1, ins.quorum, 3, ins.vin, ins.cIns, outs, make(chan int))
+	go acceptor(2, ins.aIns, outs)
 	go func() {
 		ins.vout <- learner(1, ins.lIns)
 	}()
