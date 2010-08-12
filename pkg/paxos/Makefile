@@ -3,6 +3,8 @@ include $(GOROOT)/src/Make.$(GOARCH)
 TARG=borg/paxos
 GOFILES=\
 	paxos.go\
+	putter.go\
+	instance.go\
 	coordinator.go\
 	acceptor.go\
 	learner.go\
