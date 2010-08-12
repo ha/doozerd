@@ -35,58 +35,51 @@ func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
 func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(1, msgs, func() { acks++ })
+        taught <- learner(1, msgs, func() {})
     }()
 
-    msgs <- m("1:*:VOTE:x:foo")
+    msgs <- m("1:*:VOTE:x:bar")
     msgs <- m("1:*:VOTE:1:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 1, acks, "")
 }
 
 func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(1, msgs, func() { acks++ })
+        taught <- learner(1, msgs, func() { })
     }()
 
-    msgs <- m("1:*:foo:1:foo")
+    msgs <- m("1:*:foo:1:bar")
     msgs <- m("1:*:VOTE:1:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 1, acks, "")
 }
 
 func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(1, msgs, func() { acks++ })
+        taught <- learner(1, msgs, func() { })
     }()
 
     msgs <- m("1:*:VOTE:")
     msgs <- m("1:*:VOTE:1:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 1, acks, "")
 }
 
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(2, msgs, func() { acks++ })
+        taught <- learner(2, msgs, func() { })
     }()
 
     msgs <- m("1:*:VOTE:1:foo")
@@ -96,16 +89,14 @@ func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
     assert.Equal(t, "foo", <-taught, "")
     // A quick test to make sure all msgsages were received.  If we get here
     // and it passes without deadlocking, we're all good.
-    assert.Equal(t, 3, acks, "")
 }
 
 func TestIgnoresSenderInOldRound(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(2, msgs, func() { acks++ })
+        taught <- learner(2, msgs, func() { })
     }()
 
     msgs <- m("1:*:VOTE:2:foo")
@@ -113,16 +104,14 @@ func TestIgnoresSenderInOldRound(t *testing.T) {
     msgs <- m("2:*:VOTE:2:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 3, acks, "")
 }
 
 func TestResetsVotedFlags(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(2, msgs, func() { acks++ })
+        taught <- learner(2, msgs, func() { })
     }()
 
     msgs <- m("1:*:VOTE:1:foo")
@@ -130,35 +119,31 @@ func TestResetsVotedFlags(t *testing.T) {
     msgs <- m("2:*:VOTE:2:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 3, acks, "")
 }
 
 func TestResetsVoteCounts(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(3, msgs, func() { acks++ })
+        taught <- learner(3, msgs, func() { })
     }()
 
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("2:*:VOTE:1:foo")
-    msgs <- m("3:*:VOTE:2:foo")
-    msgs <- m("2:*:VOTE:2:foo")
     msgs <- m("1:*:VOTE:2:foo")
+    msgs <- m("2:*:VOTE:2:foo")
+    msgs <- m("3:*:VOTE:2:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 5, acks, "")
 }
 
 func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(2, msgs, func(){ acks ++ })
+        taught <- learner(2, msgs, func(){ })
     }()
 
     msgs <- m("1:*:VOTE:1:foo")
@@ -166,16 +151,14 @@ func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
     msgs <- m("2:*:VOTE:1:foo")
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 3, acks, "")
 }
 
 func TestBringsOrderOutOfChaos(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
-    acks := 0
 
     go func() {
-        taught <- learner(2, msgs, func(){ acks ++ })
+        taught <- learner(2, msgs, func(){ })
     }()
 
     msgs <- m("1:*:VOTE:1:bar")  //valid
@@ -187,5 +170,4 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
     msgs <- m("1:*:VOTE:2:foo")    //valid (at quorum)
 
     assert.Equal(t, "foo", <-taught, "")
-    assert.Equal(t, 6, acks, "")
 }
