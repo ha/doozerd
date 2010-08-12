@@ -41,7 +41,6 @@ func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
         taught <- learner(1, msgs, func() { acks++ })
     }()
 
-    // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:x:foo")
     msgs <- m("1:*:VOTE:1:foo")
 
@@ -58,7 +57,6 @@ func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
         taught <- learner(1, msgs, func() { acks++ })
     }()
 
-    // Send a msgsage with no senderId
     msgs <- m("1:*:foo:1:foo")
     msgs <- m("1:*:VOTE:1:foo")
 
@@ -75,7 +73,6 @@ func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
         taught <- learner(1, msgs, func() { acks++ })
     }()
 
-    // Send a message with no senderId
     msgs <- m("1:*:VOTE:")
     msgs <- m("1:*:VOTE:1:foo")
 
@@ -92,7 +89,6 @@ func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
         taught <- learner(2, msgs, func() { acks++ })
     }()
 
-    // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("2:*:VOTE:1:foo")
@@ -112,7 +108,6 @@ func TestIgnoresSenderInOldRound(t *testing.T) {
         taught <- learner(2, msgs, func() { acks++ })
     }()
 
-    // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:2:foo")
     msgs <- m("2:*:VOTE:1:foo")
     msgs <- m("2:*:VOTE:2:foo")
@@ -130,7 +125,6 @@ func TestResetsVotedFlags(t *testing.T) {
         taught <- learner(2, msgs, func() { acks++ })
     }()
 
-    // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("1:*:VOTE:2:foo")
     msgs <- m("2:*:VOTE:2:foo")
@@ -148,7 +142,6 @@ func TestResetsVoteCounts(t *testing.T) {
         taught <- learner(3, msgs, func() { acks++ })
     }()
 
-    // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("2:*:VOTE:1:foo")
     msgs <- m("3:*:VOTE:2:foo")
