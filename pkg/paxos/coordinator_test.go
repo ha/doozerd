@@ -40,8 +40,6 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	close(tCh)
 }
 
-// This is here mainly for triangulation.  It ensures we're not
-// hardcoding crnd.
 func TestCoordStart(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
@@ -50,17 +48,31 @@ func TestCoordStart(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 
-	res := make([]Msg, 2)
 	go coordinator(1, 6, nNodes, tCh, ins, outs, clock)
 	tCh <- "foo"
-	res[0] = <-outs
+
+	assert.Equal(t, m("1:*:INVITE:1"), <-outs, "")
+
+	close(ins)
+	close(outs)
+	close(clock)
+	close(tCh)
+}
+
+// This is here mainly for triangulation.  It ensures we're not
+// hardcoding crnd.
+func TestCoordStartAlt(t *testing.T) {
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
+	clock := make(chan int)
+	tCh := make(chan string)
+
+	nNodes := uint64(10) // this is arbitrary
+
 	go coordinator(2, 6, nNodes, tCh, ins, outs, clock)
 	tCh <- "foo"
-	res[1] = <-outs
 
-	exp := msgs("1:*:INVITE:1", "2:*:INVITE:2")
-
-	assert.Equal(t, exp, res, "")
+	assert.Equal(t, m("2:*:INVITE:2"), <-outs, "")
 
 	close(ins)
 	close(outs)
