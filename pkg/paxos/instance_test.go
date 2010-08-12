@@ -26,16 +26,6 @@ type Instance struct {
 	lIns  chan Msg
 }
 
-func (ins *Instance) Put(m Msg) {
-	go func() { ins.cIns <- m }()
-	go func() { ins.aIns <- m }()
-	go func() { ins.lIns <- m }()
-}
-
-func (ins *Instance) Value() string {
-	return <-ins.vout
-}
-
 func NewInstance(quorum uint64) *Instance {
 	return &Instance{
 		quorum: quorum,
@@ -45,6 +35,16 @@ func NewInstance(quorum uint64) *Instance {
 		aIns:  make(chan Msg),
 		lIns:  make(chan Msg),
 	}
+}
+
+func (ins *Instance) Put(m Msg) {
+	go func() { ins.cIns <- m }()
+	go func() { ins.aIns <- m }()
+	go func() { ins.lIns <- m }()
+}
+
+func (ins *Instance) Value() string {
+	return <-ins.vout
 }
 
 func (ins *Instance) Init(outs Putter) {
