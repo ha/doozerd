@@ -7,7 +7,7 @@ import (
 
 func TestCoordIgnoreOldMessages(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -26,18 +26,16 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	ins <- m("4:1:RSVP:1:0:")
 	ins <- m("5:1:RSVP:1:0:")
 	ins <- m("6:1:RSVP:1:0:")
+	ins <- m("6:1::")
 
 	close(ins)
-
-	exp := []Msg{}
-	assert.Equal(t, exp, gather(outs), "")
 }
 
 // This is here mainly for triangulation.  It ensures we're not
 // hardcoding crnd.
 func TestCoordStart(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -58,7 +56,7 @@ func TestCoordStart(t *testing.T) {
 
 func TestCoordIdOutOfRange(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -71,7 +69,7 @@ func TestCoordIdOutOfRange(t *testing.T) {
 
 func TestCoordTargetNomination(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -93,7 +91,7 @@ func TestCoordTargetNomination(t *testing.T) {
 
 func TestCoordRestart(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -115,25 +113,9 @@ func TestCoordRestart(t *testing.T) {
 	assert.Equal(t, exp, <-outs, "")
 }
 
-func TestCoordShutdown(t *testing.T) {
-	ins := make(chan Msg)
-	outs := make(chan Msg)
-	clock := make(chan int)
-	tCh := make(chan string)
-
-	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, 6, nNodes, tCh, ins, outs, clock)
-	tCh <- "foo"
-
-	close(ins)
-
-	exp := msgs("1:*:INVITE:1")
-	assert.Equal(t, exp, gather(outs), "")
-}
-
 func TestCoordNonTargetNomination(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -155,7 +137,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 
 func TestCoordOneNominationPerRound(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -170,16 +152,19 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 	ins <- m("4:1:RSVP:1:0:")
 	ins <- m("5:1:RSVP:1:0:")
 	ins <- m("6:1:RSVP:1:0:")
+	got := <-outs
+
 	ins <- m("7:1:RSVP:1:0:")
+	ins <- m("1:*::")
 	close(ins)
 
-	exp := msgs("1:*:NOMINATE:1:foo")
-	assert.Equal(t, exp, gather(outs), "")
+	exp := m("1:*:NOMINATE:1:foo")
+	assert.Equal(t, exp, got, "")
 }
 
 func TestCoordEachRoundResetsCval(t *testing.T) {
 	ins := make(chan Msg)
-	outs := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 	clock := make(chan int)
 	tCh := make(chan string)
 
@@ -208,6 +193,6 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 
 	close(ins)
 
-	exp := msgs("1:*:NOMINATE:11:foo")
-	assert.Equal(t, exp, gather(outs), "")
+	exp := m("1:*:NOMINATE:11:foo")
+	assert.Equal(t, exp, <-outs, "")
 }

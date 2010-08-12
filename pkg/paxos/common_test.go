@@ -6,6 +6,12 @@ import (
 	"strconv"
 )
 
+type SyncPutter chan Msg
+
+func (sp SyncPutter) Put(m Msg) {
+	sp <- m
+}
+
 func gather(ch chan Msg) (got []Msg) {
 	var stuff vector.Vector = make([]interface{}, 0)
 

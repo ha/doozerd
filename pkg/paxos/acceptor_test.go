@@ -6,12 +6,6 @@ import (
 	"fmt"
 )
 
-type SyncPutter chan Msg
-
-func (sp SyncPutter) Put(m Msg) {
-	sp <- m
-}
-
 func TestIgnoreOldMessages(t *testing.T) {
 	tests := [][]Msg{
 		msgs("1:*:INVITE:11", "1:*:NOMINATE:1:v"),
