@@ -196,3 +196,22 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	exp := m("1:*:NOMINATE:11:foo")
 	assert.Equal(t, exp, <-outs, "")
 }
+
+func TestAbortIfNoProposal(t *testing.T) {
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
+	clock := make(chan int)
+	tCh := make(chan string)
+
+	done := make(chan int)
+
+	nNodes := uint64(10) // this is arbitrary
+	go func() {
+		coordinator(1, 6, nNodes, tCh, ins, outs, clock)
+		done <- 1
+	}()
+
+	close(tCh)
+
+	assert.Equal(t, 1, <-done, "")
+}

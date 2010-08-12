@@ -25,6 +25,9 @@ func coordinator(me, quorum, nNodes uint64, tCh chan string, ins chan Msg, outs 
 	var cval string
 
 	target := <-tCh
+	if target == "" && closed(tCh) {
+		return
+	}
 
 Start:
 	cval = ""
