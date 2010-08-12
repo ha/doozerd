@@ -6,7 +6,7 @@ const (
     lNumParts
 )
 
-func learner(quorum int, ins chan Msg, ack func()) string {
+func learner(quorum int, ins chan Msg) string {
     var round uint64 = 0
     votes := make(map[string]int) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes
@@ -23,8 +23,6 @@ func learner(quorum int, ins chan Msg, ack func()) string {
         mRound := dtoui64(parts[lRnd])
 
         v := parts[lValue]
-
-        ack()
 
         switch {
         case mRound < round:

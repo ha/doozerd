@@ -51,7 +51,7 @@ func (ins *Instance) Init(p Putter) {
 	go coordinator(1, ins.quorum, 3, ins.vin, ins.cIns, p, make(chan int))
 	go acceptor(2, ins.aIns, p)
 	go func() {
-		ins.vout <- learner(1, ins.lIns, func() {})
+		ins.vout <- learner(1, ins.lIns)
 	}()
 }
 
