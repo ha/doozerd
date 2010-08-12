@@ -6,18 +6,18 @@ const (
     lNumParts
 )
 
-func learner(quorum int, ins chan Msg, taught chan string, ack func()) {
+func learner(quorum int, ins chan Msg, ack func()) string {
     var round uint64 = 0
     votes := make(map[string]int) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes
 
-    update := func(in Msg) {
+    update := func(in Msg) string {
         defer swallowContinue()
 
         parts := splitExactly(in.body, lNumParts) // e.g. 1:xxx
 
         if in.cmd != "VOTE" {
-            return
+            return ""
         }
 
         mRound := dtoui64(parts[lRnd])
@@ -28,7 +28,7 @@ func learner(quorum int, ins chan Msg, taught chan string, ack func()) {
 
         switch {
         case mRound < round:
-            return
+            return ""
         case mRound > round:
             round = mRound
             votes = make(map[string]int)
@@ -36,20 +36,24 @@ func learner(quorum int, ins chan Msg, taught chan string, ack func()) {
             fallthrough
         case mRound == round:
             if voted[in.from] {
-                return
+                return ""
             }
             votes[v]++
             voted[in.from] = true
 
             if votes[v] >= quorum {
-                taught <- v // winner!
-                return
+                return v // winner!
             }
         }
 
+        return ""
     }
 
     for in := range ins {
-        update(in)
+        v := update(in)
+        if v != "" {
+            return v
+        }
     }
+    panic("can't happen")
 }

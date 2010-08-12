@@ -9,7 +9,9 @@ func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
 
-    go learner(1, msgs, taught, func(){})
+    go func() {
+        taught <- learner(1, msgs, func(){})
+    }()
 
     msgs <- m("1:*:VOTE:1:foo")
 
@@ -20,7 +22,9 @@ func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
 
-    go learner(2, msgs, taught, func(){})
+    go func() {
+        taught <- learner(2, msgs, func(){})
+    }()
 
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("2:*:VOTE:1:foo")
@@ -33,7 +37,9 @@ func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(1, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(1, msgs, func() { acks++ })
+    }()
 
     // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:x:foo")
@@ -48,7 +54,9 @@ func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(1, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(1, msgs, func() { acks++ })
+    }()
 
     // Send a msgsage with no senderId
     msgs <- m("1:*:foo:1:foo")
@@ -63,7 +71,9 @@ func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(1, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(1, msgs, func() { acks++ })
+    }()
 
     // Send a message with no senderId
     msgs <- m("1:*:VOTE:")
@@ -78,7 +88,9 @@ func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(2, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(2, msgs, func() { acks++ })
+    }()
 
     // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:1:foo")
@@ -96,7 +108,9 @@ func TestIgnoresSenderInOldRound(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(2, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(2, msgs, func() { acks++ })
+    }()
 
     // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:2:foo")
@@ -112,7 +126,9 @@ func TestResetsVotedFlags(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(2, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(2, msgs, func() { acks++ })
+    }()
 
     // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:1:foo")
@@ -128,7 +144,9 @@ func TestResetsVoteCounts(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(3, msgs, taught, func() { acks++ })
+    go func() {
+        taught <- learner(3, msgs, func() { acks++ })
+    }()
 
     // Send a msgsage with no senderId
     msgs <- m("1:*:VOTE:1:foo")
@@ -146,7 +164,9 @@ func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(2, msgs, taught, func(){ acks ++ })
+    go func() {
+        taught <- learner(2, msgs, func(){ acks ++ })
+    }()
 
     msgs <- m("1:*:VOTE:1:foo")
     msgs <- m("3:*:VOTE:1:bar")
@@ -161,7 +181,9 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
     taught := make(chan string)
     acks := 0
 
-    go learner(2, msgs, taught, func(){ acks ++ })
+    go func() {
+        taught <- learner(2, msgs, func(){ acks ++ })
+    }()
 
     msgs <- m("1:*:VOTE:1:bar")  //valid
     msgs <- m("3:*:VOTE:2:funk") //reset
