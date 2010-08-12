@@ -7,9 +7,10 @@ import (
 )
 
 type Msg struct {
-	cmd string
+	seqn uint64
 	from uint64
 	to uint64
+	cmd string
 	body string
 }
 

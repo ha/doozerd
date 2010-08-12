@@ -48,7 +48,7 @@ func m(s string) Msg {
 		}
 	}
 
-	return Msg{parts[mCmd], from, to, parts[mBody]}
+	return Msg{1, from, to, parts[mCmd], parts[mBody]}
 }
 
 func msgs(ss ... string) (messages []Msg) {

@@ -38,6 +38,7 @@ func acceptor(me uint64, ins chan Msg, outs Putter) {
 				rnd = i
 
 				reply := Msg{
+					seqn: in.seqn,
 					cmd: "RSVP",
 					to: in.from, // reply to the sender
 					from: me,
@@ -60,6 +61,7 @@ func acceptor(me uint64, ins chan Msg, outs Putter) {
 			vval = bodyParts[nVal]
 
 			broadcast := Msg{
+				seqn: in.seqn,
 				cmd: "VOTE",
 				from: me,
 				to: 0,
