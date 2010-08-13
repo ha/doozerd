@@ -4,6 +4,12 @@ type Putter interface {
 	Put(m Msg)
 }
 
+type ChanPutter chan Msg
+
+func (cp ChanPutter) Put(m Msg) {
+	go func() { cp <- m }()
+}
+
 type PutWrapper struct {
 	seqn, from uint64
 	Putter

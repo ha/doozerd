@@ -11,30 +11,37 @@ type Instance struct {
 
 	// Coordinator
 	cIns chan Msg
+	cPutter Putter
 
 	// Acceptor
 	aIns chan Msg
+	aPutter Putter
 
 	// Learner
 	lIns  chan Msg
+	lPutter  Putter
 }
 
 func NewInstance(id, quorum uint64) *Instance {
+	cIns, aIns, lIns := make(chan Msg), make(chan Msg), make(chan Msg)
 	return &Instance{
 		id: id,
 		quorum: quorum,
 		vin: make(chan string),
 		done: make(chan int),
-		cIns:  make(chan Msg),
-		aIns:  make(chan Msg),
-		lIns:  make(chan Msg),
+		cIns:  cIns,
+		aIns:  aIns,
+		lIns:  lIns,
+		cPutter: ChanPutter(cIns),
+		aPutter: ChanPutter(aIns),
+		lPutter: ChanPutter(lIns),
 	}
 }
 
 func (ins *Instance) Put(m Msg) {
-	go func() { ins.cIns <- m }()
-	go func() { ins.aIns <- m }()
-	go func() { ins.lIns <- m }()
+	ins.cPutter.Put(m)
+	ins.aPutter.Put(m)
+	ins.lPutter.Put(m)
 }
 
 func (ins *Instance) Value() string {
