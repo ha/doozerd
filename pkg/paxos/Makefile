@@ -4,6 +4,7 @@ TARG=borg/paxos
 GOFILES=\
 	paxos.go\
 	putter.go\
+	manager.go\
 	instance.go\
 	coordinator.go\
 	acceptor.go\
