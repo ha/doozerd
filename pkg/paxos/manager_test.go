@@ -35,7 +35,7 @@ func (m *Manager) Init(outs Putter) {
 			inst, ok := instances[req.seqn]
 			if !ok {
 				inst = NewInstance(1)
-				inst.Init(m)
+				inst.Init(PutWrapper{1, outs})
 				instances[req.seqn] = inst
 				go func() {
 					m.learned <- Result{req.seqn, inst.Value()}
@@ -57,7 +57,9 @@ func (m *Manager) Put(msg Msg) {
 }
 
 func (m *Manager) Propose(v string) string {
-	return v
+	inst := m.getInstance(1)
+	inst.Propose(v)
+	return inst.Value()
 }
 
 func (m *Manager) Recv() (uint64, string) {
@@ -74,6 +76,19 @@ func TestProposeAndLearn(t *testing.T) {
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
+}
+
+func TestProposeAndRecv(t *testing.T) {
+	exp := "foo"
+	m := NewManager()
+	m.Init(m)
+
+	got := m.Propose(exp)
+	assert.Equal(t, exp, got, "")
+
+	seqn, v := m.Recv()
+	assert.Equal(t, uint64(1), seqn, "")
+	assert.Equal(t, exp, v, "")
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
