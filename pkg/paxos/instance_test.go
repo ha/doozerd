@@ -8,7 +8,7 @@ import (
 // Testing
 
 func TestStartAtLearn(t *testing.T) {
-	ins := NewInstance(1)
+	ins := NewInstance(1, 1)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
@@ -18,7 +18,7 @@ func TestStartAtLearn(t *testing.T) {
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
-	ins := NewInstance(1)
+	ins := NewInstance(1, 1)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -27,7 +27,7 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	ins := NewInstance(1)
+	ins := NewInstance(1, 1)
 	ins.Init(ins)
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
@@ -37,7 +37,7 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	ins := NewInstance(1)
+	ins := NewInstance(1, 1)
 	ins.Init(ins)
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -53,9 +53,9 @@ func (fp FakePutter) Put(m Msg) {
 }
 
 func TestMultipleInstances(t *testing.T) {
-	insA := NewInstance(2)
-	insB := NewInstance(2)
-	insC := NewInstance(2)
+	insA := NewInstance(1, 2)
+	insB := NewInstance(2, 2)
+	insC := NewInstance(3, 2)
 	ps := []Putter{insA, insB, insC}
 	insA.Init(FakePutter(ps))
 	insB.Init(FakePutter(ps))

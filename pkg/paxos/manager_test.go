@@ -36,7 +36,7 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
-				inst = NewInstance(1)
+				inst = NewInstance(1, 1)
 				inst.Init(PutWrapper{req.seqn, outs})
 				instances[req.seqn] = inst
 				go func() {
