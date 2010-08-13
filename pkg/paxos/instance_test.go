@@ -17,6 +17,15 @@ func TestStartAtLearn(t *testing.T) {
 	ins.Close()
 }
 
+func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
+	ins := NewInstance(1)
+	ins.Init(ins)
+	ins.Put(m("1:*:VOTE:1:foo"))
+	assert.Equal(t, "foo", ins.Value(), "")
+	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
+}
+
 func TestStartAtAccept(t *testing.T) {
 	ins := NewInstance(1)
 	ins.Init(ins)

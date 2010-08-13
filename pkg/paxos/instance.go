@@ -4,7 +4,8 @@ type Instance struct {
 	quorum uint64
 
 	vin  chan string
-	vout chan string
+	v    string
+	done chan int
 
 
 	// Coordinator
@@ -21,7 +22,7 @@ func NewInstance(quorum uint64) *Instance {
 	return &Instance{
 		quorum: quorum,
 		vin: make(chan string),
-		vout: make(chan string),
+		done: make(chan int),
 		cIns:  make(chan Msg),
 		aIns:  make(chan Msg),
 		lIns:  make(chan Msg),
@@ -35,14 +36,16 @@ func (ins *Instance) Put(m Msg) {
 }
 
 func (ins *Instance) Value() string {
-	return <-ins.vout
+	<-ins.done
+	return ins.v
 }
 
 func (ins *Instance) Init(outs Putter) {
 	go coordinator(1, ins.quorum, 3, ins.vin, ins.cIns, outs, make(chan int))
 	go acceptor(2, ins.aIns, outs)
 	go func() {
-		ins.vout <- learner(1, ins.lIns)
+		ins.v = learner(1, ins.lIns)
+		close(ins.done)
 	}()
 }
 
