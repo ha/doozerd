@@ -37,7 +37,7 @@ func (m *Manager) Init(outs Putter) {
 			inst, ok := instances[req.seqn]
 			if !ok {
 				inst = NewInstance(1, 1)
-				inst.Init(PutWrapper{req.seqn, outs})
+				inst.Init(PutWrapper{req.seqn, 1, outs})
 				instances[req.seqn] = inst
 				go func() {
 					m.learned <- Result{req.seqn, inst.Value()}

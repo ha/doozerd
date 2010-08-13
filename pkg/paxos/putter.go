@@ -5,11 +5,12 @@ type Putter interface {
 }
 
 type PutWrapper struct {
-	seqn uint64
+	seqn, from uint64
 	Putter
 }
 
 func (w PutWrapper) Put(m Msg) {
 	m.seqn = w.seqn
+	m.from = w.from
 	w.Putter.Put(m)
 }

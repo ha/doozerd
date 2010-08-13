@@ -16,12 +16,11 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-func coordinator(me, quorum, nNodes uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int) {
-	if me > nNodes {
+func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int) {
+	if crnd > modulus {
 		panic(IdOutOfRange)
 	}
 
-	var crnd uint64 = me
 	var cval string
 
 	target := <-tCh
@@ -34,7 +33,6 @@ Start:
 	start := Msg{
 		cmd:  "INVITE",
 		to:   0, // send to all acceptors
-		from: me,
 		body: fmt.Sprintf("%d", crnd),
 	}
 	outs.Put(start)
@@ -83,14 +81,13 @@ Start:
 					choosen := Msg{
 						cmd:  "NOMINATE",
 						to:   0, // send to all acceptors
-						from: me,
 						body: fmt.Sprintf("%d:%s", crnd, v),
 					}
 					outs.Put(choosen)
 				}
 			}
 		case <-clock:
-			crnd += nNodes
+			crnd += modulus
 			goto Start
 		}
 	}
