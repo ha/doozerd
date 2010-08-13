@@ -41,7 +41,6 @@ func acceptor(me uint64, ins chan Msg, outs Putter) {
 					seqn: in.seqn,
 					cmd: "RSVP",
 					to: in.from, // reply to the sender
-					from: me,
 					body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
 				}
 				outs.Put(reply)
@@ -63,7 +62,6 @@ func acceptor(me uint64, ins chan Msg, outs Putter) {
 			broadcast := Msg{
 				seqn: in.seqn,
 				cmd: "VOTE",
-				from: me,
 				to: 0,
 				body: fmt.Sprintf("%d:%s", i, vval),
 			}
