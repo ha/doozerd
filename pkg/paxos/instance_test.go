@@ -74,9 +74,9 @@ func TestMultipleInstances(t *testing.T) {
 	insB := NewInstance(2, 2)
 	insC := NewInstance(3, 2)
 	ps := []Putter{insA, insB, insC}
-	insA.Init(FakePutter(ps))
-	insB.Init(FakePutter(ps))
-	insC.Init(FakePutter(ps))
+	insA.Init(PutWrapper{1, 1, FakePutter(ps)})
+	insB.Init(PutWrapper{1, 2, FakePutter(ps)})
+	insC.Init(PutWrapper{1, 3, FakePutter(ps)})
 
 	insA.Propose("bar")
 	assert.Equal(t, "bar", insA.Value(), "")
