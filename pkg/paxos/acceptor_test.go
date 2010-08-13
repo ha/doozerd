@@ -60,7 +60,6 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 
 		"1:*:INVITE:x", // invalid round number
 		"1:*:x:1",      // unknown command
-		"1:7:INVITE:1", // valid but incorrect to address
 
 		"1:*:NOMINATE:x",     // too few separators in nominate body
 		"1:*:NOMINATE:x:foo", // invalid round number

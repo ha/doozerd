@@ -22,10 +22,6 @@ func acceptor(me uint64, ins chan Msg, outs Putter) {
 	update := func(in Msg) {
 		defer swallowContinue()
 
-		if in.to != me && in.to != 0 {
-			return
-		}
-
 		switch in.cmd {
 		case "INVITE":
 			bodyParts := splitExactly(in.body, iNumParts)
