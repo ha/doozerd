@@ -11,8 +11,25 @@ func TestStartAtLearn(t *testing.T) {
 	ins := NewInstance(1, 1)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
+	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
+}
+
+func TestStartAtLearnWithDuplicates(t *testing.T) {
+	ins := NewInstance(1, 1)
+	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
+	ins.Put(m("1:*:VOTE:1:foo"))
+	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
+}
+
+func TestLearnWithQuorumOf2(t *testing.T) {
+	ins := NewInstance(1, 2)
+	ins.Init(ins)
+	ins.Put(m("1:*:VOTE:1:foo"))
+	ins.Put(m("2:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
