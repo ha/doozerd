@@ -18,12 +18,14 @@ type instReq struct {
 type Manager struct{
 	learned chan Result
 	reqs chan instReq
+	seqns chan uint64
 }
 
 func NewManager() *Manager {
 	m := &Manager{
 		learned: make(chan Result),
 		reqs: make(chan instReq),
+		seqns: make(chan uint64),
 	}
 	return m
 }
@@ -35,13 +37,20 @@ func (m *Manager) Init(outs Putter) {
 			inst, ok := instances[req.seqn]
 			if !ok {
 				inst = NewInstance(1)
-				inst.Init(PutWrapper{1, outs})
+				inst.Init(PutWrapper{req.seqn, outs})
 				instances[req.seqn] = inst
 				go func() {
 					m.learned <- Result{req.seqn, inst.Value()}
 				}()
 			}
 			req.ch <- inst
+		}
+	}()
+
+	// Generate an infinite stream of sequence numbers (seqns).
+	go func() {
+		for n := uint64(1); ; n++ {
+			m.seqns <- n
 		}
 	}()
 }
@@ -57,7 +66,7 @@ func (m *Manager) Put(msg Msg) {
 }
 
 func (m *Manager) Propose(v string) string {
-	inst := m.getInstance(1)
+	inst := m.getInstance(<-m.seqns)
 	inst.Propose(v)
 	return inst.Value()
 }
@@ -89,6 +98,27 @@ func TestProposeAndRecv(t *testing.T) {
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp, v, "")
+}
+
+func TestProposeAndRecvMultiple(t *testing.T) {
+	exp := []string{"foo", "bar"}
+	seqnexp := []uint64{1, 2}
+	m := NewManager()
+	m.Init(m)
+
+	got0 := m.Propose(exp[0])
+	assert.Equal(t, exp[0], got0, "")
+
+	got1 := m.Propose(exp[1])
+	assert.Equal(t, exp[1], got1, "")
+
+	seqn0, v0 := m.Recv()
+	assert.Equal(t, seqnexp[0], seqn0, "seqn 1")
+	assert.Equal(t, exp[0], v0, "")
+
+	seqn1, v1 := m.Recv()
+	assert.Equal(t, seqnexp[1], seqn1, "seqn 2")
+	assert.Equal(t, exp[1], v1, "")
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
