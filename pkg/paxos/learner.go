@@ -53,5 +53,5 @@ func learner(quorum uint64, ins chan Msg) string {
             return v
         }
     }
-    panic("can't happen")
+    return ""
 }

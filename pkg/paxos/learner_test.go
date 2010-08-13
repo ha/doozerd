@@ -153,6 +153,19 @@ func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
     assert.Equal(t, "foo", <-taught, "")
 }
 
+func TestExitsQuietly(t *testing.T) {
+    msgs := make(chan Msg)
+    taught := make(chan string)
+
+    go func() {
+        taught <- learner(2, msgs)
+    }()
+
+    close(msgs)
+
+    assert.Equal(t, "", <-taught, "")
+}
+
 func TestBringsOrderOutOfChaos(t *testing.T) {
     msgs := make(chan Msg)
     taught := make(chan string)
