@@ -18,7 +18,7 @@ func TestIgnoreOldMessages(t *testing.T) {
 		ins := make(chan Msg)
 		outs := SyncPutter(make(chan Msg))
 
-		go acceptor(2, ins, PutWrapper{1, 2, outs})
+		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test[0]
 		<-outs // throw away first reply
 		ins <- test[1]
@@ -37,7 +37,7 @@ func TestAcceptsInvite(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
 
-	go acceptor(2, ins, PutWrapper{1, 2, outs})
+	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- m("1:*:INVITE:1")
 	close(ins)
 
@@ -69,7 +69,7 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 		ins := make(chan Msg)
 		outs := SyncPutter(make(chan Msg))
 
-		go acceptor(2, ins, PutWrapper{1, 2, outs})
+		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test
 
 		// We want to check that it didn't try to send a response.
@@ -91,7 +91,7 @@ func TestItVotes(t *testing.T) {
 		ins := make(chan Msg)
 		outs := SyncPutter(make(chan Msg))
 
-		go acceptor(2, ins, PutWrapper{1, 2, outs})
+		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test[0]
 		close(ins)
 
@@ -106,7 +106,7 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 
 	val := "bar"
 
-	go acceptor(2, ins, PutWrapper{1, 2, outs})
+	go acceptor(ins, PutWrapper{1, 2, outs})
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- m("1:*:NOMINATE:2:"+val)
 	close(ins)
@@ -123,7 +123,7 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 
 	val := "bar"
 
-	go acceptor(3, ins, PutWrapper{1, 3, outs})
+	go acceptor(ins, PutWrapper{1, 3, outs})
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- m("1:*:NOMINATE:2:"+val)
 	close(ins)
@@ -138,7 +138,7 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
 
-	go acceptor(2, ins, PutWrapper{1, 2, outs})
+	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- m("1:*:NOMINATE:1:v")
 	<-outs // throw away VOTE message
 	ins <- m("1:*:INVITE:2")
@@ -154,7 +154,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
 
-	go acceptor(2, ins, PutWrapper{1, 2, outs})
+	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- m("1:*:NOMINATE:1:v")
 	got := <-outs
 	ins <- m("1:*:NOMINATE:1:v")

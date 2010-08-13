@@ -53,7 +53,7 @@ func (ins *Instance) Value() string {
 
 func (ins *Instance) Init(outs Putter) {
 	go coordinator(ins.id, ins.quorum, 3, ins.vin, ins.cIns, outs, make(chan int))
-	go acceptor(ins.id, ins.aIns, outs)
+	go acceptor(ins.aIns, outs)
 	go func() {
 		ins.v = learner(ins.quorum, ins.lIns)
 		close(ins.done)
