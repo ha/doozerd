@@ -100,7 +100,7 @@ func TestAllowsBroadcastMessages(t *testing.T) {
 	})
 
 	ins.Init(ins)
-	ins.Put(m("1:1:VOTE:1:foo"))
+	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, 3, nMessages, "")
 	ins.Close()
 }
