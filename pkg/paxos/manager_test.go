@@ -7,7 +7,7 @@ import (
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m := NewManager()
+	m := NewManager(1)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -16,7 +16,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m := NewManager()
+	m := NewManager(1)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -30,7 +30,7 @@ func TestProposeAndRecv(t *testing.T) {
 func TestProposeAndRecvMultiple(t *testing.T) {
 	exp := []string{"foo", "bar"}
 	seqnexp := []uint64{1, 2}
-	m := NewManager()
+	m := NewManager(1)
 	m.Init(m)
 
 	got0 := m.Propose(exp[0])
@@ -50,7 +50,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m := NewManager()
+	m := NewManager(1)
 	m.Init(m)
 
 	m.Put(Msg{1, 1, 1, "VOTE", "1:" + exp})
@@ -61,7 +61,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m := NewManager()
+	m := NewManager(1)
 	m.Init(m)
 
 	m.Put(Msg{1, 1, 1, "VOTE", "1:" + exp})

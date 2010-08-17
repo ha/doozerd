@@ -13,7 +13,7 @@ import (
 
 // Flags
 var (
-	listenAddr *string = flag.String("l", ":8046", "The address to bind to.")
+	listenAddr *string = flag.String("l", ":804", "The address to bind to.")
 	attachAddr *string = flag.String("a", "", "The address to bind to.")
 )
 
@@ -30,24 +30,28 @@ const (
 	mNumParts
 )
 
-func ListenUdp(laddr string, ch chan string) os.Error {
-	conn, err := net.ListenPacket("udp", laddr)
+// NOT IPv6-compatible.
+func getPort(addr string) uint64 {
+	parts := strings.Split(addr, ":", -1)
+	port, err := strconv.Btoui64(parts[len(parts) - 1], 10)
 	if err != nil {
-		return err
+		fmt.Printf("error getting port from %q\n", addr)
 	}
+	return port
+}
 
-	go func() {
-		for {
-			pkt := make([]byte, 3000) // make sure it's big enough
-			n, _, err := conn.ReadFrom(pkt)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			ch <- string(pkt[0:n])
+func RecvUdp(conn net.PacketConn, ch chan paxos.Msg) {
+	for {
+		pkt := make([]byte, 3000) // make sure it's big enough
+		n, addr, err := conn.ReadFrom(pkt)
+		if err != nil {
+			fmt.Println(err)
+			continue
 		}
-	}()
-	return nil
+		msg := parse(string(pkt[0:n]))
+		msg.From = getPort(addr.String())
+		ch <- msg
+	}
 }
 
 func parse(s string) paxos.Msg {
@@ -84,31 +88,89 @@ func printMsg(m paxos.Msg) {
 	fmt.Printf("should send %v\n", m)
 }
 
+func NewUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
+	put := func(m paxos.Msg) {
+		pkt := fmt.Sprintf("%d:%d:%s:%s", me, m.To, m.Cmd, m.Body)
+		fmt.Printf("send udp packet %q\n", pkt)
+		b := []byte(pkt)
+		var to []net.Addr
+		if m.To == 0 {
+			to = addrs
+		} else {
+			to = []net.Addr{&net.UDPAddr{net.ParseIP("127.0.0.1"), int(m.To)}}
+		}
+
+		for _, addr := range to {
+			n, err := conn.WriteTo(b, addr)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if n != len(b) {
+				fmt.Printf("sent <%d> bytes, wanted to send <%d>\n", n, len(b))
+				continue
+			}
+		}
+	}
+	return FuncPutter(put)
+}
+
 func main() {
+	var basePort int
+	nodes := make([]net.Addr, 5)
 	flag.Parse()
 
-	logger.Logf("attempting to listen on %s\n", *listenAddr)
-
 	if *attachAddr != "" {
-		logger.Logf("attempting to attach to %s\n", *attachAddr)
+		var err os.Error
+		basePort, err = strconv.Atoi((*attachAddr)[1:])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	} else {
+		var err os.Error
+		basePort, err = strconv.Atoi((*listenAddr)[1:])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 
+	nodes[0] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 0}
+	nodes[1] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 1}
+	nodes[2] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 2}
+	nodes[3] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 3}
+	nodes[4] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 4}
+	logger.Logf("attempting to attach to %v\n", nodes)
 
-	//open tcp sock
-	udpCh := make(chan string)
-	err := ListenUdp(*listenAddr, udpCh)
+	me, err := strconv.Btoui64((*listenAddr)[1:], 10)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	manager := paxos.NewManager()
-	manager.Init(FuncPutter(printMsg))
+	logger.Logf("attempting to listen on %s\n", *listenAddr)
+
+	//open tcp sock
+
+	conn, err := net.ListenPacket("udp", *listenAddr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	udpCh := make(chan paxos.Msg)
+	go RecvUdp(conn, udpCh)
+	udpPutter := NewUdpPutter(me, nodes, conn)
+
+	manager := paxos.NewManager(uint64(len(nodes)))
+	//manager.Init(FuncPutter(printMsg))
+	manager.Init(udpPutter)
 
 	go func() {
 		for pkt := range udpCh {
 			fmt.Printf("got udp packet: %#v\n", pkt)
-			manager.Put(parse(pkt))
+			manager.Put(pkt)
 		}
 	}()
 

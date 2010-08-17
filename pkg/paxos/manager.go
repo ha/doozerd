@@ -14,13 +14,15 @@ type Manager struct{
 	learned chan Result
 	reqs chan instReq
 	seqns chan uint64
+	nodes uint64
 }
 
-func NewManager() *Manager {
+func NewManager(n uint64) *Manager {
 	m := &Manager{
 		learned: make(chan Result),
 		reqs: make(chan instReq),
 		seqns: make(chan uint64),
+		nodes: n,
 	}
 	return m
 }
@@ -31,7 +33,8 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
-				inst = NewInstance(1, 2)
+				quorum := m.nodes/2 + 1
+				inst = NewInstance(1, quorum)
 				inst.Init(PutWrapper{req.seqn, 1, outs})
 				instances[req.seqn] = inst
 				go func() {

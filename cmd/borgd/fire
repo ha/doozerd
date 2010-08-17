@@ -15,7 +15,7 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
       "screen",
       "-t", "borgdM",
       "#{__DIR__}/borgd",
-      "-l", ":804"
+      "-l", ":8040"
     ],
   ].flatten
 
@@ -29,7 +29,7 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
       "screen",
       "-t", "borgd#{port}",
       "#{__DIR__}/borgd",
-      "-a", ":804",
+      "-a", ":8040",
       "-l", ":#{port}"
     ]
   ].flatten
