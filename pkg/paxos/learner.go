@@ -14,9 +14,9 @@ func learner(quorum uint64, ins chan Msg) string {
     update := func(in Msg) string {
         defer swallowContinue()
 
-        parts := splitExactly(in.body, lNumParts) // e.g. 1:xxx
+        parts := splitExactly(in.Body, lNumParts) // e.g. 1:xxx
 
-        if in.cmd != "VOTE" {
+        if in.Cmd != "VOTE" {
             return ""
         }
 
@@ -33,11 +33,11 @@ func learner(quorum uint64, ins chan Msg) string {
             voted = make(map[uint64]bool)
             fallthrough
         case mRound == round:
-            if voted[in.from] {
+            if voted[in.From] {
                 return ""
             }
             votes[v]++
-            voted[in.from] = true
+            voted[in.From] = true
 
             if votes[v] >= quorum {
                 return v // winner!

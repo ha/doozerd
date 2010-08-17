@@ -7,11 +7,11 @@ import (
 )
 
 type Msg struct {
-	seqn uint64
-	from uint64
-	to uint64
-	cmd string
-	body string
+	Seqn uint64
+	From uint64
+	To uint64
+	Cmd string
+	Body string
 }
 
 const (

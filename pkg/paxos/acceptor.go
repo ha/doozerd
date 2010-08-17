@@ -22,9 +22,9 @@ func acceptor(ins chan Msg, outs Putter) {
 	update := func(in Msg) {
 		defer swallowContinue()
 
-		switch in.cmd {
+		switch in.Cmd {
 		case "INVITE":
-			bodyParts := splitExactly(in.body, iNumParts)
+			bodyParts := splitExactly(in.Body, iNumParts)
 
 			i := dtoui64(bodyParts[iRnd])
 
@@ -34,15 +34,15 @@ func acceptor(ins chan Msg, outs Putter) {
 				rnd = i
 
 				reply := Msg{
-					seqn: in.seqn,
-					cmd: "RSVP",
-					to: in.from, // reply to the sender
-					body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
+					Seqn: in.Seqn,
+					Cmd: "RSVP",
+					To: in.From, // reply to the sender
+					Body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
 				}
 				outs.Put(reply)
 			}
 		case "NOMINATE":
-			bodyParts := splitExactly(in.body, nNumParts)
+			bodyParts := splitExactly(in.Body, nNumParts)
 
 			i := dtoui64(bodyParts[nRnd])
 
@@ -56,10 +56,10 @@ func acceptor(ins chan Msg, outs Putter) {
 			vval = bodyParts[nVal]
 
 			broadcast := Msg{
-				seqn: in.seqn,
-				cmd: "VOTE",
-				to: 0,
-				body: fmt.Sprintf("%d:%s", i, vval),
+				Seqn: in.Seqn,
+				Cmd: "VOTE",
+				To: 0,
+				Body: fmt.Sprintf("%d:%s", i, vval),
 			}
 			outs.Put(broadcast)
 		}

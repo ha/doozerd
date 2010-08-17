@@ -31,7 +31,7 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
-				inst = NewInstance(1, 1)
+				inst = NewInstance(1, 2)
 				inst.Init(PutWrapper{req.seqn, 1, outs})
 				instances[req.seqn] = inst
 				go func() {
@@ -57,7 +57,7 @@ func (m *Manager) getInstance(seqn uint64) *Instance {
 }
 
 func (m *Manager) Put(msg Msg) {
-	m.getInstance(msg.seqn).Put(msg)
+	m.getInstance(msg.Seqn).Put(msg)
 }
 
 func (m *Manager) Propose(v string) string {

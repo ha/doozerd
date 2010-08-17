@@ -31,9 +31,9 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 Start:
 	cval = ""
 	start := Msg{
-		cmd:  "INVITE",
-		to:   0, // send to all acceptors
-		body: fmt.Sprintf("%d", crnd),
+		Cmd:  "INVITE",
+		To:   0, // send to all acceptors
+		Body: fmt.Sprintf("%d", crnd),
 	}
 	outs.Put(start)
 
@@ -47,9 +47,9 @@ Start:
 			if closed(ins) {
 				goto Done
 			}
-			switch in.cmd {
+			switch in.Cmd {
 			case "RSVP":
-				bodyParts := splitExactly(in.body, rNumParts)
+				bodyParts := splitExactly(in.Body, rNumParts)
 				i := dtoui64(bodyParts[rRnd])
 				vrnd := dtoui64(bodyParts[rVrnd])
 				vval := bodyParts[rVval]
@@ -79,9 +79,9 @@ Start:
 					cval = v
 
 					choosen := Msg{
-						cmd:  "NOMINATE",
-						to:   0, // send to all acceptors
-						body: fmt.Sprintf("%d:%s", crnd, v),
+						Cmd:  "NOMINATE",
+						To:   0, // send to all acceptors
+						Body: fmt.Sprintf("%d:%s", crnd, v),
 					}
 					outs.Put(choosen)
 				}

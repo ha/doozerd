@@ -1,10 +1,14 @@
 package main
 
 import (
-	//"borg"
+	"borg/paxos"
 	"flag"
+	"fmt"
 	"log"
+	"net"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // Flags
@@ -18,6 +22,68 @@ var (
 	logger *log.Logger = log.New(os.Stderr, nil, "borgd: ", log.Lok)
 )
 
+const (
+	mFrom = iota
+	mTo
+	mCmd
+	mBody
+	mNumParts
+)
+
+func ListenUdp(laddr string, ch chan string) os.Error {
+	conn, err := net.ListenPacket("udp", laddr)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for {
+			pkt := make([]byte, 3000) // make sure it's big enough
+			n, _, err := conn.ReadFrom(pkt)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			ch <- string(pkt[0:n])
+		}
+	}()
+	return nil
+}
+
+func parse(s string) paxos.Msg {
+	parts := strings.Split(s, ":", mNumParts)
+	if len(parts) != mNumParts {
+		panic(s)
+	}
+
+	from, err := strconv.Btoui64(parts[mFrom], 10)
+	if err != nil {
+		panic(s)
+	}
+
+	var to uint64
+	if parts[mTo] == "*" {
+		to = 0
+	} else {
+		to, err = strconv.Btoui64(parts[mTo], 10)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return paxos.Msg{1, from, to, parts[mCmd], parts[mBody]}
+}
+
+type FuncPutter func (paxos.Msg)
+
+func (f FuncPutter) Put(m paxos.Msg) {
+	f(m)
+}
+
+func printMsg(m paxos.Msg) {
+	fmt.Printf("should send %v\n", m)
+}
+
 func main() {
 	flag.Parse()
 
@@ -25,6 +91,49 @@ func main() {
 
 	if *attachAddr != "" {
 		logger.Logf("attempting to attach to %s\n", *attachAddr)
+	}
+
+
+	//open tcp sock
+	udpCh := make(chan string)
+	err := ListenUdp(*listenAddr, udpCh)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	manager := paxos.NewManager()
+	manager.Init(FuncPutter(printMsg))
+
+	go func() {
+		for pkt := range udpCh {
+			fmt.Printf("got udp packet: %#v\n", pkt)
+			manager.Put(parse(pkt))
+		}
+	}()
+
+	//go func() {
+	//	for m from a client:
+	//		switch m.type {
+	//		case 'set':
+	//			go func() {
+	//				v := manager.propose(encode(m))
+	//				if v == m {
+	//					reply 'OK'
+	//				} else {
+	//					reply 'fail'
+	//				}
+	//			}()
+	//		case 'get':
+	//			read from store
+	//			return value
+	//		}
+	//}()
+
+	for {
+		seqn, v := manager.Recv()
+		fmt.Printf("learned %d %#v\n", seqn, v)
+		//store.Apply(manager.Recv())
 	}
 
 	// Think of borg events like inotify events.  We're interested in changes to

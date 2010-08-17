@@ -39,7 +39,7 @@ func NewInstance(id, quorum uint64) *Instance {
 }
 
 func (ins *Instance) Put(m Msg) {
-	if m.to == ins.id || m.to == 0 {
+	if m.To == ins.id || m.To == 0 {
 		ins.cPutter.Put(m)
 		ins.aPutter.Put(m)
 		ins.lPutter.Put(m)
