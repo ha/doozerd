@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+session_name = ARGV[0] || 'borg'
+
+
+def _system(*args)
+  system(*args)
+end
+
+__DIR__ = File.expand_path(File.dirname(__FILE__))
+
+  argv = [
+    "-S", session_name,
+    "-X",
+    [
+      "screen",
+      "-t", "borgdM",
+      "#{__DIR__}/borgd",
+      "-l", ":804"
+    ],
+  ].flatten
+
+  _system("screen", *argv)
+
+(8041..8044).each do |port|
+  argv = [
+    "-S", session_name,
+    "-X",
+    [
+      "screen",
+      "-t", "borgd#{port}",
+      "#{__DIR__}/borgd",
+      "-a", ":804",
+      "-l", ":#{port}"
+    ]
+  ].flatten
+
+  _system("screen", *argv)
+end
