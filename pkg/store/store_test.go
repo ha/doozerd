@@ -99,12 +99,6 @@ func TestDecodeBadMutations(t *testing.T) {
 	}
 }
 
-func TestApply(t *testing.T) {
-	s := NewStore()
-	mut, _ := EncodeSet("/x", "a")
-	s.Apply(1, mut)
-}
-
 func TestLookupMissing(t *testing.T) {
 	s := NewStore()
 	v, ok := s.Lookup("/x")
