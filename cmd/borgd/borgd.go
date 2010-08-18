@@ -211,7 +211,7 @@ func main() {
 	//
 	//     $ borgd -i -a :9999
 	//     >> ls /proc/123_a3c_a12b3c45/beanstalkd/12345/
-	//     cmd
+	//     exe
 	//     env
 	//     lock
 	//     >> cat /proc/123_a3c_a12b3c45/beanstalkd/12345/*
