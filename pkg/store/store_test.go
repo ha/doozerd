@@ -107,3 +107,27 @@ func TestApplyOutOfOrder(t *testing.T) {
 	assert.Equal(t, true, ok, "")
 	assert.Equal(t, "b", v, "")
 }
+
+func TestApplyIgnoreDuplicate(t *testing.T) {
+	s := NewStore()
+	mut1, _ := Encode("/x", "a")
+	mut2, _ := Encode("/x", "b")
+	s.Apply(1, mut1)
+	s.Apply(1, mut2)
+	v, ok := s.Lookup("/x")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "a", v, "")
+}
+
+func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
+	s := NewStore()
+	mut1, _ := Encode("/x", "a")
+	mut2, _ := Encode("/x", "b")
+	mut3, _ := Encode("/x", "c")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+	s.Apply(1, mut3)
+	v, ok := s.Lookup("/x")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "b", v, "")
+}
