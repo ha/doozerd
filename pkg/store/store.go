@@ -45,31 +45,12 @@ type reply struct {
 }
 
 func NewStore() *Store {
-	next := uint64(1)
-	todo := make(map[uint64]apply)
-	values := make(map[string]string)
-	reqCh := make(chan req)
-	applyCh := make(chan apply)
-	go func() {
-		for {
-			select {
-			case a := <-applyCh:
-				todo[a.seqn] = a
-				for t, ok := todo[next]; ok; t, ok = todo[next] {
-					values[t.k] = t.v
-					todo[next] = apply{}, false
-					next++
-				}
-			case r := <-reqCh:
-				v, ok := values[r.k]
-				r.ch <- reply{v, ok}
-			}
-		}
-	}()
-	return &Store{
-		applyCh: applyCh,
-		reqCh: reqCh,
+	s := &Store{
+		applyCh: make(chan apply),
+		reqCh: make(chan req),
 	}
+	go s.process()
+	return s
 }
 
 func Encode(path, v string) (mutation string, err os.Error) {
@@ -89,6 +70,26 @@ func decode(mutation string) (path, v string, err os.Error) {
 		return "", "", BadMutationError
 	}
 	return parts[0], parts[1], nil
+}
+
+func (s *Store) process() {
+	next := uint64(1)
+	todo := make(map[uint64]apply)
+	values := make(map[string]string)
+	for {
+		select {
+		case a := <-s.applyCh:
+			todo[a.seqn] = a
+			for t, ok := todo[next]; ok; t, ok = todo[next] {
+				values[t.k] = t.v
+				todo[next] = apply{}, false
+				next++
+			}
+		case r := <-s.reqCh:
+			v, ok := values[r.k]
+			r.ch <- reply{v, ok}
+		}
+	}
 }
 
 func (s *Store) Apply(seqn uint64, mutation string) {
