@@ -132,12 +132,17 @@ func (s *Store) process() {
 				s.todo[a.seqn] = a
 			}
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
-				go s.notify(Set, a.seqn, t.k, t.v)
-				if _, ok := values[t.k]; !ok {
-					dirname, basename := path.Split(t.k)
-					go s.notify(Add, a.seqn, dirname, basename)
+				switch t.op {
+				case Set:
+					go s.notify(Set, a.seqn, t.k, t.v)
+					if _, ok := values[t.k]; !ok {
+						dirname, basename := path.Split(t.k)
+						go s.notify(Add, a.seqn, dirname, basename)
+					}
+					values[t.k] = t.v
+				case Del:
+					values[t.k] = "", false
 				}
-				values[t.k] = t.v
 				s.todo[next] = apply{}, false
 				next++
 			}

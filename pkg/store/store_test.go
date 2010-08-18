@@ -115,6 +115,17 @@ func TestLookup(t *testing.T) {
 	assert.Equal(t, "a", v, "")
 }
 
+func TestLookupDeleted(t *testing.T) {
+	s := NewStore()
+	mut, _ := EncodeSet("/x", "a")
+	s.Apply(1, mut)
+	mut, _ = EncodeDel("/x")
+	s.Apply(2, mut)
+	v, ok := s.Lookup("/x")
+	assert.Equal(t, false, ok, "")
+	assert.Equal(t, "", v, "")
+}
+
 func TestApplyInOrder(t *testing.T) {
 	s := NewStore()
 	mut1, _ := EncodeSet("/x", "a")
