@@ -117,6 +117,9 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	v, ok := s.Lookup("/x")
 	assert.Equal(t, true, ok, "")
 	assert.Equal(t, "a", v, "")
+
+	// check that we aren't leaking memory
+	assert.Equal(t, 0, len(s.todo), "")
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
@@ -130,4 +133,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	v, ok := s.Lookup("/x")
 	assert.Equal(t, true, ok, "")
 	assert.Equal(t, "b", v, "")
+
+	// check that we aren't leaking memory
+	assert.Equal(t, 0, len(s.todo), "")
 }

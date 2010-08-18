@@ -26,6 +26,7 @@ var (
 type Store struct {
 	applyCh chan apply
 	reqCh chan req
+	todo map[uint64]apply
 }
 
 type apply struct {
@@ -48,6 +49,7 @@ func NewStore() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		reqCh: make(chan req),
+		todo: make(map[uint64]apply),
 	}
 	go s.process()
 	return s
@@ -74,15 +76,16 @@ func decode(mutation string) (path, v string, err os.Error) {
 
 func (s *Store) process() {
 	next := uint64(1)
-	todo := make(map[uint64]apply)
 	values := make(map[string]string)
 	for {
 		select {
 		case a := <-s.applyCh:
-			todo[a.seqn] = a
-			for t, ok := todo[next]; ok; t, ok = todo[next] {
+			if a.seqn >= next {
+				s.todo[a.seqn] = a
+			}
+			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 				values[t.k] = t.v
-				todo[next] = apply{}, false
+				s.todo[next] = apply{}, false
 				next++
 			}
 		case r := <-s.reqCh:
