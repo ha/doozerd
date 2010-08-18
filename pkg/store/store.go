@@ -22,7 +22,6 @@ const (
 
 var (
 	BadPathError = os.NewError("bad path")
-	BadMutationError = os.NewError("bad mutation")
 )
 
 type Store struct {
@@ -94,9 +93,10 @@ func EncodeDel(path string) (mutation string, err os.Error) {
 
 func decode(mutation string) (op int, path, v string, err os.Error) {
 	parts := strings.Split(mutation, "=", 2)
+	if err = checkPath(parts[0]); err != nil {
+		return
+	}
 	switch len(parts) {
-	case 0:
-		return 0, "", "", BadMutationError
 	case 1:
 		return Del, parts[0], "", nil
 	case 2:

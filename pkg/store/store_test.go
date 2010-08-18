@@ -25,6 +25,12 @@ var BadPaths = []string{
 }
 
 var BadMutations = []string{
+	"",
+	"x",
+	"/x y",
+	"=",
+	"x=",
+	"/x y=",
 }
 
 func TestEncodeSet(t *testing.T) {
@@ -87,8 +93,8 @@ func TestDecodeDel(t *testing.T) {
 func TestDecodeBadMutations(t *testing.T) {
 	for _, m := range BadMutations {
 		_, _, _, err := decode(m)
-		if err != BadMutationError {
-			t.Errorf("expected BadMutationError on %q", m)
+		if err != BadPathError {
+			t.Errorf("expected BadPathError on %q", m)
 		}
 	}
 }
