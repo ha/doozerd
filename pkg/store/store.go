@@ -35,6 +35,7 @@ type Store struct {
 
 type apply struct {
 	seqn uint64
+	op int
 	k string
 	v string
 }
@@ -66,23 +67,42 @@ func NewStore() *Store {
 	return s
 }
 
-func Encode(path, v string) (mutation string, err os.Error) {
+func checkPath(k string) os.Error {
 	switch {
-	case len(path) < 1,
-	     path[0] != '/',
-	     strings.Count(path, "=") > 0,
-	     strings.Count(path, " ") > 0:
-		return "", BadPathError
+	case len(k) < 1,
+	     k[0] != '/',
+	     strings.Count(k, "=") > 0,
+	     strings.Count(k, " ") > 0:
+		return BadPathError
+	}
+	return nil
+}
+
+func EncodeSet(path, v string) (mutation string, err os.Error) {
+	if err = checkPath(path); err != nil {
+		return
 	}
 	return path + "=" + v, nil
 }
 
-func decode(mutation string) (path, v string, err os.Error) {
-	parts := strings.Split(mutation, "=", 2)
-	if len(parts) < 2 {
-		return "", "", BadMutationError
+func EncodeDel(path string) (mutation string, err os.Error) {
+	if err := checkPath(path); err != nil {
+		return
 	}
-	return parts[0], parts[1], nil
+	return path, nil
+}
+
+func decode(mutation string) (op int, path, v string, err os.Error) {
+	parts := strings.Split(mutation, "=", 2)
+	switch len(parts) {
+	case 0:
+		return 0, "", "", BadMutationError
+	case 1:
+		return Del, parts[0], "", nil
+	case 2:
+		return Set, parts[0], parts[1], nil
+	}
+	panic("can't happen")
 }
 
 func (s *Store) notify(ev int, seqn uint64, k, v string) {
@@ -133,11 +153,11 @@ func (s *Store) process() {
 }
 
 func (s *Store) Apply(seqn uint64, mutation string) {
-	path, v, err := decode(mutation)
+	op, path, v, err := decode(mutation)
 	if err != nil {
 		return
 	}
-	s.applyCh <- apply{seqn, path, v}
+	s.applyCh <- apply{seqn, op, path, v}
 }
 
 // For a missing path, `ok == false`. Otherwise, it is `true`.
