@@ -1,8 +1,6 @@
 package store
 
 import (
-	"container/vector"
-	"container/heap"
 	"os"
 	"strings"
 )
@@ -46,22 +44,9 @@ type reply struct {
 	ok bool
 }
 
-type applyHeap struct {
-	vector.Vector
-}
-
-func (ah applyHeap) Less(i, j int) bool {
-	return ah.Seqn(i) < ah.Seqn(j)
-}
-
-func (ah applyHeap) Seqn(i int) uint64 {
-	return ah.At(i).(*apply).seqn
-}
-
 func NewStore() *Store {
 	next := uint64(1)
-	todo := new(applyHeap)
-	heap.Init(todo)
+	todo := make(map[uint64]apply)
 	values := make(map[string]string)
 	reqCh := make(chan req)
 	applyCh := make(chan apply)
@@ -69,10 +54,10 @@ func NewStore() *Store {
 		for {
 			select {
 			case a := <-applyCh:
-				heap.Push(todo, &a)
-				for todo.Len() > 0 && todo.Seqn(0) == next {
-					t := heap.Pop(todo).(*apply)
+				todo[a.seqn] = a
+				for t, ok := todo[next]; ok; t, ok = todo[next] {
 					values[t.k] = t.v
+					todo[next] = apply{}, false
 					next++
 				}
 			case r := <-reqCh:
