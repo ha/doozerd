@@ -105,7 +105,6 @@ func (s *Store) Lookup(path string) (v string, ok bool) {
 	ch := make(chan reply)
 	s.reqCh <- req{path, ch}
 	rep := <-ch
-	//v, ok = s.values[path]
 	return rep.v, rep.ok
 }
 
