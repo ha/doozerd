@@ -20,6 +20,8 @@ const (
 	Rem
 )
 
+var conj = map[uint]uint{Set:Add, Del:Rem}
+
 var (
 	BadPathError = os.NewError("bad path")
 )
@@ -136,17 +138,9 @@ func (s *Store) process() {
 			}
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 				go s.notify(t.op, a.seqn, t.k, t.v)
-				switch t.op {
-				case Set:
-					if _, ok := values[t.k]; !ok {
-						dirname, basename := path.Split(t.k)
-						go s.notify(Add, a.seqn, dirname, basename)
-					}
-				case Del:
-					if _, ok := values[t.k]; ok {
-						dirname, basename := path.Split(t.k)
-						go s.notify(Rem, a.seqn, dirname, basename)
-					}
+				if _, ok := values[t.k]; ok == (t.op == Del) {
+					dirname, basename := path.Split(t.k)
+					go s.notify(conj[t.op], a.seqn, dirname, basename)
 				}
 				values[t.k] = t.v, t.op == Set
 				s.todo[next] = apply{}, false
