@@ -108,7 +108,9 @@ func decode(mutation string) (op uint, path, v string, err os.Error) {
 
 func (s *Store) notify(ev uint, seqn uint64, k, v string) {
 	for _, w := range s.watches[k] {
-		w.ch <- Event{ev, seqn, k, v}
+		if w.mask & ev != 0 {
+			w.ch <- Event{ev, seqn, k, v}
+		}
 	}
 }
 
@@ -142,6 +144,7 @@ func (s *Store) process() {
 					}
 					values[t.k] = t.v
 				case Del:
+					go s.notify(Del, a.seqn, t.k, t.v)
 					values[t.k] = "", false
 				}
 				s.todo[next] = apply{}, false
@@ -174,10 +177,10 @@ func (s *Store) Lookup(path string) (v string, ok bool) {
 	return rep.v, rep.ok
 }
 
-// `eventMask` is one or more of `Set`, `Del`, `Add`, and `Rem`, bitwise OR-ed
+// `mask` is one or more of `Set`, `Del`, `Add`, and `Rem`, bitwise OR-ed
 // together.
-func (s *Store) Watch(path string, eventMask uint) (events chan Event) {
+func (s *Store) Watch(path string, mask uint) (events chan Event) {
 	ch := make(chan Event)
-	s.watchCh <- watch{ch, 0, path}
+	s.watchCh <- watch{ch, mask, path}
 	return ch
 }

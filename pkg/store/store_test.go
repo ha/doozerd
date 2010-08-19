@@ -197,6 +197,29 @@ func TestWatchSet(t *testing.T) {
 	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb, "")
 }
 
+func TestWatchDel(t *testing.T) {
+	s := NewStore()
+
+	ch := s.Watch("/x", Del)
+	assert.Equal(t, 1, len(s.watches["/x"]), "")
+
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	mut3, _ := EncodeSet("/y", "c")
+	mut4, _ := EncodeDel("/x")
+	mut5, _ := EncodeDel("/y")
+	mut6, _ := EncodeDel("/x")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+	s.Apply(3, mut3)
+	s.Apply(4, mut4)
+	s.Apply(5, mut5)
+	s.Apply(6, mut6)
+
+	exp := <-ch
+	assert.Equal(t, Event{Del, 4, "/x", ""}, exp, "")
+}
+
 func TestWatchAdd(t *testing.T) {
 	s := NewStore()
 
