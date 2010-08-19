@@ -142,14 +142,13 @@ func (s *Store) process() {
 						dirname, basename := path.Split(t.k)
 						go s.notify(Add, a.seqn, dirname, basename)
 					}
-					values[t.k] = t.v
 				case Del:
 					if _, ok := values[t.k]; ok {
 						dirname, basename := path.Split(t.k)
 						go s.notify(Rem, a.seqn, dirname, basename)
 					}
-					values[t.k] = "", false
 				}
+				values[t.k] = t.v, t.op == Set
 				s.todo[next] = apply{}, false
 				next++
 			}
