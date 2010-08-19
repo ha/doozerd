@@ -255,19 +255,19 @@ func TestDelDirParents(t *testing.T) {
 
 	v, ok := s.Lookup("/")
 	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "", v, "")
+	assert.Equal(t, "", v, "lookup /")
 
 	v, ok = s.Lookup("/x")
 	assert.Equal(t, false, ok, "")
-	assert.Equal(t, "", v, "")
+	assert.Equal(t, "", v, "lookup /x")
 
 	v, ok = s.Lookup("/x/y")
 	assert.Equal(t, false, ok, "")
-	assert.Equal(t, "", v, "")
+	assert.Equal(t, "", v, "lookup /x/y")
 
 	v, ok = s.Lookup("/x/y/z")
 	assert.Equal(t, false, ok, "")
-	assert.Equal(t, "", v, "")
+	assert.Equal(t, "", v, "lookup /x/y/z")
 }
 
 func TestWatchSet(t *testing.T) {

@@ -26,10 +26,13 @@ var (
 	BadPathError = os.NewError("bad path")
 )
 
+// This structure should be kept immutable.
 type node struct {
 	v string
 	ds map[string]*node
 }
+
+var emptyNode = node{v:"", ds:make(map[string]*node)}
 
 type Store struct {
 	applyCh chan apply
@@ -74,11 +77,7 @@ func NewStore() *Store {
 	return s
 }
 
-func newNode() *node {
-	return &node{ds:make(map[string]*node)}
-}
-
-func (n *node) readdir() string {
+func (n node) readdir() string {
 	names := make([]string, len(n.ds))
 	i := 0
 	for name, _ := range n.ds {
@@ -88,7 +87,7 @@ func (n *node) readdir() string {
 	return strings.Join(names, "")
 }
 
-func (n *node) get(parts []string) (string, bool) {
+func (n node) get(parts []string) (string, bool) {
 	switch len(parts) {
 	case 0:
 		if len(n.ds) > 0 {
@@ -112,7 +111,7 @@ func split(path string) []string {
 	return strings.Split(path[1:], "/", -1)
 }
 
-func (n *node) getp(path string) (string, bool) {
+func (n node) getp(path string) (string, bool) {
 	if err := checkPath(path); err != nil {
 		return "", false
 	}
@@ -120,29 +119,41 @@ func (n *node) getp(path string) (string, bool) {
 	return n.get(split(path))
 }
 
-// Return value: should keep this node.
-func (n *node) set(parts []string, v string, keep bool) bool {
+// Return value: replacement node.
+func (n node) set(parts []string, v string, keep bool) (y *node) {
 	switch len(parts) {
 	case 0:
 		n.v = v
+		y = &node{v:v, ds:n.ds}
 	default:
-		if _, ok := n.ds[parts[0]]; !ok {
-			n.ds[parts[0]] = newNode()
+		m := n.ds[parts[0]]
+		if m == nil {
+			m = &emptyNode
 		}
-		r := n.ds[parts[0]].set(parts[1:], v, keep)
-		if !r {
-			n.ds[parts[0]] = nil, false
+		m = m.set(parts[1:], v, keep)
+		ds := make(map[string]*node)
+		for k,v := range n.ds {
+			ds[k] = v
 		}
+		ds[parts[0]] = m, m != nil
+		y = &node{v:n.v, ds:ds}
 	}
-	return keep || len(n.ds) > 0
+	if !keep && len(y.ds) == 0 {
+		return nil
+	}
+	return
 }
 
-func (n *node) setp(path string, v string, keep bool) {
+func (n node) setp(path string, v string, keep bool) (y node) {
 	if err := checkPath(path); err != nil {
-		return
+		return n
 	}
 
-	n.set(split(path), v, keep)
+	r := n.set(split(path), v, keep)
+	if r == nil {
+		return emptyNode
+	}
+	return *r
 }
 
 func checkPath(k string) os.Error {
@@ -206,7 +217,7 @@ func append(ws *[]watch, w watch) {
 
 func (s *Store) process() {
 	next := uint64(1)
-	values := newNode()
+	values := emptyNode
 	for {
 		select {
 		case a := <-s.applyCh:
@@ -219,7 +230,7 @@ func (s *Store) process() {
 					dirname, basename := path.Split(t.k)
 					go s.notify(conj[t.op], a.seqn, dirname, basename)
 				}
-				values.setp(t.k, t.v, t.op == Set)
+				values = values.setp(t.k, t.v, t.op == Set)
 				s.todo[next] = apply{}, false
 				next++
 			}
