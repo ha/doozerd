@@ -246,6 +246,9 @@ func (s *Store) process() {
 				values, changed = values.setp(t.k, t.v, t.op == Set)
 				for _, p := range changed {
 					dirname, basename := path.Split(p)
+					if dirname != "/" {
+						dirname = dirname[0:len(dirname) - 1] // strip slash
+					}
 					go s.notify(conj[t.op], a.seqn, dirname, basename)
 				}
 				s.todo[next] = apply{}, false

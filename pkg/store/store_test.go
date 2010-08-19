@@ -371,3 +371,16 @@ func TestWatchDelDirParents(t *testing.T) {
 	expa := <-ch
 	assert.Equal(t, Event{Rem, 2, "/", "x"}, expa, "")
 }
+
+func TestWatchSetDirParents(t *testing.T) {
+	s := NewStore()
+
+	ch := s.Watch("/x", Add)
+	assert.Equal(t, 1, len(s.watches["/x"]), "")
+
+	mut, _ := EncodeSet("/x/y/z", "a")
+	s.Apply(1, mut)
+
+	expa := <-ch
+	assert.Equal(t, Event{Add, 1, "/x", "y"}, expa, "")
+}
