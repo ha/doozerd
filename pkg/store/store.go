@@ -145,6 +145,10 @@ func (s *Store) process() {
 					values[t.k] = t.v
 				case Del:
 					go s.notify(Del, a.seqn, t.k, t.v)
+					if _, ok := values[t.k]; ok {
+						dirname, basename := path.Split(t.k)
+						go s.notify(Rem, a.seqn, dirname, basename)
+					}
 					values[t.k] = "", false
 				}
 				s.todo[next] = apply{}, false

@@ -238,3 +238,28 @@ func TestWatchAdd(t *testing.T) {
 	expb := <-ch
 	assert.Equal(t, Event{Add, 3, "/", "y"}, expb, "")
 }
+
+func TestWatchRem(t *testing.T) {
+	s := NewStore()
+
+	ch := s.Watch("/", Rem)
+	assert.Equal(t, 1, len(s.watches["/"]), "")
+
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	mut3, _ := EncodeSet("/y", "c")
+	mut4, _ := EncodeDel("/x")
+	mut5, _ := EncodeDel("/y")
+	mut6, _ := EncodeDel("/x")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+	s.Apply(3, mut3)
+	s.Apply(4, mut4)
+	s.Apply(5, mut5)
+	s.Apply(6, mut6)
+
+	expa := <-ch
+	assert.Equal(t, Event{Rem, 4, "/", "x"}, expa, "")
+	expb := <-ch
+	assert.Equal(t, Event{Rem, 5, "/", "y"}, expb, "")
+}
