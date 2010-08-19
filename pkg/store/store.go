@@ -10,7 +10,7 @@ type Event struct {
 	Type uint
 	Seqn uint64
 	Path string
-	Value string
+	Body string
 }
 
 const (
@@ -184,11 +184,11 @@ func checkPath(k string) os.Error {
 	return nil
 }
 
-func EncodeSet(path, v string) (mutation string, err os.Error) {
+func EncodeSet(path, body string) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
-	return path + "=" + v, nil
+	return path + "=" + body, nil
 }
 
 func EncodeDel(path string) (mutation string, err os.Error) {
@@ -274,7 +274,7 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 }
 
 // For a missing path, `ok == false`. Otherwise, it is `true`.
-func (s *Store) Lookup(path string) (v string, ok bool) {
+func (s *Store) Lookup(path string) (body string, ok bool) {
 	ch := make(chan reply)
 	s.reqCh <- req{path, ch}
 	rep := <-ch
