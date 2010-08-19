@@ -26,6 +26,11 @@ var (
 	BadPathError = os.NewError("bad path")
 )
 
+type node struct {
+	v string
+	ds map[string]*node
+}
+
 type Store struct {
 	applyCh chan apply
 	reqCh chan req
@@ -69,10 +74,82 @@ func NewStore() *Store {
 	return s
 }
 
+func newNode() *node {
+	return &node{ds:make(map[string]*node)}
+}
+
+func (n *node) readdir() string {
+	names := make([]string, len(n.ds))
+	i := 0
+	for name, _ := range n.ds {
+		names[i] = name + "\n"
+		i++
+	}
+	return strings.Join(names, "")
+}
+
+func (n *node) get(parts []string) (string, bool) {
+	switch len(parts) {
+	case 0:
+		if len(n.ds) > 0 {
+			return n.readdir(), true
+		} else {
+			return n.v, true
+		}
+	default:
+		if m, ok := n.ds[parts[0]]; ok {
+			return m.get(parts[1:])
+		}
+		return "", false
+	}
+	panic("can't happen")
+}
+
+func split(path string) []string {
+	if path == "/" {
+		return []string{}
+	}
+	return strings.Split(path[1:], "/", -1)
+}
+
+func (n *node) getp(path string) (string, bool) {
+	if err := checkPath(path); err != nil {
+		return "", false
+	}
+
+	return n.get(split(path))
+}
+
+// Return value: should keep this node.
+func (n *node) set(parts []string, v string, keep bool) bool {
+	switch len(parts) {
+	case 0:
+		n.v = v
+	default:
+		if _, ok := n.ds[parts[0]]; !ok {
+			n.ds[parts[0]] = newNode()
+		}
+		r := n.ds[parts[0]].set(parts[1:], v, keep)
+		if !r {
+			n.ds[parts[0]] = nil, false
+		}
+	}
+	return keep || len(n.ds) > 0
+}
+
+func (n *node) setp(path string, v string, keep bool) {
+	if err := checkPath(path); err != nil {
+		return
+	}
+
+	n.set(split(path), v, keep)
+}
+
 func checkPath(k string) os.Error {
 	switch {
 	case len(k) < 1,
 	     k[0] != '/',
+	     len(k) > 1 && k[len(k) - 1] == '/',
 	     strings.Count(k, "=") > 0,
 	     strings.Count(k, " ") > 0:
 		return BadPathError
@@ -129,7 +206,7 @@ func append(ws *[]watch, w watch) {
 
 func (s *Store) process() {
 	next := uint64(1)
-	values := make(map[string]string)
+	values := newNode()
 	for {
 		select {
 		case a := <-s.applyCh:
@@ -138,16 +215,16 @@ func (s *Store) process() {
 			}
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 				go s.notify(t.op, a.seqn, t.k, t.v)
-				if _, ok := values[t.k]; ok == (t.op == Del) {
+				if _, ok := values.getp(t.k); ok == (t.op == Del) {
 					dirname, basename := path.Split(t.k)
 					go s.notify(conj[t.op], a.seqn, dirname, basename)
 				}
-				values[t.k] = t.v, t.op == Set
+				values.setp(t.k, t.v, t.op == Set)
 				s.todo[next] = apply{}, false
 				next++
 			}
 		case r := <-s.reqCh:
-			v, ok := values[r.k]
+			v, ok := values.getp(r.k)
 			r.ch <- reply{v, ok}
 		case w := <-s.watchCh:
 			watches := s.watches[w.k]

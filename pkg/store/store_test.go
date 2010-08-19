@@ -17,11 +17,18 @@ var DelKVMs = [][3]string{
 	[3]string{"/x", "/x"},
 }
 
+var GoodPaths = []string{
+	"/",
+	"/x",
+	"/x/y",
+}
+
 var BadPaths = []string{
 	"",
 	"x",
 	"/x=",
 	"/x y",
+	"/x/",
 }
 
 var BadMutations = []string{
@@ -33,6 +40,38 @@ var BadMutations = []string{
 	"/x y=",
 }
 
+var Splits = [][]string{
+	[]string{"/"},
+	[]string{"/x", "x"},
+	[]string{"/x/y/z", "x", "y", "z"},
+}
+
+func TestSplit(t *testing.T) {
+	for _, vals := range Splits {
+		path, exp := vals[0], vals[1:]
+		got := split(path)
+		assert.Equal(t, exp, got, path)
+	}
+}
+
+func TestCheckBadPaths(t *testing.T) {
+	for _, k := range BadPaths {
+		err := checkPath(k)
+		if err != BadPathError {
+			t.Errorf("expected BadPathError on %q", k)
+		}
+	}
+}
+
+func TestCheckGoodPaths(t *testing.T) {
+	for _, k := range GoodPaths {
+		err := checkPath(k)
+		if err != nil {
+			t.Errorf("unexpected error on %q: %v", k, err)
+		}
+	}
+}
+
 func TestEncodeSet(t *testing.T) {
 	for _, kvm := range SetKVMs {
 		k, v, exp := kvm[0], kvm[1], kvm[2]
@@ -41,15 +80,6 @@ func TestEncodeSet(t *testing.T) {
 			t.Error("unexpected error:", err)
 		}
 		assert.Equal(t, exp, got, "")
-	}
-}
-
-func TestEncodeSetBadPaths(t *testing.T) {
-	for _, k := range BadPaths {
-		_, err := EncodeSet(k, "")
-		if err != BadPathError {
-			t.Errorf("expected BadPathError on %q", k)
-		}
 	}
 }
 
@@ -176,6 +206,68 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 
 	// check that we aren't leaking memory
 	assert.Equal(t, 0, len(s.todo), "")
+}
+
+func TestGetDir(t *testing.T) {
+	s := NewStore()
+
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/y", "b")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+
+	v, ok := s.Lookup("/")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "x\ny\n", v, "")
+}
+
+func TestDirParents(t *testing.T) {
+	s := NewStore()
+
+	mut1, _ := EncodeSet("/x/y/z", "a")
+	s.Apply(1, mut1)
+
+	v, ok := s.Lookup("/")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "x\n", v, "")
+
+	v, ok = s.Lookup("/x")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "y\n", v, "")
+
+	v, ok = s.Lookup("/x/y")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "z\n", v, "")
+
+	v, ok = s.Lookup("/x/y/z")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "a", v, "")
+}
+
+func TestDelDirParents(t *testing.T) {
+	s := NewStore()
+
+	mut1, _ := EncodeSet("/x/y/z", "a")
+	s.Apply(1, mut1)
+
+	mut2, _ := EncodeDel("/x/y/z")
+	s.Apply(2, mut2)
+
+	v, ok := s.Lookup("/")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "", v, "")
+
+	v, ok = s.Lookup("/x")
+	assert.Equal(t, false, ok, "")
+	assert.Equal(t, "", v, "")
+
+	v, ok = s.Lookup("/x/y")
+	assert.Equal(t, false, ok, "")
+	assert.Equal(t, "", v, "")
+
+	v, ok = s.Lookup("/x/y/z")
+	assert.Equal(t, false, ok, "")
+	assert.Equal(t, "", v, "")
 }
 
 func TestWatchSet(t *testing.T) {
