@@ -7,14 +7,14 @@ import (
 )
 
 type Event struct {
-	Type int
+	Type uint
 	Seqn uint64
 	Path string
 	Value string
 }
 
 const (
-	Set = (1<<iota)
+	Set = uint(1<<iota)
 	Del
 	Add
 	Rem
@@ -34,7 +34,7 @@ type Store struct {
 
 type apply struct {
 	seqn uint64
-	op int
+	op uint
 	k string
 	v string
 }
@@ -51,6 +51,7 @@ type reply struct {
 
 type watch struct {
 	ch chan Event
+	mask uint
 	k string
 }
 
@@ -91,7 +92,7 @@ func EncodeDel(path string) (mutation string, err os.Error) {
 	return path, nil
 }
 
-func decode(mutation string) (op int, path, v string, err os.Error) {
+func decode(mutation string) (op uint, path, v string, err os.Error) {
 	parts := strings.Split(mutation, "=", 2)
 	if err = checkPath(parts[0]); err != nil {
 		return
@@ -105,7 +106,7 @@ func decode(mutation string) (op int, path, v string, err os.Error) {
 	panic("can't happen")
 }
 
-func (s *Store) notify(ev int, seqn uint64, k, v string) {
+func (s *Store) notify(ev uint, seqn uint64, k, v string) {
 	for _, w := range s.watches[k] {
 		w.ch <- Event{ev, seqn, k, v}
 	}
@@ -175,8 +176,8 @@ func (s *Store) Lookup(path string) (v string, ok bool) {
 
 // `eventMask` is one or more of `Set`, `Del`, `Add`, and `Rem`, bitwise OR-ed
 // together.
-func (s *Store) Watch(path string, eventMask byte) (events chan Event) {
+func (s *Store) Watch(path string, eventMask uint) (events chan Event) {
 	ch := make(chan Event)
-	s.watchCh <- watch{ch, path}
+	s.watchCh <- watch{ch, 0, path}
 	return ch
 }
