@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=borg/client
+TARG=borg/proto
 GOFILES=\
-	client.go\
+	proto.go\
 
 include $(GOROOT)/src/Make.pkg
