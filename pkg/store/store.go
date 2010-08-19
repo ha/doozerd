@@ -111,6 +111,10 @@ func split(path string) []string {
 	return strings.Split(path[1:], "/", -1)
 }
 
+func join(parts []string) string {
+	return "/" + strings.Join(parts, "/")
+}
+
 func (n node) getp(path string) (string, bool) {
 	if err := checkPath(path); err != nil {
 		return "", false
@@ -119,41 +123,53 @@ func (n node) getp(path string) (string, bool) {
 	return n.get(split(path))
 }
 
-// Return value: replacement node.
-func (n node) set(parts []string, v string, keep bool) (y *node) {
+// Return value: y = replacement node; c = how many levels were changed.
+func (n node) set(parts []string, v string, keep bool) (y *node, c int) {
 	switch len(parts) {
 	case 0:
 		n.v = v
 		y = &node{v:v, ds:n.ds}
 	default:
-		m := n.ds[parts[0]]
+		d := 0
+		m, ok := n.ds[parts[0]]
 		if m == nil {
 			m = &emptyNode
 		}
-		m = m.set(parts[1:], v, keep)
+		m, d = m.set(parts[1:], v, keep)
 		ds := make(map[string]*node)
 		for k,v := range n.ds {
 			ds[k] = v
 		}
 		ds[parts[0]] = m, m != nil
+		if ok != (m != nil) {
+			c = 1
+		}
 		y = &node{v:n.v, ds:ds}
+		c += d
 	}
 	if !keep && len(y.ds) == 0 {
-		return nil
+		y = nil
 	}
 	return
 }
 
-func (n node) setp(path string, v string, keep bool) (y node) {
-	if err := checkPath(path); err != nil {
-		return n
+func (n node) setp(k, v string, keep bool) (y node, ps []string) {
+	if err := checkPath(k); err != nil {
+		return n, []string{}
 	}
 
-	r := n.set(split(path), v, keep)
-	if r == nil {
-		return emptyNode
+	r, c := n.set(split(k), v, keep)
+	ps = make([]string, c)
+	for i := 0; i < c; i++ {
+		ps[i] = k
+		d, _ := path.Split(k)
+		k = d[0:len(d) - 1]
 	}
-	return *r
+
+	if r == nil {
+		return emptyNode, ps
+	}
+	return *r, ps
 }
 
 func checkPath(k string) os.Error {
@@ -225,12 +241,13 @@ func (s *Store) process() {
 				s.todo[a.seqn] = a
 			}
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
+				var changed []string
 				go s.notify(t.op, a.seqn, t.k, t.v)
-				if _, ok := values.getp(t.k); ok == (t.op == Del) {
-					dirname, basename := path.Split(t.k)
+				values, changed = values.setp(t.k, t.v, t.op == Set)
+				for _, p := range changed {
+					dirname, basename := path.Split(p)
 					go s.notify(conj[t.op], a.seqn, dirname, basename)
 				}
-				values = values.setp(t.k, t.v, t.op == Set)
 				s.todo[next] = apply{}, false
 				next++
 			}
