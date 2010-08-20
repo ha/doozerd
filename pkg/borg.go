@@ -165,7 +165,7 @@ func New(id string, listenAddr string, logger *log.Logger) *Node {
 	return &Node{
 		listenAddr:listenAddr,
 		logger:logger,
-		store:store.New(),
+		store:store.New(logger),
 		id:id,
 	}
 }

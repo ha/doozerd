@@ -1,6 +1,7 @@
 package store
 
 import (
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -40,6 +41,7 @@ type Store struct {
 	watchCh chan watch
 	watches map[string][]watch
 	todo map[uint64]apply
+	logger *log.Logger
 }
 
 type apply struct {
@@ -65,13 +67,14 @@ type watch struct {
 	k string
 }
 
-func New() *Store {
+func New(logger *log.Logger) *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		reqCh: make(chan req),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
 		watches: make(map[string][]watch),
+		logger: logger,
 	}
 	go s.process()
 	return s
@@ -244,6 +247,7 @@ func (s *Store) process() {
 				var changed []string
 				go s.notify(t.op, a.seqn, t.k, t.v)
 				values, changed = values.setp(t.k, t.v, t.op == Set)
+				s.logger.Logf("applied %v", t)
 				for _, p := range changed {
 					dirname, basename := path.Split(p)
 					if dirname != "/" {

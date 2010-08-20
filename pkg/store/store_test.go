@@ -2,7 +2,9 @@ package store
 
 import (
 	"borg/assert"
+	"log"
 	"testing"
+	"testing/iotest"
 )
 
 var SetKVMs = [][3]string{
@@ -45,6 +47,8 @@ var Splits = [][]string{
 	[]string{"/x", "x"},
 	[]string{"/x/y/z", "x", "y", "z"},
 }
+
+var logger = log.New(iotest.TruncateWriter(nil, 0), nil, "", log.Lok)
 
 func TestSplit(t *testing.T) {
 	for _, vals := range Splits {
@@ -130,14 +134,14 @@ func TestDecodeBadMutations(t *testing.T) {
 }
 
 func TestLookupMissing(t *testing.T) {
-	s := New()
+	s := New(logger)
 	v, ok := s.Lookup("/x")
 	assert.Equal(t, false, ok, "")
 	assert.Equal(t, "", v, "")
 }
 
 func TestLookup(t *testing.T) {
-	s := New()
+	s := New(logger)
 	mut, _ := EncodeSet("/x", "a")
 	s.Apply(1, mut)
 	v, ok := s.Lookup("/x")
@@ -146,7 +150,7 @@ func TestLookup(t *testing.T) {
 }
 
 func TestLookupDeleted(t *testing.T) {
-	s := New()
+	s := New(logger)
 	mut, _ := EncodeSet("/x", "a")
 	s.Apply(1, mut)
 	mut, _ = EncodeDel("/x")
@@ -157,7 +161,7 @@ func TestLookupDeleted(t *testing.T) {
 }
 
 func TestApplyInOrder(t *testing.T) {
-	s := New()
+	s := New(logger)
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(1, mut1)
@@ -168,7 +172,7 @@ func TestApplyInOrder(t *testing.T) {
 }
 
 func TestApplyOutOfOrder(t *testing.T) {
-	s := New()
+	s := New(logger)
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(2, mut2)
@@ -179,7 +183,7 @@ func TestApplyOutOfOrder(t *testing.T) {
 }
 
 func TestApplyIgnoreDuplicate(t *testing.T) {
-	s := New()
+	s := New(logger)
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(1, mut1)
@@ -193,7 +197,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
-	s := New()
+	s := New(logger)
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	mut3, _ := EncodeSet("/x", "c")
@@ -209,7 +213,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 }
 
 func TestGetDir(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/y", "b")
@@ -222,7 +226,7 @@ func TestGetDir(t *testing.T) {
 }
 
 func TestDirParents(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	mut1, _ := EncodeSet("/x/y/z", "a")
 	s.Apply(1, mut1)
@@ -245,7 +249,7 @@ func TestDirParents(t *testing.T) {
 }
 
 func TestDelDirParents(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	mut1, _ := EncodeSet("/x/y/z", "a")
 	s.Apply(1, mut1)
@@ -271,7 +275,7 @@ func TestDelDirParents(t *testing.T) {
 }
 
 func TestWatchSet(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	ch := s.Watch("/x", Set)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
@@ -290,7 +294,7 @@ func TestWatchSet(t *testing.T) {
 }
 
 func TestWatchDel(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	ch := s.Watch("/x", Del)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
@@ -313,7 +317,7 @@ func TestWatchDel(t *testing.T) {
 }
 
 func TestWatchAdd(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	ch := s.Watch("/", Add)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
@@ -332,7 +336,7 @@ func TestWatchAdd(t *testing.T) {
 }
 
 func TestWatchRem(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	ch := s.Watch("/", Rem)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
@@ -357,7 +361,7 @@ func TestWatchRem(t *testing.T) {
 }
 
 func TestWatchDelDirParents(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	ch := s.Watch("/", Rem)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
@@ -373,7 +377,7 @@ func TestWatchDelDirParents(t *testing.T) {
 }
 
 func TestWatchSetDirParents(t *testing.T) {
-	s := New()
+	s := New(logger)
 
 	ch := s.Watch("/x", Add)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
