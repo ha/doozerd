@@ -272,8 +272,12 @@ func (n *Node) server(conn net.Conn) {
 				io.WriteString(conn, "-ERR: failed")
 			}
 		case "get":
-			//read from store
-			//return value
+			body, ok := n.store.Lookup(parts[1])
+			if ok {
+				proto.Encode(conn, body)
+			} else {
+				io.WriteString(conn, "-ERR: missing")
+			}
 		default:
 			io.WriteString(conn, "-ERR: unknown command")
 		}
