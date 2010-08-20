@@ -65,7 +65,7 @@ type watch struct {
 	k string
 }
 
-func NewStore() *Store {
+func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		reqCh: make(chan req),
