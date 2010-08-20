@@ -304,6 +304,25 @@ func TestWatchSet(t *testing.T) {
 	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb, "")
 }
 
+func TestWatchSetOutOfOrder(t *testing.T) {
+	s := New(logger)
+
+	ch := s.Watch("/x", Set)
+	assert.Equal(t, 1, len(s.watches["/x"]), "")
+
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	mut3, _ := EncodeSet("/y", "c")
+	s.Apply(2, mut2)
+	s.Apply(1, mut1)
+	s.Apply(3, mut3)
+
+	expa := <-ch
+	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa, "")
+	expb := <-ch
+	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb, "")
+}
+
 func TestWatchDel(t *testing.T) {
 	s := New(logger)
 
@@ -339,6 +358,25 @@ func TestWatchAdd(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
+
+	expa := <-ch
+	assert.Equal(t, Event{Add, 1, "/", "x"}, expa, "")
+	expb := <-ch
+	assert.Equal(t, Event{Add, 3, "/", "y"}, expb, "")
+}
+
+func TestWatchAddOutOfOrder(t *testing.T) {
+	s := New(logger)
+
+	ch := s.Watch("/", Add)
+	assert.Equal(t, 1, len(s.watches["/"]), "")
+
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	mut3, _ := EncodeSet("/y", "c")
+	s.Apply(3, mut3)
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
 
 	expa := <-ch
 	assert.Equal(t, Event{Add, 1, "/", "x"}, expa, "")

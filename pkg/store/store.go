@@ -247,7 +247,7 @@ func (s *Store) process() {
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 				if t.op != Nop {
 					var changed []string
-					go s.notify(t.op, a.seqn, t.k, t.v)
+					go s.notify(t.op, t.seqn, t.k, t.v)
 					values, changed = values.setp(t.k, t.v, t.op == Set)
 					s.logger.Logf("applied %v", t)
 					for _, p := range changed {
@@ -255,7 +255,7 @@ func (s *Store) process() {
 						if dirname != "/" {
 							dirname = dirname[0:len(dirname) - 1] // strip slash
 						}
-						go s.notify(conj[t.op], a.seqn, dirname, basename)
+						go s.notify(conj[t.op], t.seqn, dirname, basename)
 					}
 				}
 				s.todo[next] = apply{}, false
