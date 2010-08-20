@@ -66,6 +66,7 @@ type watch struct {
 	ch chan Event
 	mask uint
 	k string
+	ready chan int
 }
 
 func New(logger *log.Logger) *Store {
@@ -216,10 +217,12 @@ func decode(mutation string) (op uint, path, v string, err os.Error) {
 	panic("can't happen")
 }
 
-func (s *Store) notify(ev uint, seqn uint64, k, v string) {
+func (s *Store) notify(t uint, seqn uint64, k, v string) {
 	for _, w := range s.watches[k] {
-		if w.mask & ev != 0 {
-			w.ch <- Event{ev, seqn, k, v}
+		if w.mask & t != 0 {
+			go func(ch chan Event, ev Event) {
+				ch <- ev
+			}(w.ch, Event{t, seqn, k, v})
 		}
 	}
 }
@@ -247,7 +250,7 @@ func (s *Store) process() {
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 				if t.op != Nop {
 					var changed []string
-					go s.notify(t.op, t.seqn, t.k, t.v)
+					s.notify(t.op, t.seqn, t.k, t.v)
 					values, changed = values.setp(t.k, t.v, t.op == Set)
 					s.logger.Logf("applied %v", t)
 					for _, p := range changed {
@@ -255,7 +258,7 @@ func (s *Store) process() {
 						if dirname != "/" {
 							dirname = dirname[0:len(dirname) - 1] // strip slash
 						}
-						go s.notify(conj[t.op], t.seqn, dirname, basename)
+						s.notify(conj[t.op], t.seqn, dirname, basename)
 					}
 				}
 				s.todo[next] = apply{}, false
@@ -268,6 +271,7 @@ func (s *Store) process() {
 			watches := s.watches[w.k]
 			append(&watches, w)
 			s.watches[w.k] = watches
+			w.ready <- 1
 		}
 	}
 }
@@ -293,6 +297,8 @@ func (s *Store) Lookup(path string) (body string, ok bool) {
 // together.
 func (s *Store) Watch(path string, mask uint) (events chan Event) {
 	ch := make(chan Event)
-	s.watchCh <- watch{ch, mask, path}
+	ready := make(chan int)
+	s.watchCh <- watch{ch, mask, path, ready}
+	<-ready
 	return ch
 }
