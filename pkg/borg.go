@@ -267,14 +267,14 @@ func (n *Node) server(conn net.Conn) {
 			}
 			v := n.manager.Propose(mutation)
 			if v == mutation {
-				proto.Encode(conn, "OK")
+				proto.Encodef(conn, "OK")
 			} else {
 				io.WriteString(conn, "-ERR: failed")
 			}
 		case "get":
 			body, ok := n.store.Lookup(parts[1])
 			if ok {
-				proto.Encode(conn, body)
+				proto.Encodef(conn, "%s", body)
 			} else {
 				io.WriteString(conn, "-ERR: missing")
 			}
