@@ -15,6 +15,7 @@ type Event struct {
 }
 
 const (
+	Nop = 0
 	Set = uint(1<<iota)
 	Del
 	Add
@@ -244,16 +245,18 @@ func (s *Store) process() {
 				s.todo[a.seqn] = a
 			}
 			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
-				var changed []string
-				go s.notify(t.op, a.seqn, t.k, t.v)
-				values, changed = values.setp(t.k, t.v, t.op == Set)
-				s.logger.Logf("applied %v", t)
-				for _, p := range changed {
-					dirname, basename := path.Split(p)
-					if dirname != "/" {
-						dirname = dirname[0:len(dirname) - 1] // strip slash
+				if t.op != Nop {
+					var changed []string
+					go s.notify(t.op, a.seqn, t.k, t.v)
+					values, changed = values.setp(t.k, t.v, t.op == Set)
+					s.logger.Logf("applied %v", t)
+					for _, p := range changed {
+						dirname, basename := path.Split(p)
+						if dirname != "/" {
+							dirname = dirname[0:len(dirname) - 1] // strip slash
+						}
+						go s.notify(conj[t.op], a.seqn, dirname, basename)
 					}
-					go s.notify(conj[t.op], a.seqn, dirname, basename)
 				}
 				s.todo[next] = apply{}, false
 				next++
@@ -272,9 +275,10 @@ func (s *Store) process() {
 func (s *Store) Apply(seqn uint64, mutation string) {
 	op, path, v, err := decode(mutation)
 	if err != nil {
-		return
+		s.applyCh <- apply{seqn:seqn} // nop
+	} else {
+		s.applyCh <- apply{seqn, op, path, v}
 	}
-	s.applyCh <- apply{seqn, op, path, v}
 }
 
 // For a missing path, `ok == false`. Otherwise, it is `true`.

@@ -171,6 +171,17 @@ func TestApplyInOrder(t *testing.T) {
 	assert.Equal(t, "b", v, "")
 }
 
+func TestApplyBadThenGood(t *testing.T) {
+	s := New(logger)
+	mut1 := "foo" // bad mutation
+	mut2, _ := EncodeSet("/x", "b")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+	v, ok := s.Lookup("/x")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "b", v, "")
+}
+
 func TestApplyOutOfOrder(t *testing.T) {
 	s := New(logger)
 	mut1, _ := EncodeSet("/x", "a")
