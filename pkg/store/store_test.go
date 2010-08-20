@@ -384,6 +384,25 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	assert.Equal(t, Event{Add, 3, "/", "y"}, expb, "")
 }
 
+func TestWatchAddSubdir(t *testing.T) {
+	s := New(logger)
+
+	ch := s.Watch("/a", Add)
+	assert.Equal(t, 1, len(s.watches["/a"]), "")
+
+	mut1, _ := EncodeSet("/a/x", "a")
+	mut2, _ := EncodeSet("/a/x", "b")
+	mut3, _ := EncodeSet("/a/y", "c")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+	s.Apply(3, mut3)
+
+	expa := <-ch
+	assert.Equal(t, Event{Add, 1, "/a", "x"}, expa, "")
+	expb := <-ch
+	assert.Equal(t, Event{Add, 3, "/a", "y"}, expb, "")
+}
+
 func TestWatchRem(t *testing.T) {
 	s := New(logger)
 
