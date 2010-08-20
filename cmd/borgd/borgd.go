@@ -29,7 +29,7 @@ func main() {
 	adds := s.Watch("/service", store.Add)
 	go func() {
 		for ev := range adds {
-			logger.Logf("notice %s/%s", ev.Path, ev.Body)
+			logger.Logf("oh, %s/%s has appeared", ev.Path, ev.Body)
 		}
 	}()
 

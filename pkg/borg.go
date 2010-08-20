@@ -125,14 +125,9 @@ func (f funcPutter) Put(m paxos.Msg) {
 	f(m)
 }
 
-func printMsg(m paxos.Msg) {
-	fmt.Printf("should send %v\n", m)
-}
-
 func newUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
 	put := func(m paxos.Msg) {
 		pkt := fmt.Sprintf("%d:%d:%d:%s:%s", m.Seqn, me, m.To, m.Cmd, m.Body)
-		fmt.Printf("send udp packet %q\n", pkt)
 		b := []byte(pkt)
 		var to []net.Addr
 		if m.To == 0 {
@@ -326,7 +321,6 @@ func (n *Node) RunForever() {
 	go recvUdp(udpConn, udpCh)
 	udpPutter := newUdpPutter(me, n.nodes, udpConn)
 
-	//n.manager.Init(funcPutter(printMsg))
 	n.manager.Init(udpPutter)
 
 	go func() {

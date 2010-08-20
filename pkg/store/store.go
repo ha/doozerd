@@ -252,7 +252,7 @@ func (s *Store) process() {
 					var changed []string
 					s.notify(t.op, t.seqn, t.k, t.v)
 					values, changed = values.setp(t.k, t.v, t.op == Set)
-					s.logger.Logf("applied %v", t)
+					s.logger.Logf("store applied %v", t)
 					for _, p := range changed {
 						dirname, basename := path.Split(p)
 						if dirname != "/" {

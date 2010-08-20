@@ -74,13 +74,16 @@ func (m *Manager) Put(msg Msg) {
 }
 
 func (m *Manager) Propose(v string) string {
-	inst := m.getInstance(<-m.seqns)
+	seqn := <-m.seqns
+	inst := m.getInstance(seqn)
+	m.logger.Logf("paxos %d propose -> %q", seqn, v)
 	inst.Propose(v)
 	return inst.Value()
 }
 
 func (m *Manager) Recv() (uint64, string) {
 	result := <-m.learned
+	m.logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
 	return result.seqn, result.v
 }
 
