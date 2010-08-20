@@ -249,7 +249,12 @@ func (n *Node) server(conn net.Conn) {
 	br := bufio.NewReader(conn)
 	for {
 		parts, err := proto.Decode(br)
-		if err != nil {
+		switch err {
+		case os.EOF:
+			return
+		case nil:
+			// nothing
+		default:
 			n.logger.Log(err)
 			continue
 		}
