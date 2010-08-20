@@ -45,6 +45,7 @@ package borg
 import (
 	"borg/paxos"
 	"borg/store"
+	"borg/util"
 	"fmt"
 	"log"
 	"net"
@@ -147,17 +148,25 @@ func NewUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter
 }
 
 type Node struct {
+	id string
 	listenAddr string
 	logger *log.Logger
 	nodes []net.Addr
 	store *store.Store
+	manager *paxos.Manager
 }
 
-func New(listenAddr string, logger *log.Logger) *Node {
+func New(id string, listenAddr string, logger *log.Logger) *Node {
+	if id == "" {
+		b := make([]byte, 8)
+		util.RandBytes(b)
+		id = fmt.Sprintf("%x", b)
+	}
 	return &Node{
 		listenAddr:listenAddr,
 		logger:logger,
 		store:store.New(),
+		id:id,
 	}
 }
 
@@ -175,10 +184,27 @@ func (n *Node) Init() {
 	n.nodes[2] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 2}
 	n.nodes[3] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 3}
 	n.nodes[4] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 4}
+
+
+	nodeKey := "/node/" + n.id
+	mut, err := store.EncodeSet(nodeKey, n.listenAddr)
+	if err != nil {
+		panic(err)
+	}
+	n.store.Apply(1, mut)
+	n.logger.Logf("registered %s at %s\n", n.id, n.listenAddr)
+	n.manager = paxos.NewManager(2, uint64(len(n.nodes)))
 }
 
-func (n *Node) Join(addr string) {
-	n.logger.Logf("TODO: get a snapshot")
+// TODO this function should take only an address and get all necessary info
+// from the other existing nodes.
+func (n *Node) Join(master string) {
+	parts := strings.Split(master, "=", 2)
+	if len(parts) < 2 {
+		panic(fmt.Sprintf("bad master address: %s", master))
+	}
+	mid, addr := parts[0], parts[1]
+
 
 	var basePort int
 	var err os.Error
@@ -194,6 +220,19 @@ func (n *Node) Join(addr string) {
 	n.nodes[3] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 3}
 	n.nodes[4] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 4}
 	n.logger.Logf("attempting to attach to %v\n", n.nodes)
+
+	n.logger.Logf("TODO: get a snapshot")
+	// TODO remove all this fake stuff and talk to the other nodes
+	// BEGIN FAKE STUFF
+	nodeKey := "/node/" + mid
+	mut, err := store.EncodeSet(nodeKey, addr)
+	if err != nil {
+		panic(err)
+	}
+	n.store.Apply(1, mut)
+	// END OF FAKE STUFF
+
+	n.manager = paxos.NewManager(2, uint64(len(n.nodes)))
 }
 
 func (n *Node) RunForever() {
@@ -217,14 +256,13 @@ func (n *Node) RunForever() {
 	go RecvUdp(conn, udpCh)
 	udpPutter := NewUdpPutter(me, n.nodes, conn)
 
-	manager := paxos.NewManager(1, uint64(len(n.nodes)))
-	//manager.Init(FuncPutter(printMsg))
-	manager.Init(udpPutter)
+	//n.manager.Init(FuncPutter(printMsg))
+	n.manager.Init(udpPutter)
 
 	go func() {
 		for pkt := range udpCh {
 			fmt.Printf("got udp packet: %#v\n", pkt)
-			manager.Put(pkt)
+			n.manager.Put(pkt)
 		}
 	}()
 
@@ -233,7 +271,7 @@ func (n *Node) RunForever() {
 	//		switch m.type {
 	//		case 'set':
 	//			go func() {
-	//				v := manager.propose(encode(m))
+	//				v := n.manager.propose(encode(m))
 	//				if v == m {
 	//					reply 'OK'
 	//				} else {
@@ -247,8 +285,8 @@ func (n *Node) RunForever() {
 	//}()
 
 	for {
-		seqn, v := manager.Recv()
+		seqn, v := n.manager.Recv()
 		fmt.Printf("learned %d %#v\n", seqn, v)
-		//store.Apply(manager.Recv())
+		//store.Apply(n.manager.Recv())
 	}
 }

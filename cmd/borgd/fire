@@ -6,6 +6,8 @@ def _system(*args)
   system(*args)
 end
 
+master_id = "88fca87ce04b0276"
+
 __DIR__ = File.expand_path(File.dirname(__FILE__))
 
   argv = [
@@ -15,6 +17,7 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
       "screen",
       "-t", "borgdM",
       "#{__DIR__}/borgd",
+      "-i", master_id,
       "-l", ":8040"
     ],
   ].flatten
@@ -29,7 +32,7 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
       "screen",
       "-t", "borgd#{port}",
       "#{__DIR__}/borgd",
-      "-a", ":8040",
+      "-a", master_id+"=:8040",
       "-l", ":#{port}"
     ]
   ].flatten
