@@ -193,7 +193,7 @@ func (n *Node) Init() {
 	}
 	n.store.Apply(1, mut)
 	n.logger.Logf("registered %s at %s\n", n.id, n.listenAddr)
-	n.manager = paxos.NewManager(2, uint64(len(n.nodes)))
+	n.manager = paxos.NewManager(2, uint64(len(n.nodes)), n.logger)
 }
 
 // TODO this function should take only an address and get all necessary info
@@ -232,7 +232,7 @@ func (n *Node) Join(master string) {
 	n.store.Apply(1, mut)
 	// END OF FAKE STUFF
 
-	n.manager = paxos.NewManager(2, uint64(len(n.nodes)))
+	n.manager = paxos.NewManager(2, uint64(len(n.nodes)), n.logger)
 }
 
 func (n *Node) RunForever() {

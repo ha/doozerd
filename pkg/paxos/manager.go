@@ -1,5 +1,9 @@
 package paxos
 
+import (
+	"log"
+)
+
 type Result struct {
 	seqn uint64
 	v string
@@ -16,15 +20,17 @@ type Manager struct{
 	seqns chan uint64
 	start uint64
 	nodes uint64
+	logger *log.Logger
 }
 
-func NewManager(start, n uint64) *Manager {
+func NewManager(start, n uint64, logger *log.Logger) *Manager {
 	m := &Manager{
 		learned: make(chan Result),
 		reqs: make(chan instReq),
 		seqns: make(chan uint64),
 		nodes: n,
 		start: start,
+		logger: logger,
 	}
 	return m
 }
@@ -73,6 +79,7 @@ func (m *Manager) Propose(v string) string {
 
 func (m *Manager) Recv() (uint64, string) {
 	result := <-m.learned
+	m.logger.Logf("learned %d %q", result.seqn, result.v)
 	return result.seqn, result.v
 }
 
