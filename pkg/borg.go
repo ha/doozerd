@@ -76,7 +76,7 @@ func getPort(addr string) uint64 {
 	return port
 }
 
-func RecvUdp(conn net.PacketConn, ch chan paxos.Msg) {
+func recvUdp(conn net.PacketConn, ch chan paxos.Msg) {
 	for {
 		pkt := make([]byte, 3000) // make sure it's big enough
 		n, addr, err := conn.ReadFrom(pkt)
@@ -119,9 +119,9 @@ func parse(s string) paxos.Msg {
 	return paxos.Msg{seqn, from, to, parts[mCmd], parts[mBody]}
 }
 
-type FuncPutter func (paxos.Msg)
+type funcPutter func (paxos.Msg)
 
-func (f FuncPutter) Put(m paxos.Msg) {
+func (f funcPutter) Put(m paxos.Msg) {
 	f(m)
 }
 
@@ -129,7 +129,7 @@ func printMsg(m paxos.Msg) {
 	fmt.Printf("should send %v\n", m)
 }
 
-func NewUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
+func newUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
 	put := func(m paxos.Msg) {
 		pkt := fmt.Sprintf("%d:%d:%d:%s:%s", m.Seqn, me, m.To, m.Cmd, m.Body)
 		fmt.Printf("send udp packet %q\n", pkt)
@@ -153,7 +153,7 @@ func NewUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter
 			}
 		}
 	}
-	return FuncPutter(put)
+	return funcPutter(put)
 }
 
 type Node struct {
@@ -318,10 +318,10 @@ func (n *Node) RunForever() {
 	}
 
 	udpCh := make(chan paxos.Msg)
-	go RecvUdp(udpConn, udpCh)
-	udpPutter := NewUdpPutter(me, n.nodes, udpConn)
+	go recvUdp(udpConn, udpCh)
+	udpPutter := newUdpPutter(me, n.nodes, udpConn)
 
-	//n.manager.Init(FuncPutter(printMsg))
+	//n.manager.Init(funcPutter(printMsg))
 	n.manager.Init(udpPutter)
 
 	go func() {
