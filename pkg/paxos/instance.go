@@ -1,5 +1,9 @@
 package paxos
 
+import (
+	"log"
+)
+
 type Instance struct {
 	id     uint64
 	quorum uint64
@@ -20,9 +24,11 @@ type Instance struct {
 	// Learner
 	lIns  chan Msg
 	lPutter  Putter
+
+	logger *log.Logger
 }
 
-func NewInstance(id, quorum uint64) *Instance {
+func NewInstance(id, quorum uint64, logger *log.Logger) *Instance {
 	cIns, aIns, lIns := make(chan Msg), make(chan Msg), make(chan Msg)
 	return &Instance{
 		id: id,
@@ -35,11 +41,14 @@ func NewInstance(id, quorum uint64) *Instance {
 		cPutter: ChanPutter(cIns),
 		aPutter: ChanPutter(aIns),
 		lPutter: ChanPutter(lIns),
+		logger: logger,
 	}
 }
 
 func (ins *Instance) Put(m Msg) {
+	ins.logger.Logf("instance got msg %v", m)
 	if m.To == ins.id || m.To == 0 {
+		ins.logger.Logf("delivering message!")
 		ins.cPutter.Put(m)
 		ins.aPutter.Put(m)
 		ins.lPutter.Put(m)
@@ -52,7 +61,7 @@ func (ins *Instance) Value() string {
 }
 
 func (ins *Instance) Init(outs Putter) {
-	go coordinator(ins.id, ins.quorum, 3, ins.vin, ins.cIns, outs, make(chan int))
+	go coordinator(ins.id, ins.quorum, 3, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
 	go acceptor(ins.aIns, outs)
 	go func() {
 		ins.v = learner(ins.quorum, ins.lIns)

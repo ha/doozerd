@@ -2,16 +2,12 @@ package paxos
 
 import (
     "borg/assert"
-    "log"
     "testing"
-    "testing/iotest"
 )
-
-var logger = log.New(iotest.TruncateWriter(nil, 0), nil, "", log.Lok)
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1, 1, logger)
+	m := NewManager(1, 1, 1, logger)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -20,7 +16,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1, 1, logger)
+	m := NewManager(1, 1, 1, logger)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -33,7 +29,7 @@ func TestProposeAndRecv(t *testing.T) {
 
 func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
-	m := NewManager(2, 1, logger)
+	m := NewManager(1, 2, 1, logger)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -47,7 +43,7 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 func TestProposeAndRecvMultiple(t *testing.T) {
 	exp := []string{"foo", "bar"}
 	seqnexp := []uint64{1, 2}
-	m := NewManager(1, 1, logger)
+	m := NewManager(1, 1, 1, logger)
 	m.Init(m)
 
 	got0 := m.Propose(exp[0])
@@ -67,7 +63,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1, 1, logger)
+	m := NewManager(1, 1, 1, logger)
 	m.Init(m)
 
 	m.Put(Msg{1, 1, 1, "VOTE", "1:" + exp})
@@ -78,7 +74,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m := NewManager(1, 1, logger)
+	m := NewManager(1, 1, 1, logger)
 	m.Init(m)
 
 	m.Put(Msg{1, 1, 1, "VOTE", "1:" + exp})

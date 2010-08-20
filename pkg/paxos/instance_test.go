@@ -8,7 +8,7 @@ import (
 // Testing
 
 func TestStartAtLearn(t *testing.T) {
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -16,7 +16,7 @@ func TestStartAtLearn(t *testing.T) {
 }
 
 func TestStartAtLearnWithDuplicates(t *testing.T) {
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
@@ -26,7 +26,7 @@ func TestStartAtLearnWithDuplicates(t *testing.T) {
 }
 
 func TestLearnWithQuorumOf2(t *testing.T) {
-	ins := NewInstance(1, 2)
+	ins := NewInstance(1, 2, logger)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("2:*:VOTE:1:foo"))
@@ -35,7 +35,7 @@ func TestLearnWithQuorumOf2(t *testing.T) {
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -44,7 +44,7 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.Init(ins)
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
@@ -54,7 +54,7 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.Init(ins)
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -69,7 +69,7 @@ func (f FuncPutter) Put(m Msg) {
 
 func TestAllowsDirectlyAddressedMessages(t *testing.T) {
 	nMessages := 0
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.cPutter = FuncPutter(func(m Msg) {
 		nMessages++
 	})
@@ -88,7 +88,7 @@ func TestAllowsDirectlyAddressedMessages(t *testing.T) {
 
 func TestAllowsBroadcastMessages(t *testing.T) {
 	nMessages := 0
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.cPutter = FuncPutter(func(m Msg) {
 		nMessages++
 	})
@@ -106,7 +106,7 @@ func TestAllowsBroadcastMessages(t *testing.T) {
 }
 
 func TestIgnoresUnwantedMessages(t *testing.T) {
-	ins := NewInstance(1, 1)
+	ins := NewInstance(1, 1, logger)
 	ins.cPutter = FuncPutter(func(m Msg) {
 		t.Fatalf("instance should ignore message %#v", m)
 	})
@@ -131,9 +131,9 @@ func (fp FakePutter) Put(m Msg) {
 }
 
 func TestMultipleInstances(t *testing.T) {
-	insA := NewInstance(1, 2)
-	insB := NewInstance(2, 2)
-	insC := NewInstance(3, 2)
+	insA := NewInstance(1, 2, logger)
+	insB := NewInstance(2, 2, logger)
+	insC := NewInstance(3, 2, logger)
 	ps := []Putter{insA, insB, insC}
 	insA.Init(PutWrapper{1, 1, FakePutter(ps)})
 	insB.Init(PutWrapper{1, 2, FakePutter(ps)})

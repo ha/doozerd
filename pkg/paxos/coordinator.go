@@ -2,6 +2,7 @@ package paxos
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -16,10 +17,10 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int) {
-	if crnd > modulus {
-		panic(IdOutOfRange)
-	}
+func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
+	//if crnd > modulus {
+	//	panic(IdOutOfRange)
+	//}
 
 	var cval string
 
@@ -47,8 +48,10 @@ Start:
 			if closed(ins) {
 				goto Done
 			}
+			logger.Logf("coord got %v", in)
 			switch in.Cmd {
 			case "RSVP":
+				logger.Logf("coord got rsvp")
 				bodyParts := splitExactly(in.Body, rNumParts)
 				i := dtoui64(bodyParts[rRnd])
 				vrnd := dtoui64(bodyParts[rVrnd])
@@ -68,6 +71,7 @@ Start:
 				}
 
 				rsvps++
+				logger.Logf("now %d rsvps")
 				if rsvps >= quorum {
 					var v string
 

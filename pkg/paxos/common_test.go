@@ -2,11 +2,15 @@ package paxos
 
 import (
 	"container/vector"
+	"log"
 	"strings"
 	"strconv"
+	"testing/iotest"
 )
 
 type SyncPutter chan Msg
+
+var logger = log.New(iotest.TruncateWriter(nil, 0), nil, "", log.Lok)
 
 func (sp SyncPutter) Put(m Msg) {
 	sp <- m

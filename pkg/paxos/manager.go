@@ -15,6 +15,7 @@ type instReq struct {
 }
 
 type Manager struct{
+	me uint64
 	learned chan Result
 	reqs chan instReq
 	seqns chan uint64
@@ -23,8 +24,9 @@ type Manager struct{
 	logger *log.Logger
 }
 
-func NewManager(start, n uint64, logger *log.Logger) *Manager {
+func NewManager(me, start, n uint64, logger *log.Logger) *Manager {
 	m := &Manager{
+		me: me,
 		learned: make(chan Result),
 		reqs: make(chan instReq),
 		seqns: make(chan uint64),
@@ -42,7 +44,7 @@ func (m *Manager) Init(outs Putter) {
 			inst, ok := instances[req.seqn]
 			if !ok {
 				quorum := m.nodes/2 + 1
-				inst = NewInstance(1, quorum)
+				inst = NewInstance(m.me, quorum, m.logger)
 				inst.Init(PutWrapper{req.seqn, 1, outs})
 				instances[req.seqn] = inst
 				go func() {
@@ -68,6 +70,7 @@ func (m *Manager) getInstance(seqn uint64) *Instance {
 }
 
 func (m *Manager) Put(msg Msg) {
+	m.logger.Logf("manager got msg %v", msg)
 	m.getInstance(msg.Seqn).Put(msg)
 }
 

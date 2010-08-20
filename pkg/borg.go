@@ -49,6 +49,7 @@ import (
 	"borg/util"
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -201,7 +202,7 @@ func (n *Node) Init() {
 	}
 	n.store.Apply(1, mut)
 	n.logger.Logf("registered %s at %s\n", n.id, n.listenAddr)
-	n.manager = paxos.NewManager(2, uint64(len(n.nodes)), n.logger)
+	n.manager = paxos.NewManager(uint64(basePort), 2, uint64(len(n.nodes)), n.logger)
 }
 
 // TODO this function should take only an address and get all necessary info
@@ -240,7 +241,8 @@ func (n *Node) Join(master string) {
 	n.store.Apply(1, mut)
 	// END OF FAKE STUFF
 
-	n.manager = paxos.NewManager(2, uint64(len(n.nodes)), n.logger)
+	selfport, err := strconv.Atoi((n.listenAddr)[1:])
+	n.manager = paxos.NewManager(uint64(selfport), 2, uint64(len(n.nodes)), n.logger)
 }
 
 func (n *Node) server(conn net.Conn) {
@@ -252,21 +254,29 @@ func (n *Node) server(conn net.Conn) {
 			continue
 		}
 
+		if len(parts) == 0 {
+			continue
+		}
+
 		n.logger.Log("got", parts)
-		//switch m.type {
-		//case 'set':
-		//	go func() {
-		//		v := n.manager.propose(encode(m))
-		//		if v == m {
-		//			reply 'OK'
-		//		} else {
-		//			reply 'fail'
-		//		}
-		//	}()
-		//case 'get':
-		//	read from store
-		//	return value
-		//}
+		switch parts[0] {
+		case "set":
+			mutation, err := store.EncodeSet(parts[1], parts[2])
+			if err != nil {
+				io.WriteString(conn, fmt.Sprintf("-ERR: %s", err))
+			}
+			v := n.manager.Propose(mutation)
+			if v == mutation {
+				proto.Encode(conn, "OK")
+			} else {
+				io.WriteString(conn, "-ERR: failed")
+			}
+		case "get":
+			//read from store
+			//return value
+		default:
+			io.WriteString(conn, "-ERR: unknown command")
+		}
 	}
 }
 
