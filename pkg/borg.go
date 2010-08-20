@@ -165,7 +165,7 @@ type Node struct {
 	manager *paxos.Manager
 }
 
-func New(id string, listenAddr string, logger *log.Logger) *Node {
+func New(id string, listenAddr string, s *store.Store, logger *log.Logger) *Node {
 	if id == "" {
 		b := make([]byte, 8)
 		util.RandBytes(b)
@@ -174,7 +174,7 @@ func New(id string, listenAddr string, logger *log.Logger) *Node {
 	return &Node{
 		listenAddr:listenAddr,
 		logger:logger,
-		store:store.New(logger),
+		store:s,
 		id:id,
 	}
 }

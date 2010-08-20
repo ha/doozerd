@@ -2,6 +2,7 @@ package main
 
 import (
 	"borg"
+	"borg/store"
 	"flag"
 	"log"
 	"os"
@@ -21,7 +22,17 @@ var (
 
 func main() {
 	flag.Parse()
-	b := borg.New(*id, *listenAddr, logger)
+	s := store.New(logger)
+	b := borg.New(*id, *listenAddr, s, logger)
+
+	//adds := make(chan store.Event)
+	adds := s.Watch("/service", store.Add)
+	go func() {
+		for ev := range adds {
+			logger.Logf("notice %s/%s", ev.Path, ev.Body)
+		}
+	}()
+
 	if *attachAddr == "" {
 		b.Init()
 	} else {

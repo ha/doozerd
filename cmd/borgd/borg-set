@@ -1,0 +1,9 @@
+#!/bin/sh
+
+k=$1
+shift
+
+v=$1
+shift
+
+printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v" | nc localhost 8040
