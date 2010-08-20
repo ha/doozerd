@@ -51,7 +51,11 @@ Loop:
 	return
 }
 
-func Encode(w io.Writer, parts ... string) (err os.Error) {
+func Encodef(w io.Writer, parts ... string) (err os.Error) {
+	return Encode(w, parts)
+}
+
+func Encode(w io.Writer, parts []string) (err os.Error) {
 	_, err = fmt.Fprintf(w, "*%d\r\n", len(parts))
 	for _, part := range parts {
 		_, err = fmt.Fprintf(w, "$%d\r\n%s\r\n", len(part), part)
