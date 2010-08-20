@@ -44,8 +44,10 @@ package borg
 
 import (
 	"borg/paxos"
+	"borg/proto"
 	"borg/store"
 	"borg/util"
+	"bufio"
 	"fmt"
 	"log"
 	"net"
@@ -241,6 +243,44 @@ func (n *Node) Join(master string) {
 	n.manager = paxos.NewManager(2, uint64(len(n.nodes)), n.logger)
 }
 
+func (n *Node) server(conn net.Conn) {
+	br := bufio.NewReader(conn)
+	for {
+		parts, err := proto.Decode(br)
+		if err != nil {
+			n.logger.Log(err)
+			continue
+		}
+
+		n.logger.Log("got", parts)
+		//switch m.type {
+		//case 'set':
+		//	go func() {
+		//		v := n.manager.propose(encode(m))
+		//		if v == m {
+		//			reply 'OK'
+		//		} else {
+		//			reply 'fail'
+		//		}
+		//	}()
+		//case 'get':
+		//	read from store
+		//	return value
+		//}
+	}
+}
+
+func (n *Node) accept(l net.Listener) {
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			n.logger.Log(err)
+			continue
+		}
+		go n.server(c)
+	}
+}
+
 func (n *Node) RunForever() {
 	me, err := strconv.Btoui64((n.listenAddr)[1:], 10)
 	if err != nil {
@@ -250,17 +290,22 @@ func (n *Node) RunForever() {
 
 	n.logger.Logf("attempting to listen on %s\n", n.listenAddr)
 
-	//open tcp sock
+	tcpListener, err := net.Listen("tcp", n.listenAddr)
+	if err != nil {
+		n.logger.Log(err)
+		return
+	}
+	go n.accept(tcpListener)
 
-	conn, err := net.ListenPacket("udp", n.listenAddr)
+	udpConn, err := net.ListenPacket("udp", n.listenAddr)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	udpCh := make(chan paxos.Msg)
-	go RecvUdp(conn, udpCh)
-	udpPutter := NewUdpPutter(me, n.nodes, conn)
+	go RecvUdp(udpConn, udpCh)
+	udpPutter := NewUdpPutter(me, n.nodes, udpConn)
 
 	//n.manager.Init(FuncPutter(printMsg))
 	n.manager.Init(udpPutter)
@@ -271,24 +316,6 @@ func (n *Node) RunForever() {
 			n.manager.Put(pkt)
 		}
 	}()
-
-	//go func() {
-	//	for m from a client:
-	//		switch m.type {
-	//		case 'set':
-	//			go func() {
-	//				v := n.manager.propose(encode(m))
-	//				if v == m {
-	//					reply 'OK'
-	//				} else {
-	//					reply 'fail'
-	//				}
-	//			}()
-	//		case 'get':
-	//			read from store
-	//			return value
-	//		}
-	//}()
 
 	for {
 		n.store.Apply(n.manager.Recv())
