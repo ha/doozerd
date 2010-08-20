@@ -7,11 +7,11 @@ bench: bench.pkg
 	cd cmd && make $*
 
 %.pkg:
-	cd pkg && make $*
 	cd pkg/assert && make $*
 	cd pkg/paxos && make $*
 	cd pkg/proto && make $*
 	cd pkg/shell && make $*
 	cd pkg/store && make $*
 	cd pkg/util && make $*
+	cd pkg && make $*
 
