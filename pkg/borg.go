@@ -55,7 +55,8 @@ import (
 )
 
 const (
-	mFrom = iota
+	mSeqn = iota
+	mFrom
 	mTo
 	mCmd
 	mBody
@@ -92,6 +93,11 @@ func parse(s string) paxos.Msg {
 		panic(s)
 	}
 
+	seqn, err := strconv.Btoui64(parts[mSeqn], 10)
+	if err != nil {
+		panic(s)
+	}
+
 	from, err := strconv.Btoui64(parts[mFrom], 10)
 	if err != nil {
 		panic(s)
@@ -107,7 +113,7 @@ func parse(s string) paxos.Msg {
 		}
 	}
 
-	return paxos.Msg{1, from, to, parts[mCmd], parts[mBody]}
+	return paxos.Msg{seqn, from, to, parts[mCmd], parts[mBody]}
 }
 
 type FuncPutter func (paxos.Msg)
@@ -122,7 +128,7 @@ func printMsg(m paxos.Msg) {
 
 func NewUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
 	put := func(m paxos.Msg) {
-		pkt := fmt.Sprintf("%d:%d:%s:%s", me, m.To, m.Cmd, m.Body)
+		pkt := fmt.Sprintf("%d:%d:%d:%s:%s", m.Seqn, me, m.To, m.Cmd, m.Body)
 		fmt.Printf("send udp packet %q\n", pkt)
 		b := []byte(pkt)
 		var to []net.Addr
