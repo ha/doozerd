@@ -285,8 +285,6 @@ func (n *Node) RunForever() {
 	//}()
 
 	for {
-		seqn, v := n.manager.Recv()
-		fmt.Printf("learned %d %#v\n", seqn, v)
-		//store.Apply(n.manager.Recv())
+		n.store.Apply(n.manager.Recv())
 	}
 }
