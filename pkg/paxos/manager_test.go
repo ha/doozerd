@@ -7,7 +7,7 @@ import (
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1)
+	m := NewManager(1, 1)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -16,7 +16,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1)
+	m := NewManager(1, 1)
 	m.Init(m)
 
 	got := m.Propose(exp)
@@ -27,10 +27,23 @@ func TestProposeAndRecv(t *testing.T) {
 	assert.Equal(t, exp, v, "")
 }
 
+func TestProposeAndRecvAltStart(t *testing.T) {
+	exp := "foo"
+	m := NewManager(2, 1)
+	m.Init(m)
+
+	got := m.Propose(exp)
+	assert.Equal(t, exp, got, "")
+
+	seqn, v := m.Recv()
+	assert.Equal(t, uint64(2), seqn, "")
+	assert.Equal(t, exp, v, "")
+}
+
 func TestProposeAndRecvMultiple(t *testing.T) {
 	exp := []string{"foo", "bar"}
 	seqnexp := []uint64{1, 2}
-	m := NewManager(1)
+	m := NewManager(1, 1)
 	m.Init(m)
 
 	got0 := m.Propose(exp[0])
@@ -50,7 +63,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1)
+	m := NewManager(1, 1)
 	m.Init(m)
 
 	m.Put(Msg{1, 1, 1, "VOTE", "1:" + exp})
@@ -61,7 +74,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m := NewManager(1)
+	m := NewManager(1, 1)
 	m.Init(m)
 
 	m.Put(Msg{1, 1, 1, "VOTE", "1:" + exp})

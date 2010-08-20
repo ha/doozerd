@@ -217,7 +217,7 @@ func (n *Node) RunForever() {
 	go RecvUdp(conn, udpCh)
 	udpPutter := NewUdpPutter(me, n.nodes, conn)
 
-	manager := paxos.NewManager(uint64(len(n.nodes)))
+	manager := paxos.NewManager(1, uint64(len(n.nodes)))
 	//manager.Init(FuncPutter(printMsg))
 	manager.Init(udpPutter)
 
