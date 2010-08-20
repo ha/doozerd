@@ -46,9 +46,7 @@ func NewInstance(id, quorum uint64, logger *log.Logger) *Instance {
 }
 
 func (ins *Instance) Put(m Msg) {
-	ins.logger.Logf("instance got msg %v", m)
 	if m.To == ins.id || m.To == 0 {
-		ins.logger.Logf("delivering message!")
 		ins.cPutter.Put(m)
 		ins.aPutter.Put(m)
 		ins.lPutter.Put(m)

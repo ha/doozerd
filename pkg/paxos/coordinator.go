@@ -48,10 +48,8 @@ Start:
 			if closed(ins) {
 				goto Done
 			}
-			logger.Logf("coord got %v", in)
 			switch in.Cmd {
 			case "RSVP":
-				logger.Logf("coord got rsvp")
 				bodyParts := splitExactly(in.Body, rNumParts)
 				i := dtoui64(bodyParts[rRnd])
 				vrnd := dtoui64(bodyParts[rVrnd])
@@ -71,7 +69,6 @@ Start:
 				}
 
 				rsvps++
-				logger.Logf("now %d rsvps")
 				if rsvps >= quorum {
 					var v string
 

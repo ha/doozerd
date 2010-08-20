@@ -326,7 +326,6 @@ func (n *Node) RunForever() {
 
 	go func() {
 		for pkt := range udpCh {
-			fmt.Printf("got udp packet: %#v\n", pkt)
 			n.manager.Put(pkt)
 		}
 	}()

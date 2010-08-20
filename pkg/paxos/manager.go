@@ -70,7 +70,6 @@ func (m *Manager) getInstance(seqn uint64) *Instance {
 }
 
 func (m *Manager) Put(msg Msg) {
-	m.logger.Logf("manager got msg %v", msg)
 	m.getInstance(msg.Seqn).Put(msg)
 }
 
@@ -82,7 +81,6 @@ func (m *Manager) Propose(v string) string {
 
 func (m *Manager) Recv() (uint64, string) {
 	result := <-m.learned
-	m.logger.Logf("learned %d %q", result.seqn, result.v)
 	return result.seqn, result.v
 }
 
