@@ -60,7 +60,12 @@ func TestProtoDecodeNonEmpty(t *testing.T) {
 	br := bufio.NewReader(b)
 
 	Encode(b, "SET", "foo", "bar")
-	parts, _ := Decode(br)
+	parts, err := Decode(br)
 
+	assert.Equal(t, nil, err, "")
 	assert.Equal(t, []string{"SET", "foo", "bar"}, parts, "")
+
+	parts, err = Decode(br)
+	assert.Equal(t, os.EOF, err, "")
+	assert.Equal(t, []string{}, parts, "")
 }
