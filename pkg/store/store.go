@@ -217,14 +217,24 @@ func decode(mutation string) (op uint, path, v string, err os.Error) {
 	panic("can't happen")
 }
 
+func (w watch) send(ev Event) {
+	w.ch <- ev
+}
+
 func (s *Store) notify(t uint, seqn uint64, k, v string) {
 	for _, w := range s.watches[k] {
 		if w.mask & t != 0 {
-			go func(ch chan Event, ev Event) {
-				ch <- ev
-			}(w.ch, Event{t, seqn, k, v})
+			go w.send(Event{t, seqn, k, v})
 		}
 	}
+}
+
+func (s *Store) notifyDir(t uint, seqn uint64, p string) {
+	dirname, basename := path.Split(p)
+	if dirname != "/" {
+		dirname = dirname[0:len(dirname) - 1] // strip slash
+	}
+	s.notify(t, seqn, dirname, basename)
 }
 
 func append(ws *[]watch, w watch) {
@@ -254,11 +264,7 @@ func (s *Store) process() {
 					values, changed = values.setp(t.k, t.v, t.op == Set)
 					s.logger.Logf("store applied %v", t)
 					for _, p := range changed {
-						dirname, basename := path.Split(p)
-						if dirname != "/" {
-							dirname = dirname[0:len(dirname) - 1] // strip slash
-						}
-						s.notify(conj[t.op], t.seqn, dirname, basename)
+						s.notifyDir(conj[t.op], t.seqn, p)
 					}
 				}
 				s.todo[next] = apply{}, false
