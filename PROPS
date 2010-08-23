@@ -1,0 +1,29 @@
+## Key Space
+
+/b/ -- everything
+  borg/ -- borg stuff
+    cluster/
+      node/
+        a83kkfj821j4l19dj3ydk27xl2719x8y/
+          ip=10.1.2.34 -- 32 byte ID
+          image=ami-2k3h421
+          ...
+  mon/ -- upstart/systemd-type stuff (what can be)
+    run/ -- (what should be)
+      account123@heroku.com/
+        slug/
+          123_d83jf4u_87d8x89/
+            env/ -- user supplied ENV
+              S3_PUBLIC_KEY=kk83j2k01
+              S3_SECRECT_KEY=12312412312312312
+    proc/ -- (what is) - analogous to /proc and/or /sys in linux
+      10.10.10.17/ -- host
+        123/ -- pid
+          run=/b/mon/run/account123@heroku.com/slug/123_d83jf4u_87d8x89/
+          cmd=ruby1.9 worker.rb
+          exe=/usr/bin/ruby1.9
+          cwd=/mnt/slugs/app123@heroku.com
+          env/ -- user + generated ENV
+            PORT=8080
+            S3_PUBLIC_KEY=kk83j2k01
+            S3_SECRECT_KEY=12312412312312312
