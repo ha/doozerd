@@ -288,7 +288,8 @@ func TestDelDirParents(t *testing.T) {
 func TestWatchSet(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/x", Set)
+	ch := make(chan Event)
+	s.Watch("/x", Set, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
 	mut1, _ := EncodeSet("/x", "a")
@@ -307,7 +308,8 @@ func TestWatchSet(t *testing.T) {
 func TestWatchSetOutOfOrder(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/x", Set)
+	ch := make(chan Event)
+	s.Watch("/x", Set, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
 	mut1, _ := EncodeSet("/x", "a")
@@ -326,7 +328,8 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 func TestWatchDel(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/x", Del)
+	ch := make(chan Event)
+	s.Watch("/x", Del, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
 	mut1, _ := EncodeSet("/x", "a")
@@ -349,7 +352,8 @@ func TestWatchDel(t *testing.T) {
 func TestWatchAdd(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/", Add)
+	ch := make(chan Event)
+	s.Watch("/", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
 	mut1, _ := EncodeSet("/x", "a")
@@ -368,7 +372,8 @@ func TestWatchAdd(t *testing.T) {
 func TestWatchAddOutOfOrder(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/", Add)
+	ch := make(chan Event)
+	s.Watch("/", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
 	mut1, _ := EncodeSet("/x", "a")
@@ -387,7 +392,8 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 func TestWatchAddSubdir(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/a", Add)
+	ch := make(chan Event)
+	s.Watch("/a", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/a"]), "")
 
 	mut1, _ := EncodeSet("/a/x", "a")
@@ -406,7 +412,8 @@ func TestWatchAddSubdir(t *testing.T) {
 func TestWatchRem(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/", Rem)
+	ch := make(chan Event)
+	s.Watch("/", Rem, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
 	mut1, _ := EncodeSet("/x", "a")
@@ -431,7 +438,8 @@ func TestWatchRem(t *testing.T) {
 func TestWatchDelDirParents(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/", Rem)
+	ch := make(chan Event)
+	s.Watch("/", Rem, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
 	mut1, _ := EncodeSet("/x/y/z", "a")
@@ -447,7 +455,8 @@ func TestWatchDelDirParents(t *testing.T) {
 func TestWatchSetDirParents(t *testing.T) {
 	s := New(logger)
 
-	ch := s.Watch("/x", Add)
+	ch := make(chan Event)
+	s.Watch("/x", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
 	mut, _ := EncodeSet("/x/y/z", "a")

@@ -295,10 +295,8 @@ func (s *Store) Lookup(path string) (body string, ok bool) {
 
 // `mask` is one or more of `Set`, `Del`, `Add`, and `Rem`, bitwise OR-ed
 // together.
-func (s *Store) Watch(path string, mask uint) (events chan Event) {
-	ch := make(chan Event)
+func (s *Store) Watch(path string, mask uint, events chan Event) {
 	ready := make(chan int)
-	s.watchCh <- watch{ch, mask, path, ready}
+	s.watchCh <- watch{events, mask, path, ready}
 	<-ready
-	return ch
 }

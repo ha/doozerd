@@ -62,8 +62,8 @@ func main() {
 	s := store.New(logger)
 	b := borg.New(*id, *listenAddr, s, logger)
 
-	//adds := make(chan store.Event)
-	adds := s.Watch("/service", store.Add)
+	adds := make(chan store.Event)
+	s.Watch("/service", store.Add, adds)
 	go func() {
 		for ev := range adds {
 			path := ev.Path + "/" + ev.Body
