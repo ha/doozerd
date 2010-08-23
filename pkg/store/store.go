@@ -69,6 +69,9 @@ type watch struct {
 	ready chan int
 }
 
+// Creates a new, empty data store. Mutations will be applied in order,
+// starting at number 1 (number 0 can be thought of as the creation of the
+// store).
 func New(logger *log.Logger) *Store {
 	s := &Store{
 		applyCh: make(chan apply),
@@ -282,6 +285,9 @@ func (s *Store) process() {
 	}
 }
 
+// Applies `mutation` in sequence at position `seqn`. A malformed mutation is
+// treated as a no-op. If a mutation has already been applied at this position,
+// this one is sliently ignored.
 func (s *Store) Apply(seqn uint64, mutation string) {
 	op, path, v, err := decode(mutation)
 	if err != nil {
@@ -291,7 +297,8 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 	}
 }
 
-// For a missing path, `ok == false`. Otherwise, it is `true`.
+// Gets the value stored at `path`, if any. If no value is stored at `path`,
+// `ok` is false.
 func (s *Store) Lookup(path string) (body string, ok bool) {
 	ch := make(chan reply)
 	s.reqCh <- req{path, ch}
@@ -299,8 +306,9 @@ func (s *Store) Lookup(path string) (body string, ok bool) {
 	return rep.v, rep.ok
 }
 
-// `mask` is one or more of `Set`, `Del`, `Add`, and `Rem`, bitwise OR-ed
-// together.
+// Subscribes `events` to receive notifications when mutations are applied to
+// the store. Set `mask` to one or more of `Set`, `Del`, `Add`, and `Rem`,
+// bitwise OR-ed together.
 func (s *Store) Watch(path string, mask uint, events chan Event) {
 	ready := make(chan int)
 	s.watchCh <- watch{events, mask, path, ready}
