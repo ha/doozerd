@@ -80,24 +80,6 @@ func TestCoordStartAlt(t *testing.T) {
 	close(tCh)
 }
 
-func TestCoordIdOutOfRange(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
-
-	nNodes := uint64(10) // this is arbitrary
-	assert.Panic(t, IdOutOfRange, func() {
-		coordinator(11, 6, nNodes, tCh, ins, outs, clock, logger)
-		tCh <- "foo"
-	})
-
-	close(ins)
-	close(outs)
-	close(clock)
-	close(tCh)
-}
-
 func TestCoordTargetNomination(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
