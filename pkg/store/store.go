@@ -283,20 +283,6 @@ func (s *Store) process() {
 			if a.seqn >= next {
 				s.todo[a.seqn] = a
 			}
-			for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
-				if t.op != Nop {
-					var changed []string
-					s.notify(t.op, t.seqn, t.k, t.v)
-					values, changed = values.setp(t.k, t.v, t.op == Set)
-					s.logger.Logf("store applied %v", t)
-					for _, p := range changed {
-						s.notifyDir(conj[t.op], t.seqn, p)
-					}
-				}
-				ver = next
-				s.todo[next] = apply{}, false
-				next++
-			}
 		case r := <-s.reqCh:
 			heap.Push(s.todoLookup, r)
 		case w := <-s.watchCh:
@@ -304,6 +290,21 @@ func (s *Store) process() {
 			append(&watches, w)
 			s.watches[w.k] = watches
 			w.ready <- 1
+		}
+
+		for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
+			if t.op != Nop {
+				var changed []string
+				s.notify(t.op, t.seqn, t.k, t.v)
+				values, changed = values.setp(t.k, t.v, t.op == Set)
+				s.logger.Logf("store applied %v", t)
+				for _, p := range changed {
+					s.notifyDir(conj[t.op], t.seqn, p)
+				}
+			}
+			ver = next
+			s.todo[next] = apply{}, false
+			next++
 		}
 
 		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
