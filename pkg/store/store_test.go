@@ -171,6 +171,26 @@ func TestApplyInOrder(t *testing.T) {
 	assert.Equal(t, "b", v, "")
 }
 
+func TestLookupSync(t *testing.T) {
+	chv := make(chan string)
+	chok := make(chan bool)
+	s := New(logger)
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	go func() {
+		v, ok := s.LookupSync("/x", 5)
+		chv <- v
+		chok <- ok
+	}()
+	s.Apply(1, mut1)
+	s.Apply(2, mut1)
+	s.Apply(3, mut1)
+	s.Apply(4, mut1)
+	s.Apply(5, mut2)
+	assert.Equal(t, "b", <-chv, "")
+	assert.Equal(t, true, <-chok, "")
+}
+
 func TestApplyBadThenGood(t *testing.T) {
 	s := New(logger)
 	mut1 := "foo" // bad mutation

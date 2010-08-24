@@ -1,7 +1,10 @@
 package store
 
 import (
+	"container/heap"
+	"container/vector"
 	"log"
+	"math"
 	"os"
 	"path"
 	"strings"
@@ -42,6 +45,7 @@ type Store struct {
 	watchCh chan watch
 	watches map[string][]watch
 	todo map[uint64]apply
+	todoLookup *reqQueue
 	logger *log.Logger
 }
 
@@ -54,7 +58,12 @@ type apply struct {
 
 type req struct {
 	k string
+	seqn uint64
 	ch chan reply
+}
+
+type reqQueue struct {
+	vector.Vector
 }
 
 type reply struct {
@@ -69,6 +78,17 @@ type watch struct {
 	ready chan int
 }
 
+func (r req) Less(y interface{}) bool {
+	return r.seqn < y.(req).seqn
+}
+
+func (q *reqQueue) peek() req {
+	if len(q.Vector) == 0 {
+		return req{seqn:math.MaxUint64} // ~infinity
+	}
+	return q.Vector[0].(req)
+}
+
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
@@ -78,9 +98,11 @@ func New(logger *log.Logger) *Store {
 		reqCh: make(chan req),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
+		todoLookup: new(reqQueue),
 		watches: make(map[string][]watch),
 		logger: logger,
 	}
+	heap.Init(s.todoLookup)
 	go s.process()
 	return s
 }
@@ -252,6 +274,7 @@ func append(ws *[]watch, w watch) {
 }
 
 func (s *Store) process() {
+	ver := uint64(0)
 	next := uint64(1)
 	values := emptyNode
 	for {
@@ -270,18 +293,25 @@ func (s *Store) process() {
 						s.notifyDir(conj[t.op], t.seqn, p)
 					}
 				}
+				ver = next
 				s.todo[next] = apply{}, false
 				next++
 			}
 		case r := <-s.reqCh:
-			v, ok := values.getp(r.k)
-			r.ch <- reply{v, ok}
+			heap.Push(s.todoLookup, r)
 		case w := <-s.watchCh:
 			watches := s.watches[w.k]
 			append(&watches, w)
 			s.watches[w.k] = watches
 			w.ready <- 1
 		}
+
+		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
+			r := heap.Pop(s.todoLookup).(req)
+			v, ok := values.getp(r.k)
+			r.ch <- reply{v, ok}
+		}
+
 	}
 }
 
@@ -300,8 +330,14 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
 // `ok` is false.
 func (s *Store) Lookup(path string) (body string, ok bool) {
+	return s.LookupSync(path, 0)
+}
+
+// Like `Lookup`, but waits until after mutation number `seqn` has been
+// applied before doing the lookup.
+func (s *Store) LookupSync(path string, seqn uint64) (body string, ok bool) {
 	ch := make(chan reply)
-	s.reqCh <- req{path, ch}
+	s.reqCh <- req{path, seqn, ch}
 	rep := <-ch
 	return rep.v, rep.ok
 }
