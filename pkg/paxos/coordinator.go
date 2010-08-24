@@ -19,14 +19,20 @@ var (
 
 // TODO maybe we can make a better name for this. Not sure.
 type Cluster interface {
+	Putter
 	Len() int
 	Quorum() int
 }
 
 // TODO this is temporary during refactoring. we should remove it when we can.
 type FakeCluster struct {
+	outs Putter
 	length uint64
 	quorum uint64
+}
+
+func (f FakeCluster) Put(m Msg) {
+	f.outs.Put(m)
 }
 
 func (f FakeCluster) Len() int {
@@ -48,9 +54,8 @@ type C struct {
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	c := NewC(FakeCluster{modulus, quorum})
+	c := NewC(FakeCluster{outs, modulus, quorum})
 	c.ins = ins
-	c.outs = outs
 	c.clock = clock
 
 	target := <-tCh
@@ -65,6 +70,7 @@ func NewC(c Cluster) *C {
 	return &C{
 		quorum: uint64(c.Quorum()),
 		modulus: uint64(c.Len()),
+		outs: c,
 	}
 }
 
