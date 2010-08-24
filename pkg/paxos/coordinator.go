@@ -26,7 +26,6 @@ type C struct {
 	ins chan Msg
 	outs Putter
 	clock chan int
-	logger *log.Logger
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
@@ -37,7 +36,6 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 	c.ins = ins
 	c.outs = outs
 	c.clock = clock
-	c.logger = logger
 
 	target := <-tCh
 	if target == "" && closed(tCh) {
