@@ -32,9 +32,9 @@ type Instance struct {
 	logger *log.Logger
 }
 
-func NewInstance(id, nNodes uint64, logger *log.Logger) *Instance {
+func NewInstance(outs Putter, id, nNodes uint64, logger *log.Logger) *Instance {
 	cIns, aIns, lIns := make(chan Msg), make(chan Msg), make(chan Msg)
-	return &Instance{
+	ins := &Instance{
 		id: id,
 		nNodes: nNodes,
 		quorum: nNodes/2 + 1,
@@ -48,6 +48,15 @@ func NewInstance(id, nNodes uint64, logger *log.Logger) *Instance {
 		lPutter: ChanPutter(lIns),
 		logger: logger,
 	}
+
+	go coordinator(ins.id, UNUSED, ins.nNodes, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
+	go acceptor(ins.aIns, outs)
+	go func() {
+		ins.v = learner(ins.quorum, ins.lIns)
+		close(ins.done)
+	}()
+
+	return ins
 }
 
 func (ins *Instance) Put(m Msg) {
@@ -61,15 +70,6 @@ func (ins *Instance) Put(m Msg) {
 func (ins *Instance) Value() string {
 	<-ins.done
 	return ins.v
-}
-
-func (ins *Instance) Init(outs Putter) {
-	go coordinator(ins.id, UNUSED, ins.nNodes, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
-	go acceptor(ins.aIns, outs)
-	go func() {
-		ins.v = learner(ins.quorum, ins.lIns)
-		close(ins.done)
-	}()
 }
 
 func (ins *Instance) Close() {

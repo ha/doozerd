@@ -2,22 +2,36 @@ package paxos
 
 import (
 	"borg/assert"
+	"log"
 	"testing"
 )
 
 // Testing
 
+type FakePutter []Putter
+
+func (fp FakePutter) Put(m Msg) {
+	for _, p := range fp {
+		p.Put(m)
+	}
+}
+
+func selfRefNewInstance(id, nNodes uint64, logger *log.Logger) *Instance {
+	p := make([]Putter, 1)
+	ins := NewInstance(FakePutter(p), id, nNodes, logger)
+	p[0] = ins
+	return ins
+}
+
 func TestStartAtLearn(t *testing.T) {
-	ins := NewInstance(1, 1, logger)
-	ins.Init(ins)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestStartAtLearnWithDuplicates(t *testing.T) {
-	ins := NewInstance(1, 1, logger)
-	ins.Init(ins)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("1:*:VOTE:1:foo"))
@@ -26,8 +40,7 @@ func TestStartAtLearnWithDuplicates(t *testing.T) {
 }
 
 func TestLearnWithQuorumOf2(t *testing.T) {
-	ins := NewInstance(1, 3, logger)
-	ins.Init(ins)
+	ins := selfRefNewInstance(1, 3, logger)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("2:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -35,8 +48,7 @@ func TestLearnWithQuorumOf2(t *testing.T) {
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
-	ins := NewInstance(1, 1, logger)
-	ins.Init(ins)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -44,8 +56,7 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	ins := NewInstance(1, 1, logger)
-	ins.Init(ins)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
 	ins.Put(m("1:*:NOMINATE:1:foo"))
@@ -54,8 +65,7 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	ins := NewInstance(1, 1, logger)
-	ins.Init(ins)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
@@ -69,7 +79,7 @@ func (f FuncPutter) Put(m Msg) {
 
 func TestAllowsDirectlyAddressedMessages(t *testing.T) {
 	nMessages := 0
-	ins := NewInstance(1, 1, logger)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.cPutter = FuncPutter(func(m Msg) {
 		nMessages++
 	})
@@ -80,7 +90,6 @@ func TestAllowsDirectlyAddressedMessages(t *testing.T) {
 		nMessages++
 	})
 
-	ins.Init(ins)
 	ins.Put(m("1:1:VOTE:1:foo"))
 	assert.Equal(t, 3, nMessages, "")
 	ins.Close()
@@ -88,7 +97,7 @@ func TestAllowsDirectlyAddressedMessages(t *testing.T) {
 
 func TestAllowsBroadcastMessages(t *testing.T) {
 	nMessages := 0
-	ins := NewInstance(1, 1, logger)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.cPutter = FuncPutter(func(m Msg) {
 		nMessages++
 	})
@@ -99,14 +108,13 @@ func TestAllowsBroadcastMessages(t *testing.T) {
 		nMessages++
 	})
 
-	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	assert.Equal(t, 3, nMessages, "")
 	ins.Close()
 }
 
 func TestIgnoresUnwantedMessages(t *testing.T) {
-	ins := NewInstance(1, 1, logger)
+	ins := selfRefNewInstance(1, 1, logger)
 	ins.cPutter = FuncPutter(func(m Msg) {
 		t.Fatalf("instance should ignore message %#v", m)
 	})
@@ -117,27 +125,18 @@ func TestIgnoresUnwantedMessages(t *testing.T) {
 		t.Fatalf("instance should ignore message %#v", m)
 	})
 
-	ins.Init(ins)
 	ins.Put(m("2:2:VOTE:1:foo"))
 	ins.Close()
 }
 
-type FakePutter []Putter
-
-func (fp FakePutter) Put(m Msg) {
-	for _, p := range fp {
-		p.Put(m)
-	}
-}
-
 func TestMultipleInstances(t *testing.T) {
-	insA := NewInstance(1, 3, logger)
-	insB := NewInstance(2, 3, logger)
-	insC := NewInstance(3, 3, logger)
-	ps := []Putter{insA, insB, insC}
-	insA.Init(PutWrapper{1, 1, FakePutter(ps)})
-	insB.Init(PutWrapper{1, 2, FakePutter(ps)})
-	insC.Init(PutWrapper{1, 3, FakePutter(ps)})
+	ps := make([]Putter, 3)
+	insA := NewInstance(PutWrapper{1, 1, FakePutter(ps)}, 1, 3, logger)
+	insB := NewInstance(PutWrapper{1, 2, FakePutter(ps)}, 2, 3, logger)
+	insC := NewInstance(PutWrapper{1, 3, FakePutter(ps)}, 3, 3, logger)
+	ps[0] = insA
+	ps[1] = insB
+	ps[2] = insC
 
 	insA.Propose("bar")
 	assert.Equal(t, "bar", insA.Value(), "")

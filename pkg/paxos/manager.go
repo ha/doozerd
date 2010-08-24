@@ -43,8 +43,7 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
-				inst = NewInstance(m.me, m.nodes, m.logger)
-				inst.Init(PutWrapper{req.seqn, 1, outs})
+				inst = NewInstance(PutWrapper{req.seqn, 1, outs}, m.me, m.nodes, m.logger)
 				instances[req.seqn] = inst
 				go func() {
 					m.learned <- Result{req.seqn, inst.Value()}
