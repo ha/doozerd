@@ -10,8 +10,6 @@ const UNUSED = 0
 type Instance struct {
 	cx Cluster
 
-	quorum uint64
-
 	vin  chan string
 	v    string
 	done chan int
@@ -36,7 +34,6 @@ func NewInstance(cx Cluster, nNodes uint64, logger *log.Logger) *Instance {
 	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &Instance{
 		cx: cx,
-		quorum: nNodes/2 + 1,
 		vin: make(chan string),
 		done: make(chan int),
 		aIns:  aIns,
@@ -49,7 +46,7 @@ func NewInstance(cx Cluster, nNodes uint64, logger *log.Logger) *Instance {
 
 	go acceptor(ins.aIns, cx)
 	go func() {
-		ins.v = learner(ins.quorum, ins.lIns)
+		ins.v = learner(uint64(cx.Quorum()), ins.lIns)
 		close(ins.done)
 	}()
 
