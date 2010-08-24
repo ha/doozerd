@@ -23,7 +23,6 @@ type C struct {
 	quorum uint64
 	modulus uint64
 
-	tCh chan string
 	ins chan Msg
 	outs Putter
 	clock chan int
@@ -35,7 +34,6 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 	c.crnd = crnd
 	c.quorum = quorum
 	c.modulus = modulus
-	c.tCh = tCh
 	c.ins = ins
 	c.outs = outs
 	c.clock = clock
