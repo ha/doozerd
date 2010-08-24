@@ -36,12 +36,10 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	c.Put(m("5:1:RSVP:1:0:"))
 	c.Put(m("6:1:RSVP:1:0:"))
 
-	close(c.ins)
+	c.Close()
 	assert.Equal(t, 1, <-done, "")
 
-	close(c.ins)
 	close(outs)
-	close(c.clock)
 }
 
 func TestCoordCloseIns(t *testing.T) {
