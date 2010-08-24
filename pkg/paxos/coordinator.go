@@ -31,8 +31,20 @@ type C struct {
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	c := &C{crnd, quorum, modulus, tCh, ins, outs, clock, logger}
+	c := NewC()
+	c.crnd = crnd
+	c.quorum = quorum
+	c.modulus = modulus
+	c.tCh = tCh
+	c.ins = ins
+	c.outs = outs
+	c.clock = clock
+	c.logger = logger
 	c.process()
+}
+
+func NewC() *C {
+	return &C{}
 }
 
 func (c *C) process() {
