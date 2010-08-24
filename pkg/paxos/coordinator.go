@@ -63,7 +63,8 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 		return
 	}
 
-	c.process(target, crnd)
+	// TODO this ugly cast will go away when we fix Msg
+	c.process(target, int(crnd))
 }
 
 func NewC(c Cluster) *C {
@@ -74,8 +75,8 @@ func NewC(c Cluster) *C {
 	}
 }
 
-func (c *C) process(target string, crnd uint64) {
-	//if crnd > c.modulus {
+func (c *C) process(target string, crnd int) {
+	//if crnd > c.cluster.Len() {
 	//	panic(IdOutOfRange)
 	//}
 
@@ -103,7 +104,10 @@ Start:
 			switch in.Cmd {
 			case "RSVP":
 				bodyParts := splitExactly(in.Body, rNumParts)
-				i := dtoui64(bodyParts[rRnd])
+
+				// TODO this ugly cast will go away when we fix Msg
+				i := int(dtoui64(bodyParts[rRnd]))
+
 				vrnd := dtoui64(bodyParts[rVrnd])
 				vval := bodyParts[rVval]
 
@@ -140,7 +144,7 @@ Start:
 				}
 			}
 		case <-c.clock:
-			crnd += c.modulus
+			crnd += c.cluster.Len()
 			goto Start
 		}
 	}
