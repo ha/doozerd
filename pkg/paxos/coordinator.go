@@ -48,7 +48,6 @@ type C struct {
 	cluster Cluster
 
 	ins chan Msg
-	outs Putter
 	clock chan int
 }
 
@@ -69,7 +68,6 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 func NewC(c Cluster) *C {
 	return &C{
 		cluster: c,
-		outs: c,
 	}
 }
 
