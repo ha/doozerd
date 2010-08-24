@@ -18,8 +18,7 @@ type Instance struct {
 
 
 	// Coordinator
-	cIns chan Msg
-	cPutter Putter
+	cPutter PutCloseProcessor
 
 	// Acceptor
 	aIns chan Msg
@@ -32,24 +31,25 @@ type Instance struct {
 	logger *log.Logger
 }
 
+// TODO this should take a Cluster as a param
 func NewInstance(outs Putter, id, nNodes uint64, logger *log.Logger) *Instance {
-	cIns, aIns, lIns := make(chan Msg), make(chan Msg), make(chan Msg)
+	// TODO this ugly cast will go away when we take a Cluster param
+	c := NewC(fakeCluster{outs, nNodes, int(id)})
+	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &Instance{
 		id: id,
 		nNodes: nNodes,
 		quorum: nNodes/2 + 1,
 		vin: make(chan string),
 		done: make(chan int),
-		cIns:  cIns,
 		aIns:  aIns,
 		lIns:  lIns,
-		cPutter: ChanPutter(cIns),
+		cPutter: c,
 		aPutter: ChanPutter(aIns),
 		lPutter: ChanPutter(lIns),
 		logger: logger,
 	}
 
-	go coordinator(ins.id, UNUSED, ins.nNodes, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
 	go acceptor(ins.aIns, outs)
 	go func() {
 		ins.v = learner(ins.quorum, ins.lIns)
@@ -73,13 +73,15 @@ func (ins *Instance) Value() string {
 }
 
 func (ins *Instance) Close() {
-	close(ins.cIns)
+	ins.cPutter.Close()
 	close(ins.aIns)
 	close(ins.lIns)
 }
 
 func (ins *Instance) Propose(v string) {
-	ins.vin <- v
+	// TODO make propose into a message type. This becomes:
+	//   ins.cPutter.Put(...)
+	go ins.cPutter.process(v)
 }
 
 

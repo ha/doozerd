@@ -4,6 +4,16 @@ type Putter interface {
 	Put(m Msg)
 }
 
+type PutCloser interface {
+	Putter
+	Close()
+}
+
+type PutCloseProcessor interface {
+	PutCloser
+	process(string)
+}
+
 type ChanPutter chan Msg
 
 func (cp ChanPutter) Put(m Msg) {

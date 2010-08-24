@@ -77,6 +77,12 @@ func (f FuncPutter) Put(m Msg) {
 	f(m)
 }
 
+func (f FuncPutter) Close() {
+}
+
+func (f FuncPutter) process(string) {
+}
+
 func TestAllowsDirectlyAddressedMessages(t *testing.T) {
 	nMessages := 0
 	ins := selfRefNewInstance(1, 1, logger)
