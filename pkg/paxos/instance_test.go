@@ -19,7 +19,7 @@ func (fp FakePutter) Put(m Msg) {
 func selfRefNewInstance(id, nNodes uint64, logger *log.Logger) *Instance {
 	p := make([]Putter, 1)
 	cx := fakeCluster{FakePutter(p), nNodes, int(id)}
-	ins := NewInstance(cx, nNodes, logger)
+	ins := NewInstance(cx, logger)
 	p[0] = ins
 	return ins
 }
@@ -141,9 +141,9 @@ func TestMultipleInstances(t *testing.T) {
 	cxA := fakeCluster{PutWrapper{1, 1, FakePutter(ps)}, 3, 1}
 	cxB := fakeCluster{PutWrapper{1, 2, FakePutter(ps)}, 3, 2}
 	cxC := fakeCluster{PutWrapper{1, 3, FakePutter(ps)}, 3, 3}
-	insA := NewInstance(cxA, 3, logger)
-	insB := NewInstance(cxB, 3, logger)
-	insC := NewInstance(cxC, 3, logger)
+	insA := NewInstance(cxA, logger)
+	insB := NewInstance(cxB, logger)
+	insC := NewInstance(cxC, logger)
 	ps[0] = insA
 	ps[1] = insB
 	ps[2] = insC

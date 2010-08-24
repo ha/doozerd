@@ -29,7 +29,7 @@ type Instance struct {
 	logger *log.Logger
 }
 
-func NewInstance(cx Cluster, nNodes uint64, logger *log.Logger) *Instance {
+func NewInstance(cx Cluster, logger *log.Logger) *Instance {
 	c := NewC(cx)
 	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &Instance{

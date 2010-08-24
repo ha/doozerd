@@ -46,7 +46,7 @@ func (m *Manager) Init(outs Putter) {
 				// TODO this ugly cast will go away when we make a proper
 				// cluster type
 				cluster := fakeCluster{PutWrapper{req.seqn, 1, outs}, m.nodes, int(m.me)}
-				inst = NewInstance(cluster, m.nodes, m.logger)
+				inst = NewInstance(cluster, m.logger)
 				instances[req.seqn] = inst
 				go func() {
 					m.learned <- Result{req.seqn, inst.Value()}
