@@ -73,6 +73,12 @@ func NewC(c Cluster) *C {
 	}
 }
 
+
+func (c *C) Close() {
+	close(c.ins)
+	close(c.clock)
+}
+
 func (c *C) process(target string, crnd int) {
 	//if crnd > c.cluster.Len() {
 	//	panic(IdOutOfRange)
