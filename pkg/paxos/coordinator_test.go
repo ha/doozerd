@@ -101,43 +101,32 @@ func TestCoordCloseClock(t *testing.T) {
 }
 
 func TestCoordStart(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
 
-	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
-	tCh <- "foo"
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes})
+	go c.process("foo", 1)
 
 	assert.Equal(t, m("1:*:INVITE:1"), <-outs, "")
 
-	close(ins)
+	c.Close()
 	close(outs)
-	close(clock)
-	close(tCh)
 }
 
 // This is here mainly for triangulation.  It ensures we're not
 // hardcoding crnd.
 func TestCoordStartAlt(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
 
-	go coordinator(2, UNUSED, nNodes, tCh, ins, PutWrapper{1, 2, outs}, clock, logger)
-	tCh <- "foo"
+	c := NewC(fakeCluster{PutWrapper{1, 2, outs}, nNodes})
+	go c.process("foo", 2)
 
 	assert.Equal(t, m("2:*:INVITE:2"), <-outs, "")
 
-	close(ins)
 	close(outs)
-	close(clock)
-	close(tCh)
 }
 
 func TestCoordTargetNomination(t *testing.T) {
