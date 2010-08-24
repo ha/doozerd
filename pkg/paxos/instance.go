@@ -10,7 +10,6 @@ const UNUSED = 0
 type Instance struct {
 	cx Cluster
 
-	nNodes uint64
 	quorum uint64
 
 	vin  chan string
@@ -37,7 +36,6 @@ func NewInstance(cx Cluster, nNodes uint64, logger *log.Logger) *Instance {
 	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &Instance{
 		cx: cx,
-		nNodes: nNodes,
 		quorum: nNodes/2 + 1,
 		vin: make(chan string),
 		done: make(chan int),
