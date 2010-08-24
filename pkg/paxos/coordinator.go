@@ -73,6 +73,11 @@ func NewC(c Cluster) *C {
 	}
 }
 
+func (c *C) Put(m Msg) {
+	go func() {
+		c.ins <- m
+	}()
+}
 
 func (c *C) Close() {
 	close(c.ins)

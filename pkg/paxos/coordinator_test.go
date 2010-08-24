@@ -5,6 +5,14 @@ import (
 	"testing"
 )
 
+func TestCoordPut(t *testing.T) {
+	c := NewC(FakeCluster{nil, 0})
+	c.ins = make(chan Msg)
+	msg := m("1:1:RSVP:1:0")
+	c.Put(msg)
+	assert.Equal(t, msg, <-c.ins, "")
+}
+
 func TestCoordIgnoreOldMessages(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 	done := make(chan int)
