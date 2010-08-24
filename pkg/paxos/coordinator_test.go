@@ -6,7 +6,7 @@ import (
 )
 
 func TestCoordPut(t *testing.T) {
-	c := NewC(FakeCluster{nil, 0})
+	c := NewC(fakeCluster{nil, 0})
 	c.ins = make(chan Msg)
 	msg := m("1:1:RSVP:1:0")
 	c.Put(msg)
@@ -18,7 +18,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	done := make(chan int)
 
 	nNodes := uint64(10)
-	c := NewC(FakeCluster{outs, nNodes})
+	c := NewC(fakeCluster{outs, nNodes})
 	go func() {
 		c.process("foo", 1)
 		done <- 1
@@ -47,7 +47,7 @@ func TestCoordCloseIns(t *testing.T) {
 	done := make(chan int)
 
 	nNodes := uint64(10)
-	c := NewC(FakeCluster{outs, nNodes})
+	c := NewC(fakeCluster{outs, nNodes})
 	go func() {
 		c.process("foo", 1)
 		done <- 1
@@ -76,7 +76,7 @@ func TestCoordCloseClock(t *testing.T) {
 	done := make(chan int)
 
 	nNodes := uint64(10)
-	c := NewC(FakeCluster{outs, nNodes})
+	c := NewC(fakeCluster{outs, nNodes})
 	go func() {
 		c.process("foo", 1)
 		done <- 1

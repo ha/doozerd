@@ -26,20 +26,20 @@ type Cluster interface {
 
 // TODO this is temporarily here during refactoring. it should be moved to
 // testing-only code when possible.
-type FakeCluster struct {
+type fakeCluster struct {
 	outs Putter
 	length uint64
 }
 
-func (f FakeCluster) Put(m Msg) {
+func (f fakeCluster) Put(m Msg) {
 	f.outs.Put(m)
 }
 
-func (f FakeCluster) Len() int {
+func (f fakeCluster) Len() int {
 	return int(f.length)
 }
 
-func (f FakeCluster) Quorum() int {
+func (f fakeCluster) Quorum() int {
 	return f.Len()/2 + 1
 }
 
@@ -52,7 +52,7 @@ type C struct {
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	c := NewC(FakeCluster{outs, modulus})
+	c := NewC(fakeCluster{outs, modulus})
 	c.ins = ins
 	c.clock = clock
 
