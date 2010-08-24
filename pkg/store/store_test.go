@@ -61,18 +61,14 @@ func TestSplit(t *testing.T) {
 func TestCheckBadPaths(t *testing.T) {
 	for _, k := range BadPaths {
 		err := checkPath(k)
-		if err != BadPathError {
-			t.Errorf("expected BadPathError on %q", k)
-		}
+		assert.Equal(t, BadPathError, err, "")
 	}
 }
 
 func TestCheckGoodPaths(t *testing.T) {
 	for _, k := range GoodPaths {
 		err := checkPath(k)
-		if err != nil {
-			t.Errorf("unexpected error on %q: %v", k, err)
-		}
+		assert.Equal(t, nil, err, k)
 	}
 }
 
@@ -80,9 +76,7 @@ func TestEncodeSet(t *testing.T) {
 	for _, kvm := range SetKVMs {
 		k, v, exp := kvm[0], kvm[1], kvm[2]
 		got, err := EncodeSet(k, v)
-		if err != nil {
-			t.Error("unexpected error:", err)
-		}
+		assert.Equal(t, nil, err, "")
 		assert.Equal(t, exp, got, "")
 	}
 }
@@ -91,9 +85,7 @@ func TestEncodeDel(t *testing.T) {
 	for _, kvm := range DelKVMs {
 		k, exp := kvm[0], kvm[1]
 		got, err := EncodeDel(k)
-		if err != nil {
-			t.Error("unexpected error:", err)
-		}
+		assert.Equal(t, nil, err, "")
 		assert.Equal(t, exp, got, "")
 	}
 }
@@ -102,9 +94,7 @@ func TestDecodeSet(t *testing.T) {
 	for _, kvm := range SetKVMs {
 		expk, expv, m := kvm[0], kvm[1], kvm[2]
 		op, gotk, gotv, err := decode(m)
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Equal(t, nil, err, "")
 		assert.Equal(t, Set, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, expv, gotv, "value from " + m)
@@ -115,9 +105,7 @@ func TestDecodeDel(t *testing.T) {
 	for _, kvm := range DelKVMs {
 		expk, m := kvm[0], kvm[1]
 		op, gotk, gotv, err := decode(m)
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Equal(t, nil, err, "")
 		assert.Equal(t, Del, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, "", gotv, "value from " + m)
@@ -127,9 +115,7 @@ func TestDecodeDel(t *testing.T) {
 func TestDecodeBadMutations(t *testing.T) {
 	for _, m := range BadMutations {
 		_, _, _, err := decode(m)
-		if err != BadPathError {
-			t.Errorf("expected BadPathError on %q", m)
-		}
+		assert.Equal(t, BadPathError, err, "")
 	}
 }
 
