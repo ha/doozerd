@@ -278,6 +278,7 @@ func (s *Store) process() {
 	next := uint64(1)
 	values := emptyNode
 	for {
+		// Take any incoming requests and queue them up.
 		select {
 		case a := <-s.applyCh:
 			if a.seqn >= next {
@@ -292,6 +293,7 @@ func (s *Store) process() {
 			w.ready <- 1
 		}
 
+		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 			if t.op != Nop {
 				var changed []string
@@ -307,6 +309,7 @@ func (s *Store) process() {
 			next++
 		}
 
+		// If we have any lookups that can be satisfied, do them.
 		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
 			r := heap.Pop(s.todoLookup).(req)
 			v, ok := values.getp(r.k)
