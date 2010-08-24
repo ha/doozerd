@@ -17,17 +17,6 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-// TODO maybe we can make a better name for this. Not sure.
-//
-// SelfIndex is the position of the local node in the alphabetized list of all
-// nodes in the cluster.
-type Cluster interface {
-	Putter
-	Len() int
-	Quorum() int
-	SelfIndex() int
-}
-
 // TODO this is temporarily here during refactoring. it should be moved to
 // testing-only code when possible.
 type fakeCluster struct {
