@@ -2,7 +2,6 @@ package paxos
 
 import (
 	"fmt"
-	"log"
 	"os"
 )
 
@@ -47,20 +46,6 @@ type C struct {
 
 	ins chan Msg
 	clock chan int
-}
-
-func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	// TODO this ugly cast will go away when we fix Msg
-	c := NewC(fakeCluster{outs, modulus, int(crnd)})
-	c.ins = ins
-	c.clock = clock
-
-	target := <-tCh
-	if target == "" && closed(tCh) {
-		return
-	}
-
-	c.process(target)
 }
 
 func NewC(c Cluster) *C {
