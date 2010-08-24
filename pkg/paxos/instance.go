@@ -6,6 +6,7 @@ import (
 
 type Instance struct {
 	id     uint64
+	nNodes uint64
 	quorum uint64
 
 	vin  chan string
@@ -28,11 +29,12 @@ type Instance struct {
 	logger *log.Logger
 }
 
-func NewInstance(id, quorum uint64, logger *log.Logger) *Instance {
+func NewInstance(id, nNodes uint64, logger *log.Logger) *Instance {
 	cIns, aIns, lIns := make(chan Msg), make(chan Msg), make(chan Msg)
 	return &Instance{
 		id: id,
-		quorum: quorum,
+		nNodes: nNodes,
+		quorum: nNodes/2 + 1,
 		vin: make(chan string),
 		done: make(chan int),
 		cIns:  cIns,
@@ -59,7 +61,7 @@ func (ins *Instance) Value() string {
 }
 
 func (ins *Instance) Init(outs Putter) {
-	go coordinator(ins.id, ins.quorum, 3, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
+	go coordinator(ins.id, ins.quorum, ins.nNodes, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
 	go acceptor(ins.aIns, outs)
 	go func() {
 		ins.v = learner(ins.quorum, ins.lIns)

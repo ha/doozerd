@@ -43,8 +43,7 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
-				quorum := m.nodes/2 + 1
-				inst = NewInstance(m.me, quorum, m.logger)
+				inst = NewInstance(m.me, m.nodes, m.logger)
 				inst.Init(PutWrapper{req.seqn, 1, outs})
 				instances[req.seqn] = inst
 				go func() {

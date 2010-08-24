@@ -41,7 +41,7 @@ func (f FakeCluster) Len() int {
 }
 
 func (f FakeCluster) Quorum() int {
-	return int(f.quorum)
+	return f.Len()/2 + 1
 }
 
 // TODO temporary name

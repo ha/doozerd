@@ -26,7 +26,7 @@ func TestStartAtLearnWithDuplicates(t *testing.T) {
 }
 
 func TestLearnWithQuorumOf2(t *testing.T) {
-	ins := NewInstance(1, 2, logger)
+	ins := NewInstance(1, 3, logger)
 	ins.Init(ins)
 	ins.Put(m("1:*:VOTE:1:foo"))
 	ins.Put(m("2:*:VOTE:1:foo"))
@@ -131,9 +131,9 @@ func (fp FakePutter) Put(m Msg) {
 }
 
 func TestMultipleInstances(t *testing.T) {
-	insA := NewInstance(1, 2, logger)
-	insB := NewInstance(2, 2, logger)
-	insC := NewInstance(3, 2, logger)
+	insA := NewInstance(1, 3, logger)
+	insB := NewInstance(2, 3, logger)
+	insC := NewInstance(3, 3, logger)
 	ps := []Putter{insA, insB, insC}
 	insA.Init(PutWrapper{1, 1, FakePutter(ps)})
 	insB.Init(PutWrapper{1, 2, FakePutter(ps)})
