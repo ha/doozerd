@@ -87,7 +87,7 @@ Start:
 		To:   0, // send to all acceptors
 		Body: fmt.Sprintf("%d", crnd),
 	}
-	c.outs.Put(start)
+	c.cluster.Put(start)
 
 	var rsvps int
 	var vr uint64
@@ -138,7 +138,7 @@ Start:
 						To:   0, // send to all acceptors
 						Body: fmt.Sprintf("%d:%s", crnd, v),
 					}
-					c.outs.Put(choosen)
+					c.cluster.Put(choosen)
 				}
 			}
 		case <-c.clock:
