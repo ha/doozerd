@@ -19,7 +19,6 @@ var (
 
 // TODO temporary name
 type C struct {
-	crnd uint64
 	quorum uint64
 	modulus uint64
 
@@ -30,7 +29,6 @@ type C struct {
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
 	c := NewC()
-	c.crnd = crnd
 	c.quorum = quorum
 	c.modulus = modulus
 	c.ins = ins
@@ -42,15 +40,15 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 		return
 	}
 
-	c.process(target)
+	c.process(target, crnd)
 }
 
 func NewC() *C {
 	return &C{}
 }
 
-func (c *C) process(target string) {
-	//if c.crnd > c.modulus {
+func (c *C) process(target string, crnd uint64) {
+	//if crnd > c.modulus {
 	//	panic(IdOutOfRange)
 	//}
 
@@ -61,7 +59,7 @@ Start:
 	start := Msg{
 		Cmd:  "INVITE",
 		To:   0, // send to all acceptors
-		Body: fmt.Sprintf("%d", c.crnd),
+		Body: fmt.Sprintf("%d", crnd),
 	}
 	c.outs.Put(start)
 
@@ -86,7 +84,7 @@ Start:
 					continue
 				}
 
-				if i < c.crnd {
+				if i < crnd {
 					continue
 				}
 
@@ -109,13 +107,13 @@ Start:
 					choosen := Msg{
 						Cmd:  "NOMINATE",
 						To:   0, // send to all acceptors
-						Body: fmt.Sprintf("%d:%s", c.crnd, v),
+						Body: fmt.Sprintf("%d:%s", crnd, v),
 					}
 					c.outs.Put(choosen)
 				}
 			}
 		case <-c.clock:
-			c.crnd += c.modulus
+			crnd += c.modulus
 			goto Start
 		}
 	}
