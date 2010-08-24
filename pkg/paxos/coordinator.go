@@ -46,7 +46,6 @@ func (f FakeCluster) Quorum() int {
 // TODO temporary name
 type C struct {
 	cluster Cluster
-	modulus uint64
 
 	ins chan Msg
 	outs Putter
@@ -70,7 +69,6 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 func NewC(c Cluster) *C {
 	return &C{
 		cluster: c,
-		modulus: uint64(c.Len()),
 		outs: c,
 	}
 }
