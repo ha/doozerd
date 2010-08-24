@@ -45,6 +45,7 @@ func (f FakeCluster) Quorum() int {
 
 // TODO temporary name
 type C struct {
+	cluster Cluster
 	quorum uint64
 	modulus uint64
 
@@ -68,6 +69,7 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 
 func NewC(c Cluster) *C {
 	return &C{
+		cluster: c,
 		quorum: uint64(c.Quorum()),
 		modulus: uint64(c.Len()),
 		outs: c,
@@ -90,7 +92,7 @@ Start:
 	}
 	c.outs.Put(start)
 
-	var rsvps uint64
+	var rsvps int
 	var vr uint64
 	var vv string
 
@@ -121,7 +123,7 @@ Start:
 				}
 
 				rsvps++
-				if rsvps >= c.quorum {
+				if rsvps >= c.cluster.Quorum() {
 					var v string
 
 					if vr > 0 {
