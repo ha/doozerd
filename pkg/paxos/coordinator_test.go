@@ -29,12 +29,12 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	c.clock <- 1 // force the start of a new round
 	<-outs     //discard INVITE:11
 
-	c.ins <- m("1:1:RSVP:1:0:")
-	c.ins <- m("2:1:RSVP:1:0:")
-	c.ins <- m("3:1:RSVP:1:0:")
-	c.ins <- m("4:1:RSVP:1:0:")
-	c.ins <- m("5:1:RSVP:1:0:")
-	c.ins <- m("6:1:RSVP:1:0:")
+	c.Put(m("1:1:RSVP:1:0:"))
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
 
 	close(c.ins)
 	assert.Equal(t, 1, <-done, "")
