@@ -6,38 +6,34 @@ import (
 )
 
 func TestCoordIgnoreOldMessages(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 	done := make(chan int)
 
-	nNodes := uint64(10) // this is arbitrary
+	nNodes := uint64(10)
+	c := NewC(FakeCluster{outs, nNodes})
 	go func() {
-		coordinator(1, UNUSED, nNodes, tCh, ins, outs, clock, logger)
+		c.process("foo", 1)
 		done <- 1
 	}()
-	tCh <- "foo"
 
 	<-outs //discard INVITE:1
 
-	clock <- 1 // force the start of a new round
+	c.clock <- 1 // force the start of a new round
 	<-outs     //discard INVITE:11
 
-	ins <- m("1:1:RSVP:1:0:")
-	ins <- m("2:1:RSVP:1:0:")
-	ins <- m("3:1:RSVP:1:0:")
-	ins <- m("4:1:RSVP:1:0:")
-	ins <- m("5:1:RSVP:1:0:")
-	ins <- m("6:1:RSVP:1:0:")
+	c.ins <- m("1:1:RSVP:1:0:")
+	c.ins <- m("2:1:RSVP:1:0:")
+	c.ins <- m("3:1:RSVP:1:0:")
+	c.ins <- m("4:1:RSVP:1:0:")
+	c.ins <- m("5:1:RSVP:1:0:")
+	c.ins <- m("6:1:RSVP:1:0:")
 
-	close(ins)
+	close(c.ins)
 	assert.Equal(t, 1, <-done, "")
 
-	close(ins)
+	close(c.ins)
 	close(outs)
-	close(clock)
-	close(tCh)
+	close(c.clock)
 }
 
 func TestCoordStart(t *testing.T) {
