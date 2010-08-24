@@ -4,9 +4,6 @@ import (
 	"log"
 )
 
-// TODO this is temporary during refactoring
-const UNUSED = 0
-
 type Instance struct {
 	cx Cluster
 
