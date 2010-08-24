@@ -130,176 +130,125 @@ func TestCoordStartAlt(t *testing.T) {
 }
 
 func TestCoordTargetNomination(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
-	tCh <- "foo"
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes, 1})
+	go c.process("foo")
 	<-outs //discard INVITE
 
-	ins <- m("2:1:RSVP:1:0:")
-	ins <- m("3:1:RSVP:1:0:")
-	ins <- m("4:1:RSVP:1:0:")
-	ins <- m("5:1:RSVP:1:0:")
-	ins <- m("6:1:RSVP:1:0:")
-	ins <- m("7:1:RSVP:1:0:")
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
+	c.Put(m("7:1:RSVP:1:0:"))
 	assert.Equal(t, m("1:*:NOMINATE:1:foo"), <-outs, "")
 
-	close(ins)
+	c.Close()
 	close(outs)
-	close(clock)
-	close(tCh)
 }
 
 func TestCoordRestart(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
-	tCh <- "foo"
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes, 1})
+	go c.process("foo")
 	<-outs //discard INVITE
 
 	// never reach majority (force timeout)
-	ins <- m("2:1:RSVP:1:0:")
-	ins <- m("3:1:RSVP:1:0:")
-	ins <- m("4:1:RSVP:1:0:")
-	ins <- m("5:1:RSVP:1:0:")
-	ins <- m("6:1:RSVP:1:0:")
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
 
-	clock <- 1
+	c.clock <- 1
 	assert.Equal(t, m("1:*:INVITE:11"), <-outs, "")
 
-	close(ins)
+	c.Close()
 	close(outs)
-	close(clock)
-	close(tCh)
 }
 
 func TestCoordNonTargetNomination(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
-	tCh <- "foo"
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes, 1})
+	go c.process("foo")
 	<-outs //discard INVITE
 
-	ins <- m("1:1:RSVP:1:0:")
-	ins <- m("2:1:RSVP:1:0:")
-	ins <- m("3:1:RSVP:1:0:")
-	ins <- m("4:1:RSVP:1:0:")
-	ins <- m("5:1:RSVP:1:0:")
-	ins <- m("6:1:RSVP:1:1:bar")
+	c.Put(m("1:1:RSVP:1:0:"))
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:1:bar"))
 	assert.Equal(t, m("1:*:NOMINATE:1:bar"), <-outs, "")
 
-	close(ins)
+	c.Close()
 	close(outs)
-	close(clock)
-	close(tCh)
 }
 
 func TestCoordOneNominationPerRound(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 	done := make(chan int)
 
 	nNodes := uint64(10) // this is arbitrary
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes, 1})
 	go func() {
-		coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+		go c.process("foo")
 		done <- 1
 	}()
 
-	tCh <- "foo"
 	<-outs //discard INVITE
 
-	ins <- m("1:1:RSVP:1:0:")
-	ins <- m("2:1:RSVP:1:0:")
-	ins <- m("3:1:RSVP:1:0:")
-	ins <- m("4:1:RSVP:1:0:")
-	ins <- m("5:1:RSVP:1:0:")
-	ins <- m("6:1:RSVP:1:0:")
+	c.Put(m("1:1:RSVP:1:0:"))
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
 	assert.Equal(t, m("1:*:NOMINATE:1:foo"), <-outs, "")
 
-	ins <- m("7:1:RSVP:1:0:")
-	close(ins)
+	c.Put(m("7:1:RSVP:1:0:"))
+	c.Close()
 	assert.Equal(t, 1, <-done, "")
 
-	close(ins)
+	c.Close()
 	close(outs)
-	close(clock)
-	close(tCh)
 }
 
 func TestCoordEachRoundResetsCval(t *testing.T) {
-	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
-	tCh <- "foo"
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes, 1})
+	go c.process("foo")
 	<-outs //discard INVITE
 
-	ins <- m("1:1:RSVP:1:0:")
-	ins <- m("2:1:RSVP:1:0:")
-	ins <- m("3:1:RSVP:1:0:")
-	ins <- m("4:1:RSVP:1:0:")
-	ins <- m("5:1:RSVP:1:0:")
-	ins <- m("6:1:RSVP:1:0:")
+	c.Put(m("1:1:RSVP:1:0:"))
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
 	<-outs //discard NOMINATE
 
-	clock <- 1 // force the start of a new round
+	c.clock <- 1 // force the start of a new round
 	<-outs     //discard INVITE:11
 
-	ins <- m("1:1:RSVP:11:0:")
-	ins <- m("2:1:RSVP:11:0:")
-	ins <- m("3:1:RSVP:11:0:")
-	ins <- m("4:1:RSVP:11:0:")
-	ins <- m("5:1:RSVP:11:0:")
-	ins <- m("6:1:RSVP:11:0:")
-
-	close(ins)
+	c.Put(m("1:1:RSVP:11:0:"))
+	c.Put(m("2:1:RSVP:11:0:"))
+	c.Put(m("3:1:RSVP:11:0:"))
+	c.Put(m("4:1:RSVP:11:0:"))
+	c.Put(m("5:1:RSVP:11:0:"))
+	c.Put(m("6:1:RSVP:11:0:"))
 
 	exp := m("1:*:NOMINATE:11:foo")
 	assert.Equal(t, exp, <-outs, "")
 
-	close(ins)
+	c.Close()
 	close(outs)
-	close(clock)
-	close(tCh)
-}
-
-func TestAbortIfNoProposal(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
-	clock := make(chan int)
-	tCh := make(chan string)
-
-	done := make(chan int)
-
-	nNodes := uint64(10) // this is arbitrary
-	go func() {
-		coordinator(1, UNUSED, nNodes, tCh, ins, outs, clock, logger)
-		done <- 1
-	}()
-
-	close(tCh)
-
-	assert.Equal(t, 1, <-done, "")
-
-	close(ins)
-	close(outs)
-	close(clock)
-	close(tCh)
 }
