@@ -41,8 +41,8 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 	c.clock = clock
 	c.logger = logger
 
-	target := <-c.tCh
-	if target == "" && closed(c.tCh) {
+	target := <-tCh
+	if target == "" && closed(tCh) {
 		return
 	}
 
