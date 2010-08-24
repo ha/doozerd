@@ -44,6 +44,64 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	close(c.clock)
 }
 
+func TestCoordCloseIns(t *testing.T) {
+	outs := SyncPutter(make(chan Msg))
+	done := make(chan int)
+
+	nNodes := uint64(10)
+	c := NewC(FakeCluster{outs, nNodes})
+	go func() {
+		c.process("foo", 1)
+		done <- 1
+	}()
+
+	<-outs //discard INVITE:1
+
+	c.clock <- 1 // force the start of a new round
+	<-outs     //discard INVITE:11
+
+	c.Put(m("1:1:RSVP:1:0:"))
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
+
+	close(c.ins)
+	assert.Equal(t, 1, <-done, "")
+
+	close(outs)
+}
+
+func TestCoordCloseClock(t *testing.T) {
+	outs := SyncPutter(make(chan Msg))
+	done := make(chan int)
+
+	nNodes := uint64(10)
+	c := NewC(FakeCluster{outs, nNodes})
+	go func() {
+		c.process("foo", 1)
+		done <- 1
+	}()
+
+	<-outs //discard INVITE:1
+
+	c.clock <- 1 // force the start of a new round
+	<-outs     //discard INVITE:11
+
+	c.Put(m("1:1:RSVP:1:0:"))
+	c.Put(m("2:1:RSVP:1:0:"))
+	c.Put(m("3:1:RSVP:1:0:"))
+	c.Put(m("4:1:RSVP:1:0:"))
+	c.Put(m("5:1:RSVP:1:0:"))
+	c.Put(m("6:1:RSVP:1:0:"))
+
+	close(c.clock)
+	assert.Equal(t, 1, <-done, "")
+
+	close(outs)
+}
+
 func TestCoordStart(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))

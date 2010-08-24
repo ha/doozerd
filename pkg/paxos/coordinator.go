@@ -153,6 +153,9 @@ Start:
 				}
 			}
 		case <-c.clock:
+			if closed(c.clock) {
+				goto Done
+			}
 			crnd += c.cluster.Len()
 			goto Start
 		}
