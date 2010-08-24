@@ -68,6 +68,8 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 func NewC(c Cluster) *C {
 	return &C{
 		cluster: c,
+		ins: make(chan Msg),
+		clock: make(chan int),
 	}
 }
 
