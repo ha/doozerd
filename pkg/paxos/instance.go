@@ -8,7 +8,8 @@ import (
 const UNUSED = 0
 
 type Instance struct {
-	id     uint64
+	cx Cluster
+
 	nNodes uint64
 	quorum uint64
 
@@ -31,13 +32,11 @@ type Instance struct {
 	logger *log.Logger
 }
 
-// TODO this should take a Cluster as a param
-func NewInstance(outs Putter, id, nNodes uint64, logger *log.Logger) *Instance {
-	// TODO this ugly cast will go away when we take a Cluster param
-	c := NewC(fakeCluster{outs, nNodes, int(id)})
+func NewInstance(cx Cluster, nNodes uint64, logger *log.Logger) *Instance {
+	c := NewC(cx)
 	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &Instance{
-		id: id,
+		cx: cx,
 		nNodes: nNodes,
 		quorum: nNodes/2 + 1,
 		vin: make(chan string),
@@ -50,7 +49,7 @@ func NewInstance(outs Putter, id, nNodes uint64, logger *log.Logger) *Instance {
 		logger: logger,
 	}
 
-	go acceptor(ins.aIns, outs)
+	go acceptor(ins.aIns, cx)
 	go func() {
 		ins.v = learner(ins.quorum, ins.lIns)
 		close(ins.done)
@@ -60,7 +59,7 @@ func NewInstance(outs Putter, id, nNodes uint64, logger *log.Logger) *Instance {
 }
 
 func (ins *Instance) Put(m Msg) {
-	if m.To == ins.id || m.To == 0 {
+	if m.To == uint64(ins.cx.SelfIndex()) || m.To == 0 {
 		ins.cPutter.Put(m)
 		ins.aPutter.Put(m)
 		ins.lPutter.Put(m)
