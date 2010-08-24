@@ -17,6 +17,20 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
+// TODO maybe we can make a better name for this. Not sure.
+type Cluster interface {
+	Quorum() int
+}
+
+// TODO this is temporary during refactoring. we should remove it when we can.
+type FakeCluster struct {
+	quorum uint64
+}
+
+func (f FakeCluster) Quorum() int {
+	return int(f.quorum)
+}
+
 // TODO temporary name
 type C struct {
 	quorum uint64
@@ -28,8 +42,7 @@ type C struct {
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	c := NewC()
-	c.quorum = quorum
+	c := NewC(FakeCluster{quorum})
 	c.modulus = modulus
 	c.ins = ins
 	c.outs = outs
@@ -43,8 +56,10 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 	c.process(target, crnd)
 }
 
-func NewC() *C {
-	return &C{}
+func NewC(c Cluster) *C {
+	return &C{
+		quorum: uint64(c.Quorum()),
+	}
 }
 
 func (c *C) process(target string, crnd uint64) {
