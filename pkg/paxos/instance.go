@@ -4,6 +4,9 @@ import (
 	"log"
 )
 
+// TODO this is temporary during refactoring
+const UNUSED = 0
+
 type Instance struct {
 	id     uint64
 	nNodes uint64
@@ -61,7 +64,7 @@ func (ins *Instance) Value() string {
 }
 
 func (ins *Instance) Init(outs Putter) {
-	go coordinator(ins.id, ins.quorum, ins.nNodes, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
+	go coordinator(ins.id, UNUSED, ins.nNodes, ins.vin, ins.cIns, outs, make(chan int), ins.logger)
 	go acceptor(ins.aIns, outs)
 	go func() {
 		ins.v = learner(ins.quorum, ins.lIns)

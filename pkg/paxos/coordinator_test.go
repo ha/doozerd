@@ -14,7 +14,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 	go func() {
-		coordinator(1, 6, nNodes, tCh, ins, outs, clock, logger)
+		coordinator(1, UNUSED, nNodes, tCh, ins, outs, clock, logger)
 		done <- 1
 	}()
 	tCh <- "foo"
@@ -48,7 +48,7 @@ func TestCoordStart(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 
-	go coordinator(1, 6, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
 	tCh <- "foo"
 
 	assert.Equal(t, m("1:*:INVITE:1"), <-outs, "")
@@ -69,7 +69,7 @@ func TestCoordStartAlt(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 
-	go coordinator(2, 6, nNodes, tCh, ins, PutWrapper{1, 2, outs}, clock, logger)
+	go coordinator(2, UNUSED, nNodes, tCh, ins, PutWrapper{1, 2, outs}, clock, logger)
 	tCh <- "foo"
 
 	assert.Equal(t, m("2:*:INVITE:2"), <-outs, "")
@@ -87,7 +87,7 @@ func TestCoordTargetNomination(t *testing.T) {
 	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, 6, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
 	tCh <- "foo"
 	<-outs //discard INVITE
 
@@ -112,7 +112,7 @@ func TestCoordRestart(t *testing.T) {
 	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, 6, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
 	tCh <- "foo"
 	<-outs //discard INVITE
 
@@ -139,7 +139,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, 6, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
 	tCh <- "foo"
 	<-outs //discard INVITE
 
@@ -166,7 +166,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 	go func() {
-		coordinator(1, 6, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+		coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
 		done <- 1
 	}()
 
@@ -198,7 +198,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	tCh := make(chan string)
 
 	nNodes := uint64(10) // this is arbitrary
-	go coordinator(1, 6, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
+	go coordinator(1, UNUSED, nNodes, tCh, ins, PutWrapper{1, 1, outs}, clock, logger)
 	tCh <- "foo"
 	<-outs //discard INVITE
 
@@ -241,7 +241,7 @@ func TestAbortIfNoProposal(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 	go func() {
-		coordinator(1, 6, nNodes, tCh, ins, outs, clock, logger)
+		coordinator(1, UNUSED, nNodes, tCh, ins, outs, clock, logger)
 		done <- 1
 	}()
 
