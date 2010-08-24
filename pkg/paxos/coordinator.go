@@ -17,15 +17,33 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
+// TODO temporary name
+type C struct {
+	crnd uint64
+	quorum uint64
+	modulus uint64
+
+	tCh chan string
+	ins chan Msg
+	outs Putter
+	clock chan int
+	logger *log.Logger
+}
+
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	//if crnd > modulus {
+	c := &C{crnd, quorum, modulus, tCh, ins, outs, clock, logger}
+	c.process()
+}
+
+func (c *C) process() {
+	//if c.crnd > c.modulus {
 	//	panic(IdOutOfRange)
 	//}
 
 	var cval string
 
-	target := <-tCh
-	if target == "" && closed(tCh) {
+	target := <-c.tCh
+	if target == "" && closed(c.tCh) {
 		return
 	}
 
@@ -34,9 +52,9 @@ Start:
 	start := Msg{
 		Cmd:  "INVITE",
 		To:   0, // send to all acceptors
-		Body: fmt.Sprintf("%d", crnd),
+		Body: fmt.Sprintf("%d", c.crnd),
 	}
-	outs.Put(start)
+	c.outs.Put(start)
 
 	var rsvps uint64
 	var vr uint64
@@ -44,8 +62,8 @@ Start:
 
 	for {
 		select {
-		case in := <-ins:
-			if closed(ins) {
+		case in := <-c.ins:
+			if closed(c.ins) {
 				goto Done
 			}
 			switch in.Cmd {
@@ -59,7 +77,7 @@ Start:
 					continue
 				}
 
-				if i < crnd {
+				if i < c.crnd {
 					continue
 				}
 
@@ -69,7 +87,7 @@ Start:
 				}
 
 				rsvps++
-				if rsvps >= quorum {
+				if rsvps >= c.quorum {
 					var v string
 
 					if vr > 0 {
@@ -82,13 +100,13 @@ Start:
 					choosen := Msg{
 						Cmd:  "NOMINATE",
 						To:   0, // send to all acceptors
-						Body: fmt.Sprintf("%d:%s", crnd, v),
+						Body: fmt.Sprintf("%d:%s", c.crnd, v),
 					}
-					outs.Put(choosen)
+					c.outs.Put(choosen)
 				}
 			}
-		case <-clock:
-			crnd += modulus
+		case <-c.clock:
+			c.crnd += c.modulus
 			goto Start
 		}
 	}
