@@ -24,7 +24,8 @@ type Cluster interface {
 	Quorum() int
 }
 
-// TODO this is temporary during refactoring. we should remove it when we can.
+// TODO this is temporarily here during refactoring. it should be moved to
+// testing-only code when possible.
 type FakeCluster struct {
 	outs Putter
 	length uint64
