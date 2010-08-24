@@ -18,10 +18,14 @@ var (
 )
 
 // TODO maybe we can make a better name for this. Not sure.
+//
+// SelfIndex is the position of the local node in the alphabetized list of all
+// nodes in the cluster.
 type Cluster interface {
 	Putter
 	Len() int
 	Quorum() int
+	SelfIndex() int
 }
 
 // TODO this is temporarily here during refactoring. it should be moved to
@@ -29,6 +33,7 @@ type Cluster interface {
 type fakeCluster struct {
 	outs Putter
 	length uint64
+	selfIndex int
 }
 
 func (f fakeCluster) Put(m Msg) {
@@ -43,6 +48,10 @@ func (f fakeCluster) Quorum() int {
 	return f.Len()/2 + 1
 }
 
+func (f fakeCluster) SelfIndex() int {
+	return f.selfIndex
+}
+
 // TODO temporary name
 type C struct {
 	cluster Cluster
@@ -52,7 +61,8 @@ type C struct {
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	c := NewC(fakeCluster{outs, modulus})
+	// TODO this ugly cast will go away when we fix Msg
+	c := NewC(fakeCluster{outs, modulus, int(crnd)})
 	c.ins = ins
 	c.clock = clock
 
@@ -61,8 +71,7 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 		return
 	}
 
-	// TODO this ugly cast will go away when we fix Msg
-	c.process(target, int(crnd))
+	c.process(target)
 }
 
 func NewC(c Cluster) *C {
@@ -84,7 +93,9 @@ func (c *C) Close() {
 	close(c.clock)
 }
 
-func (c *C) process(target string, crnd int) {
+func (c *C) process(target string) {
+	var crnd int = c.cluster.SelfIndex()
+
 	//if crnd > c.cluster.Len() {
 	//	panic(IdOutOfRange)
 	//}

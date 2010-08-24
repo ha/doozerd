@@ -6,7 +6,7 @@ import (
 )
 
 func TestCoordPut(t *testing.T) {
-	c := NewC(fakeCluster{nil, 0})
+	c := NewC(fakeCluster{nil, 0, 0})
 	c.ins = make(chan Msg)
 	msg := m("1:1:RSVP:1:0")
 	c.Put(msg)
@@ -18,9 +18,9 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	done := make(chan int)
 
 	nNodes := uint64(10)
-	c := NewC(fakeCluster{outs, nNodes})
+	c := NewC(fakeCluster{outs, nNodes, 1})
 	go func() {
-		c.process("foo", 1)
+		c.process("foo")
 		done <- 1
 	}()
 
@@ -47,9 +47,9 @@ func TestCoordCloseIns(t *testing.T) {
 	done := make(chan int)
 
 	nNodes := uint64(10)
-	c := NewC(fakeCluster{outs, nNodes})
+	c := NewC(fakeCluster{outs, nNodes, 1})
 	go func() {
-		c.process("foo", 1)
+		c.process("foo")
 		done <- 1
 	}()
 
@@ -76,9 +76,9 @@ func TestCoordCloseClock(t *testing.T) {
 	done := make(chan int)
 
 	nNodes := uint64(10)
-	c := NewC(fakeCluster{outs, nNodes})
+	c := NewC(fakeCluster{outs, nNodes, 1})
 	go func() {
-		c.process("foo", 1)
+		c.process("foo")
 		done <- 1
 	}()
 
@@ -105,8 +105,8 @@ func TestCoordStart(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 
-	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes})
-	go c.process("foo", 1)
+	c := NewC(fakeCluster{PutWrapper{1, 1, outs}, nNodes, 1})
+	go c.process("foo")
 
 	assert.Equal(t, m("1:*:INVITE:1"), <-outs, "")
 
@@ -121,8 +121,8 @@ func TestCoordStartAlt(t *testing.T) {
 
 	nNodes := uint64(10) // this is arbitrary
 
-	c := NewC(fakeCluster{PutWrapper{1, 2, outs}, nNodes})
-	go c.process("foo", 2)
+	c := NewC(fakeCluster{PutWrapper{1, 2, outs}, nNodes, 2})
+	go c.process("foo")
 
 	assert.Equal(t, m("2:*:INVITE:2"), <-outs, "")
 
