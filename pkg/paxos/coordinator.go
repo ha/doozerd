@@ -29,7 +29,6 @@ type Cluster interface {
 type FakeCluster struct {
 	outs Putter
 	length uint64
-	quorum uint64
 }
 
 func (f FakeCluster) Put(m Msg) {
@@ -53,7 +52,7 @@ type C struct {
 }
 
 func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, outs Putter, clock chan int, logger *log.Logger) {
-	c := NewC(FakeCluster{outs, modulus, quorum})
+	c := NewC(FakeCluster{outs, modulus})
 	c.ins = ins
 	c.clock = clock
 
