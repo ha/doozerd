@@ -40,24 +40,25 @@ func coordinator(crnd, quorum, modulus uint64, tCh chan string, ins chan Msg, ou
 	c.outs = outs
 	c.clock = clock
 	c.logger = logger
-	c.process()
+
+	target := <-c.tCh
+	if target == "" && closed(c.tCh) {
+		return
+	}
+
+	c.process(target)
 }
 
 func NewC() *C {
 	return &C{}
 }
 
-func (c *C) process() {
+func (c *C) process(target string) {
 	//if c.crnd > c.modulus {
 	//	panic(IdOutOfRange)
 	//}
 
 	var cval string
-
-	target := <-c.tCh
-	if target == "" && closed(c.tCh) {
-		return
-	}
 
 Start:
 	cval = ""
