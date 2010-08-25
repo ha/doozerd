@@ -14,6 +14,26 @@ type Msg struct {
 	Body string
 }
 
+func (m Msg) SeqnX() uint64 {
+	return m.Seqn
+}
+
+func (m Msg) FromX() uint64 {
+	return m.From
+}
+
+func (m Msg) ToX() uint64 {
+	return m.To
+}
+
+func (m Msg) CmdX() string {
+	return m.Cmd
+}
+
+func (m Msg) BodyX() string {
+	return m.Body
+}
+
 // TODO maybe we can make a better name for this. Not sure.
 //
 // SelfIndex is the position of the local node in the alphabetized list of all
