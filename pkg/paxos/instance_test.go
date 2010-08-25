@@ -84,58 +84,6 @@ func (f FuncPutter) Close() {
 func (f FuncPutter) process(string) {
 }
 
-func TestAllowsDirectlyAddressedMessages(t *testing.T) {
-	nMessages := 0
-	ins := selfRefNewInstance(1, 1, logger)
-	ins.cPutter = FuncPutter(func(m Msg) {
-		nMessages++
-	})
-	ins.aPutter = FuncPutter(func(m Msg) {
-		nMessages++
-	})
-	ins.lPutter = FuncPutter(func(m Msg) {
-		nMessages++
-	})
-
-	ins.Put(m("1:1:VOTE:1:foo"))
-	assert.Equal(t, 3, nMessages, "")
-	ins.Close()
-}
-
-func TestAllowsBroadcastMessages(t *testing.T) {
-	nMessages := 0
-	ins := selfRefNewInstance(1, 1, logger)
-	ins.cPutter = FuncPutter(func(m Msg) {
-		nMessages++
-	})
-	ins.aPutter = FuncPutter(func(m Msg) {
-		nMessages++
-	})
-	ins.lPutter = FuncPutter(func(m Msg) {
-		nMessages++
-	})
-
-	ins.Put(m("1:*:VOTE:1:foo"))
-	assert.Equal(t, 3, nMessages, "")
-	ins.Close()
-}
-
-func TestIgnoresUnwantedMessages(t *testing.T) {
-	ins := selfRefNewInstance(1, 1, logger)
-	ins.cPutter = FuncPutter(func(m Msg) {
-		t.Fatalf("instance should ignore message %#v", m)
-	})
-	ins.aPutter = FuncPutter(func(m Msg) {
-		t.Fatalf("instance should ignore message %#v", m)
-	})
-	ins.lPutter = FuncPutter(func(m Msg) {
-		t.Fatalf("instance should ignore message %#v", m)
-	})
-
-	ins.Put(m("2:2:VOTE:1:foo"))
-	ins.Close()
-}
-
 func TestMultipleInstances(t *testing.T) {
 	ps := make([]Putter, 3)
 	cxA := fakeCluster{PutWrapper{1, 1, FakePutter(ps)}, 3, 1}

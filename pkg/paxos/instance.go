@@ -51,11 +51,9 @@ func NewInstance(cx Cluster, logger *log.Logger) *Instance {
 }
 
 func (ins *Instance) Put(m Msg) {
-	if m.To == uint64(ins.cx.SelfIndex()) || m.To == 0 {
-		ins.cPutter.Put(m)
-		ins.aPutter.Put(m)
-		ins.lPutter.Put(m)
-	}
+	ins.cPutter.Put(m)
+	ins.aPutter.Put(m)
+	ins.lPutter.Put(m)
 }
 
 func (ins *Instance) Value() string {
