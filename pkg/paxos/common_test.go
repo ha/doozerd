@@ -2,8 +2,6 @@ package paxos
 
 import (
 	"log"
-	"strings"
-	"strconv"
 	"testing/iotest"
 )
 
@@ -18,17 +16,7 @@ func (sp SyncPutter) Put(m Message) {
 }
 
 func m(s string) Message {
-	parts := strings.Split(s, ":", mNumParts)
-	if len(parts) != mNumParts {
-		panic(s)
-	}
-
-	from, err := strconv.Btoui64(parts[mFrom], 10)
-	if err != nil {
-		panic(s)
-	}
-
-	return Msg{1, from, parts[mCmd], parts[mBody]}
+	return parse("1:" + s)
 }
 
 func msgs(ss ... string) (messages []Message) {

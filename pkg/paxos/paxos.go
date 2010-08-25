@@ -40,14 +40,6 @@ type Cluster interface {
 	SelfIndex() int
 }
 
-const (
-	mFrom = iota
-	mTo
-	mCmd
-	mBody
-	mNumParts
-)
-
 var (
 	InvalidArgumentsError = os.NewError("Invalid Arguments")
 	Continue = os.NewError("continue")
