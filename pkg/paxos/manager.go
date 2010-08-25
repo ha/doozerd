@@ -15,22 +15,22 @@ type instReq struct {
 }
 
 type Manager struct{
-	me uint64
+	self string
+	nodes []string
 	learned chan Result
 	reqs chan instReq
 	seqns chan uint64
 	start uint64
-	nodes uint64
 	logger *log.Logger
 }
 
-func NewManager(me, start, n uint64, logger *log.Logger) *Manager {
+func NewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
 	m := &Manager{
-		me: me,
+		self: self,
+		nodes: nodes,
 		learned: make(chan Result),
 		reqs: make(chan instReq),
 		seqns: make(chan uint64),
-		nodes: n,
 		start: start,
 		logger: logger,
 	}
@@ -43,9 +43,15 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
+				xx := NewCluster(m.self, m.nodes, nil)
+				selfIndex := xx.SelfIndex()
+				if selfIndex == 0 {
+					selfIndex += xx.Len()
+				}
+
 				// TODO this ugly cast will go away when we make a proper
 				// cluster type
-				cluster := fakeCluster{PutWrapper{req.seqn, 1, outs}, m.nodes, int(m.me)}
+				cluster := fakeCluster{PutWrapper{req.seqn, 1, outs}, uint64(len(m.nodes)), selfIndex}
 				inst = NewInstance(cluster, m.logger)
 				instances[req.seqn] = inst
 				go func() {
