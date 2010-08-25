@@ -43,13 +43,8 @@ func (m *Manager) Init(outs Putter) {
 		for req := range m.reqs {
 			inst, ok := instances[req.seqn]
 			if !ok {
-				xx := NewCluster(m.self, m.nodes, nil)
-				selfIndex := xx.SelfIndex()
-
-				// TODO this ugly cast will go away when we make a proper
-				// cluster type
-				cluster := fakeCluster{PutWrapper{req.seqn, 1, outs}, uint64(len(m.nodes)), selfIndex}
-				inst = NewInstance(cluster, m.logger)
+				cx := NewCluster(m.self, m.nodes, PutWrapper{req.seqn, 1, outs})
+				inst = NewInstance(cx, m.logger)
 				instances[req.seqn] = inst
 				go func() {
 					m.learned <- Result{req.seqn, inst.Value()}
