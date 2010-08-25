@@ -302,11 +302,6 @@ func append(ws *[]watch, w watch) {
 	(*ws)[l] = w
 }
 
-func isSnapshot(r io.Reader, ver *uint64) bool {
-	err := gob.NewDecoder(r).Decode(ver)
-	return err == nil
-}
-
 func (s *Store) process() {
 	ver := uint64(0)
 	next := uint64(1)
@@ -331,10 +326,11 @@ func (s *Store) process() {
 
 		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
-			if r, nver := strings.NewReader(t.mutation), uint64(0)
-			   t.seqn == 1 && isSnapshot(r, &nver) {
+			var nver uint64
+			d := gob.NewDecoder(strings.NewReader(t.mutation))
+			if t.seqn == 1 && d.Decode(&nver) == nil {
 				var vx node
-				err := gob.NewDecoder(r).Decode(&vx)
+				err := d.Decode(&vx)
 				if err == nil {
 					values = vx
 					next = nver
