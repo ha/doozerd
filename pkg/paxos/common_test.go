@@ -12,6 +12,8 @@ type SyncPutter chan Msg
 
 var logger = log.New(iotest.TruncateWriter(nil, 0), nil, "", log.Lok)
 
+var tenNodes = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
+
 func (sp SyncPutter) Put(m Msg) {
 	sp <- m
 }
