@@ -6,17 +6,17 @@ const (
     lNumParts
 )
 
-func learner(quorum uint64, ins chan Msg) string {
+func learner(quorum uint64, ins chan Message) string {
     var round uint64 = 0
     votes := make(map[string]uint64) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes
 
-    update := func(in Msg) string {
+    update := func(in Message) string {
         defer swallowContinue()
 
-        parts := splitExactly(in.Body, lNumParts) // e.g. 1:xxx
+        parts := splitExactly(in.Body(), lNumParts) // e.g. 1:xxx
 
-        if in.Cmd != "VOTE" {
+        if in.Cmd() != "VOTE" {
             return ""
         }
 
@@ -33,11 +33,11 @@ func learner(quorum uint64, ins chan Msg) string {
             voted = make(map[uint64]bool)
             fallthrough
         case mRound == round:
-            if voted[in.From] {
+            if voted[in.From()] {
                 return ""
             }
             votes[v]++
-            voted[in.From] = true
+            voted[in.From()] = true
 
             if votes[v] >= quorum {
                 return v // winner!

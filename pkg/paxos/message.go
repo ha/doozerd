@@ -1,8 +1,8 @@
 package paxos
 
 type Message interface {
-    SeqnX() uint64
-    FromX() int
-    CmdX() int
-    BodyX() string // soon to be []byte
+    Seqn() uint64
+    From() uint64
+    Cmd() string
+    Body() string // soon to be []byte
 }

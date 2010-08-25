@@ -69,8 +69,8 @@ func (m *Manager) getInstance(seqn uint64) *Instance {
 	return <-ch
 }
 
-func (m *Manager) Put(msg Msg) {
-	m.getInstance(msg.Seqn).Put(msg)
+func (m *Manager) Put(msg Message) {
+	m.getInstance(msg.Seqn()).Put(msg)
 }
 
 func (m *Manager) Propose(v string) string {

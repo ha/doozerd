@@ -7,31 +7,31 @@ import (
 )
 
 type Msg struct {
-	Seqn uint64
-	From uint64
-	To uint64
-	Cmd string
-	Body string
+	seqn uint64
+	from uint64
+	to uint64
+	cmd string
+	body string
 }
 
-func (m Msg) SeqnX() uint64 {
-	return m.Seqn
+func (m Msg) Seqn() uint64 {
+	return m.seqn
 }
 
-func (m Msg) FromX() uint64 {
-	return m.From
+func (m Msg) From() uint64 {
+	return m.from
 }
 
-func (m Msg) ToX() uint64 {
-	return m.To
+func (m Msg) To() uint64 {
+	return m.to
 }
 
-func (m Msg) CmdX() string {
-	return m.Cmd
+func (m Msg) Cmd() string {
+	return m.cmd
 }
 
-func (m Msg) BodyX() string {
-	return m.Body
+func (m Msg) Body() string {
+	return m.body
 }
 
 // TODO maybe we can make a better name for this. Not sure.

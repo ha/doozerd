@@ -20,19 +20,19 @@ var (
 type C struct {
 	cx Cluster
 
-	ins chan Msg
+	ins chan Message
 	clock chan int
 }
 
 func NewC(c Cluster) *C {
 	return &C{
 		cx: c,
-		ins: make(chan Msg),
+		ins: make(chan Message),
 		clock: make(chan int),
 	}
 }
 
-func (c *C) Put(m Msg) {
+func (c *C) Put(m Message) {
 	go func() {
 		c.ins <- m
 	}()
@@ -58,9 +58,9 @@ func (c *C) process(target string) {
 Start:
 	cval = ""
 	start := Msg{
-		Cmd:  "INVITE",
-		To:   0, // send to all acceptors
-		Body: fmt.Sprintf("%d", crnd),
+		cmd:  "INVITE",
+		to:   0, // send to all acceptors
+		body: fmt.Sprintf("%d", crnd),
 	}
 	c.cx.Put(start)
 
@@ -74,9 +74,9 @@ Start:
 			if closed(c.ins) {
 				goto Done
 			}
-			switch in.Cmd {
+			switch in.Cmd() {
 			case "RSVP":
-				bodyParts := splitExactly(in.Body, rNumParts)
+				bodyParts := splitExactly(in.Body(), rNumParts)
 
 				// TODO this ugly cast will go away when we fix Msg
 				i := int(dtoui64(bodyParts[rRnd]))
@@ -109,9 +109,9 @@ Start:
 					cval = v
 
 					choosen := Msg{
-						Cmd:  "NOMINATE",
-						To:   0, // send to all acceptors
-						Body: fmt.Sprintf("%d:%s", crnd, v),
+						cmd:  "NOMINATE",
+						to:   0, // send to all acceptors
+						body: fmt.Sprintf("%d:%s", crnd, v),
 					}
 					c.cx.Put(choosen)
 				}

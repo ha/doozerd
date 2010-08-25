@@ -7,7 +7,7 @@ import (
 )
 
 func TestIgnoreOldMessages(t *testing.T) {
-	tests := [][]Msg{
+	tests := [][]Message{
 		msgs("1:*:INVITE:11", "1:*:NOMINATE:1:v"),
 		msgs("1:*:NOMINATE:11:v", "1:*:INVITE:1"),
 		msgs("1:*:INVITE:11", "1:*:INVITE:1"),
@@ -15,8 +15,8 @@ func TestIgnoreOldMessages(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ins := make(chan Msg)
-		outs := SyncPutter(make(chan Msg))
+		ins := make(chan Message)
+		outs := SyncPutter(make(chan Message))
 
 		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test[0]
@@ -34,8 +34,8 @@ func TestIgnoreOldMessages(t *testing.T) {
 }
 
 func TestAcceptsInvite(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	ins := make(chan Message)
+	outs := SyncPutter(make(chan Message))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- m("1:*:INVITE:1")
@@ -66,8 +66,8 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 	)
 
 	for _, test := range totest {
-		ins := make(chan Msg)
-		outs := SyncPutter(make(chan Msg))
+		ins := make(chan Message)
+		outs := SyncPutter(make(chan Message))
 
 		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test
@@ -82,14 +82,14 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 }
 
 func TestItVotes(t *testing.T) {
-	totest := [][]Msg{
+	totest := [][]Message{
 		msgs("1:*:NOMINATE:1:foo", "2:*:VOTE:1:foo"),
 		msgs("1:*:NOMINATE:1:bar", "2:*:VOTE:1:bar"),
 	}
 
 	for _, test := range totest {
-		ins := make(chan Msg)
-		outs := SyncPutter(make(chan Msg))
+		ins := make(chan Message)
+		outs := SyncPutter(make(chan Message))
 
 		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test[0]
@@ -101,8 +101,8 @@ func TestItVotes(t *testing.T) {
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	ins := make(chan Message)
+	outs := SyncPutter(make(chan Message))
 
 	val := "bar"
 
@@ -118,8 +118,8 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	ins := make(chan Message)
+	outs := SyncPutter(make(chan Message))
 
 	val := "bar"
 
@@ -135,8 +135,8 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	ins := make(chan Message)
+	outs := SyncPutter(make(chan Message))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- m("1:*:NOMINATE:1:v")
@@ -151,8 +151,8 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	ins := make(chan Message)
+	outs := SyncPutter(make(chan Message))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- m("1:*:NOMINATE:1:v")

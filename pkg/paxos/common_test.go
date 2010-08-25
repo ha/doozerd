@@ -1,39 +1,23 @@
 package paxos
 
 import (
-	"container/vector"
 	"log"
 	"strings"
 	"strconv"
 	"testing/iotest"
 )
 
-type SyncPutter chan Msg
+type SyncPutter chan Message
 
 var logger = log.New(iotest.TruncateWriter(nil, 0), nil, "", log.Lok)
 
 var tenNodes = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 
-func (sp SyncPutter) Put(m Msg) {
+func (sp SyncPutter) Put(m Message) {
 	sp <- m
 }
 
-func gather(ch chan Msg) (got []Msg) {
-	var stuff vector.Vector = make([]interface{}, 0)
-
-	for x := range ch {
-		stuff.Push(x)
-	}
-
-	got = make([]Msg, len(stuff))
-	for i, v := range stuff {
-		got[i] = v.(Msg)
-	}
-
-	return
-}
-
-func m(s string) Msg {
+func m(s string) Message {
 	parts := strings.Split(s, ":", mNumParts)
 	if len(parts) != mNumParts {
 		panic(s)
@@ -57,8 +41,8 @@ func m(s string) Msg {
 	return Msg{1, from, to, parts[mCmd], parts[mBody]}
 }
 
-func msgs(ss ... string) (messages []Msg) {
-	messages = make([]Msg, len(ss))
+func msgs(ss ... string) (messages []Message) {
+	messages = make([]Message, len(ss))
 	for i, s := range ss {
 		messages[i] = m(s)
 	}

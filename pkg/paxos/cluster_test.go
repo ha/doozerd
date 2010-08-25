@@ -6,7 +6,7 @@ import (
 )
 
 func TestCluster(t *testing.T) {
-    outs := make(chan Msg)
+    outs := make(chan Message)
     cx := NewCluster("c", []string{"a", "b", "c"}, ChanPutter(outs))
     assert.Equal(t, 3, cx.Len(), "Len")
     assert.Equal(t, 2, cx.Quorum(), "Quorum")

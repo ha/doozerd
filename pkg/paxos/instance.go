@@ -16,11 +16,11 @@ type Instance struct {
 	cPutter PutCloseProcessor
 
 	// Acceptor
-	aIns chan Msg
+	aIns chan Message
 	aPutter Putter
 
 	// Learner
-	lIns  chan Msg
+	lIns  chan Message
 	lPutter  Putter
 
 	logger *log.Logger
@@ -28,7 +28,7 @@ type Instance struct {
 
 func NewInstance(cx Cluster, logger *log.Logger) *Instance {
 	c := NewC(cx)
-	aIns, lIns := make(chan Msg), make(chan Msg)
+	aIns, lIns := make(chan Message), make(chan Message)
 	ins := &Instance{
 		cx: cx,
 		vin: make(chan string),
@@ -50,7 +50,7 @@ func NewInstance(cx Cluster, logger *log.Logger) *Instance {
 	return ins
 }
 
-func (ins *Instance) Put(m Msg) {
+func (ins *Instance) Put(m Message) {
 	ins.cPutter.Put(m)
 	ins.aPutter.Put(m)
 	ins.lPutter.Put(m)

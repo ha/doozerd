@@ -10,5 +10,6 @@ GOFILES=\
 	coordinator.go\
 	acceptor.go\
 	learner.go\
+	message.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -45,6 +45,6 @@ func (cx *RealCluster) SelfIndex() int {
     return cx.selfIndex
 }
 
-func (cx *RealCluster) Put(m Msg) {
+func (cx *RealCluster) Put(m Message) {
     cx.fw.Put(m)
 }
