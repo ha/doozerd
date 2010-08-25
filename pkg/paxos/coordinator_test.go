@@ -5,6 +5,28 @@ import (
 	"testing"
 )
 
+type fakeCluster struct {
+	outs Putter
+	length uint64
+	selfIndex int
+}
+
+func (f fakeCluster) Put(m Msg) {
+	f.outs.Put(m)
+}
+
+func (f fakeCluster) Len() int {
+	return int(f.length)
+}
+
+func (f fakeCluster) Quorum() int {
+	return f.Len()/2 + 1
+}
+
+func (f fakeCluster) SelfIndex() int {
+	return f.selfIndex
+}
+
 func TestCoordPut(t *testing.T) {
 	c := NewC(fakeCluster{nil, 0, 0})
 	c.ins = make(chan Msg)

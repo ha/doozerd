@@ -16,30 +16,6 @@ var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
 
-// TODO this is temporarily here during refactoring. it should be moved to
-// testing-only code when possible.
-type fakeCluster struct {
-	outs Putter
-	length uint64
-	selfIndex int
-}
-
-func (f fakeCluster) Put(m Msg) {
-	f.outs.Put(m)
-}
-
-func (f fakeCluster) Len() int {
-	return int(f.length)
-}
-
-func (f fakeCluster) Quorum() int {
-	return f.Len()/2 + 1
-}
-
-func (f fakeCluster) SelfIndex() int {
-	return f.selfIndex
-}
-
 // TODO temporary name
 type C struct {
 	cx Cluster
