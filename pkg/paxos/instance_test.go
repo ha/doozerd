@@ -72,18 +72,6 @@ func TestStartAtCoord(t *testing.T) {
 	ins.Close()
 }
 
-type FuncPutter func (Msg)
-
-func (f FuncPutter) Put(m Msg) {
-	f(m)
-}
-
-func (f FuncPutter) Close() {
-}
-
-func (f FuncPutter) process(string) {
-}
-
 func TestMultipleInstances(t *testing.T) {
 	ps := make([]Putter, 3)
 	cxA := fakeCluster{PutWrapper{1, 1, FakePutter(ps)}, 3, 1}
