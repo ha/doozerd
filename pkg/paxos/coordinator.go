@@ -42,7 +42,7 @@ func (f fakeCluster) SelfIndex() int {
 
 // TODO temporary name
 type C struct {
-	cluster Cluster
+	cx Cluster
 
 	ins chan Msg
 	clock chan int
@@ -50,7 +50,7 @@ type C struct {
 
 func NewC(c Cluster) *C {
 	return &C{
-		cluster: c,
+		cx: c,
 		ins: make(chan Msg),
 		clock: make(chan int),
 	}
@@ -68,12 +68,12 @@ func (c *C) Close() {
 }
 
 func (c *C) process(target string) {
-	var crnd int = c.cluster.SelfIndex()
+	var crnd int = c.cx.SelfIndex()
 	if crnd == 0 {
-		crnd += c.cluster.Len()
+		crnd += c.cx.Len()
 	}
 
-	//if crnd > c.cluster.Len() {
+	//if crnd > c.cx.Len() {
 	//	panic(IdOutOfRange)
 	//}
 
@@ -86,7 +86,7 @@ Start:
 		To:   0, // send to all acceptors
 		Body: fmt.Sprintf("%d", crnd),
 	}
-	c.cluster.Put(start)
+	c.cx.Put(start)
 
 	var rsvps int
 	var vr uint64
@@ -122,7 +122,7 @@ Start:
 				}
 
 				rsvps++
-				if rsvps >= c.cluster.Quorum() {
+				if rsvps >= c.cx.Quorum() {
 					var v string
 
 					if vr > 0 {
@@ -137,14 +137,14 @@ Start:
 						To:   0, // send to all acceptors
 						Body: fmt.Sprintf("%d:%s", crnd, v),
 					}
-					c.cluster.Put(choosen)
+					c.cx.Put(choosen)
 				}
 			}
 		case <-c.clock:
 			if closed(c.clock) {
 				goto Done
 			}
-			crnd += c.cluster.Len()
+			crnd += c.cx.Len()
 			goto Start
 		}
 	}
