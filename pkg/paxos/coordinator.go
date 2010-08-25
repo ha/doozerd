@@ -59,7 +59,6 @@ Start:
 	cval = ""
 	start := Msg{
 		cmd:  "INVITE",
-		to:   0, // send to all acceptors
 		body: fmt.Sprintf("%d", crnd),
 	}
 	c.cx.Put(start)
@@ -110,7 +109,6 @@ Start:
 
 					choosen := Msg{
 						cmd:  "NOMINATE",
-						to:   0, // send to all acceptors
 						body: fmt.Sprintf("%d:%s", crnd, v),
 					}
 					c.cx.Put(choosen)

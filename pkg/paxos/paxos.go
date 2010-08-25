@@ -9,7 +9,6 @@ import (
 type Msg struct {
 	seqn uint64
 	from uint64
-	to uint64
 	cmd string
 	body string
 }
@@ -20,10 +19,6 @@ func (m Msg) Seqn() uint64 {
 
 func (m Msg) From() uint64 {
 	return m.from
-}
-
-func (m Msg) To() uint64 {
-	return m.to
 }
 
 func (m Msg) Cmd() string {

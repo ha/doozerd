@@ -28,17 +28,7 @@ func m(s string) Message {
 		panic(s)
 	}
 
-	var to uint64
-	if parts[mTo] == "*" {
-		to = 0
-	} else {
-		to, err = strconv.Btoui64(parts[mTo], 10)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	return Msg{1, from, to, parts[mCmd], parts[mBody]}
+	return Msg{1, from, parts[mCmd], parts[mBody]}
 }
 
 func msgs(ss ... string) (messages []Message) {
