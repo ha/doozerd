@@ -3,6 +3,7 @@ include $(GOROOT)/src/Make.$(GOARCH)
 TARG=borg/paxos
 GOFILES=\
 	paxos.go\
+	cluster.go\
 	putter.go\
 	manager.go\
 	instance.go\
