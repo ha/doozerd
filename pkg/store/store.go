@@ -3,6 +3,8 @@ package store
 import (
 	"container/heap"
 	"container/vector"
+	"gob"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -18,7 +20,6 @@ type Event struct {
 }
 
 const (
-	Nop = 0
 	Set = uint(1<<iota)
 	Del
 	Add
@@ -42,18 +43,18 @@ var emptyNode = node{v:"", ds:make(map[string]*node)}
 type Store struct {
 	applyCh chan apply
 	reqCh chan req
+	snapCh chan snap
 	watchCh chan watch
 	watches map[string][]watch
 	todo map[uint64]apply
 	todoLookup *reqQueue
+	todoSnap *snapQueue
 	logger *log.Logger
 }
 
 type apply struct {
 	seqn uint64
-	op uint
-	k string
-	v string
+	mutation string
 }
 
 type req struct {
@@ -62,7 +63,21 @@ type req struct {
 	ch chan reply
 }
 
+type snap struct {
+	seqn uint64
+	ch chan state
+}
+
+type state struct {
+	ver uint64
+	root node
+}
+
 type reqQueue struct {
+	vector.Vector
+}
+
+type snapQueue struct {
 	vector.Vector
 }
 
@@ -82,11 +97,22 @@ func (r req) Less(y interface{}) bool {
 	return r.seqn < y.(req).seqn
 }
 
+func (r snap) Less(y interface{}) bool {
+	return r.seqn < y.(snap).seqn
+}
+
 func (q *reqQueue) peek() req {
 	if len(q.Vector) == 0 {
 		return req{seqn:math.MaxUint64} // ~infinity
 	}
 	return q.Vector[0].(req)
+}
+
+func (q *snapQueue) peek() snap {
+	if len(q.Vector) == 0 {
+		return snap{seqn:math.MaxUint64} // ~infinity
+	}
+	return q.Vector[0].(snap)
 }
 
 // Creates a new, empty data store. Mutations will be applied in order,
@@ -96,13 +122,16 @@ func New(logger *log.Logger) *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		reqCh: make(chan req),
+		snapCh: make(chan snap),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
 		todoLookup: new(reqQueue),
+		todoSnap: new(snapQueue),
 		watches: make(map[string][]watch),
 		logger: logger,
 	}
 	heap.Init(s.todoLookup)
+	heap.Init(s.todoSnap)
 	go s.process()
 	return s
 }
@@ -273,6 +302,11 @@ func append(ws *[]watch, w watch) {
 	(*ws)[l] = w
 }
 
+func isSnapshot(r io.Reader, ver *uint64) bool {
+	err := gob.NewDecoder(r).Decode(ver)
+	return err == nil
+}
+
 func (s *Store) process() {
 	ver := uint64(0)
 	next := uint64(1)
@@ -286,6 +320,8 @@ func (s *Store) process() {
 			}
 		case r := <-s.reqCh:
 			heap.Push(s.todoLookup, r)
+		case r := <-s.snapCh:
+			heap.Push(s.todoSnap, r)
 		case w := <-s.watchCh:
 			watches := s.watches[w.k]
 			append(&watches, w)
@@ -295,13 +331,25 @@ func (s *Store) process() {
 
 		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
-			if t.op != Nop {
-				var changed []string
-				s.notify(t.op, t.seqn, t.k, t.v)
-				values, changed = values.setp(t.k, t.v, t.op == Set)
-				s.logger.Logf("store applied %v", t)
-				for _, p := range changed {
-					s.notifyDir(conj[t.op], t.seqn, p)
+			if r, nver := strings.NewReader(t.mutation), uint64(0)
+			   t.seqn == 1 && isSnapshot(r, &nver) {
+				var vx node
+				err := gob.NewDecoder(r).Decode(&vx)
+				if err == nil {
+					values = vx
+					next = nver
+					s.todo = make(map[uint64]apply)
+				}
+			} else {
+				op, k, v, err := decode(t.mutation)
+				if err == nil {
+					var changed []string
+					s.notify(op, t.seqn, k, v)
+					values, changed = values.setp(k, v, op == Set)
+					s.logger.Logf("store applied %v", t)
+					for _, p := range changed {
+						s.notifyDir(conj[op], t.seqn, p)
+					}
 				}
 			}
 			ver = next
@@ -316,19 +364,21 @@ func (s *Store) process() {
 			r.ch <- reply{v, ok}
 		}
 
+		// If we have any snapshots that can be satisfied, do them.
+		for r := s.todoSnap.peek(); ver >= r.seqn; r = s.todoSnap.peek() {
+			r := heap.Pop(s.todoSnap).(snap)
+			r.ch <- state{ver, values}
+		}
 	}
 }
 
 // Applies `mutation` in sequence at position `seqn`. A malformed mutation is
 // treated as a no-op. If a mutation has already been applied at this position,
 // this one is sliently ignored.
+//
+// If `mutation` is a snapshot, notifications will not be sent.
 func (s *Store) Apply(seqn uint64, mutation string) {
-	op, path, v, err := decode(mutation)
-	if err != nil {
-		s.applyCh <- apply{seqn:seqn} // nop
-	} else {
-		s.applyCh <- apply{seqn, op, path, v}
-	}
+	s.applyCh <- apply{seqn, mutation}
 }
 
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
@@ -346,9 +396,40 @@ func (s *Store) LookupSync(path string, seqn uint64) (body string, ok bool) {
 	return rep.v, rep.ok
 }
 
+// Encodes the entire storage state, including the current sequence number, as
+// a mutation, and writes the mutation to `w`. This mutation can be applied to
+// an empty store to reproduce the state of this one.
+//
+// A snapshot must be applied at sequence number `1`. Once a snapshot has been
+// applied, the store's current sequence number will be set to that of the
+// snapshot.
+//
+// Note that applying a snapshot does not send notifications.
+func (s *Store) Snapshot(w io.Writer) (err os.Error) {
+	return s.SnapshotSync(0, w)
+}
+
+// Like `Snapshot`, but waits until after mutation number `seqn` has been
+// applied before making the snapshot.
+func (s *Store) SnapshotSync(seqn uint64, w io.Writer) (err os.Error) {
+	ch := make(chan state)
+	s.snapCh <- snap{seqn, ch}
+	st := <-ch
+	err = gob.NewEncoder(w).Encode(st.ver)
+	if err != nil {
+		return
+	}
+
+	err = gob.NewEncoder(w).Encode(st.root)
+	return
+}
+
 // Subscribes `events` to receive notifications when mutations are applied to
 // the store. Set `mask` to one or more of `Set`, `Del`, `Add`, and `Rem`,
 // bitwise OR-ed together.
+//
+// Notifications will not be sent for changes made as the result of applying a
+// snapshot.
 func (s *Store) Watch(path string, mask uint, events chan Event) {
 	ready := make(chan int)
 	s.watchCh <- watch{events, mask, path, ready}

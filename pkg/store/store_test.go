@@ -2,7 +2,9 @@ package store
 
 import (
 	"borg/assert"
+	"bytes"
 	"log"
+	"os"
 	"testing"
 	"testing/iotest"
 )
@@ -540,4 +542,101 @@ func TestWatchSetDirParents(t *testing.T) {
 
 	expa := <-ch
 	assert.Equal(t, Event{Add, 1, "/x", "y"}, expa, "")
+}
+
+func TestSnapshotApply(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	s1 := New(logger)
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	s1.Apply(1, mut1)
+	s1.Apply(2, mut2)
+	err := s1.SnapshotSync(1, buf)
+	assert.Equal(t, nil, err, "")
+
+	s2 := New(logger)
+	s2.Apply(1, buf.String())
+
+	v, ok := s2.Lookup("/x")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "b", v, "")
+}
+
+func TestSnapshotSeqn(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	s1 := New(logger)
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	s1.Apply(1, mut1)
+	s1.Apply(2, mut2)
+	err := s1.SnapshotSync(1, buf)
+	assert.Equal(t, nil, err, "")
+
+	s2 := New(logger)
+	s2.Apply(1, buf.String())
+	v, ok := s2.Lookup("/x")
+	assert.Equal(t, true, ok, "snap")
+	assert.Equal(t, "b", v, "snap")
+
+	mutx, _ := EncodeSet("/x", "x")
+	s2.Apply(1, mutx)
+	v, ok = s2.LookupSync("/x", 1)
+	assert.Equal(t, true, ok, "x")
+	assert.Equal(t, "b", v, "x")
+
+	muty, _ := EncodeSet("/x", "y")
+	s2.Apply(2, muty)
+	v, ok = s2.LookupSync("/x", 2)
+	assert.Equal(t, true, ok, "y")
+	assert.Equal(t, "b", v, "y")
+
+	mutz, _ := EncodeSet("/x", "z")
+	s2.Apply(3, mutz)
+	v, ok = s2.LookupSync("/x", 3)
+	assert.Equal(t, true, ok, "z")
+	assert.Equal(t, "z", v, "z")
+}
+
+func TestSnapshotLeak(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	s1 := New(logger)
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	s1.Apply(1, mut1)
+	s1.Apply(2, mut2)
+	err := s1.SnapshotSync(1, buf)
+	assert.Equal(t, nil, err, "")
+
+	s2 := New(logger)
+
+	mut3, _ := EncodeSet("/x", "c")
+	s2.Apply(2, mut3)
+	s2.Apply(3, mut3)
+
+	s2.Apply(1, buf.String())
+
+	// check that we aren't leaking memory
+	assert.Equal(t, 0, len(s2.todo), "")
+}
+
+func TestSnapshotSync(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	ch := make(chan os.Error)
+	s1 := New(logger)
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	go func() {
+		ch <- s1.SnapshotSync(2, buf)
+	}()
+	s1.Apply(1, mut1)
+	s1.Apply(2, mut2)
+	err := <-ch
+	assert.Equal(t, nil, err, "")
+
+	s2 := New(logger)
+	s2.Apply(1, buf.String())
+
+	v, ok := s2.Lookup("/x")
+	assert.Equal(t, true, ok, "")
+	assert.Equal(t, "b", v, "")
 }
