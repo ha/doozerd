@@ -69,6 +69,9 @@ func (c *C) Close() {
 
 func (c *C) process(target string) {
 	var crnd int = c.cluster.SelfIndex()
+	if crnd == 0 {
+		crnd += c.cluster.Len()
+	}
 
 	//if crnd > c.cluster.Len() {
 	//	panic(IdOutOfRange)

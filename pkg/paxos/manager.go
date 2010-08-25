@@ -45,9 +45,6 @@ func (m *Manager) Init(outs Putter) {
 			if !ok {
 				xx := NewCluster(m.self, m.nodes, nil)
 				selfIndex := xx.SelfIndex()
-				if selfIndex == 0 {
-					selfIndex += xx.Len()
-				}
 
 				// TODO this ugly cast will go away when we make a proper
 				// cluster type
