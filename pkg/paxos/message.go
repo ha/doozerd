@@ -22,7 +22,7 @@ type Message interface {
     Body() string // soon to be []byte
 }
 
-func parse(s string) Msg {
+func NewMessage(s string) Message {
 	parts := strings.Split(s, ":", mNumParts)
 	if len(parts) != mNumParts {
 		panic(s)

@@ -16,7 +16,7 @@ func (sp SyncPutter) Put(m Message) {
 }
 
 func m(s string) Message {
-	return parse("1:" + s)
+	return NewMessage("1:" + s)
 }
 
 func msgs(ss ... string) (messages []Message) {

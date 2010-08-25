@@ -57,15 +57,6 @@ import (
 	"strings"
 )
 
-const (
-	mSeqn = iota
-	mFrom
-	mTo
-	mCmd
-	mBody
-	mNumParts
-)
-
 // NOT IPv6-compatible.
 func getPort(addr string) uint64 {
 	parts := strings.Split(addr, ":", -1)
@@ -76,67 +67,31 @@ func getPort(addr string) uint64 {
 	return port
 }
 
-func recvUdp(conn net.PacketConn, ch chan paxos.Msg) {
+func recvUdp(conn net.PacketConn, ch chan paxos.Message) {
 	for {
 		pkt := make([]byte, 3000) // make sure it's big enough
-		n, addr, err := conn.ReadFrom(pkt)
+		n, _, err := conn.ReadFrom(pkt)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		msg := parse(string(pkt[0:n]))
-		msg.From = getPort(addr.String())
+		msg := paxos.NewMessage(string(pkt[0:n]))
 		ch <- msg
 	}
 }
 
-func parse(s string) paxos.Msg {
-	parts := strings.Split(s, ":", mNumParts)
-	if len(parts) != mNumParts {
-		panic(s)
-	}
+type funcPutter func (paxos.Message)
 
-	seqn, err := strconv.Btoui64(parts[mSeqn], 10)
-	if err != nil {
-		panic(s)
-	}
-
-	from, err := strconv.Btoui64(parts[mFrom], 10)
-	if err != nil {
-		panic(s)
-	}
-
-	var to uint64
-	if parts[mTo] == "*" {
-		to = 0
-	} else {
-		to, err = strconv.Btoui64(parts[mTo], 10)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	return paxos.Msg{seqn, from, to, parts[mCmd], parts[mBody]}
-}
-
-type funcPutter func (paxos.Msg)
-
-func (f funcPutter) Put(m paxos.Msg) {
+func (f funcPutter) Put(m paxos.Message) {
 	f(m)
 }
 
 func newUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
-	put := func(m paxos.Msg) {
-		pkt := fmt.Sprintf("%d:%d:%d:%s:%s", m.Seqn, me, m.To, m.Cmd, m.Body)
+	put := func(m paxos.Message) {
+		pkt := fmt.Sprintf("%d:%d:0:%s:%s", m.Seqn(), me, m.Cmd(), m.Body())
 		b := []byte(pkt)
-		var to []net.Addr
-		if m.To == 0 {
-			to = addrs
-		} else {
-			to = []net.Addr{&net.UDPAddr{net.ParseIP("127.0.0.1"), int(m.To)}}
-		}
 
-		for _, addr := range to {
+		for _, addr := range addrs {
 			n, err := conn.WriteTo(b, addr)
 			if err != nil {
 				fmt.Println(err)
@@ -189,7 +144,6 @@ func (n *Node) Init() {
 	n.nodes[3] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 3}
 	n.nodes[4] = &net.UDPAddr{net.ParseIP("127.0.0.1"), basePort + 4}
 
-
 	nodeKey := "/node/" + n.id
 	mut, err := store.EncodeSet(nodeKey, n.listenAddr)
 	if err != nil {
@@ -197,7 +151,7 @@ func (n *Node) Init() {
 	}
 	n.store.Apply(1, mut)
 	n.logger.Logf("registered %s at %s\n", n.id, n.listenAddr)
-	n.manager = paxos.NewManager(uint64(basePort), 2, uint64(len(n.nodes)), n.logger)
+	n.manager = paxos.NewManager(2, n.id, []string{n.id}, n.logger)
 }
 
 // TODO this function should take only an address and get all necessary info
@@ -236,8 +190,7 @@ func (n *Node) Join(master string) {
 	n.store.Apply(1, mut)
 	// END OF FAKE STUFF
 
-	selfport, err := strconv.Atoi((n.listenAddr)[1:])
-	n.manager = paxos.NewManager(uint64(selfport), 2, uint64(len(n.nodes)), n.logger)
+	n.manager = paxos.NewManager(2, n.id, []string{n.id}, n.logger)
 }
 
 func (n *Node) server(conn net.Conn) {
@@ -317,7 +270,7 @@ func (n *Node) RunForever() {
 		return
 	}
 
-	udpCh := make(chan paxos.Msg)
+	udpCh := make(chan paxos.Message)
 	go recvUdp(udpConn, udpCh)
 	udpPutter := newUdpPutter(me, n.nodes, udpConn)
 
