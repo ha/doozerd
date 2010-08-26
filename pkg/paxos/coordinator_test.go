@@ -8,7 +8,7 @@ import (
 func TestCoordPut(t *testing.T) {
 	c := NewC(NewCluster("a", []string{"a"}, nil))
 	c.ins = make(chan Message)
-	msg := m("1:1:RSVP:1:0")
+	msg := &Msg{}
 	c.Put(msg)
 	assert.Equal(t, msg, <-c.ins, "")
 }
@@ -103,7 +103,7 @@ func TestCoordStart(t *testing.T) {
 	c := NewC(NewCluster("b", tenNodes, PutWrapper{1, 1, outs}))
 	go c.process("foo")
 
-	assert.Equal(t, m("1:*:INVITE:1"), <-outs, "")
+	assert.Equal(t, newInviteFrom(1, 1), <-outs, "")
 
 	c.Close()
 	close(outs)

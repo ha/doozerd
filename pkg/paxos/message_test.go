@@ -26,6 +26,14 @@ func newRsvpFrom(from byte, i, vrnd uint64, vval string) Message {
     return m
 }
 
+// For testing convenience
+func newInviteFrom(from byte, rnd int) Message {
+    m := NewInvite(rnd)
+    m.SetSeqn(1)
+    m.SetFrom(from)
+    return m
+}
+
 func TestNewInvite(t *testing.T) {
     m := NewInvite(1)
     assert.Equal(t, "INVITE", m.Cmd(), "")
