@@ -68,5 +68,3 @@ func (ins *Instance) Propose(v string) {
 	//   ins.cPutter.Put(...)
 	go ins.cPutter.process(v)
 }
-
-
