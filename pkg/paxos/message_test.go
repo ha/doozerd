@@ -12,6 +12,13 @@ func newVoteFrom(from byte, i uint64, vval string) Message {
     return m
 }
 
+// For testing convenience
+func newNominateFrom(from byte, crnd int, v string) Message {
+    m := NewNominate(crnd, v)
+    m.SetFrom(from)
+    return m
+}
+
 func TestNewInvite(t *testing.T) {
     m := NewInvite(1)
     assert.Equal(t, "INVITE", m.Cmd(), "")

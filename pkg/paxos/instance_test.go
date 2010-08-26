@@ -58,9 +58,9 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 
 func TestStartAtAccept(t *testing.T) {
 	ins := selfRefNewInstance("a", []string{"a"}, logger)
-	ins.Put(m("1:*:NOMINATE:1:foo"))
-	ins.Put(m("1:*:NOMINATE:1:foo"))
-	ins.Put(m("1:*:NOMINATE:1:foo"))
+	ins.Put(newNominateFrom(1, 1, "foo"))
+	ins.Put(newNominateFrom(1, 1, "foo"))
+	ins.Put(newNominateFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
