@@ -1,13 +1,5 @@
 package paxos
 
-import (
-	"os"
-)
-
-var (
-	IdOutOfRange = os.NewError("Id Out of Range")
-)
-
 // TODO temporary name
 type C struct {
 	cx Cluster
@@ -40,10 +32,6 @@ func (c *C) process(target string) {
 	if crnd == 0 {
 		crnd += uint64(c.cx.Len())
 	}
-
-	//if crnd > c.cx.Len() {
-	//	panic(IdOutOfRange)
-	//}
 
 	var cval string
 
