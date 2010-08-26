@@ -81,3 +81,11 @@ func TestSetFrom(t *testing.T) {
     m.SetFrom(2)
     assert.Equal(t, uint64(2), m.From(), "")
 }
+
+func TestSetSeqn(t *testing.T) {
+    m := NewInvite(1)
+    m.SetSeqn(1)
+    assert.Equal(t, uint64(1), m.Seqn(), "")
+    m.SetSeqn(2)
+    assert.Equal(t, uint64(2), m.Seqn(), "")
+}

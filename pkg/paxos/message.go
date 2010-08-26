@@ -23,6 +23,7 @@ type Message interface {
     Body() string // soon to be []byte
 
 	SetFrom(byte)
+	SetSeqn(uint64)
 }
 
 func NewMessage(s string) Message {
@@ -99,4 +100,8 @@ func (m Msg) Body() string {
 
 func (m *Msg) SetFrom(from byte) {
 	m.from = uint64(from)
+}
+
+func (m *Msg) SetSeqn(seqn uint64) {
+	m.seqn = seqn
 }
