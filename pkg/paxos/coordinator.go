@@ -43,9 +43,9 @@ func (c *C) Close() {
 }
 
 func (c *C) process(target string) {
-	var crnd int = c.cx.SelfIndex()
+	crnd := uint64(c.cx.SelfIndex())
 	if crnd == 0 {
-		crnd += c.cx.Len()
+		crnd += uint64(c.cx.Len())
 	}
 
 	//if crnd > c.cx.Len() {
@@ -73,8 +73,7 @@ Start:
 			case "RSVP":
 				bodyParts := splitExactly(in.Body(), rNumParts)
 
-				// TODO this ugly cast will go away when we fix Msg
-				i := int(dtoui64(bodyParts[rRnd]))
+				i := dtoui64(bodyParts[rRnd])
 
 				vrnd := dtoui64(bodyParts[rVrnd])
 				vval := bodyParts[rVval]
@@ -111,7 +110,7 @@ Start:
 			if closed(c.clock) {
 				goto Done
 			}
-			crnd += c.cx.Len()
+			crnd += uint64(c.cx.Len())
 			goto Start
 		}
 	}

@@ -84,7 +84,7 @@ func newVoteFrom(from byte, i uint64, vval string) Message {
 }
 
 // For testing convenience
-func newNominateFrom(from byte, crnd int, v string) Message {
+func newNominateFrom(from byte, crnd uint64, v string) Message {
     m := NewNominate(crnd, v)
     m.SetSeqn(1)
     m.SetFrom(from)
@@ -100,7 +100,7 @@ func newRsvpFrom(from byte, i, vrnd uint64, vval string) Message {
 }
 
 // For testing convenience
-func newInviteFrom(from byte, rnd int) Message {
+func newInviteFrom(from byte, rnd uint64) Message {
     m := NewInvite(rnd)
     m.SetSeqn(1)
     m.SetFrom(from)
@@ -174,13 +174,13 @@ func TestSetSeqn(t *testing.T) {
 func TestInviteParts(t *testing.T) {
     m := NewInvite(1)
     crnd := InviteParts(m)
-    assert.Equal(t, 1, crnd, "")
+    assert.Equal(t, uint64(1), crnd, "")
 }
 
 func TestNominateParts(t *testing.T) {
     m := NewNominate(1, "foo")
     crnd, v := NominateParts(m)
-    assert.Equal(t, 1, crnd, "")
+    assert.Equal(t, uint64(1), crnd, "")
     assert.Equal(t, "foo", v, "")
 }
 
@@ -202,13 +202,13 @@ func TestVoteParts(t *testing.T) {
 func TestInvitePartsAlt(t *testing.T) {
     m := NewInvite(2)
     crnd := InviteParts(m)
-    assert.Equal(t, 2, crnd, "")
+    assert.Equal(t, uint64(2), crnd, "")
 }
 
 func TestNominatePartsAlt(t *testing.T) {
     m := NewNominate(2, "bar")
     crnd, v := NominateParts(m)
-    assert.Equal(t, 2, crnd, "")
+    assert.Equal(t, uint64(2), crnd, "")
     assert.Equal(t, "bar", v, "")
 }
 

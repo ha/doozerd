@@ -45,7 +45,7 @@ func NewMessage(s string) Message {
 	return &Msg{seqn, from, parts[mCmd], parts[mBody]}
 }
 
-func NewInvite(crnd int) Message {
+func NewInvite(crnd uint64) Message {
 	return &Msg{
 		cmd:  "INVITE",
 		body: fmt.Sprintf("%d", crnd),
@@ -53,12 +53,12 @@ func NewInvite(crnd int) Message {
 }
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
-func InviteParts(m Message) (crnd int) {
-	crnd, _ = strconv.Atoi(m.Body())
+func InviteParts(m Message) (crnd uint64) {
+	crnd, _ = strconv.Atoui64(m.Body())
 	return
 }
 
-func NewNominate(crnd int, v string) Message {
+func NewNominate(crnd uint64, v string) Message {
 	return &Msg{
 		cmd:  "NOMINATE",
 		body: fmt.Sprintf("%d:%s", crnd, v),
@@ -66,14 +66,13 @@ func NewNominate(crnd int, v string) Message {
 }
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
-func NominateParts(m Message) (crnd int, v string) {
+func NominateParts(m Message) (crnd uint64, v string) {
 	parts := strings.Split(m.Body(), ":", 2)
-	crnd, _ = strconv.Atoi(parts[0])
+	crnd, _ = strconv.Atoui64(parts[0])
 	v = parts[1]
 	return
 }
 
-// TODO fix these numeric types
 func NewRsvp(i, vrnd uint64, vval string) Message {
 	return &Msg{
 		cmd: "RSVP",
@@ -82,7 +81,6 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 }
 
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
-// TODO fix these numeric types
 func RsvpParts(m Message) (i, vrnd uint64, vval string) {
 	parts := strings.Split(m.Body(), ":", 3)
 	i, _ = strconv.Atoui64(parts[0])
@@ -91,7 +89,6 @@ func RsvpParts(m Message) (i, vrnd uint64, vval string) {
 	return
 }
 
-// TODO fix these numeric types
 func NewVote(i uint64, vval string) Message {
 	return &Msg{
 		cmd: "VOTE",
@@ -100,7 +97,6 @@ func NewVote(i uint64, vval string) Message {
 }
 
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
-// TODO fix these numeric types
 func VoteParts(m Message) (i uint64, vval string) {
 	parts := strings.Split(m.Body(), ":", 2)
 	i, _ = strconv.Atoui64(parts[0])
