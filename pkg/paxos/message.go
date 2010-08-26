@@ -21,6 +21,8 @@ type Message interface {
     From() uint64
     Cmd() string
     Body() string // soon to be []byte
+
+	SetFrom(byte)
 }
 
 func NewMessage(s string) Message {
@@ -39,18 +41,18 @@ func NewMessage(s string) Message {
 		panic(s)
 	}
 
-	return Msg{seqn, from, parts[mCmd], parts[mBody]}
+	return &Msg{seqn, from, parts[mCmd], parts[mBody]}
 }
 
 func NewInvite(crnd int) Message {
-	return Msg{
+	return &Msg{
 		cmd:  "INVITE",
 		body: fmt.Sprintf("%d", crnd),
 	}
 }
 
 func NewNominate(crnd int, v string) Message {
-	return Msg{
+	return &Msg{
 		cmd:  "NOMINATE",
 		body: fmt.Sprintf("%d:%s", crnd, v),
 	}
@@ -58,7 +60,7 @@ func NewNominate(crnd int, v string) Message {
 
 // TODO fix these numeric types
 func NewRsvp(i, vrnd uint64, vval string) Message {
-	return Msg{
+	return &Msg{
 		cmd: "RSVP",
 		body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
 	}
@@ -66,7 +68,7 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 
 // TODO fix these numeric types
 func NewVote(i uint64, vval string) Message {
-	return Msg{
+	return &Msg{
 		cmd: "VOTE",
 		body: fmt.Sprintf("%d:%s", i, vval),
 	}
@@ -93,4 +95,8 @@ func (m Msg) Cmd() string {
 
 func (m Msg) Body() string {
 	return m.body
+}
+
+func (m *Msg) SetFrom(from byte) {
+	m.from = uint64(from)
 }

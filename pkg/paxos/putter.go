@@ -26,7 +26,7 @@ type PutWrapper struct {
 }
 
 func (w PutWrapper) Put(m Message) {
-	r := m.(Msg)
+	r := m.(*Msg)
 	r.seqn = w.seqn
 	r.from = w.from
 	w.Putter.Put(r)

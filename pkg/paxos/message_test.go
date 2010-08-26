@@ -52,3 +52,11 @@ func TestNewVoteAlt(t *testing.T) {
     assert.Equal(t, "VOTE", m.Cmd(), "")
     assert.Equal(t, "2:bar", m.Body(), "")
 }
+
+func TestSetFrom(t *testing.T) {
+    m := NewInvite(1)
+    m.SetFrom(1)
+    assert.Equal(t, uint64(1), m.From(), "")
+    m.SetFrom(2)
+    assert.Equal(t, uint64(2), m.From(), "")
+}
