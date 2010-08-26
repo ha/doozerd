@@ -26,31 +26,31 @@ func selfRefNewInstance(self string, nodes []string, logger *log.Logger) *Instan
 
 func TestStartAtLearn(t *testing.T) {
 	ins := selfRefNewInstance("a", []string{"a"}, logger)
-	ins.Put(m("1:*:VOTE:1:foo"))
+	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestStartAtLearnWithDuplicates(t *testing.T) {
 	ins := selfRefNewInstance("a", []string{"a"}, logger)
-	ins.Put(m("1:*:VOTE:1:foo"))
-	ins.Put(m("1:*:VOTE:1:foo"))
-	ins.Put(m("1:*:VOTE:1:foo"))
+	ins.Put(newVoteFrom(1, 1, "foo"))
+	ins.Put(newVoteFrom(1, 1, "foo"))
+	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestLearnWithQuorumOf2(t *testing.T) {
 	ins := selfRefNewInstance("b", []string{"a", "b", "c"}, logger)
-	ins.Put(m("1:*:VOTE:1:foo"))
-	ins.Put(m("2:*:VOTE:1:foo"))
+	ins.Put(newVoteFrom(1, 1, "foo"))
+	ins.Put(newVoteFrom(2, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 	ins := selfRefNewInstance("a", []string{"a"}, logger)
-	ins.Put(m("1:*:VOTE:1:foo"))
+	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
