@@ -1,11 +1,5 @@
 package paxos
 
-const (
-    lRnd = iota
-    lValue
-    lNumParts
-)
-
 func learner(quorum uint64, ins chan Message) string {
     var round uint64 = 1
     votes := make(map[string]uint64) // maps values to number of votes
@@ -14,15 +8,11 @@ func learner(quorum uint64, ins chan Message) string {
     update := func(in Message) string {
         defer swallowContinue()
 
-        parts := splitExactly(in.Body(), lNumParts) // e.g. 1:xxx
-
         if in.Cmd() != "VOTE" {
             return ""
         }
 
-        mRound := dtoui64(parts[lRnd])
-
-        v := parts[lValue]
+        mRound, v := VoteParts(in)
 
         switch {
         case mRound < round:

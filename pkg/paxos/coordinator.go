@@ -4,13 +4,6 @@ import (
 	"os"
 )
 
-const (
-	rRnd = iota
-	rVrnd
-	rVval
-	rNumParts
-)
-
 var (
 	IdOutOfRange = os.NewError("Id Out of Range")
 )
@@ -71,12 +64,7 @@ Start:
 			}
 			switch in.Cmd() {
 			case "RSVP":
-				bodyParts := splitExactly(in.Body(), rNumParts)
-
-				i := dtoui64(bodyParts[rRnd])
-
-				vrnd := dtoui64(bodyParts[rVrnd])
-				vval := bodyParts[rVval]
+				i, vrnd, vval := RsvpParts(in)
 
 				if cval != "" {
 					continue

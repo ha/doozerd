@@ -1,16 +1,5 @@
 package paxos
 
-const (
-	iRnd = iota
-	iNumParts
-)
-
-const (
-	nRnd = iota
-	nVal
-	nNumParts
-)
-
 func acceptor(ins chan Message, outs Putter) {
 	var rnd, vrnd uint64
 	var vval string
@@ -20,9 +9,7 @@ func acceptor(ins chan Message, outs Putter) {
 
 		switch in.Cmd() {
 		case "INVITE":
-			bodyParts := splitExactly(in.Body(), iNumParts)
-
-			i := dtoui64(bodyParts[iRnd])
+			i := InviteParts(in)
 
 			switch {
 			case i <= rnd:
@@ -33,9 +20,7 @@ func acceptor(ins chan Message, outs Putter) {
 				outs.Put(reply)
 			}
 		case "NOMINATE":
-			bodyParts := splitExactly(in.Body(), nNumParts)
-
-			i := dtoui64(bodyParts[nRnd])
+			i, v := NominateParts(in)
 
 			// SUPER IMPT MAD PAXOS
 			if i < rnd || i == vrnd {
@@ -44,7 +29,7 @@ func acceptor(ins chan Message, outs Putter) {
 
 			rnd = i
 			vrnd = i
-			vval = bodyParts[nVal]
+			vval = v
 
 			broadcast := NewVote(i, vval)
 			outs.Put(broadcast)
