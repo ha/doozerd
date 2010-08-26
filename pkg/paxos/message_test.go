@@ -19,6 +19,13 @@ func newNominateFrom(from byte, crnd int, v string) Message {
     return m
 }
 
+// For testing convenience
+func newRsvpFrom(from byte, i, vrnd uint64, vval string) Message {
+    m := NewRsvp(i, vrnd, vval)
+    m.SetFrom(from)
+    return m
+}
+
 func TestNewInvite(t *testing.T) {
     m := NewInvite(1)
     assert.Equal(t, "INVITE", m.Cmd(), "")
