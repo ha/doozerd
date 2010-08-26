@@ -52,11 +52,21 @@ func NewInvite(crnd int) Message {
 	}
 }
 
+// Returns the info for `m`. If `m` is not an invite, the result is undefined.
+func InviteParts(m Message) (crnd int) {
+	return 1
+}
+
 func NewNominate(crnd int, v string) Message {
 	return &Msg{
 		cmd:  "NOMINATE",
 		body: fmt.Sprintf("%d:%s", crnd, v),
 	}
+}
+
+// Returns the info for `m`. If `m` is not a nominate, the result is undefined.
+func NominateParts(m Message) (crnd int, v string) {
+	return 1, "foo"
 }
 
 // TODO fix these numeric types
@@ -67,12 +77,24 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 	}
 }
 
+// Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
+// TODO fix these numeric types
+func RsvpParts(m Message) (i, vrnd uint64, vval string) {
+	return 1, 0, ""
+}
+
 // TODO fix these numeric types
 func NewVote(i uint64, vval string) Message {
 	return &Msg{
 		cmd: "VOTE",
 		body: fmt.Sprintf("%d:%s", i, vval),
 	}
+}
+
+// Returns the info for `m`. If `m` is not a vote, the result is undefined.
+// TODO fix these numeric types
+func VoteParts(m Message) (i uint64, vval string) {
+	return 1, "foo"
 }
 
 type Msg struct {

@@ -170,3 +170,31 @@ func TestSetSeqn(t *testing.T) {
     m.SetSeqn(2)
     assert.Equal(t, uint64(2), m.Seqn(), "")
 }
+
+func TestInviteParts(t *testing.T) {
+    m := NewInvite(1)
+    crnd := InviteParts(m)
+    assert.Equal(t, 1, crnd, "")
+}
+
+func TestNominateParts(t *testing.T) {
+    m := NewNominate(1, "foo")
+    crnd, v := NominateParts(m)
+    assert.Equal(t, 1, crnd, "")
+    assert.Equal(t, "foo", v, "")
+}
+
+func TestRsvpParts(t *testing.T) {
+    m := NewRsvp(1, 0, "")
+    i, vrnd, vval := RsvpParts(m)
+    assert.Equal(t, uint64(1), i, "")
+    assert.Equal(t, uint64(0), vrnd, "")
+    assert.Equal(t, "", vval, "")
+}
+
+func TestVoteParts(t *testing.T) {
+    m := NewVote(1, "foo")
+    i, vval := VoteParts(m)
+    assert.Equal(t, uint64(1), i, "")
+    assert.Equal(t, "foo", vval, "")
+}
