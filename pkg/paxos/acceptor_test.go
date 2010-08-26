@@ -8,10 +8,10 @@ import (
 
 func TestIgnoreOldMessages(t *testing.T) {
 	tests := [][]Message{
-		msgs("1:*:INVITE:11", "1:*:NOMINATE:1:v"),
-		msgs("1:*:NOMINATE:11:v", "1:*:INVITE:1"),
-		msgs("1:*:INVITE:11", "1:*:INVITE:1"),
-		msgs("1:*:NOMINATE:11:v", "1:*:NOMINATE:1:v"),
+		[]Message{newInviteFrom(1, 11), newNominateFrom(1, 1, "v")},
+		[]Message{newNominateFrom(1, 11, "v"), newInviteFrom(1, 1)},
+		[]Message{newInviteFrom(1, 11), newInviteFrom(1, 1)},
+		[]Message{newNominateFrom(1, 11, "v"), newNominateFrom(1, 1, "v")},
 	}
 
 	for _, test := range tests {
@@ -48,13 +48,18 @@ func TestAcceptsInvite(t *testing.T) {
 }
 
 func TestIgnoresMalformedMessages(t *testing.T) {
-	totest := msgs(
-		"1:*:INVITE:x", // invalid round number
-		"1:*:x:1",      // unknown command
+	unknownCommand := newInviteFrom(1, 1)
+	unknownCommand.(*Msg).cmd = "x"
+	invalidBody := newNominateFrom(1, 1, "foo")
+	invalidBody.(*Msg).body = "x"
 
-		"1:*:NOMINATE:x",     // too few separators in nominate body
-		"1:*:NOMINATE:x:foo", // invalid round number
-	)
+	totest := []Message{
+		newInviteFrom(1, 0), // invalid round number
+		unknownCommand,      // unknown command
+
+		invalidBody,                  // too few separators in nominate body
+		newNominateFrom(1, 0, "foo"), // invalid round number
+	}
 
 	for _, test := range totest {
 		ins := make(chan Message)
@@ -74,8 +79,8 @@ func TestIgnoresMalformedMessages(t *testing.T) {
 
 func TestItVotes(t *testing.T) {
 	totest := [][]Message{
-		msgs("1:*:NOMINATE:1:foo", "2:*:VOTE:1:foo"),
-		msgs("1:*:NOMINATE:1:bar", "2:*:VOTE:1:bar"),
+		[]Message{newNominateFrom(1, 1, "foo"), newVoteFrom(2, 1, "foo")},
+		[]Message{newNominateFrom(1, 1, "bar"), newVoteFrom(2, 1, "bar")},
 	}
 
 	for _, test := range totest {
