@@ -2,13 +2,21 @@ package paxos
 
 import (
     "borg/assert"
+    "log"
     "testing"
 )
 
+func selfRefNewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
+	p := make([]Putter, 1)
+	m := NewManager(start, self, nodes, logger)
+	m.Init(FakePutter(p))
+	p[0] = m
+	return m
+}
+
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1, "a", []string{"a"}, logger)
-	m.Init(m)
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -16,8 +24,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1, "a", []string{"a"}, logger)
-	m.Init(m)
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -29,8 +36,7 @@ func TestProposeAndRecv(t *testing.T) {
 
 func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
-	m := NewManager(2, "a", []string{"a"}, logger)
-	m.Init(m)
+	m := selfRefNewManager(2, "a", []string{"a"}, logger)
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -43,8 +49,7 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 func TestProposeAndRecvMultiple(t *testing.T) {
 	exp := []string{"foo", "bar"}
 	seqnexp := []uint64{1, 2}
-	m := NewManager(1, "a", []string{"a"}, logger)
-	m.Init(m)
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
 
 	got0 := m.Propose(exp[0])
 	assert.Equal(t, exp[0], got0, "")
@@ -63,8 +68,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m := NewManager(1, "a", []string{"a"}, logger)
-	m.Init(m)
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -74,8 +78,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m := NewManager(1, "a", []string{"a"}, logger)
-	m.Init(m)
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
