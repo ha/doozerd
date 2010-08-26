@@ -1,9 +1,5 @@
 package paxos
 
-import (
-	"fmt"
-)
-
 const (
 	iRnd = iota
 	iNumParts
@@ -50,11 +46,7 @@ func acceptor(ins chan Message, outs Putter) {
 			vrnd = i
 			vval = bodyParts[nVal]
 
-			broadcast := Msg{
-				seqn: in.Seqn(),
-				cmd: "VOTE",
-				body: fmt.Sprintf("%d:%s", i, vval),
-			}
+			broadcast := NewVote(i, vval)
 			outs.Put(broadcast)
 		}
 	}

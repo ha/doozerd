@@ -64,6 +64,14 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 	}
 }
 
+// TODO fix these numeric types
+func NewVote(i uint64, vval string) Message {
+	return Msg{
+		cmd: "VOTE",
+		body: fmt.Sprintf("%d:%s", i, vval),
+	}
+}
+
 type Msg struct {
 	seqn uint64
 	from uint64
