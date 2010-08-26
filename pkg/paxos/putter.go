@@ -14,10 +14,14 @@ type PutCloseProcessor interface {
 	process(string)
 }
 
-type ChanPutter chan Message
+type ChanPutCloser chan Message
 
-func (cp ChanPutter) Put(m Message) {
+func (cp ChanPutCloser) Put(m Message) {
 	go func() { cp <- m }()
+}
+
+func (cp ChanPutCloser) Close() {
+	close(cp)
 }
 
 type PutWrapper struct {

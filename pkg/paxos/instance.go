@@ -16,12 +16,10 @@ type Instance struct {
 	cPutter PutCloseProcessor
 
 	// Acceptor
-	aIns chan Message
-	aPutter Putter
+	aPutter PutCloser
 
 	// Learner
-	lIns  chan Message
-	lPutter  Putter
+	lPutter  PutCloser
 
 	logger *log.Logger
 }
@@ -33,17 +31,15 @@ func NewInstance(cx Cluster, logger *log.Logger) *Instance {
 		cx: cx,
 		vin: make(chan string),
 		done: make(chan int),
-		aIns:  aIns,
-		lIns:  lIns,
 		cPutter: c,
-		aPutter: ChanPutter(aIns),
-		lPutter: ChanPutter(lIns),
+		aPutter: ChanPutCloser(aIns),
+		lPutter: ChanPutCloser(lIns),
 		logger: logger,
 	}
 
-	go acceptor(ins.aIns, cx)
+	go acceptor(aIns, cx)
 	go func() {
-		ins.v = learner(uint64(cx.Quorum()), ins.lIns)
+		ins.v = learner(uint64(cx.Quorum()), lIns)
 		close(ins.done)
 	}()
 
@@ -63,8 +59,8 @@ func (ins *Instance) Value() string {
 
 func (ins *Instance) Close() {
 	ins.cPutter.Close()
-	close(ins.aIns)
-	close(ins.lIns)
+	ins.aPutter.Close()
+	ins.lPutter.Close()
 }
 
 func (ins *Instance) Propose(v string) {
