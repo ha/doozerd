@@ -6,29 +6,6 @@ import (
 	"strconv"
 )
 
-type Msg struct {
-	seqn uint64
-	from uint64
-	cmd string
-	body string
-}
-
-func (m Msg) Seqn() uint64 {
-	return m.seqn
-}
-
-func (m Msg) From() uint64 {
-	return m.from
-}
-
-func (m Msg) Cmd() string {
-	return m.cmd
-}
-
-func (m Msg) Body() string {
-	return m.body
-}
-
 // TODO maybe we can make a better name for this. Not sure.
 //
 // SelfIndex is the position of the local node in the alphabetized list of all

@@ -57,10 +57,7 @@ func (c *C) process(target string) {
 
 Start:
 	cval = ""
-	start := Msg{
-		cmd:  "INVITE",
-		body: fmt.Sprintf("%d", crnd),
-	}
+	start := NewInvite(crnd)
 	c.cx.Put(start)
 
 	var rsvps int

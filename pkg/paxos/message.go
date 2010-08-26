@@ -2,6 +2,7 @@
 package paxos
 
 import (
+    "fmt"
     "strconv"
     "strings"
 )
@@ -39,4 +40,34 @@ func NewMessage(s string) Message {
 	}
 
 	return Msg{seqn, from, parts[mCmd], parts[mBody]}
+}
+
+func NewInvite(crnd int) Message {
+	return Msg{
+		cmd:  "INVITE",
+		body: fmt.Sprintf("%d", crnd),
+	}
+}
+
+type Msg struct {
+	seqn uint64
+	from uint64
+	cmd string
+	body string
+}
+
+func (m Msg) Seqn() uint64 {
+	return m.seqn
+}
+
+func (m Msg) From() uint64 {
+	return m.from
+}
+
+func (m Msg) Cmd() string {
+	return m.cmd
+}
+
+func (m Msg) Body() string {
+	return m.body
 }
