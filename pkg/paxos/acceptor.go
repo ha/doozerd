@@ -4,7 +4,7 @@ func acceptor(ins chan Message, outs Putter) {
 	var rnd, vrnd uint64
 	var vval string
 
-	update := func(in Message) {
+	for in := range ins {
 		switch in.Cmd() {
 		case "INVITE":
 			i := InviteParts(in)
@@ -22,7 +22,7 @@ func acceptor(ins chan Message, outs Putter) {
 
 			// SUPER IMPT MAD PAXOS
 			if i < rnd || i == vrnd {
-				return
+				continue
 			}
 
 			rnd = i
@@ -32,9 +32,5 @@ func acceptor(ins chan Message, outs Putter) {
 			broadcast := NewVote(i, vval)
 			outs.Put(broadcast)
 		}
-	}
-
-	for in := range ins {
-		update(in)
 	}
 }

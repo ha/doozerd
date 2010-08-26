@@ -5,16 +5,16 @@ func learner(quorum uint64, ins chan Message) string {
     votes := make(map[string]uint64) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes
 
-    update := func(in Message) string {
+    for in := range ins {
         if in.Cmd() != "VOTE" {
-            return ""
+            continue
         }
 
         mRound, v := VoteParts(in)
 
         switch {
         case mRound < round:
-            return ""
+            continue
         case mRound > round:
             round = mRound
             votes = make(map[string]uint64)
@@ -22,7 +22,7 @@ func learner(quorum uint64, ins chan Message) string {
             fallthrough
         case mRound == round:
             if voted[in.From()] {
-                return ""
+                continue
             }
             votes[v]++
             voted[in.From()] = true
@@ -30,15 +30,6 @@ func learner(quorum uint64, ins chan Message) string {
             if votes[v] >= quorum {
                 return v // winner!
             }
-        }
-
-        return ""
-    }
-
-    for in := range ins {
-        v := update(in)
-        if v != "" {
-            return v
         }
     }
     return ""
