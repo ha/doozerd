@@ -14,15 +14,3 @@ var tenNodes = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}
 func (sp SyncPutter) Put(m Message) {
 	sp <- m
 }
-
-func m(s string) Message {
-	return NewMessage("1:" + s)
-}
-
-func msgs(ss ... string) (messages []Message) {
-	messages = make([]Message, len(ss))
-	for i, s := range ss {
-		messages[i] = m(s)
-	}
-	return
-}
