@@ -117,7 +117,7 @@ func TestCoordStartAlt(t *testing.T) {
 	c := NewC(NewCluster("c", tenNodes, PutWrapper{1, 2, outs}))
 	go c.process("foo")
 
-	assert.Equal(t, m("2:*:INVITE:2"), <-outs, "")
+	assert.Equal(t, newInviteFrom(2, 2), <-outs, "")
 
 	close(outs)
 }
@@ -135,7 +135,7 @@ func TestCoordTargetNomination(t *testing.T) {
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 	c.Put(newRsvpFrom(7, 1, 0, ""))
-	assert.Equal(t, m("1:*:NOMINATE:1:foo"), <-outs, "")
+	assert.Equal(t, newNominateFrom(1, 1, "foo"), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -156,7 +156,7 @@ func TestCoordRestart(t *testing.T) {
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 
 	c.clock <- 1
-	assert.Equal(t, m("1:*:INVITE:11"), <-outs, "")
+	assert.Equal(t, newInviteFrom(1, 11), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -175,7 +175,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 	c.Put(newRsvpFrom(4, 1, 0, ""))
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 1, "bar"))
-	assert.Equal(t, m("1:*:NOMINATE:1:bar"), <-outs, "")
+	assert.Equal(t, newNominateFrom(1, 1, "bar"), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -199,9 +199,9 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 	c.Put(newRsvpFrom(4, 1, 0, ""))
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 0, ""))
-	assert.Equal(t, m("1:*:NOMINATE:1:foo"), <-outs, "")
+	assert.Equal(t, newNominateFrom(1, 1, "foo"), <-outs, "")
 
-	c.Put(m("7:1:RSVP:1:0:"))
+	c.Put(newRsvpFrom(7, 1, 0, ""))
 	c.Close()
 	assert.Equal(t, 1, <-done, "")
 
@@ -234,7 +234,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	c.Put(newRsvpFrom(5, 11, 0, ""))
 	c.Put(newRsvpFrom(6, 11, 0, ""))
 
-	exp := m("1:*:NOMINATE:11:foo")
+	exp := newNominateFrom(1, 11, "foo")
 	assert.Equal(t, exp, <-outs, "")
 
 	c.Close()

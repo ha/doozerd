@@ -15,6 +15,7 @@ func newVoteFrom(from byte, i uint64, vval string) Message {
 // For testing convenience
 func newNominateFrom(from byte, crnd int, v string) Message {
     m := NewNominate(crnd, v)
+    m.SetSeqn(1)
     m.SetFrom(from)
     return m
 }
