@@ -5,8 +5,6 @@ func acceptor(ins chan Message, outs Putter) {
 	var vval string
 
 	update := func(in Message) {
-		defer swallowContinue()
-
 		switch in.Cmd() {
 		case "INVITE":
 			i := InviteParts(in)

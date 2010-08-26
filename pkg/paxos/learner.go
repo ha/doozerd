@@ -6,8 +6,6 @@ func learner(quorum uint64, ins chan Message) string {
     voted := make(map[uint64]bool) // maps values to number of votes
 
     update := func(in Message) string {
-        defer swallowContinue()
-
         if in.Cmd() != "VOTE" {
             return ""
         }
