@@ -49,6 +49,13 @@ func NewInvite(crnd int) Message {
 	}
 }
 
+func NewNominate(crnd int, v string) Message {
+	return Msg{
+		cmd:  "NOMINATE",
+		body: fmt.Sprintf("%d:%s", crnd, v),
+	}
+}
+
 type Msg struct {
 	seqn uint64
 	from uint64

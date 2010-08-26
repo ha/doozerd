@@ -1,7 +1,6 @@
 package paxos
 
 import (
-	"fmt"
 	"os"
 )
 
@@ -104,11 +103,8 @@ Start:
 					}
 					cval = v
 
-					choosen := Msg{
-						cmd:  "NOMINATE",
-						body: fmt.Sprintf("%d:%s", crnd, v),
-					}
-					c.cx.Put(choosen)
+					chosen := NewNominate(crnd, v)
+					c.cx.Put(chosen)
 				}
 			}
 		case <-c.clock:
