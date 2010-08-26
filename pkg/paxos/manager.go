@@ -24,7 +24,7 @@ type Manager struct{
 	logger *log.Logger
 }
 
-func NewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
+func NewManager(start uint64, self string, nodes []string, outs Putter, logger *log.Logger) *Manager {
 	m := &Manager{
 		self: self,
 		nodes: nodes,
@@ -34,10 +34,6 @@ func NewManager(start uint64, self string, nodes []string, logger *log.Logger) *
 		start: start,
 		logger: logger,
 	}
-	return m
-}
-
-func (m *Manager) Init(outs Putter) {
 	go func() {
 		instances := make(map[uint64]*Instance)
 		for req := range m.reqs {
@@ -61,6 +57,8 @@ func (m *Manager) Init(outs Putter) {
 			m.seqns <- n
 		}
 	}()
+
+	return m
 }
 
 func (m *Manager) getInstance(seqn uint64) *Instance {

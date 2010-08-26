@@ -151,7 +151,6 @@ func (n *Node) Init() {
 	}
 	n.store.Apply(1, mut)
 	n.logger.Logf("registered %s at %s\n", n.id, n.listenAddr)
-	n.manager = paxos.NewManager(2, n.id, []string{n.id}, n.logger)
 }
 
 // TODO this function should take only an address and get all necessary info
@@ -189,8 +188,6 @@ func (n *Node) Join(master string) {
 	}
 	n.store.Apply(1, mut)
 	// END OF FAKE STUFF
-
-	n.manager = paxos.NewManager(2, n.id, []string{n.id}, n.logger)
 }
 
 func (n *Node) server(conn net.Conn) {
@@ -274,7 +271,7 @@ func (n *Node) RunForever() {
 	go recvUdp(udpConn, udpCh)
 	udpPutter := newUdpPutter(me, n.nodes, udpConn)
 
-	n.manager.Init(udpPutter)
+	n.manager = paxos.NewManager(2, n.id, []string{n.id}, udpPutter, n.logger)
 
 	go func() {
 		for pkt := range udpCh {

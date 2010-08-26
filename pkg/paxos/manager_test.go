@@ -8,8 +8,7 @@ import (
 
 func selfRefNewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
 	p := make([]Putter, 1)
-	m := NewManager(start, self, nodes, logger)
-	m.Init(FakePutter(p))
+	m := NewManager(start, self, nodes, FakePutter(p), logger)
 	p[0] = m
 	return m
 }
