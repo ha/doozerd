@@ -56,6 +56,14 @@ func NewNominate(crnd int, v string) Message {
 	}
 }
 
+// TODO fix these numeric types
+func NewRsvp(i, vrnd uint64, vval string) Message {
+	return Msg{
+		cmd: "RSVP",
+		body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
+	}
+}
+
 type Msg struct {
 	seqn uint64
 	from uint64

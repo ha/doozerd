@@ -33,11 +33,7 @@ func acceptor(ins chan Message, outs Putter) {
 			case i > rnd:
 				rnd = i
 
-				reply := Msg{
-					seqn: in.Seqn(),
-					cmd: "RSVP",
-					body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
-				}
+				reply := NewRsvp(i, vrnd, vval)
 				outs.Put(reply)
 			}
 		case "NOMINATE":
