@@ -54,7 +54,8 @@ func NewInvite(crnd int) Message {
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
 func InviteParts(m Message) (crnd int) {
-	return 1
+	crnd, _ = strconv.Atoi(m.Body())
+	return
 }
 
 func NewNominate(crnd int, v string) Message {
@@ -66,7 +67,10 @@ func NewNominate(crnd int, v string) Message {
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
 func NominateParts(m Message) (crnd int, v string) {
-	return 1, "foo"
+	parts := strings.Split(m.Body(), ":", 2)
+	crnd, _ = strconv.Atoi(parts[0])
+	v = parts[1]
+	return
 }
 
 // TODO fix these numeric types
@@ -80,7 +84,11 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
 // TODO fix these numeric types
 func RsvpParts(m Message) (i, vrnd uint64, vval string) {
-	return 1, 0, ""
+	parts := strings.Split(m.Body(), ":", 3)
+	i, _ = strconv.Atoui64(parts[0])
+	vrnd, _ = strconv.Atoui64(parts[1])
+	vval = parts[2]
+	return
 }
 
 // TODO fix these numeric types
@@ -94,7 +102,10 @@ func NewVote(i uint64, vval string) Message {
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
 // TODO fix these numeric types
 func VoteParts(m Message) (i uint64, vval string) {
-	return 1, "foo"
+	parts := strings.Split(m.Body(), ":", 2)
+	i, _ = strconv.Atoui64(parts[0])
+	vval = parts[1]
+	return
 }
 
 type Msg struct {

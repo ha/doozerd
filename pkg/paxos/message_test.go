@@ -198,3 +198,31 @@ func TestVoteParts(t *testing.T) {
     assert.Equal(t, uint64(1), i, "")
     assert.Equal(t, "foo", vval, "")
 }
+
+func TestInvitePartsAlt(t *testing.T) {
+    m := NewInvite(2)
+    crnd := InviteParts(m)
+    assert.Equal(t, 2, crnd, "")
+}
+
+func TestNominatePartsAlt(t *testing.T) {
+    m := NewNominate(2, "bar")
+    crnd, v := NominateParts(m)
+    assert.Equal(t, 2, crnd, "")
+    assert.Equal(t, "bar", v, "")
+}
+
+func TestRsvpPartsAlt(t *testing.T) {
+    m := NewRsvp(2, 1, "foo")
+    i, vrnd, vval := RsvpParts(m)
+    assert.Equal(t, uint64(2), i, "")
+    assert.Equal(t, uint64(1), vrnd, "")
+    assert.Equal(t, "foo", vval, "")
+}
+
+func TestVotePartsAlt(t *testing.T) {
+    m := NewVote(2, "bar")
+    i, vval := VoteParts(m)
+    assert.Equal(t, uint64(2), i, "")
+    assert.Equal(t, "bar", vval, "")
+}
