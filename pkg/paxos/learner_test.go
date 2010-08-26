@@ -13,7 +13,7 @@ func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
         taught <- learner(1, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -26,8 +26,8 @@ func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
         taught <- learner(2, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:foo")
-    msgs <- m("2:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
+    msgs <- newVoteFrom(2, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -40,8 +40,8 @@ func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
         taught <- learner(1, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:x:bar")
-    msgs <- m("1:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 0, "bar")
+    msgs <- newVoteFrom(1, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -55,7 +55,7 @@ func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
     }()
 
     msgs <- m("1:*:foo:1:bar")
-    msgs <- m("1:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -69,7 +69,7 @@ func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
     }()
 
     msgs <- m("1:*:VOTE:")
-    msgs <- m("1:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -82,9 +82,9 @@ func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
         taught <- learner(2, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:foo")
-    msgs <- m("1:*:VOTE:1:foo")
-    msgs <- m("2:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
+    msgs <- newVoteFrom(1, 1, "foo")
+    msgs <- newVoteFrom(2, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
     // A quick test to make sure all msgsages were received.  If we get here
@@ -99,9 +99,9 @@ func TestIgnoresSenderInOldRound(t *testing.T) {
         taught <- learner(2, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:2:foo")
-    msgs <- m("2:*:VOTE:1:foo")
-    msgs <- m("2:*:VOTE:2:foo")
+    msgs <- newVoteFrom(1, 2, "foo")
+    msgs <- newVoteFrom(2, 1, "foo")
+    msgs <- newVoteFrom(2, 2, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -114,9 +114,9 @@ func TestResetsVotedFlags(t *testing.T) {
         taught <- learner(2, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:foo")
-    msgs <- m("1:*:VOTE:2:foo")
-    msgs <- m("2:*:VOTE:2:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
+    msgs <- newVoteFrom(1, 2, "foo")
+    msgs <- newVoteFrom(2, 2, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -129,11 +129,11 @@ func TestResetsVoteCounts(t *testing.T) {
         taught <- learner(3, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:foo")
-    msgs <- m("2:*:VOTE:1:foo")
-    msgs <- m("1:*:VOTE:2:foo")
-    msgs <- m("2:*:VOTE:2:foo")
-    msgs <- m("3:*:VOTE:2:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
+    msgs <- newVoteFrom(2, 1, "foo")
+    msgs <- newVoteFrom(1, 2, "foo")
+    msgs <- newVoteFrom(2, 2, "foo")
+    msgs <- newVoteFrom(3, 2, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -146,9 +146,9 @@ func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
         taught <- learner(2, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:foo")
-    msgs <- m("3:*:VOTE:1:bar")
-    msgs <- m("2:*:VOTE:1:foo")
+    msgs <- newVoteFrom(1, 1, "foo")
+    msgs <- newVoteFrom(3, 1, "bar")
+    msgs <- newVoteFrom(2, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
 }
@@ -174,13 +174,13 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
         taught <- learner(2, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:1:bar")  //valid
-    msgs <- m("3:*:VOTE:2:funk") //reset
-    msgs <- m("2:*:VOTE:1:bar")  //ignored
+    msgs <- newVoteFrom(1, 1, "bar")  //valid
+    msgs <- newVoteFrom(3, 2, "funk") //reset
+    msgs <- newVoteFrom(2, 1, "bar")  //ignored
 
-    msgs <- m("3:*:VOTE:1:foo")    //ignored
-    msgs <- m("2:*:VOTE:2:foo")    //valid
-    msgs <- m("1:*:VOTE:2:foo")    //valid (at quorum)
+    msgs <- newVoteFrom(3, 1, "foo")    //ignored
+    msgs <- newVoteFrom(2, 2, "foo")    //valid
+    msgs <- newVoteFrom(1, 2, "foo")    //valid (at quorum)
 
     assert.Equal(t, "foo", <-taught, "")
 }

@@ -5,6 +5,13 @@ import (
     "testing"
 )
 
+// For testing convenience
+func newVoteFrom(from byte, i uint64, vval string) Message {
+    m := NewVote(i, vval)
+    m.SetFrom(from)
+    return m
+}
+
 func TestNewInvite(t *testing.T) {
     m := NewInvite(1)
     assert.Equal(t, "INVITE", m.Cmd(), "")

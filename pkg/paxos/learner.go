@@ -7,7 +7,7 @@ const (
 )
 
 func learner(quorum uint64, ins chan Message) string {
-    var round uint64 = 0
+    var round uint64 = 1
     votes := make(map[string]uint64) // maps values to number of votes
     voted := make(map[uint64]bool) // maps values to number of votes
 
