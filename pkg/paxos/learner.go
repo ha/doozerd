@@ -6,7 +6,7 @@ func learner(quorum uint64, ins chan Message) string {
     voted := make(map[uint64]bool) // maps values to number of votes
 
     for in := range ins {
-        if in.Cmd() != "VOTE" {
+        if in.Cmd() != Vote {
             continue
         }
 

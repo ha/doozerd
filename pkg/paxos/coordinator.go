@@ -51,7 +51,7 @@ Start:
 				goto Done
 			}
 			switch in.Cmd() {
-			case "RSVP":
+			case Rsvp:
 				i, vrnd, vval := RsvpParts(in)
 
 				if cval != "" {

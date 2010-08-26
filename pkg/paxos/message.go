@@ -16,10 +16,18 @@ const (
 	mNumParts
 )
 
+const (
+	Nop = iota
+	Invite
+	Rsvp
+	Nominate
+	Vote
+)
+
 type Message interface {
     Seqn() uint64
     From() uint64
-    Cmd() string
+    Cmd() int
     Body() string // soon to be []byte
 
 	SetFrom(byte)
@@ -42,12 +50,17 @@ func NewMessage(s string) Message {
 		panic(s)
 	}
 
-	return &Msg{seqn, from, parts[mCmd], parts[mBody]}
+	cmd, err := strconv.Atoi(parts[mCmd])
+	if err != nil {
+		panic(s)
+	}
+
+	return &Msg{seqn, from, cmd, parts[mBody]}
 }
 
 func NewInvite(crnd uint64) Message {
 	return &Msg{
-		cmd:  "INVITE",
+		cmd:  Invite,
 		body: fmt.Sprintf("%d", crnd),
 	}
 }
@@ -60,7 +73,7 @@ func InviteParts(m Message) (crnd uint64) {
 
 func NewNominate(crnd uint64, v string) Message {
 	return &Msg{
-		cmd:  "NOMINATE",
+		cmd:  Nominate,
 		body: fmt.Sprintf("%d:%s", crnd, v),
 	}
 }
@@ -75,7 +88,7 @@ func NominateParts(m Message) (crnd uint64, v string) {
 
 func NewRsvp(i, vrnd uint64, vval string) Message {
 	return &Msg{
-		cmd: "RSVP",
+		cmd: Rsvp,
 		body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
 	}
 }
@@ -91,7 +104,7 @@ func RsvpParts(m Message) (i, vrnd uint64, vval string) {
 
 func NewVote(i uint64, vval string) Message {
 	return &Msg{
-		cmd: "VOTE",
+		cmd: Vote,
 		body: fmt.Sprintf("%d:%s", i, vval),
 	}
 }
@@ -104,10 +117,25 @@ func VoteParts(m Message) (i uint64, vval string) {
 	return
 }
 
+// In-memory format:
+//
+//     0    -- index of sender
+//     1    -- cmd
+//     2..9 -- seqn
+//     10.. -- body -- format depends on command
+//
+// Wire format is same as in-memory format, but without the first byte (the
+// sender index). Here it is for clarity:
+//
+//     0    -- cmd
+//     1..8 -- seqn
+//     9..  -- body -- format depends on command
+//type Msg []byte
+
 type Msg struct {
 	seqn uint64
 	from uint64
-	cmd string
+	cmd int
 	body string
 }
 
@@ -119,7 +147,7 @@ func (m Msg) From() uint64 {
 	return m.from
 }
 
-func (m Msg) Cmd() string {
+func (m Msg) Cmd() int {
 	return m.cmd
 }
 

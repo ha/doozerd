@@ -6,7 +6,7 @@ func acceptor(ins chan Message, outs Putter) {
 
 	for in := range ins {
 		switch in.Cmd() {
-		case "INVITE":
+		case Invite:
 			i := InviteParts(in)
 
 			switch {
@@ -17,7 +17,7 @@ func acceptor(ins chan Message, outs Putter) {
 				reply := NewRsvp(i, vrnd, vval)
 				outs.Put(reply)
 			}
-		case "NOMINATE":
+		case Nominate:
 			i, v := NominateParts(in)
 
 			// SUPER IMPT MAD PAXOS
