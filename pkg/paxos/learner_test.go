@@ -46,38 +46,6 @@ func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
     assert.Equal(t, "foo", <-taught, "")
 }
 
-func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
-    msgs := make(chan Message)
-    taught := make(chan string)
-
-    go func() {
-        taught <- learner(1, msgs)
-    }()
-
-    m := newVoteFrom(1, 1, "foo")
-    m.(*Msg).cmd = "foo"
-    msgs <- m
-    msgs <- newVoteFrom(1, 1, "foo")
-
-    assert.Equal(t, "foo", <-taught, "")
-}
-
-func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
-    msgs := make(chan Message)
-    taught := make(chan string)
-
-    go func() {
-        taught <- learner(1, msgs)
-    }()
-
-    m := newVoteFrom(1, 1, "foo")
-    m.(*Msg).body = ""
-    msgs <- m
-    msgs <- newVoteFrom(1, 1, "foo")
-
-    assert.Equal(t, "foo", <-taught, "")
-}
-
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
     msgs := make(chan Message)
     taught := make(chan string)

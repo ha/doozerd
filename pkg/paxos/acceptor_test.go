@@ -47,36 +47,6 @@ func TestAcceptsInvite(t *testing.T) {
 	assert.Equal(t, exp, <-outs, "")
 }
 
-func TestIgnoresMalformedMessages(t *testing.T) {
-	unknownCommand := newInviteFrom(1, 1)
-	unknownCommand.(*Msg).cmd = "x"
-	invalidBody := newNominateFrom(1, 1, "foo")
-	invalidBody.(*Msg).body = "x"
-
-	totest := []Message{
-		newInviteFrom(1, 0), // invalid round number
-		unknownCommand,      // unknown command
-
-		invalidBody,                  // too few separators in nominate body
-		newNominateFrom(1, 0, "foo"), // invalid round number
-	}
-
-	for _, test := range totest {
-		ins := make(chan Message)
-		outs := SyncPutter(make(chan Message))
-
-		go acceptor(ins, PutWrapper{1, 2, outs})
-		ins <- test
-
-		// We want to check that it didn't try to send a response.
-		// If it didn't, it will continue to read the next input message and
-		// this will work fine. If it did, this will deadlock.
-		ins <- test
-
-		close(ins)
-	}
-}
-
 func TestItVotes(t *testing.T) {
 	totest := [][]Message{
 		[]Message{newNominateFrom(1, 1, "foo"), newVoteFrom(2, 1, "foo")},

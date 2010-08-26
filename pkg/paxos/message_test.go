@@ -13,6 +13,68 @@ import (
 // "1:x:INVITE:1" // invalid to address
 // "X:*:INVITE:1" // invalid from address
 
+//func TestIgnoresMalformedMessages(t *testing.T) {
+//	unknownCommand := newInviteFrom(1, 1)
+//	unknownCommand.(*Msg).cmd = "x"
+//	invalidBody := newNominateFrom(1, 1, "foo")
+//	invalidBody.(*Msg).body = "x"
+//
+//	totest := []Message{
+//		newInviteFrom(1, 0), // invalid round number
+//		unknownCommand,      // unknown command
+//
+//		invalidBody,                  // too few separators in nominate body
+//		newNominateFrom(1, 0, "foo"), // invalid round number
+//	}
+//
+//	for _, test := range totest {
+//		ins := make(chan Message)
+//		outs := SyncPutter(make(chan Message))
+//
+//		go acceptor(ins, PutWrapper{1, 2, outs})
+//		ins <- test
+//
+//		// We want to check that it didn't try to send a response.
+//		// If it didn't, it will continue to read the next input message and
+//		// this will work fine. If it did, this will deadlock.
+//		ins <- test
+//
+//		close(ins)
+//	}
+//}
+
+//func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
+//    msgs := make(chan Message)
+//    taught := make(chan string)
+//
+//    go func() {
+//        taught <- learner(1, msgs)
+//    }()
+//
+//    m := newVoteFrom(1, 1, "foo")
+//    m.(*Msg).cmd = "foo"
+//    msgs <- m
+//    msgs <- newVoteFrom(1, 1, "foo")
+//
+//    assert.Equal(t, "foo", <-taught, "")
+//}
+//
+//func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
+//    msgs := make(chan Message)
+//    taught := make(chan string)
+//
+//    go func() {
+//        taught <- learner(1, msgs)
+//    }()
+//
+//    m := newVoteFrom(1, 1, "foo")
+//    m.(*Msg).body = ""
+//    msgs <- m
+//    msgs <- newVoteFrom(1, 1, "foo")
+//
+//    assert.Equal(t, "foo", <-taught, "")
+//}
+
 // For testing convenience
 func newVoteFrom(from byte, i uint64, vval string) Message {
     m := NewVote(i, vval)
