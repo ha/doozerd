@@ -66,7 +66,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	m := NewManager(1, "a", []string{"a"}, logger)
 	m.Init(m)
 
-	m.Put(&Msg{1, 1, "VOTE", "1:" + exp})
+	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp, v, "")
@@ -77,7 +77,7 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	m := NewManager(1, "a", []string{"a"}, logger)
 	m.Init(m)
 
-	m.Put(&Msg{1, 1, "VOTE", "1:" + exp})
+	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp, v, "")
