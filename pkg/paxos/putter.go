@@ -21,12 +21,13 @@ func (cp ChanPutter) Put(m Message) {
 }
 
 type PutWrapper struct {
-	seqn, from uint64
+	seqn uint64
+	from uint8
 	Putter
 }
 
 func (w PutWrapper) Put(m Message) {
 	m.SetSeqn(w.seqn)
-	m.SetFrom(byte(w.from))
+	m.SetFrom(w.from)
 	w.Putter.Put(m)
 }
