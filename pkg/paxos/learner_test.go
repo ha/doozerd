@@ -54,7 +54,9 @@ func TestIgnoresMalformedMessageBadCommand(t *testing.T) {
         taught <- learner(1, msgs)
     }()
 
-    msgs <- m("1:*:foo:1:bar")
+    m := newVoteFrom(1, 1, "foo")
+    m.(*Msg).cmd = "foo"
+    msgs <- m
     msgs <- newVoteFrom(1, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
@@ -68,7 +70,9 @@ func TestIgnoresMessageWithIncorrectArityInBody(t *testing.T) {
         taught <- learner(1, msgs)
     }()
 
-    msgs <- m("1:*:VOTE:")
+    m := newVoteFrom(1, 1, "foo")
+    m.(*Msg).body = ""
+    msgs <- m
     msgs <- newVoteFrom(1, 1, "foo")
 
     assert.Equal(t, "foo", <-taught, "")
