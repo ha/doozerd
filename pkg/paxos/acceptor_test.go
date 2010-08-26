@@ -38,10 +38,10 @@ func TestAcceptsInvite(t *testing.T) {
 	outs := SyncPutter(make(chan Message))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
-	ins <- m("1:*:INVITE:1")
+	ins <- newInviteFrom(1, 1)
 	close(ins)
 
-	exp := m("2:1:RSVP:1:0:")
+	exp := newRsvpFrom(2, 1, 0, "")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -49,15 +49,6 @@ func TestAcceptsInvite(t *testing.T) {
 
 func TestIgnoresMalformedMessages(t *testing.T) {
 	totest := msgs(
-		// TODO: Move to router tests
-		//m("x"),            // too few separators
-		//m("x:x"),          // too few separators
-		//m("x:x:x"),        // too few separators
-		//m("x:x:x:x:x"),    // too many separators
-		//m("1:x:INVITE:1"), // invalid to address
-		//m("X:*:INVITE:1"), // invalid from address
-		// TODO: END
-
 		"1:*:INVITE:x", // invalid round number
 		"1:*:x:1",      // unknown command
 
@@ -108,10 +99,10 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	// According to paxos, we can omit Phase 1 in the first round
-	ins <- m("1:*:NOMINATE:2:"+val)
+	ins <- newNominateFrom(1, 2, val)
 	close(ins)
 
-	exp := m("2:*:VOTE:2:" + val)
+	exp := newVoteFrom(2, 2, val)
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -125,10 +116,10 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 
 	go acceptor(ins, PutWrapper{1, 3, outs})
 	// According to paxos, we can omit Phase 1 in the first round
-	ins <- m("1:*:NOMINATE:2:"+val)
+	ins <- newNominateFrom(1, 2, val)
 	close(ins)
 
-	exp := m("3:*:VOTE:2:" + val)
+	exp := newVoteFrom(3, 2, val)
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -139,12 +130,12 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	outs := SyncPutter(make(chan Message))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
-	ins <- m("1:*:NOMINATE:1:v")
+	ins <- newNominateFrom(1, 1, "v")
 	<-outs // throw away VOTE message
-	ins <- m("1:*:INVITE:2")
+	ins <- newInviteFrom(1, 2)
 	close(ins)
 
-	exp := m("2:1:RSVP:2:1:v")
+	exp := newRsvpFrom(2, 2, 1, "v")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -155,18 +146,18 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	outs := SyncPutter(make(chan Message))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
-	ins <- m("1:*:NOMINATE:1:v")
+	ins <- newNominateFrom(1, 1, "v")
 	got := <-outs
-	ins <- m("1:*:NOMINATE:1:v")
+	ins <- newNominateFrom(1, 1, "v")
 
 	// We want to check that it didn't try to send a response.
 	// If it didn't, it will continue to read the next input message and
 	// this will work fine. If it did, this will deadlock.
-	ins <- m("1:*::")
+	ins <- &Msg{}
 
 	close(ins)
 
-	exp := m("2:*:VOTE:1:v")
+	exp := newVoteFrom(2, 1, "v")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, got, "")

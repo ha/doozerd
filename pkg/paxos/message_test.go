@@ -5,9 +5,18 @@ import (
     "testing"
 )
 
+// TODO: test wire format
+// "x"            // too few separators
+// "x:x"          // too few separators
+// "x:x:x"        // too few separators
+// "x:x:x:x:x"    // too many separators
+// "1:x:INVITE:1" // invalid to address
+// "X:*:INVITE:1" // invalid from address
+
 // For testing convenience
 func newVoteFrom(from byte, i uint64, vval string) Message {
     m := NewVote(i, vval)
+    m.SetSeqn(1)
     m.SetFrom(from)
     return m
 }
@@ -23,6 +32,7 @@ func newNominateFrom(from byte, crnd int, v string) Message {
 // For testing convenience
 func newRsvpFrom(from byte, i, vrnd uint64, vval string) Message {
     m := NewRsvp(i, vrnd, vval)
+    m.SetSeqn(1)
     m.SetFrom(from)
     return m
 }
