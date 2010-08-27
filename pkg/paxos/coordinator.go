@@ -39,7 +39,7 @@ func (c *C) process(target string) {
 
 Start:
 	cval = ""
-	start := NewInvite(crnd)
+	start := newInvite(crnd)
 	c.outs.Put(start)
 
 	var rsvps int
@@ -54,7 +54,7 @@ Start:
 			}
 			switch in.Cmd() {
 			case Rsvp:
-				i, vrnd, vval := RsvpParts(in)
+				i, vrnd, vval := rsvpParts(in)
 
 				if cval != "" {
 					continue
@@ -80,7 +80,7 @@ Start:
 					}
 					cval = v
 
-					chosen := NewNominate(crnd, v)
+					chosen := newNominate(crnd, v)
 					c.outs.Put(chosen)
 				}
 			}

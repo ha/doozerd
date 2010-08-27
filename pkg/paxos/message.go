@@ -19,6 +19,26 @@ import (
 //     1..8  -- cluster version
 //     9..15 -- seqn
 //     16..  -- body -- format depends on command
+//
+// Here's how you create a `Msg` from incoming network data. This assumes you
+// know some upper bound on the size of a message (for instance, UDP packets
+// can't ever be more than about 1,500 bytes in practice over Ethernet).
+//
+// First, allocate a message that's definitely big enough:
+//
+//     m := make(Msg, 3000) // plenty of space for an Ethernet frame
+//
+// Then, read in bytes from the wire into the "wire format" portion of the
+// Msg:
+//
+//     n, addr, _ := conn.ReadFrom(m.WireBytes())
+//
+// Finally, slice off the proper size of the message object:
+//
+//     m = m[0:n]
+//
+// Of course, you'll want to do error checking and probably fill in the `From`
+// index based on the UDP sender address.
 type Msg []byte
 
 const (
@@ -45,7 +65,7 @@ const (
 	voteLen     = 8  // not including v
 )
 
-func NewInvite(crnd uint64) Msg {
+func newInvite(crnd uint64) Msg {
 	m := make(Msg, baseLen + inviteLen)
 	m[mCmd] = Invite
 	util.Packui64(m.Body()[0:8], crnd)
@@ -53,11 +73,11 @@ func NewInvite(crnd uint64) Msg {
 }
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
-func InviteParts(m Msg) (crnd uint64) {
+func inviteParts(m Msg) (crnd uint64) {
 	return util.Unpackui64(m.Body())
 }
 
-func NewNominate(crnd uint64, v string) Msg {
+func newNominate(crnd uint64, v string) Msg {
 	m := make(Msg, baseLen+nominateLen+len(v))
 	m[mCmd] = Nominate
 	util.Packui64(m.Body()[0:8], crnd)
@@ -66,13 +86,13 @@ func NewNominate(crnd uint64, v string) Msg {
 }
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
-func NominateParts(m Msg) (crnd uint64, v string) {
+func nominateParts(m Msg) (crnd uint64, v string) {
 	crnd = util.Unpackui64(m.Body()[0:8])
 	v = string(m.Body()[8:])
 	return
 }
 
-func NewRsvp(i, vrnd uint64, vval string) Msg {
+func newRsvp(i, vrnd uint64, vval string) Msg {
 	m := make(Msg, baseLen+rsvpLen+len(vval))
 	m[mCmd] = Rsvp
 	util.Packui64(m.Body()[0:8], i)
@@ -82,14 +102,14 @@ func NewRsvp(i, vrnd uint64, vval string) Msg {
 }
 
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
-func RsvpParts(m Msg) (i, vrnd uint64, vval string) {
+func rsvpParts(m Msg) (i, vrnd uint64, vval string) {
 	i = util.Unpackui64(m.Body()[0:8])
 	vrnd = util.Unpackui64(m.Body()[8:16])
 	vval = string(m.Body()[16:])
 	return
 }
 
-func NewVote(i uint64, vval string) Msg {
+func newVote(i uint64, vval string) Msg {
 	m := make(Msg, baseLen+voteLen+len(vval))
 	m[mCmd] = Vote
 	util.Packui64(m.Body()[0:8], i)
@@ -98,7 +118,7 @@ func NewVote(i uint64, vval string) Msg {
 }
 
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
-func VoteParts(m Msg) (i uint64, vval string) {
+func voteParts(m Msg) (i uint64, vval string) {
 	i = util.Unpackui64(m.Body()[0:8])
 	vval = string(m.Body()[8:])
 	return
@@ -124,18 +144,25 @@ func (m Msg) Body() []byte {
 	return m[mBody:]
 }
 
+// Typically used after reading from the network, when building a new `Msg`
+// object.
 func (m Msg) SetFrom(from byte) {
 	m[mFrom] = from
 }
 
+// Typically used just before writing `m` to the network.
 func (m Msg) SetClusterVersion(ver uint64) {
 	util.Packui64(m[mClusterVersion:mClusterVersion+8], ver)
 }
 
+// Typically used just before writing `m` to the network.
 func (m Msg) SetSeqn(seqn uint64) {
 	util.Packui64(m[mSeqn:mSeqn+8], seqn)
 }
 
+// Check that `m` is well-formed. Does not guarantee that it will be valid or
+// meaningful. If this method returns `true`, you can safely pass `m` into a
+// `Putter`.
 func (m Msg) Ok() bool {
 	if len(m) < 2 {
 		return false

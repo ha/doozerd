@@ -128,7 +128,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	// We want to check that it didn't try to send a response.
 	// If it didn't, it will continue to read the next input message and
 	// this will work fine. If it did, this will deadlock.
-	ins <- NewInvite(0) // any old Msg will do here
+	ins <- newInvite(0) // any old Msg will do here
 
 	close(ins)
 

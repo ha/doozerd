@@ -8,7 +8,7 @@ import (
 func TestCoordPut(t *testing.T) {
 	c := NewC(NewCluster("a", []string{"a"}), nil)
 	c.ins = make(chan Msg)
-	msg := NewInvite(0) // any old Msg will do here
+	msg := newInvite(0) // any old Msg will do here
 	c.Put(msg)
 	assert.Equal(t, msg, <-c.ins, "")
 }

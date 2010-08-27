@@ -10,7 +10,7 @@ func learner(quorum uint64, ins chan Msg) string {
 			continue
 		}
 
-		mRound, v := VoteParts(in)
+		mRound, v := voteParts(in)
 
 		switch {
 		case mRound < round:
