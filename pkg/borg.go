@@ -75,7 +75,7 @@ func recvUdp(conn net.PacketConn, ch chan paxos.Message) {
 			fmt.Println(err)
 			continue
 		}
-		msg := paxos.NewMessage(string(pkt[0:n]))
+		msg := paxos.NewMessage(pkt[0:n])
 		ch <- msg
 	}
 }

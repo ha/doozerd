@@ -34,7 +34,8 @@ type Message interface {
 	SetSeqn(uint64)
 }
 
-func NewMessage(s string) Message {
+func NewMessage(b []byte) Message {
+	s := string(b)
 	parts := strings.Split(s, ":", mNumParts)
 	if len(parts) != mNumParts {
 		panic(s)
