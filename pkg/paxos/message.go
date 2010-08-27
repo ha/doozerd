@@ -25,9 +25,9 @@ const (
 )
 
 type Message interface {
-    Seqn() uint64
-    From() uint64
+    From() int
     Cmd() int
+    Seqn() uint64
     Body() string // soon to be []byte
 
 	SetFrom(byte)
@@ -45,7 +45,7 @@ func NewMessage(s string) Message {
 		panic(s)
 	}
 
-	from, err := strconv.Btoui64(parts[mFrom], 10)
+	from, err := strconv.Atoi(parts[mFrom])
 	if err != nil {
 		panic(s)
 	}
@@ -55,7 +55,7 @@ func NewMessage(s string) Message {
 		panic(s)
 	}
 
-	return &Msg{seqn, from, cmd, parts[mBody]}
+	return &Msg{byte(from), cmd, seqn, parts[mBody]}
 }
 
 func NewInvite(crnd uint64) Message {
@@ -133,9 +133,9 @@ func VoteParts(m Message) (i uint64, vval string) {
 //type Msg []byte
 
 type Msg struct {
-	seqn uint64
-	from uint64
+	from byte
 	cmd int
+	seqn uint64
 	body string
 }
 
@@ -143,8 +143,8 @@ func (m Msg) Seqn() uint64 {
 	return m.seqn
 }
 
-func (m Msg) From() uint64 {
-	return m.from
+func (m Msg) From() int {
+	return int(m.from)
 }
 
 func (m Msg) Cmd() int {
@@ -156,7 +156,7 @@ func (m Msg) Body() string {
 }
 
 func (m *Msg) SetFrom(from byte) {
-	m.from = uint64(from)
+	m.from = from
 }
 
 func (m *Msg) SetSeqn(seqn uint64) {

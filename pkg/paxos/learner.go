@@ -3,7 +3,7 @@ package paxos
 func learner(quorum uint64, ins chan Message) string {
     var round uint64 = 1
     votes := make(map[string]uint64) // maps values to number of votes
-    voted := make(map[uint64]bool) // maps values to number of votes
+    voted := make(map[int]bool) // maps nodes to vote status
 
     for in := range ins {
         if in.Cmd() != Vote {
@@ -18,7 +18,7 @@ func learner(quorum uint64, ins chan Message) string {
         case mRound > round:
             round = mRound
             votes = make(map[string]uint64)
-            voted = make(map[uint64]bool)
+            voted = make(map[int]bool)
             fallthrough
         case mRound == round:
             if voted[in.From()] {
