@@ -35,3 +35,11 @@ func Packui64(b []byte, n uint64) {
 		n >>= 8
 	}
 }
+
+func Unpackui64(b []byte) (n uint64) {
+	for _, k := range b {
+		n <<= 8
+		n |= uint64(k)
+	}
+	return
+}
