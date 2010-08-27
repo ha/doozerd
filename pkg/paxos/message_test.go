@@ -6,7 +6,7 @@ import (
 )
 
 // For testing convenience
-func newVoteFrom(from byte, i uint64, vval string) Message {
+func newVoteFrom(from byte, i uint64, vval string) Msg {
 	m := NewVote(i, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -14,7 +14,7 @@ func newVoteFrom(from byte, i uint64, vval string) Message {
 }
 
 // For testing convenience
-func newNominateFrom(from byte, crnd uint64, v string) Message {
+func newNominateFrom(from byte, crnd uint64, v string) Msg {
 	m := NewNominate(crnd, v)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -22,7 +22,7 @@ func newNominateFrom(from byte, crnd uint64, v string) Message {
 }
 
 // For testing convenience
-func newRsvpFrom(from byte, i, vrnd uint64, vval string) Message {
+func newRsvpFrom(from byte, i, vrnd uint64, vval string) Msg {
 	m := NewRsvp(i, vrnd, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -30,7 +30,7 @@ func newRsvpFrom(from byte, i, vrnd uint64, vval string) Message {
 }
 
 // For testing convenience
-func newInviteFrom(from byte, rnd uint64) Message {
+func newInviteFrom(from byte, rnd uint64) Msg {
 	m := NewInvite(rnd)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -117,7 +117,7 @@ func TestMessageSetSeqn(t *testing.T) {
 	assert.Equal(t, uint64(2), m.Seqn(), "")
 }
 
-var badMessages = []Message{
+var badMessages = []Msg{
 	Msg{0},      // too short
 	Msg{0, 255}, // bad cmd
 
@@ -145,7 +145,7 @@ func TestBadMessagesOk(t *testing.T) {
 	}
 }
 
-var goodMessages = []Message{
+var goodMessages = []Msg{
 	NewInvite(1),
 	NewRsvp(2, 1, "foo"),
 	NewNominate(1, "foo"),

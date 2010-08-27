@@ -7,16 +7,16 @@ import (
 )
 
 func TestIgnoreOldMessages(t *testing.T) {
-	tests := [][]Message{
-		[]Message{newInviteFrom(1, 11), newNominateFrom(1, 1, "v")},
-		[]Message{newNominateFrom(1, 11, "v"), newInviteFrom(1, 1)},
-		[]Message{newInviteFrom(1, 11), newInviteFrom(1, 1)},
-		[]Message{newNominateFrom(1, 11, "v"), newNominateFrom(1, 1, "v")},
+	tests := [][]Msg{
+		[]Msg{newInviteFrom(1, 11), newNominateFrom(1, 1, "v")},
+		[]Msg{newNominateFrom(1, 11, "v"), newInviteFrom(1, 1)},
+		[]Msg{newInviteFrom(1, 11), newInviteFrom(1, 1)},
+		[]Msg{newNominateFrom(1, 11, "v"), newNominateFrom(1, 1, "v")},
 	}
 
 	for _, test := range tests {
-		ins := make(chan Message)
-		outs := SyncPutter(make(chan Message))
+		ins := make(chan Msg)
+		outs := SyncPutter(make(chan Msg))
 
 		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test[0]
@@ -34,8 +34,8 @@ func TestIgnoreOldMessages(t *testing.T) {
 }
 
 func TestAcceptsInvite(t *testing.T) {
-	ins := make(chan Message)
-	outs := SyncPutter(make(chan Message))
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- newInviteFrom(1, 1)
@@ -48,14 +48,14 @@ func TestAcceptsInvite(t *testing.T) {
 }
 
 func TestItVotes(t *testing.T) {
-	totest := [][]Message{
-		[]Message{newNominateFrom(1, 1, "foo"), newVoteFrom(2, 1, "foo")},
-		[]Message{newNominateFrom(1, 1, "bar"), newVoteFrom(2, 1, "bar")},
+	totest := [][]Msg{
+		[]Msg{newNominateFrom(1, 1, "foo"), newVoteFrom(2, 1, "foo")},
+		[]Msg{newNominateFrom(1, 1, "bar"), newVoteFrom(2, 1, "bar")},
 	}
 
 	for _, test := range totest {
-		ins := make(chan Message)
-		outs := SyncPutter(make(chan Message))
+		ins := make(chan Msg)
+		outs := SyncPutter(make(chan Msg))
 
 		go acceptor(ins, PutWrapper{1, 2, outs})
 		ins <- test[0]
@@ -67,8 +67,8 @@ func TestItVotes(t *testing.T) {
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
-	ins := make(chan Message)
-	outs := SyncPutter(make(chan Message))
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	val := "bar"
 
@@ -84,8 +84,8 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
-	ins := make(chan Message)
-	outs := SyncPutter(make(chan Message))
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	val := "bar"
 
@@ -101,8 +101,8 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
-	ins := make(chan Message)
-	outs := SyncPutter(make(chan Message))
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- newNominateFrom(1, 1, "v")
@@ -117,8 +117,8 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
-	ins := make(chan Message)
-	outs := SyncPutter(make(chan Message))
+	ins := make(chan Msg)
+	outs := SyncPutter(make(chan Msg))
 
 	go acceptor(ins, PutWrapper{1, 2, outs})
 	ins <- newNominateFrom(1, 1, "v")
@@ -128,7 +128,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	// We want to check that it didn't try to send a response.
 	// If it didn't, it will continue to read the next input message and
 	// this will work fine. If it did, this will deadlock.
-	ins <- NewInvite(0) // any old Message will do here
+	ins <- NewInvite(0) // any old Msg will do here
 
 	close(ins)
 

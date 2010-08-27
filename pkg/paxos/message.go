@@ -27,22 +27,11 @@ const (
 	voteLen     = 8  // not including v
 )
 
-type Message interface {
-	From() int
-	Cmd() int
-	Seqn() uint64
-	Body() []byte
-	Ok() bool
-
-	SetFrom(byte)
-	SetSeqn(uint64)
-}
-
-func NewMessage(b []byte) Message {
+func NewMessage(b []byte) Msg {
 	return Msg(b)
 }
 
-func NewInvite(crnd uint64) Message {
+func NewInvite(crnd uint64) Msg {
 	m := make(Msg, baseLen + inviteLen)
 	m[mCmd] = Invite
 	util.Packui64(m.Body()[0:8], crnd)
@@ -50,11 +39,11 @@ func NewInvite(crnd uint64) Message {
 }
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
-func InviteParts(m Message) (crnd uint64) {
+func InviteParts(m Msg) (crnd uint64) {
 	return util.Unpackui64(m.Body())
 }
 
-func NewNominate(crnd uint64, v string) Message {
+func NewNominate(crnd uint64, v string) Msg {
 	m := make(Msg, baseLen+nominateLen+len(v))
 	m[mCmd] = Nominate
 	util.Packui64(m.Body()[0:8], crnd)
@@ -63,13 +52,13 @@ func NewNominate(crnd uint64, v string) Message {
 }
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
-func NominateParts(m Message) (crnd uint64, v string) {
+func NominateParts(m Msg) (crnd uint64, v string) {
 	crnd = util.Unpackui64(m.Body()[0:8])
 	v = string(m.Body()[8:])
 	return
 }
 
-func NewRsvp(i, vrnd uint64, vval string) Message {
+func NewRsvp(i, vrnd uint64, vval string) Msg {
 	m := make(Msg, baseLen+rsvpLen+len(vval))
 	m[mCmd] = Rsvp
 	util.Packui64(m.Body()[0:8], i)
@@ -79,14 +68,14 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 }
 
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
-func RsvpParts(m Message) (i, vrnd uint64, vval string) {
+func RsvpParts(m Msg) (i, vrnd uint64, vval string) {
 	i = util.Unpackui64(m.Body()[0:8])
 	vrnd = util.Unpackui64(m.Body()[8:16])
 	vval = string(m.Body()[16:])
 	return
 }
 
-func NewVote(i uint64, vval string) Message {
+func NewVote(i uint64, vval string) Msg {
 	m := make(Msg, baseLen+voteLen+len(vval))
 	m[mCmd] = Vote
 	util.Packui64(m.Body()[0:8], i)
@@ -95,7 +84,7 @@ func NewVote(i uint64, vval string) Message {
 }
 
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
-func VoteParts(m Message) (i uint64, vval string) {
+func VoteParts(m Msg) (i uint64, vval string) {
 	i = util.Unpackui64(m.Body()[0:8])
 	vval = string(m.Body()[8:])
 	return

@@ -1,6 +1,6 @@
 package paxos
 
-func acceptor(ins chan Message, outs Putter) {
+func acceptor(ins chan Msg, outs Putter) {
 	var rnd, vrnd uint64
 	var vval string
 

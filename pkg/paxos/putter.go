@@ -1,7 +1,7 @@
 package paxos
 
 type Putter interface {
-	Put(m Message)
+	Put(m Msg)
 }
 
 type PutCloser interface {
@@ -14,9 +14,9 @@ type PutCloseProcessor interface {
 	process(string)
 }
 
-type ChanPutCloser chan Message
+type ChanPutCloser chan Msg
 
-func (cp ChanPutCloser) Put(m Message) {
+func (cp ChanPutCloser) Put(m Msg) {
 	go func() { cp <- m }()
 }
 
@@ -30,7 +30,7 @@ type PutWrapper struct {
 	Putter
 }
 
-func (w PutWrapper) Put(m Message) {
+func (w PutWrapper) Put(m Msg) {
 	m.SetSeqn(w.seqn)
 	m.SetFrom(w.from)
 	w.Putter.Put(m)

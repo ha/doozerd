@@ -6,7 +6,7 @@ import (
 )
 
 func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -19,7 +19,7 @@ func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
 }
 
 func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -33,7 +33,7 @@ func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
 }
 
 func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -47,7 +47,7 @@ func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
 }
 
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -64,7 +64,7 @@ func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
 }
 
 func TestIgnoresSenderInOldRound(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -79,7 +79,7 @@ func TestIgnoresSenderInOldRound(t *testing.T) {
 }
 
 func TestResetsVotedFlags(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -94,7 +94,7 @@ func TestResetsVotedFlags(t *testing.T) {
 }
 
 func TestResetsVoteCounts(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -111,7 +111,7 @@ func TestResetsVoteCounts(t *testing.T) {
 }
 
 func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -126,7 +126,7 @@ func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
 }
 
 func TestExitsQuietly(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {
@@ -139,7 +139,7 @@ func TestExitsQuietly(t *testing.T) {
 }
 
 func TestBringsOrderOutOfChaos(t *testing.T) {
-	msgs := make(chan Message)
+	msgs := make(chan Msg)
 	taught := make(chan string)
 
 	go func() {

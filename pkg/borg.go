@@ -33,7 +33,7 @@ package borg
 //     // The : signals a named variable part.
 //     me.HandleFunc(
 //         "/proc/:slug/beanstalkd/:upid/lock",
-//         func (msg *borg.Message) {
+//         func (msg *borg.Msg) {
 //             if msg.Value == myId {
 //                 cmd := beanstalkd ....
 //                 ... launch beanstalkd ...
@@ -67,7 +67,7 @@ func getPort(addr string) uint64 {
 	return port
 }
 
-func recvUdp(conn net.PacketConn, ch chan paxos.Message) {
+func recvUdp(conn net.PacketConn, ch chan paxos.Msg) {
 	for {
 		pkt := make([]byte, 3000) // make sure it's big enough
 		n, _, err := conn.ReadFrom(pkt)
@@ -80,14 +80,14 @@ func recvUdp(conn net.PacketConn, ch chan paxos.Message) {
 	}
 }
 
-type funcPutter func (paxos.Message)
+type funcPutter func (paxos.Msg)
 
-func (f funcPutter) Put(m paxos.Message) {
+func (f funcPutter) Put(m paxos.Msg) {
 	f(m)
 }
 
 func newUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
-	put := func(m paxos.Message) {
+	put := func(m paxos.Msg) {
 		pkt := fmt.Sprintf("%d:%d:0:%s:%s", m.Seqn(), me, m.Cmd(), m.Body())
 		b := []byte(pkt)
 
@@ -267,7 +267,7 @@ func (n *Node) RunForever() {
 		return
 	}
 
-	udpCh := make(chan paxos.Message)
+	udpCh := make(chan paxos.Msg)
 	go recvUdp(udpConn, udpCh)
 	udpPutter := newUdpPutter(me, n.nodes, udpConn)
 

@@ -5,7 +5,7 @@ type C struct {
 	cx   *cluster
 	outs Putter
 
-	ins   chan Message
+	ins   chan Msg
 	clock chan int
 }
 
@@ -13,12 +13,12 @@ func NewC(c *cluster, outs Putter) *C {
 	return &C{
 		cx:    c,
 		outs:  outs,
-		ins:   make(chan Message),
+		ins:   make(chan Msg),
 		clock: make(chan int),
 	}
 }
 
-func (c *C) Put(m Message) {
+func (c *C) Put(m Msg) {
 	go func() {
 		c.ins <- m
 	}()

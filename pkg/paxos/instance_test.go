@@ -10,7 +10,7 @@ import (
 
 type FakePutter []Putter
 
-func (fp FakePutter) Put(m Message) {
+func (fp FakePutter) Put(m Msg) {
 	for _, p := range fp {
 		p.Put(m)
 	}

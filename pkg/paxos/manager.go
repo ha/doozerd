@@ -66,7 +66,7 @@ func (m *Manager) getInstance(seqn uint64) *Instance {
 	return <-ch
 }
 
-func (m *Manager) Put(msg Message) {
+func (m *Manager) Put(msg Msg) {
 	m.getInstance(msg.Seqn()).Put(msg)
 }
 
