@@ -146,8 +146,10 @@ func (m Msg) Body() []byte {
 
 // Typically used after reading from the network, when building a new `Msg`
 // object.
-func (m Msg) SetFrom(from byte) {
-	m[mFrom] = from
+//
+// This assumes the number of nodes fits in a byte.
+func (m Msg) SetFrom(from int) {
+	m[mFrom] = byte(from)
 }
 
 // Typically used just before writing `m` to the network.

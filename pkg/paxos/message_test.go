@@ -6,7 +6,7 @@ import (
 )
 
 // For testing convenience
-func newVoteFrom(from byte, i uint64, vval string) Msg {
+func newVoteFrom(from int, i uint64, vval string) Msg {
 	m := newVote(i, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -14,7 +14,7 @@ func newVoteFrom(from byte, i uint64, vval string) Msg {
 }
 
 // For testing convenience
-func newNominateFrom(from byte, crnd uint64, v string) Msg {
+func newNominateFrom(from int, crnd uint64, v string) Msg {
 	m := newNominate(crnd, v)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -22,7 +22,7 @@ func newNominateFrom(from byte, crnd uint64, v string) Msg {
 }
 
 // For testing convenience
-func newRsvpFrom(from byte, i, vrnd uint64, vval string) Msg {
+func newRsvpFrom(from int, i, vrnd uint64, vval string) Msg {
 	m := newRsvp(i, vrnd, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -30,7 +30,7 @@ func newRsvpFrom(from byte, i, vrnd uint64, vval string) Msg {
 }
 
 // For testing convenience
-func newInviteFrom(from byte, rnd uint64) Msg {
+func newInviteFrom(from int, rnd uint64) Msg {
 	m := newInvite(rnd)
 	m.SetSeqn(1)
 	m.SetFrom(from)

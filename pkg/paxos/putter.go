@@ -26,7 +26,7 @@ func (cp chanPutCloser) Close() {
 
 type putWrapper struct {
 	seqn uint64
-	from uint8
+	from int
 	Putter
 }
 
