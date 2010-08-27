@@ -4,7 +4,7 @@ import (
 	"sort"
 )
 
-type Node struct {
+type node struct {
 	id string
 }
 
@@ -16,7 +16,7 @@ type cluster struct {
 	selfIndex int
 }
 
-func NewCluster(self string, nodes []string) *cluster {
+func newCluster(self string, nodes []string) *cluster {
 	sort.SortStrings(nodes)
 	selfIndex := -1
 	for i, id := range nodes {

@@ -4,33 +4,33 @@ type Putter interface {
 	Put(m Msg)
 }
 
-type PutCloser interface {
+type putCloser interface {
 	Putter
 	Close()
 }
 
-type PutCloseProcessor interface {
-	PutCloser
+type putCloseProcessor interface {
+	putCloser
 	process(string)
 }
 
-type ChanPutCloser chan Msg
+type chanPutCloser chan Msg
 
-func (cp ChanPutCloser) Put(m Msg) {
+func (cp chanPutCloser) Put(m Msg) {
 	go func() { cp <- m }()
 }
 
-func (cp ChanPutCloser) Close() {
+func (cp chanPutCloser) Close() {
 	close(cp)
 }
 
-type PutWrapper struct {
+type putWrapper struct {
 	seqn uint64
 	from uint8
 	Putter
 }
 
-func (w PutWrapper) Put(m Msg) {
+func (w putWrapper) Put(m Msg) {
 	m.SetSeqn(w.seqn)
 	m.SetFrom(w.from)
 	w.Putter.Put(m)

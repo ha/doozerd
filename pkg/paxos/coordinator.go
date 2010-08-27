@@ -1,7 +1,7 @@
 package paxos
 
 // TODO temporary name
-type C struct {
+type coord struct {
 	cx   *cluster
 	outs Putter
 
@@ -9,8 +9,8 @@ type C struct {
 	clock chan int
 }
 
-func NewC(c *cluster, outs Putter) *C {
-	return &C{
+func newCoord(c *cluster, outs Putter) *coord {
+	return &coord{
 		cx:    c,
 		outs:  outs,
 		ins:   make(chan Msg),
@@ -18,18 +18,18 @@ func NewC(c *cluster, outs Putter) *C {
 	}
 }
 
-func (c *C) Put(m Msg) {
+func (c *coord) Put(m Msg) {
 	go func() {
 		c.ins <- m
 	}()
 }
 
-func (c *C) Close() {
+func (c *coord) Close() {
 	close(c.ins)
 	close(c.clock)
 }
 
-func (c *C) process(target string) {
+func (c *coord) process(target string) {
 	crnd := uint64(c.cx.SelfIndex())
 	if crnd == 0 {
 		crnd += uint64(c.cx.Len())
@@ -53,7 +53,7 @@ Start:
 				goto Done
 			}
 			switch in.Cmd() {
-			case Rsvp:
+			case rsvp:
 				i, vrnd, vval := rsvpParts(in)
 
 				if cval != "" {

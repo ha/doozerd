@@ -39,21 +39,21 @@ func newInviteFrom(from byte, rnd uint64) Msg {
 
 func TestMessageNewInvite(t *testing.T) {
 	m := newInvite(1)
-	assert.Equal(t, Invite, m.Cmd(), "")
+	assert.Equal(t, invite, m.Cmd(), "")
 	crnd := inviteParts(m)
 	assert.Equal(t, uint64(1), crnd, "")
 }
 
 func TestMessageNewInviteAlt(t *testing.T) {
 	m := newInvite(2)
-	assert.Equal(t, Invite, m.Cmd(), "")
+	assert.Equal(t, invite, m.Cmd(), "")
 	crnd := inviteParts(m)
 	assert.Equal(t, uint64(2), crnd, "")
 }
 
 func TestMessageNewNominate(t *testing.T) {
 	m := newNominate(1, "foo")
-	assert.Equal(t, Nominate, m.Cmd(), "")
+	assert.Equal(t, nominate, m.Cmd(), "")
 	crnd, v := nominateParts(m)
 	assert.Equal(t, uint64(1), crnd, "")
 	assert.Equal(t, "foo", v, "")
@@ -61,7 +61,7 @@ func TestMessageNewNominate(t *testing.T) {
 
 func TestMessageNewNominateAlt(t *testing.T) {
 	m := newNominate(2, "bar")
-	assert.Equal(t, Nominate, m.Cmd(), "")
+	assert.Equal(t, nominate, m.Cmd(), "")
 	crnd, v := nominateParts(m)
 	assert.Equal(t, uint64(2), crnd, "")
 	assert.Equal(t, "bar", v, "")
@@ -69,7 +69,7 @@ func TestMessageNewNominateAlt(t *testing.T) {
 
 func TestMessageNewRsvp(t *testing.T) {
 	m := newRsvp(1, 0, "")
-	assert.Equal(t, Rsvp, m.Cmd(), "")
+	assert.Equal(t, rsvp, m.Cmd(), "")
 	i, vrnd, vval := rsvpParts(m)
 	assert.Equal(t, uint64(1), i, "")
 	assert.Equal(t, uint64(0), vrnd, "")
@@ -78,7 +78,7 @@ func TestMessageNewRsvp(t *testing.T) {
 
 func TestMessageNewRsvpAlt(t *testing.T) {
 	m := newRsvp(2, 1, "foo")
-	assert.Equal(t, Rsvp, m.Cmd(), "")
+	assert.Equal(t, rsvp, m.Cmd(), "")
 	i, vrnd, vval := rsvpParts(m)
 	assert.Equal(t, uint64(2), i, "")
 	assert.Equal(t, uint64(1), vrnd, "")
@@ -87,7 +87,7 @@ func TestMessageNewRsvpAlt(t *testing.T) {
 
 func TestMessageNewVote(t *testing.T) {
 	m := newVote(1, "foo")
-	assert.Equal(t, Vote, m.Cmd(), "")
+	assert.Equal(t, vote, m.Cmd(), "")
 	i, vval := voteParts(m)
 	assert.Equal(t, uint64(1), i, "")
 	assert.Equal(t, "foo", vval, "")
@@ -95,7 +95,7 @@ func TestMessageNewVote(t *testing.T) {
 
 func TestMessageNewVoteAlt(t *testing.T) {
 	m := newVote(2, "bar")
-	assert.Equal(t, Vote, m.Cmd(), "")
+	assert.Equal(t, vote, m.Cmd(), "")
 	i, vval := voteParts(m)
 	assert.Equal(t, uint64(2), i, "")
 	assert.Equal(t, "bar", vval, "")

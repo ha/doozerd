@@ -51,11 +51,11 @@ const (
 )
 
 const (
-	Nop = iota
-	Invite
-	Rsvp
-	Nominate
-	Vote
+	nop = iota
+	invite
+	rsvp
+	nominate
+	vote
 )
 
 const (
@@ -67,7 +67,7 @@ const (
 
 func newInvite(crnd uint64) Msg {
 	m := make(Msg, baseLen + inviteLen)
-	m[mCmd] = Invite
+	m[mCmd] = invite
 	util.Packui64(m.Body()[0:8], crnd)
 	return m
 }
@@ -79,7 +79,7 @@ func inviteParts(m Msg) (crnd uint64) {
 
 func newNominate(crnd uint64, v string) Msg {
 	m := make(Msg, baseLen+nominateLen+len(v))
-	m[mCmd] = Nominate
+	m[mCmd] = nominate
 	util.Packui64(m.Body()[0:8], crnd)
 	copy(m.Body()[nominateLen:], []byte(v))
 	return m
@@ -94,7 +94,7 @@ func nominateParts(m Msg) (crnd uint64, v string) {
 
 func newRsvp(i, vrnd uint64, vval string) Msg {
 	m := make(Msg, baseLen+rsvpLen+len(vval))
-	m[mCmd] = Rsvp
+	m[mCmd] = rsvp
 	util.Packui64(m.Body()[0:8], i)
 	util.Packui64(m.Body()[8:16], vrnd)
 	copy(m.Body()[rsvpLen:], []byte(vval))
@@ -111,7 +111,7 @@ func rsvpParts(m Msg) (i, vrnd uint64, vval string) {
 
 func newVote(i uint64, vval string) Msg {
 	m := make(Msg, baseLen+voteLen+len(vval))
-	m[mCmd] = Vote
+	m[mCmd] = vote
 	util.Packui64(m.Body()[0:8], i)
 	copy(m.Body()[voteLen:], []byte(vval))
 	return m
@@ -168,13 +168,13 @@ func (m Msg) Ok() bool {
 		return false
 	}
 	switch m.Cmd() {
-	case Invite:
+	case invite:
 		return len(m.Body()) == inviteLen
-	case Rsvp:
+	case rsvp:
 		return len(m.Body()) >= rsvpLen
-	case Nominate:
+	case nominate:
 		return len(m.Body()) >= nominateLen
-	case Vote:
+	case vote:
 		return len(m.Body()) >= voteLen
 	}
 	return false

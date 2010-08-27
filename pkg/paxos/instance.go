@@ -4,7 +4,7 @@ import (
 	"log"
 )
 
-type Instance struct {
+type instance struct {
 	cx *cluster
 
 	vin  chan string
@@ -12,27 +12,27 @@ type Instance struct {
 	done chan int
 
 	// Coordinator
-	cPutter PutCloseProcessor
+	cPutter putCloseProcessor
 
 	// Acceptor
-	aPutter PutCloser
+	aPutter putCloser
 
 	// Learner
-	lPutter PutCloser
+	lPutter putCloser
 
 	logger *log.Logger
 }
 
-func NewInstance(cx *cluster, outs Putter, logger *log.Logger) *Instance {
-	c := NewC(cx, outs)
+func newInstance(cx *cluster, outs Putter, logger *log.Logger) *instance {
+	c := newCoord(cx, outs)
 	aIns, lIns := make(chan Msg), make(chan Msg)
-	ins := &Instance{
+	ins := &instance{
 		cx:      cx,
 		vin:     make(chan string),
 		done:    make(chan int),
 		cPutter: c,
-		aPutter: ChanPutCloser(aIns),
-		lPutter: ChanPutCloser(lIns),
+		aPutter: chanPutCloser(aIns),
+		lPutter: chanPutCloser(lIns),
 		logger:  logger,
 	}
 
@@ -45,24 +45,24 @@ func NewInstance(cx *cluster, outs Putter, logger *log.Logger) *Instance {
 	return ins
 }
 
-func (ins *Instance) Put(m Msg) {
+func (ins *instance) Put(m Msg) {
 	ins.cPutter.Put(m)
 	ins.aPutter.Put(m)
 	ins.lPutter.Put(m)
 }
 
-func (ins *Instance) Value() string {
+func (ins *instance) Value() string {
 	<-ins.done
 	return ins.v
 }
 
-func (ins *Instance) Close() {
+func (ins *instance) Close() {
 	ins.cPutter.Close()
 	ins.aPutter.Close()
 	ins.lPutter.Close()
 }
 
-func (ins *Instance) Propose(v string) {
+func (ins *instance) Propose(v string) {
 	// TODO make propose into a message type. This becomes:
 	//   ins.cPutter.Put(...)
 	go ins.cPutter.process(v)
