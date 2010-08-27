@@ -100,3 +100,16 @@ func TestUnusedSeqn(t *testing.T) {
 	assert.Equal(t, uint64(2), seqn, "")
 	assert.Equal(t, exp2, v, "")
 }
+
+func TestIgnoreMalformedMsg(t *testing.T) {
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+
+	m.Put(resize(newVoteFrom(1, 1, ""), -1))
+
+	got := m.Propose("y")
+	assert.Equal(t, "y", got, "")
+
+	seqn, v := m.Recv()
+	assert.Equal(t, uint64(1), seqn, "")
+	assert.Equal(t, "y", v, "")
+}

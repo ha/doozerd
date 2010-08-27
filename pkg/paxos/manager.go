@@ -67,6 +67,9 @@ func (m *Manager) getInstance(seqn uint64) *instance {
 }
 
 func (m *Manager) Put(msg Msg) {
+	if !msg.Ok() {
+		return
+	}
 	m.getInstance(msg.Seqn()).Put(msg)
 }
 
