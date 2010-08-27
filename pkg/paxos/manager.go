@@ -11,6 +11,7 @@ type Result struct {
 
 type instReq struct {
 	seqn uint64 // 0 means to generate a fresh seqn
+	cx *cluster
 	ch chan *Instance
 }
 
@@ -30,9 +31,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 		}
 		inst, ok := instances[req.seqn]
 		if !ok {
-			// TODO read list of nodes from the data store
-			cx := NewCluster(m.self, m.nodes)
-			inst = NewInstance(cx, PutWrapper{req.seqn, 1, outs}, m.logger)
+			inst = NewInstance(req.cx, PutWrapper{req.seqn, 1, outs}, m.logger)
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- Result{req.seqn, inst.Value()}
@@ -61,7 +60,9 @@ func NewManager(start uint64, self string, nodes []string, outs Putter, logger *
 
 func (m *Manager) getInstance(seqn uint64) *Instance {
 	ch := make(chan *Instance)
-	m.reqs <- instReq{seqn, ch}
+	// TODO read list of nodes from the data store
+	cx := NewCluster(m.self, m.nodes)
+	m.reqs <- instReq{seqn, cx, ch}
 	return <-ch
 }
 
