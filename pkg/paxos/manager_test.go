@@ -84,3 +84,19 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp, v, "")
 }
+
+func TestUnusedSeqn(t *testing.T) {
+	exp1, exp2 := "foo", "bar"
+	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+
+	m.Put(newVoteFrom(1, 1, exp1))
+	seqn, v := m.Recv()
+	assert.Equal(t, uint64(1), seqn, "")
+	assert.Equal(t, exp1, v, "")
+
+	got := m.Propose(exp2)
+	assert.Equal(t, exp2, got, "")
+	seqn, v = m.Recv()
+	assert.Equal(t, uint64(2), seqn, "")
+	assert.Equal(t, exp2, v, "")
+}

@@ -24,11 +24,14 @@ type Manager struct{
 	logger *log.Logger
 }
 
-func (m *Manager) process(outs Putter) {
+func (m *Manager) process(next uint64, outs Putter) {
 	instances := make(map[uint64]*Instance)
 	for {
 		select {
 		case req := <-m.reqs:
+			if req.seqn == 0 {
+				req.seqn = next
+			}
 			inst, ok := instances[req.seqn]
 			if !ok {
 				// TODO read list of nodes from the data store
@@ -40,6 +43,9 @@ func (m *Manager) process(outs Putter) {
 				}()
 			}
 			req.ch <- inst
+			if req.seqn >= next {
+				next = req.seqn + 1
+			}
 		}
 	}
 }
@@ -55,7 +61,7 @@ func NewManager(start uint64, self string, nodes []string, outs Putter, logger *
 		logger: logger,
 	}
 
-	go m.process(outs)
+	go m.process(start, outs)
 
 	// Generate an infinite stream of sequence numbers (seqns).
 	go func() {
@@ -78,9 +84,8 @@ func (m *Manager) Put(msg Message) {
 }
 
 func (m *Manager) Propose(v string) string {
-	seqn := <-m.seqns
-	inst := m.getInstance(seqn)
-	m.logger.Logf("paxos %d propose -> %q", seqn, v)
+	inst := m.getInstance(0)
+	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
 	return inst.Value()
 }
