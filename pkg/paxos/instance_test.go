@@ -18,8 +18,8 @@ func (fp FakePutter) Put(m Message) {
 
 func selfRefNewInstance(self string, nodes []string, logger *log.Logger) *Instance {
 	p := make([]Putter, 1)
-	cx := NewCluster(self, nodes, FakePutter(p))
-	ins := NewInstance(cx, logger)
+	cx := NewCluster(self, nodes)
+	ins := NewInstance(cx, FakePutter(p), logger)
 	p[0] = ins
 	return ins
 }
@@ -75,12 +75,12 @@ func TestStartAtCoord(t *testing.T) {
 func TestMultipleInstances(t *testing.T) {
 	ps := make([]Putter, 3)
 	nodes := []string{"a", "b", "c"}
-	cxA := NewCluster("a", nodes, PutWrapper{1, 3, FakePutter(ps)})
-	cxB := NewCluster("a", nodes, PutWrapper{1, 1, FakePutter(ps)})
-	cxC := NewCluster("a", nodes, PutWrapper{1, 2, FakePutter(ps)})
-	insA := NewInstance(cxA, logger)
-	insB := NewInstance(cxB, logger)
-	insC := NewInstance(cxC, logger)
+	cxA := NewCluster("a", nodes)
+	cxB := NewCluster("a", nodes)
+	cxC := NewCluster("a", nodes)
+	insA := NewInstance(cxA, PutWrapper{1, 3, FakePutter(ps)}, logger)
+	insB := NewInstance(cxB, PutWrapper{1, 1, FakePutter(ps)}, logger)
+	insC := NewInstance(cxC, PutWrapper{1, 2, FakePutter(ps)}, logger)
 	ps[0] = insA
 	ps[1] = insB
 	ps[2] = insC

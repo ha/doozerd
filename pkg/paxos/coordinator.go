@@ -3,14 +3,16 @@ package paxos
 // TODO temporary name
 type C struct {
 	cx *cluster
+	outs Putter
 
 	ins chan Message
 	clock chan int
 }
 
-func NewC(c *cluster) *C {
+func NewC(c *cluster, outs Putter) *C {
 	return &C{
 		cx: c,
+		outs: outs,
 		ins: make(chan Message),
 		clock: make(chan int),
 	}
@@ -38,7 +40,7 @@ func (c *C) process(target string) {
 Start:
 	cval = ""
 	start := NewInvite(crnd)
-	c.cx.Put(start)
+	c.outs.Put(start)
 
 	var rsvps int
 	var vr uint64
@@ -79,7 +81,7 @@ Start:
 					cval = v
 
 					chosen := NewNominate(crnd, v)
-					c.cx.Put(chosen)
+					c.outs.Put(chosen)
 				}
 			}
 		case <-c.clock:

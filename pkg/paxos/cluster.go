@@ -13,11 +13,10 @@ type Node struct {
 type cluster struct {
     self string
     nodes []string
-    fw Putter
     selfIndex int
 }
 
-func NewCluster(self string, nodes []string, fw Putter) *cluster {
+func NewCluster(self string, nodes []string) *cluster {
     sort.SortStrings(nodes)
     selfIndex := -1
     for i, id := range nodes {
@@ -28,7 +27,6 @@ func NewCluster(self string, nodes []string, fw Putter) *cluster {
     return &cluster{
         self: self,
         nodes: nodes,
-        fw: fw,
         selfIndex: selfIndex,
     }
 }
@@ -43,8 +41,4 @@ func (cx *cluster) Quorum() int {
 
 func (cx *cluster) SelfIndex() int {
     return cx.selfIndex
-}
-
-func (cx *cluster) Put(m Message) {
-    cx.fw.Put(m)
 }

@@ -31,8 +31,8 @@ func (m *Manager) process(next uint64, outs Putter) {
 		inst, ok := instances[req.seqn]
 		if !ok {
 			// TODO read list of nodes from the data store
-			cx := NewCluster(m.self, m.nodes, PutWrapper{req.seqn, 1, outs})
-			inst = NewInstance(cx, m.logger)
+			cx := NewCluster(m.self, m.nodes)
+			inst = NewInstance(cx, PutWrapper{req.seqn, 1, outs}, m.logger)
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- Result{req.seqn, inst.Value()}

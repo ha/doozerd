@@ -24,8 +24,8 @@ type Instance struct {
 	logger *log.Logger
 }
 
-func NewInstance(cx *cluster, logger *log.Logger) *Instance {
-	c := NewC(cx)
+func NewInstance(cx *cluster, outs Putter, logger *log.Logger) *Instance {
+	c := NewC(cx, outs)
 	aIns, lIns := make(chan Message), make(chan Message)
 	ins := &Instance{
 		cx: cx,
@@ -37,7 +37,7 @@ func NewInstance(cx *cluster, logger *log.Logger) *Instance {
 		logger: logger,
 	}
 
-	go acceptor(aIns, cx)
+	go acceptor(aIns, outs)
 	go func() {
 		ins.v = learner(uint64(cx.Quorum()), lIns)
 		close(ins.done)
