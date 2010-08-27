@@ -117,24 +117,24 @@ func TestMessageSetSeqn(t *testing.T) {
 	assert.Equal(t, uint64(2), m.Seqn(), "")
 }
 
+func resize(m Msg, n int) Msg {
+	x := len(m)+n
+	if x > cap(m) {
+		y := make(Msg, x)
+		copy(y, m)
+		return y
+	}
+	return m[0:len(m)+n]
+}
+
 var badMessages = []Msg{
 	Msg{0},      // too short
 	Msg{0, 255}, // bad cmd
-
-	// too short for type
-	Msg{0, Invite, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-	// too long for type
-	Msg{0, Invite, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-	// too short for type
-	Msg{0, Rsvp, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-	// too short for type
-	Msg{0, Nominate, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-	// too short for type
-	Msg{0, Vote, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	resize(NewInvite(0), -1), // too short for type
+	resize(NewInvite(0), 1), // too long for type
+	resize(NewRsvp(0, 0, ""), -1), // too short for type
+	resize(NewNominate(0, ""), -1), // too short for type
+	resize(NewVote(0, ""), -1), // too short for type
 }
 
 func TestBadMessagesOk(t *testing.T) {
