@@ -2,18 +2,18 @@ package paxos
 
 // TODO temporary name
 type C struct {
-	cx *cluster
+	cx   *cluster
 	outs Putter
 
-	ins chan Message
+	ins   chan Message
 	clock chan int
 }
 
 func NewC(c *cluster, outs Putter) *C {
 	return &C{
-		cx: c,
-		outs: outs,
-		ins: make(chan Message),
+		cx:    c,
+		outs:  outs,
+		ins:   make(chan Message),
 		clock: make(chan int),
 	}
 }

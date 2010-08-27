@@ -1,8 +1,7 @@
-
 package paxos
 
 import (
-    "borg/util"
+	"borg/util"
 )
 
 const (
@@ -21,18 +20,18 @@ const (
 )
 
 const (
-	baseLen = mBody
-	inviteLen = baseLen + 8
-	rsvpLen = baseLen + 16 // not including v
-	nominateLen = baseLen + 8 // not including v
-	voteLen = baseLen + 8 // not including v
+	baseLen     = mBody
+	inviteLen   = baseLen + 8
+	rsvpLen     = baseLen + 16 // not including v
+	nominateLen = baseLen + 8  // not including v
+	voteLen     = baseLen + 8  // not including v
 )
 
 type Message interface {
-    From() int
-    Cmd() int
-    Seqn() uint64
-    Body() string // soon to be []byte
+	From() int
+	Cmd() int
+	Seqn() uint64
+	Body() string // soon to be []byte
 	Ok() bool
 
 	SetFrom(byte)
@@ -56,7 +55,7 @@ func InviteParts(m Message) (crnd uint64) {
 }
 
 func NewNominate(crnd uint64, v string) Message {
-	m := make(Msg, nominateLen + len(v))
+	m := make(Msg, nominateLen+len(v))
 	m[mCmd] = Nominate
 	util.Packui64(m[mBody:mBody+8], crnd)
 	copy(m[nominateLen:], []byte(v))
@@ -71,7 +70,7 @@ func NominateParts(m Message) (crnd uint64, v string) {
 }
 
 func NewRsvp(i, vrnd uint64, vval string) Message {
-	m := make(Msg, rsvpLen + len(vval))
+	m := make(Msg, rsvpLen+len(vval))
 	m[mCmd] = Rsvp
 	util.Packui64(m[mBody:mBody+8], i)
 	util.Packui64(m[mBody+8:mBody+16], vrnd)
@@ -88,7 +87,7 @@ func RsvpParts(m Message) (i, vrnd uint64, vval string) {
 }
 
 func NewVote(i uint64, vval string) Message {
-	m := make(Msg, voteLen + len(vval))
+	m := make(Msg, voteLen+len(vval))
 	m[mCmd] = Vote
 	util.Packui64(m[mBody:mBody+8], i)
 	copy(m[voteLen:], []byte(vval))
@@ -126,7 +125,7 @@ func (m Msg) Cmd() int {
 }
 
 func (m Msg) Seqn() uint64 {
-	return util.Unpackui64(m[mSeqn:mSeqn+8])
+	return util.Unpackui64(m[mSeqn : mSeqn+8])
 }
 
 func (m Msg) Body() string {

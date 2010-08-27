@@ -6,21 +6,21 @@ import (
 
 type Result struct {
 	seqn uint64
-	v string
+	v    string
 }
 
 type instReq struct {
 	seqn uint64 // 0 means to generate a fresh seqn
-	cx *cluster
-	ch chan *Instance
+	cx   *cluster
+	ch   chan *Instance
 }
 
-type Manager struct{
-	self string
-	nodes []string
+type Manager struct {
+	self    string
+	nodes   []string
 	learned chan Result
-	reqs chan instReq
-	logger *log.Logger
+	reqs    chan instReq
+	logger  *log.Logger
 }
 
 func (m *Manager) process(next uint64, outs Putter) {
@@ -46,11 +46,11 @@ func (m *Manager) process(next uint64, outs Putter) {
 
 func NewManager(start uint64, self string, nodes []string, outs Putter, logger *log.Logger) *Manager {
 	m := &Manager{
-		self: self,
-		nodes: nodes,
+		self:    self,
+		nodes:   nodes,
 		learned: make(chan Result),
-		reqs: make(chan instReq),
-		logger: logger,
+		reqs:    make(chan instReq),
+		logger:  logger,
 	}
 
 	go m.process(start, outs)
@@ -82,4 +82,3 @@ func (m *Manager) Recv() (uint64, string) {
 	m.logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
 	return result.seqn, result.v
 }
-

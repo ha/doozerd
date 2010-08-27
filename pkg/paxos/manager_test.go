@@ -1,9 +1,9 @@
 package paxos
 
 import (
-    "borg/assert"
-    "log"
-    "testing"
+	"borg/assert"
+	"log"
+	"testing"
 )
 
 func selfRefNewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {

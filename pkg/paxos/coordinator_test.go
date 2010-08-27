@@ -26,7 +26,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	<-outs //discard INVITE:1
 
 	c.clock <- 1 // force the start of a new round
-	<-outs     //discard INVITE:11
+	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 1, 0, ""))
 	c.Put(newRsvpFrom(2, 1, 0, ""))
@@ -54,7 +54,7 @@ func TestCoordCloseIns(t *testing.T) {
 	<-outs //discard INVITE:1
 
 	c.clock <- 1 // force the start of a new round
-	<-outs     //discard INVITE:11
+	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 1, 0, ""))
 	c.Put(newRsvpFrom(2, 1, 0, ""))
@@ -82,7 +82,7 @@ func TestCoordCloseClock(t *testing.T) {
 	<-outs //discard INVITE:1
 
 	c.clock <- 1 // force the start of a new round
-	<-outs     //discard INVITE:11
+	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 1, 0, ""))
 	c.Put(newRsvpFrom(2, 1, 0, ""))
@@ -225,7 +225,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	<-outs //discard NOMINATE
 
 	c.clock <- 1 // force the start of a new round
-	<-outs     //discard INVITE:11
+	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 11, 0, ""))
 	c.Put(newRsvpFrom(2, 11, 0, ""))
