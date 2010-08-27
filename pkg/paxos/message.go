@@ -27,10 +27,6 @@ const (
 	voteLen     = 8  // not including v
 )
 
-func NewMessage(b []byte) Msg {
-	return Msg(b)
-}
-
 func NewInvite(crnd uint64) Msg {
 	m := make(Msg, baseLen + inviteLen)
 	m[mCmd] = Invite

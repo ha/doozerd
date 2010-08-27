@@ -69,14 +69,13 @@ func getPort(addr string) uint64 {
 
 func recvUdp(conn net.PacketConn, ch chan paxos.Msg) {
 	for {
-		pkt := make([]byte, 3000) // make sure it's big enough
+		pkt := make(paxos.Msg, 3000) // make sure it's big enough
 		n, _, err := conn.ReadFrom(pkt)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		msg := paxos.NewMessage(pkt[0:n])
-		ch <- msg
+		ch <- pkt[0:n]
 	}
 }
 
