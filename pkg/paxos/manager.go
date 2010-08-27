@@ -26,18 +26,21 @@ type Manager struct{
 
 func (m *Manager) process(outs Putter) {
 	instances := make(map[uint64]*Instance)
-	for req := range m.reqs {
-		inst, ok := instances[req.seqn]
-		if !ok {
-			// TODO read list of nodes from the data store
-			cx := NewCluster(m.self, m.nodes, PutWrapper{req.seqn, 1, outs})
-			inst = NewInstance(cx, m.logger)
-			instances[req.seqn] = inst
-			go func() {
-				m.learned <- Result{req.seqn, inst.Value()}
-			}()
+	for {
+		select {
+		case req := <-m.reqs:
+			inst, ok := instances[req.seqn]
+			if !ok {
+				// TODO read list of nodes from the data store
+				cx := NewCluster(m.self, m.nodes, PutWrapper{req.seqn, 1, outs})
+				inst = NewInstance(cx, m.logger)
+				instances[req.seqn] = inst
+				go func() {
+					m.learned <- Result{req.seqn, inst.Value()}
+				}()
+			}
+			req.ch <- inst
 		}
-		req.ch <- inst
 	}
 }
 
