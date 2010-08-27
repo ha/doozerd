@@ -55,7 +55,7 @@ func NewMessage(s string) Message {
 		panic(s)
 	}
 
-	return &Msg{byte(from), cmd, seqn, parts[mBody]}
+	return &Msg{byte(from), byte(cmd), seqn, parts[mBody]}
 }
 
 func NewInvite(crnd uint64) Message {
@@ -134,7 +134,7 @@ func VoteParts(m Message) (i uint64, vval string) {
 
 type Msg struct {
 	from byte
-	cmd int
+	cmd byte
 	seqn uint64
 	body string
 }
@@ -148,7 +148,7 @@ func (m Msg) From() int {
 }
 
 func (m Msg) Cmd() int {
-	return m.cmd
+	return int(m.cmd)
 }
 
 func (m Msg) Body() string {
