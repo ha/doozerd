@@ -10,7 +10,7 @@ type Result struct {
 }
 
 type instReq struct {
-	seqn uint64
+	seqn uint64 // 0 means to generate a fresh seqn
 	ch chan *Instance
 }
 
