@@ -4,6 +4,23 @@ import (
 	"borg/util"
 )
 
+// In-memory format:
+//
+//     0      -- index of sender
+//     1      -- cmd
+//     2..9   -- cluster version
+//     10..17 -- seqn
+//     18..   -- body -- format depends on command
+//
+// Wire format is same as in-memory format, but without the first byte (the
+// sender index). Here it is for clarity:
+//
+//     0     -- cmd
+//     1..8  -- cluster version
+//     9..15 -- seqn
+//     16..  -- body -- format depends on command
+type Msg []byte
+
 const (
 	mFrom = iota
 	mCmd
@@ -86,21 +103,6 @@ func VoteParts(m Msg) (i uint64, vval string) {
 	vval = string(m.Body()[8:])
 	return
 }
-
-// In-memory format:
-//
-//     0    -- index of sender
-//     1    -- cmd
-//     2..9 -- seqn
-//     10.. -- body -- format depends on command
-//
-// Wire format is same as in-memory format, but without the first byte (the
-// sender index). Here it is for clarity:
-//
-//     0    -- cmd
-//     1..8 -- seqn
-//     9..  -- body -- format depends on command
-type Msg []byte
 
 func (m Msg) From() int {
 	return int(m[mFrom])
