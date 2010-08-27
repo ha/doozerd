@@ -117,6 +117,14 @@ func TestMessageSetSeqn(t *testing.T) {
 	assert.Equal(t, uint64(2), m.Seqn(), "")
 }
 
+func TestMessageSetClusterVersion(t *testing.T) {
+	m := NewInvite(1)
+	m.SetClusterVersion(1)
+	assert.Equal(t, uint64(1), m.ClusterVersion(), "")
+	m.SetClusterVersion(2)
+	assert.Equal(t, uint64(2), m.ClusterVersion(), "")
+}
+
 func resize(m Msg, n int) Msg {
 	x := len(m)+n
 	if x > cap(m) {

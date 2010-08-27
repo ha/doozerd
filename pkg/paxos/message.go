@@ -7,8 +7,9 @@ import (
 const (
 	mFrom = iota
 	mCmd
-	mSeqn // 2-9
-	mBody = 10
+	mClusterVersion // 2 - 9
+	mSeqn = 10 // - 17
+	mBody = 18
 	baseLen = mBody
 )
 
@@ -109,6 +110,10 @@ func (m Msg) Cmd() int {
 	return int(m[mCmd])
 }
 
+func (m Msg) ClusterVersion() uint64 {
+	return util.Unpackui64(m[mClusterVersion : mClusterVersion+8])
+}
+
 func (m Msg) Seqn() uint64 {
 	return util.Unpackui64(m[mSeqn : mSeqn+8])
 }
@@ -119,6 +124,10 @@ func (m Msg) Body() []byte {
 
 func (m Msg) SetFrom(from byte) {
 	m[mFrom] = from
+}
+
+func (m Msg) SetClusterVersion(ver uint64) {
+	util.Packui64(m[mClusterVersion:mClusterVersion+8], ver)
 }
 
 func (m Msg) SetSeqn(seqn uint64) {
