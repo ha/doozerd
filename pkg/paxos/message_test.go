@@ -159,3 +159,11 @@ func TestGoodMessagesOk(t *testing.T) {
 		}
 	}
 }
+
+func TestWireBytes(t *testing.T) {
+	m := NewInvite(1)
+	b := m.WireBytes()
+	assert.Equal(t, []byte(m[1:]), b, "")
+	b[0] = 2
+	assert.Equal(t, byte(2), m[1], "")
+}

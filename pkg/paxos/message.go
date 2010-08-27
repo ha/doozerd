@@ -141,3 +141,7 @@ func (m Msg) Ok() bool {
 	}
 	return false
 }
+
+func (m Msg) WireBytes() []byte {
+	return m[1:]
+}
