@@ -2,18 +2,14 @@
 package paxos
 
 import (
-    "fmt"
-    "strconv"
-    "strings"
+    "borg/util"
 )
 
 const (
-	mSeqn = iota
-	mFrom
-	mTo
+	mFrom = iota
 	mCmd
-	mBody
-	mNumParts
+	mSeqn // 2-9
+	mBody = 10
 )
 
 const (
@@ -22,6 +18,14 @@ const (
 	Rsvp
 	Nominate
 	Vote
+)
+
+const (
+	baseLen = mBody
+	inviteLen = baseLen + 8
+	nominateLen = baseLen + 8 // not including v
+	rsvpLen = baseLen + 16 // not including v
+	voteLen = baseLen + 8 // not including v
 )
 
 type Message interface {
@@ -35,86 +39,65 @@ type Message interface {
 }
 
 func NewMessage(b []byte) Message {
-	s := string(b)
-	parts := strings.Split(s, ":", mNumParts)
-	if len(parts) != mNumParts {
-		panic(s)
-	}
-
-	seqn, err := strconv.Btoui64(parts[mSeqn], 10)
-	if err != nil {
-		panic(s)
-	}
-
-	from, err := strconv.Atoi(parts[mFrom])
-	if err != nil {
-		panic(s)
-	}
-
-	cmd, err := strconv.Atoi(parts[mCmd])
-	if err != nil {
-		panic(s)
-	}
-
-	return &Msg{byte(from), byte(cmd), seqn, parts[mBody]}
+	return Msg(b)
 }
 
 func NewInvite(crnd uint64) Message {
-	return &Msg{
-		cmd:  Invite,
-		body: fmt.Sprintf("%d", crnd),
-	}
+	m := make(Msg, inviteLen)
+	m[mCmd] = Invite
+	util.Packui64(m[mBody:mBody+8], crnd)
+	return m
 }
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
 func InviteParts(m Message) (crnd uint64) {
-	crnd, _ = strconv.Atoui64(m.Body())
-	return
+	return util.Unpackui64([]byte(m.Body()))
 }
 
 func NewNominate(crnd uint64, v string) Message {
-	return &Msg{
-		cmd:  Nominate,
-		body: fmt.Sprintf("%d:%s", crnd, v),
-	}
+	m := make(Msg, nominateLen + len(v))
+	m[mCmd] = Nominate
+	util.Packui64(m[mBody:mBody+8], crnd)
+	copy(m[nominateLen:], []byte(v))
+	return m
 }
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
 func NominateParts(m Message) (crnd uint64, v string) {
-	parts := strings.Split(m.Body(), ":", 2)
-	crnd, _ = strconv.Atoui64(parts[0])
-	v = parts[1]
+	crnd = util.Unpackui64([]byte(m.Body())[0:8])
+	v = m.Body()[8:]
 	return
 }
 
 func NewRsvp(i, vrnd uint64, vval string) Message {
-	return &Msg{
-		cmd: Rsvp,
-		body: fmt.Sprintf("%d:%d:%s", i, vrnd, vval),
-	}
+	m := make(Msg, rsvpLen + len(vval))
+	m[mCmd] = Rsvp
+	util.Packui64(m[mBody:mBody+8], i)
+	util.Packui64(m[mBody+8:mBody+16], vrnd)
+	copy(m[rsvpLen:], []byte(vval))
+	return m
 }
 
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
 func RsvpParts(m Message) (i, vrnd uint64, vval string) {
-	parts := strings.Split(m.Body(), ":", 3)
-	i, _ = strconv.Atoui64(parts[0])
-	vrnd, _ = strconv.Atoui64(parts[1])
-	vval = parts[2]
+	i = util.Unpackui64([]byte(m.Body())[0:8])
+	vrnd = util.Unpackui64([]byte(m.Body())[8:16])
+	vval = m.Body()[16:]
 	return
 }
 
 func NewVote(i uint64, vval string) Message {
-	return &Msg{
-		cmd: Vote,
-		body: fmt.Sprintf("%d:%s", i, vval),
-	}
+	m := make(Msg, voteLen + len(vval))
+	m[mCmd] = Vote
+	util.Packui64(m[mBody:mBody+8], i)
+	copy(m[voteLen:], []byte(vval))
+	return m
 }
 
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
 func VoteParts(m Message) (i uint64, vval string) {
-	parts := strings.Split(m.Body(), ":", 2)
-	i, _ = strconv.Atoui64(parts[0])
-	vval = parts[1]
+	i = util.Unpackui64([]byte(m.Body())[0:8])
+	vval = m.Body()[8:]
 	return
 }
 
@@ -131,35 +114,28 @@ func VoteParts(m Message) (i uint64, vval string) {
 //     0    -- cmd
 //     1..8 -- seqn
 //     9..  -- body -- format depends on command
-//type Msg []byte
-
-type Msg struct {
-	from byte
-	cmd byte
-	seqn uint64
-	body string
-}
-
-func (m Msg) Seqn() uint64 {
-	return m.seqn
-}
+type Msg []byte
 
 func (m Msg) From() int {
-	return int(m.from)
+	return int(m[mFrom])
 }
 
 func (m Msg) Cmd() int {
-	return int(m.cmd)
+	return int(m[mCmd])
+}
+
+func (m Msg) Seqn() uint64 {
+	return util.Unpackui64(m[mSeqn:mSeqn+8])
 }
 
 func (m Msg) Body() string {
-	return m.body
+	return string([]byte(m[mBody:]))
 }
 
-func (m *Msg) SetFrom(from byte) {
-	m.from = from
+func (m Msg) SetFrom(from byte) {
+	m[mFrom] = from
 }
 
-func (m *Msg) SetSeqn(seqn uint64) {
-	m.seqn = seqn
+func (m Msg) SetSeqn(seqn uint64) {
+	util.Packui64(m[mSeqn:mSeqn+8], seqn)
 }
