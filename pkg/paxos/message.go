@@ -23,8 +23,8 @@ const (
 const (
 	baseLen = mBody
 	inviteLen = baseLen + 8
-	nominateLen = baseLen + 8 // not including v
 	rsvpLen = baseLen + 16 // not including v
+	nominateLen = baseLen + 8 // not including v
 	voteLen = baseLen + 8 // not including v
 )
 
@@ -33,6 +33,7 @@ type Message interface {
     Cmd() int
     Seqn() uint64
     Body() string // soon to be []byte
+	Ok() bool
 
 	SetFrom(byte)
 	SetSeqn(uint64)
@@ -138,4 +139,21 @@ func (m Msg) SetFrom(from byte) {
 
 func (m Msg) SetSeqn(seqn uint64) {
 	util.Packui64(m[mSeqn:mSeqn+8], seqn)
+}
+
+func (m Msg) Ok() bool {
+	if len(m) < 2 {
+		return false
+	}
+	switch m.Cmd() {
+	case Invite:
+		return len(m) == inviteLen
+	case Rsvp:
+		return len(m) >= rsvpLen
+	case Nominate:
+		return len(m) >= nominateLen
+	case Vote:
+		return len(m) >= voteLen
+	}
+	return false
 }
