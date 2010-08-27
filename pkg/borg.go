@@ -69,13 +69,15 @@ func getPort(addr string) uint64 {
 
 func recvUdp(conn net.PacketConn, ch chan paxos.Msg) {
 	for {
-		pkt := make(paxos.Msg, 3000) // make sure it's big enough
-		n, _, err := conn.ReadFrom(pkt)
+		m := make(paxos.Msg, 3000) // make sure it's big enough
+		n, _, err := conn.ReadFrom(m.WireBytes())
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		ch <- pkt[0:n]
+		// TODO check that m is valid
+		// TODO set From index based on sender's network addr
+		ch <- m[0:n]
 	}
 }
 
@@ -87,8 +89,7 @@ func (f funcPutter) Put(m paxos.Msg) {
 
 func newUdpPutter(me uint64, addrs []net.Addr, conn net.PacketConn) paxos.Putter {
 	put := func(m paxos.Msg) {
-		pkt := fmt.Sprintf("%d:%d:0:%s:%s", m.Seqn(), me, m.Cmd(), m.Body())
-		b := []byte(pkt)
+		b := m.WireBytes()
 
 		for _, addr := range addrs {
 			n, err := conn.WriteTo(b, addr)
