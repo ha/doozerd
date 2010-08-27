@@ -58,7 +58,7 @@ func NewNominate(crnd uint64, v string) Message {
 	m := make(Msg, baseLen+nominateLen+len(v))
 	m[mCmd] = Nominate
 	util.Packui64(m.Body()[0:8], crnd)
-	copy(m[baseLen+nominateLen:], []byte(v))
+	copy(m.Body()[nominateLen:], []byte(v))
 	return m
 }
 
@@ -74,7 +74,7 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 	m[mCmd] = Rsvp
 	util.Packui64(m.Body()[0:8], i)
 	util.Packui64(m.Body()[8:16], vrnd)
-	copy(m[baseLen+rsvpLen:], []byte(vval))
+	copy(m.Body()[rsvpLen:], []byte(vval))
 	return m
 }
 
@@ -90,7 +90,7 @@ func NewVote(i uint64, vval string) Message {
 	m := make(Msg, baseLen+voteLen+len(vval))
 	m[mCmd] = Vote
 	util.Packui64(m.Body()[0:8], i)
-	copy(m[baseLen+voteLen:], []byte(vval))
+	copy(m.Body()[voteLen:], []byte(vval))
 	return m
 }
 
@@ -146,13 +146,13 @@ func (m Msg) Ok() bool {
 	}
 	switch m.Cmd() {
 	case Invite:
-		return len(m) == baseLen + inviteLen
+		return len(m.Body()) == inviteLen
 	case Rsvp:
-		return len(m) >= baseLen+rsvpLen
+		return len(m.Body()) >= rsvpLen
 	case Nominate:
-		return len(m) >= baseLen+nominateLen
+		return len(m.Body()) >= nominateLen
 	case Vote:
-		return len(m) >= baseLen+voteLen
+		return len(m.Body()) >= voteLen
 	}
 	return false
 }
