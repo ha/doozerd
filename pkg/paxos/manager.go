@@ -19,8 +19,6 @@ type Manager struct{
 	nodes []string
 	learned chan Result
 	reqs chan instReq
-	seqns chan uint64
-	start uint64
 	logger *log.Logger
 }
 
@@ -56,19 +54,10 @@ func NewManager(start uint64, self string, nodes []string, outs Putter, logger *
 		nodes: nodes,
 		learned: make(chan Result),
 		reqs: make(chan instReq),
-		seqns: make(chan uint64),
-		start: start,
 		logger: logger,
 	}
 
 	go m.process(start, outs)
-
-	// Generate an infinite stream of sequence numbers (seqns).
-	go func() {
-		for n := m.start; ; n++ {
-			m.seqns <- n
-		}
-	}()
 
 	return m
 }
