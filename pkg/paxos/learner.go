@@ -1,7 +1,7 @@
 package paxos
 
 func learner(quorum uint64, ins chan Msg) string {
-	var round uint64 = 1
+	round := uint64(1)
 	votes := make(map[string]uint64) // maps values to number of votes
 	voted := make(map[int]bool)      // maps nodes to vote status
 
