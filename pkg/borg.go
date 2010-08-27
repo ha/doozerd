@@ -75,7 +75,6 @@ func recvUdp(conn net.PacketConn, ch chan paxos.Msg) {
 			fmt.Println(err)
 			continue
 		}
-		// TODO check that m is valid
 		// TODO set From index based on sender's network addr
 		ch <- m[0:n]
 	}
