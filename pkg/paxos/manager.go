@@ -24,6 +24,23 @@ type Manager struct{
 	logger *log.Logger
 }
 
+func (m *Manager) process(outs Putter) {
+	instances := make(map[uint64]*Instance)
+	for req := range m.reqs {
+		inst, ok := instances[req.seqn]
+		if !ok {
+			// TODO read list of nodes from the data store
+			cx := NewCluster(m.self, m.nodes, PutWrapper{req.seqn, 1, outs})
+			inst = NewInstance(cx, m.logger)
+			instances[req.seqn] = inst
+			go func() {
+				m.learned <- Result{req.seqn, inst.Value()}
+			}()
+		}
+		req.ch <- inst
+	}
+}
+
 func NewManager(start uint64, self string, nodes []string, outs Putter, logger *log.Logger) *Manager {
 	m := &Manager{
 		self: self,
@@ -34,22 +51,8 @@ func NewManager(start uint64, self string, nodes []string, outs Putter, logger *
 		start: start,
 		logger: logger,
 	}
-	go func() {
-		instances := make(map[uint64]*Instance)
-		for req := range m.reqs {
-			inst, ok := instances[req.seqn]
-			if !ok {
-				// TODO read list of nodes from the data store
-				cx := NewCluster(m.self, m.nodes, PutWrapper{req.seqn, 1, outs})
-				inst = NewInstance(cx, m.logger)
-				instances[req.seqn] = inst
-				go func() {
-					m.learned <- Result{req.seqn, inst.Value()}
-				}()
-			}
-			req.ch <- inst
-		}
-	}()
+
+	go m.process(outs)
 
 	// Generate an infinite stream of sequence numbers (seqns).
 	go func() {
