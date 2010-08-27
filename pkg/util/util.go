@@ -28,3 +28,10 @@ func RandBytes(b []byte) {
 	}
 }
 
+func Packui64(b []byte, n uint64) {
+	l := len(b)
+	for i := range b {
+		b[l-i-1] = uint8(n & 0xff)
+		n >>= 8
+	}
+}
