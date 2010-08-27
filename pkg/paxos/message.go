@@ -31,7 +31,7 @@ type Message interface {
 	From() int
 	Cmd() int
 	Seqn() uint64
-	Body() string // soon to be []byte
+	Body() []byte
 	Ok() bool
 
 	SetFrom(byte)
@@ -51,7 +51,7 @@ func NewInvite(crnd uint64) Message {
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
 func InviteParts(m Message) (crnd uint64) {
-	return util.Unpackui64([]byte(m.Body()))
+	return util.Unpackui64(m.Body())
 }
 
 func NewNominate(crnd uint64, v string) Message {
@@ -64,8 +64,8 @@ func NewNominate(crnd uint64, v string) Message {
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
 func NominateParts(m Message) (crnd uint64, v string) {
-	crnd = util.Unpackui64([]byte(m.Body())[0:8])
-	v = m.Body()[8:]
+	crnd = util.Unpackui64(m.Body()[0:8])
+	v = string(m.Body()[8:])
 	return
 }
 
@@ -80,9 +80,9 @@ func NewRsvp(i, vrnd uint64, vval string) Message {
 
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
 func RsvpParts(m Message) (i, vrnd uint64, vval string) {
-	i = util.Unpackui64([]byte(m.Body())[0:8])
-	vrnd = util.Unpackui64([]byte(m.Body())[8:16])
-	vval = m.Body()[16:]
+	i = util.Unpackui64(m.Body()[0:8])
+	vrnd = util.Unpackui64(m.Body()[8:16])
+	vval = string(m.Body()[16:])
 	return
 }
 
@@ -96,8 +96,8 @@ func NewVote(i uint64, vval string) Message {
 
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
 func VoteParts(m Message) (i uint64, vval string) {
-	i = util.Unpackui64([]byte(m.Body())[0:8])
-	vval = m.Body()[8:]
+	i = util.Unpackui64(m.Body()[0:8])
+	vval = string(m.Body()[8:])
 	return
 }
 
@@ -128,8 +128,8 @@ func (m Msg) Seqn() uint64 {
 	return util.Unpackui64(m[mSeqn : mSeqn+8])
 }
 
-func (m Msg) Body() string {
-	return string([]byte(m[mBody:]))
+func (m Msg) Body() []byte {
+	return m[mBody:]
 }
 
 func (m Msg) SetFrom(from byte) {
