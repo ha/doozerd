@@ -8,16 +8,16 @@ type Node struct {
     id string
 }
 
-// TODO this is a bad name. I predict that we should soon get rid of the
-// "Cluster" *interface* and rename this type to "Cluster".
-type RealCluster struct {
+// SelfIndex is the position of the local node in the alphabetized list of all
+// nodes in the cluster.
+type cluster struct {
     self string
     nodes []string
     fw Putter
     selfIndex int
 }
 
-func NewCluster(self string, nodes []string, fw Putter) Cluster {
+func NewCluster(self string, nodes []string, fw Putter) *cluster {
     sort.SortStrings(nodes)
     selfIndex := -1
     for i, id := range nodes {
@@ -25,7 +25,7 @@ func NewCluster(self string, nodes []string, fw Putter) Cluster {
             selfIndex = i
         }
     }
-    return &RealCluster{
+    return &cluster{
         self: self,
         nodes: nodes,
         fw: fw,
@@ -33,18 +33,18 @@ func NewCluster(self string, nodes []string, fw Putter) Cluster {
     }
 }
 
-func (cx *RealCluster) Len() int {
+func (cx *cluster) Len() int {
     return len(cx.nodes)
 }
 
-func (cx *RealCluster) Quorum() int {
+func (cx *cluster) Quorum() int {
     return cx.Len()/2 + 1
 }
 
-func (cx *RealCluster) SelfIndex() int {
+func (cx *cluster) SelfIndex() int {
     return cx.selfIndex
 }
 
-func (cx *RealCluster) Put(m Message) {
+func (cx *cluster) Put(m Message) {
     cx.fw.Put(m)
 }

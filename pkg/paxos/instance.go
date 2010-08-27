@@ -5,7 +5,7 @@ import (
 )
 
 type Instance struct {
-	cx Cluster
+	cx *cluster
 
 	vin  chan string
 	v    string
@@ -24,7 +24,7 @@ type Instance struct {
 	logger *log.Logger
 }
 
-func NewInstance(cx Cluster, logger *log.Logger) *Instance {
+func NewInstance(cx *cluster, logger *log.Logger) *Instance {
 	c := NewC(cx)
 	aIns, lIns := make(chan Message), make(chan Message)
 	ins := &Instance{

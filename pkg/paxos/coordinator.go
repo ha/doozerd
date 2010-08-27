@@ -2,13 +2,13 @@ package paxos
 
 // TODO temporary name
 type C struct {
-	cx Cluster
+	cx *cluster
 
 	ins chan Message
 	clock chan int
 }
 
-func NewC(c Cluster) *C {
+func NewC(c *cluster) *C {
 	return &C{
 		cx: c,
 		ins: make(chan Message),
