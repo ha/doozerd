@@ -2,16 +2,12 @@ package paxos
 
 // TODO temporary name
 type coord struct {
-	outs Putter
-
 	chanPutCloser
+	outs Putter
 }
 
 func newCoord(outs Putter) *coord {
-	return &coord{
-		outs:  outs,
-		chanPutCloser: chanPutCloser(make(chan Msg)),
-	}
+	return &coord{make(chanPutCloser), outs}
 }
 
 func (c *coord) process(cx *cluster) {

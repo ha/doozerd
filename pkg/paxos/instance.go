@@ -24,14 +24,13 @@ type instance struct {
 }
 
 func newInstance(self string, st *store.Store, cver uint64, outs Putter, logger *log.Logger) *instance {
-	c := newCoord(outs)
-	aIns, lIns := make(chan Msg), make(chan Msg)
+	c, aIns, lIns := newCoord(outs), make(chanPutCloser), make(chanPutCloser)
 	ins := &instance{
 		vin:     make(chan string),
 		done:    make(chan int),
 		cPutter: c,
-		aPutter: chanPutCloser(aIns),
-		lPutter: chanPutCloser(lIns),
+		aPutter: aIns,
+		lPutter: lIns,
 		logger:  logger,
 	}
 
