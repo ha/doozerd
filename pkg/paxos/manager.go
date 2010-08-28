@@ -1,7 +1,9 @@
 package paxos
 
 import (
+	"borg/store"
 	"log"
+	"strings"
 )
 
 type result struct {
@@ -17,7 +19,7 @@ type instReq struct {
 
 type Manager struct {
 	self    string
-	nodes   []string
+	st      *store.Store
 	learned chan result
 	reqs    chan instReq
 	logger  *log.Logger
@@ -44,10 +46,10 @@ func (m *Manager) process(next uint64, outs Putter) {
 	}
 }
 
-func NewManager(start uint64, self string, nodes []string, outs Putter, logger *log.Logger) *Manager {
+func NewManager(start uint64, self string, st *store.Store, outs Putter, logger *log.Logger) *Manager {
 	m := &Manager{
 		self:    self,
-		nodes:   nodes,
+		st:      st,
 		learned: make(chan result),
 		reqs:    make(chan instReq),
 		logger:  logger,
@@ -58,10 +60,15 @@ func NewManager(start uint64, self string, nodes []string, outs Putter, logger *
 	return m
 }
 
-func (m *Manager) getInstance(seqn uint64) *instance {
+func (m *Manager) getInstance(seqn, cver uint64) *instance {
 	ch := make(chan *instance)
-	// TODO read list of nodes from the data store
-	cx := newCluster(m.self, m.nodes)
+	nodes, ok := m.st.LookupSync("/b/borg/members", cver)
+	if !ok {
+		// No members? We are seriously F'd in the A.
+		m.logger.Log("no members")
+		panic("no members")
+	}
+	cx := newCluster(m.self, strings.Split(nodes, "\n", -1))
 	m.reqs <- instReq{seqn, cx, ch}
 	return <-ch
 }
@@ -70,11 +77,13 @@ func (m *Manager) Put(msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	m.getInstance(msg.Seqn()).Put(msg)
+	go func() {
+		m.getInstance(msg.Seqn(), msg.ClusterVersion()).Put(msg)
+	}()
 }
 
 func (m *Manager) Propose(v string) string {
-	inst := m.getInstance(0)
+	inst := m.getInstance(0, 0)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
 	return inst.Value()

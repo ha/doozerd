@@ -2,13 +2,18 @@ package paxos
 
 import (
 	"borg/assert"
+	"borg/store"
 	"log"
 	"testing"
 )
 
 func selfRefNewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
 	p := make(FakePutter, 1)
-	m := NewManager(start, self, nodes, p, logger)
+	st := store.New(logger)
+	for i, node := range nodes {
+		st.Apply(uint64(i+1), mustEncodeSet("/b/borg/members/" + node, ""))
+	}
+	m := NewManager(start, self, st, p, logger)
 	p[0] = m
 	return m
 }
@@ -112,4 +117,51 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, "y", v, "")
+}
+
+func mustEncodeSet(k, v string) string {
+	m, err := store.EncodeSet(k, v)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+func TestReadFromStore(t *testing.T) {
+	self := "a"
+
+	// The cluster initially has 1 node (quorum of 1).
+	st := store.New(logger)
+	st.Apply(1, mustEncodeSet("/b/borg/members/" + self, ""))
+
+	p := make(chanPutCloser)
+	m := NewManager(1, self, st, p, logger)
+
+	// Fire up a new instance with a vote message. This instance should block
+	// trying to read the list of members. If it doesn't wait, it'll
+	// immediately learn the value `x`.
+	in := newVoteFrom(0, 1, "x")
+	in.SetSeqn(3)
+	in.SetClusterVersion(2)
+	m.Put(in)
+
+	// Satisfy the sync read of data members above. After this, there will be
+	// 2 nodes in the cluster, making the quorum 2.
+	st.Apply(2, mustEncodeSet("/b/borg/members/b", ""))
+
+	// Now try to make it learn a new value with 2 votes to meet the new
+	// quorum.
+	exp := "y"
+	in = newVoteFrom(0, 2, exp)
+	in.SetSeqn(3)
+	in.SetClusterVersion(2)
+	m.Put(in)
+	in = newVoteFrom(1, 2, exp)
+	in.SetSeqn(3)
+	in.SetClusterVersion(2)
+	m.Put(in)
+
+	seqn, v := m.Recv()
+	assert.Equal(t, uint64(3), seqn, "")
+	assert.Equal(t, exp, v, "")
 }
