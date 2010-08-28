@@ -69,9 +69,7 @@ func (m *Manager) Put(msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	go func() {
-		m.getInstance(msg.Seqn(), msg.ClusterVersion()).Put(msg)
-	}()
+	m.getInstance(msg.Seqn(), msg.ClusterVersion()).Put(msg)
 }
 
 func (m *Manager) Propose(v string) string {
