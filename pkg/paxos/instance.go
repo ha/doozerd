@@ -12,7 +12,7 @@ type instance struct {
 	done chan int
 
 	// Coordinator
-	cPutter putCloseProcessor
+	cPutter putCloser
 
 	// Acceptor
 	aPutter putCloser

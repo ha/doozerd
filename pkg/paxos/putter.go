@@ -9,11 +9,6 @@ type putCloser interface {
 	Close()
 }
 
-type putCloseProcessor interface {
-	putCloser
-	process()
-}
-
 type chanPutCloser chan Msg
 
 func (cp chanPutCloser) Put(m Msg) {
