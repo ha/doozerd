@@ -2,15 +2,13 @@ package paxos
 
 // TODO temporary name
 type coord struct {
-	cx   *cluster
 	outs Putter
 
 	chanPutCloser
 }
 
-func newCoord(c *cluster, outs Putter) *coord {
+func newCoord(outs Putter) *coord {
 	return &coord{
-		cx:    c,
 		outs:  outs,
 		chanPutCloser: chanPutCloser(make(chan Msg)),
 	}
@@ -20,10 +18,10 @@ func (c *coord) Close() {
 	c.chanPutCloser.Close()
 }
 
-func (c *coord) process() {
-	crnd := uint64(c.cx.SelfIndex())
+func (c *coord) process(cx *cluster) {
+	crnd := uint64(cx.SelfIndex())
 	if crnd == 0 {
-		crnd += uint64(c.cx.Len())
+		crnd += uint64(cx.Len())
 	}
 
 	var target string
@@ -65,7 +63,7 @@ func (c *coord) process() {
 			}
 
 			rsvps++
-			if rsvps >= c.cx.Quorum() {
+			if rsvps >= cx.Quorum() {
 				var v string
 
 				if vr > 0 {
@@ -82,7 +80,7 @@ func (c *coord) process() {
 			target = proposeParts(in)
 			fallthrough
 		case tick:
-			crnd += uint64(c.cx.Len())
+			crnd += uint64(cx.Len())
 			c.outs.Put(newInvite(crnd))
 			vr = 0
 			vv = ""
