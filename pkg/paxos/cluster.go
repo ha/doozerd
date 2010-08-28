@@ -17,16 +17,24 @@ type cluster struct {
 }
 
 func newCluster(self string, nodes []string) *cluster {
-	sort.SortStrings(nodes)
+	validNodes := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		if node != "" {
+			validNodes = validNodes[0:len(validNodes)+1]
+			validNodes[len(validNodes)-1] = node
+		}
+	}
+
+	sort.SortStrings(validNodes)
 	selfIndex := -1
-	for i, id := range nodes {
+	for i, id := range validNodes {
 		if id == self {
 			selfIndex = i
 		}
 	}
 	return &cluster{
 		self:      self,
-		nodes:     nodes,
+		nodes:     validNodes,
 		selfIndex: selfIndex,
 	}
 }
