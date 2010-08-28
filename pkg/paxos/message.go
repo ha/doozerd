@@ -57,6 +57,7 @@ const (
 	nominate
 	vote
 	tick
+	propose
 )
 
 const (
@@ -65,6 +66,7 @@ const (
 	nominateLen = 8  // not including v
 	voteLen     = 8  // not including v
 	tickLen     = 0
+	proposeLen  = 0  // not including v
 )
 
 func newInvite(crnd uint64) Msg {
@@ -130,6 +132,19 @@ func newTick() Msg {
 	m := make(Msg, baseLen + tickLen)
 	m[mCmd] = tick
 	return m
+}
+
+func newPropose(val string) Msg {
+	m := make(Msg, baseLen+proposeLen+len(val))
+	m[mCmd] = propose
+	copy(m.Body()[proposeLen:], []byte(val))
+	return m
+}
+
+// Returns the info for `m`. If `m` is not a propose, the result is undefined.
+func proposeParts(m Msg) (val string) {
+	val = string(m.Body()[proposeLen:])
+	return
 }
 
 func (m Msg) From() int {

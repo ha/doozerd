@@ -106,6 +106,13 @@ func TestMessageNewTick(t *testing.T) {
 	assert.Equal(t, tick, m.Cmd(), "")
 }
 
+func TestMessageNewPropose(t *testing.T) {
+	m := newPropose("foo")
+	assert.Equal(t, propose, m.Cmd(), "")
+	val := proposeParts(m)
+	assert.Equal(t, "foo", val, "")
+}
+
 func TestMessageSetFrom(t *testing.T) {
 	m := newInvite(1)
 	m.SetFrom(1)
