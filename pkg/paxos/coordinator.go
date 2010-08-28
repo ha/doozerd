@@ -14,10 +14,6 @@ func newCoord(outs Putter) *coord {
 	}
 }
 
-func (c *coord) Close() {
-	c.chanPutCloser.Close()
-}
-
 func (c *coord) process(cx *cluster) {
 	crnd := uint64(cx.SelfIndex())
 	if crnd == 0 {
