@@ -36,6 +36,7 @@ func newInstance(cx *cluster, outs Putter, logger *log.Logger) *instance {
 		logger:  logger,
 	}
 
+	go c.process()
 	go acceptor(aIns, outs)
 	go func() {
 		ins.v = learner(uint64(cx.Quorum()), lIns)
@@ -63,7 +64,5 @@ func (ins *instance) Close() {
 }
 
 func (ins *instance) Propose(v string) {
-	// TODO make propose into a message type. This becomes:
-	//   ins.cPutter.Put(...)
-	go ins.cPutter.process(v)
+	ins.cPutter.Put(newPropose(v))
 }

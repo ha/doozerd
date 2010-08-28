@@ -20,22 +20,31 @@ func (c *coord) Close() {
 	c.chanPutCloser.Close()
 }
 
-func (c *coord) process(target string) {
+func (c *coord) process() {
 	crnd := uint64(c.cx.SelfIndex())
 	if crnd == 0 {
 		crnd += uint64(c.cx.Len())
 	}
 
+	var target string
 	var cval string
-
-Start:
-	cval = ""
-	start := newInvite(crnd)
-	c.outs.Put(start)
-
 	var rsvps int
 	var vr uint64
 	var vv string
+
+	// Wait for the very first proposal
+	for in := range c.chanPutCloser {
+		if in.Cmd() != propose {
+			continue
+		}
+		target = proposeParts(in)
+		c.outs.Put(newInvite(crnd))
+		vr = 0
+		vv = ""
+		rsvps = 0
+		cval = ""
+		break
+	}
 
 	for in := range c.chanPutCloser {
 		if closed(c.chanPutCloser) {
@@ -72,9 +81,16 @@ Start:
 				chosen := newNominate(crnd, v)
 				c.outs.Put(chosen)
 			}
+		case propose:
+			target = proposeParts(in)
+			fallthrough
 		case tick:
 			crnd += uint64(c.cx.Len())
-			goto Start
+			c.outs.Put(newInvite(crnd))
+			vr = 0
+			vv = ""
+			rsvps = 0
+			cval = ""
 		}
 	}
 

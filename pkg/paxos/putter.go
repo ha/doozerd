@@ -11,7 +11,7 @@ type putCloser interface {
 
 type putCloseProcessor interface {
 	putCloser
-	process(string)
+	process()
 }
 
 type chanPutCloser chan Msg
