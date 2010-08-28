@@ -3,7 +3,6 @@ package paxos
 import (
 	"borg/store"
 	"log"
-	"strings"
 )
 
 type result struct {
@@ -13,7 +12,7 @@ type result struct {
 
 type instReq struct {
 	seqn uint64 // 0 means to generate a fresh seqn
-	cx   *cluster
+	cver uint64
 	ch   chan *instance
 }
 
@@ -33,7 +32,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 		}
 		inst, ok := instances[req.seqn]
 		if !ok {
-			inst = newInstance(req.cx, putWrapper{req.seqn, 1, outs}, m.logger)
+			inst = newInstance(m.self, m.st, req.cver, putWrapper{req.seqn, 1, outs}, m.logger)
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}
@@ -62,14 +61,7 @@ func NewManager(start uint64, self string, st *store.Store, outs Putter, logger 
 
 func (m *Manager) getInstance(seqn, cver uint64) *instance {
 	ch := make(chan *instance)
-	nodes, ok := m.st.LookupSync("/b/borg/members", cver)
-	if !ok {
-		// No members? We are seriously F'd in the A.
-		m.logger.Log("no members")
-		panic("no members")
-	}
-	cx := newCluster(m.self, strings.Split(nodes, "\n", -1))
-	m.reqs <- instReq{seqn, cx, ch}
+	m.reqs <- instReq{seqn, cver, ch}
 	return <-ch
 }
 

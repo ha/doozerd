@@ -1,7 +1,9 @@
 package paxos
 
 import (
+	"borg/store"
 	"log"
+	"strings"
 )
 
 type instance struct {
@@ -21,7 +23,7 @@ type instance struct {
 	logger *log.Logger
 }
 
-func newInstance(cx *cluster, outs Putter, logger *log.Logger) *instance {
+func newInstance(self string, st *store.Store, cver uint64, outs Putter, logger *log.Logger) *instance {
 	c := newCoord(outs)
 	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &instance{
@@ -33,11 +35,21 @@ func newInstance(cx *cluster, outs Putter, logger *log.Logger) *instance {
 		logger:  logger,
 	}
 
-	go c.process(cx)
-	go acceptor(aIns, outs)
 	go func() {
-		ins.v = learner(uint64(cx.Quorum()), lIns)
-		close(ins.done)
+		nodes, ok := st.LookupSync("/b/borg/members", cver)
+		if !ok {
+			// No members? We are seriously F'd in the A.
+			logger.Log("no members")
+			panic("no members")
+		}
+		cx := newCluster(self, strings.Split(nodes, "\n", -1))
+
+		go c.process(cx)
+		go acceptor(aIns, outs)
+		go func() {
+			ins.v = learner(uint64(cx.Quorum()), lIns)
+			close(ins.done)
+		}()
 	}()
 
 	return ins
