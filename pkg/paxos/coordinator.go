@@ -6,7 +6,6 @@ type coord struct {
 	outs Putter
 
 	chanPutCloser
-	clock chan int
 }
 
 func newCoord(c *cluster, outs Putter) *coord {
@@ -14,13 +13,11 @@ func newCoord(c *cluster, outs Putter) *coord {
 		cx:    c,
 		outs:  outs,
 		chanPutCloser: chanPutCloser(make(chan Msg)),
-		clock: make(chan int),
 	}
 }
 
 func (c *coord) Close() {
 	c.chanPutCloser.Close()
-	close(c.clock)
 }
 
 func (c *coord) process(target string) {
@@ -40,48 +37,42 @@ Start:
 	var vr uint64
 	var vv string
 
-	for {
-		select {
-		case in := <-c.chanPutCloser:
-			if closed(c.chanPutCloser) {
-				goto Done
+	for in := range c.chanPutCloser {
+		if closed(c.chanPutCloser) {
+			goto Done
+		}
+		switch in.Cmd() {
+		case rsvp:
+			i, vrnd, vval := rsvpParts(in)
+
+			if cval != "" {
+				continue
 			}
-			switch in.Cmd() {
-			case rsvp:
-				i, vrnd, vval := rsvpParts(in)
 
-				if cval != "" {
-					continue
-				}
-
-				if i < crnd {
-					continue
-				}
-
-				if vrnd > vr {
-					vr = vrnd
-					vv = vval
-				}
-
-				rsvps++
-				if rsvps >= c.cx.Quorum() {
-					var v string
-
-					if vr > 0 {
-						v = vv
-					} else {
-						v = target
-					}
-					cval = v
-
-					chosen := newNominate(crnd, v)
-					c.outs.Put(chosen)
-				}
+			if i < crnd {
+				continue
 			}
-		case <-c.clock:
-			if closed(c.clock) {
-				goto Done
+
+			if vrnd > vr {
+				vr = vrnd
+				vv = vval
 			}
+
+			rsvps++
+			if rsvps >= c.cx.Quorum() {
+				var v string
+
+				if vr > 0 {
+					v = vv
+				} else {
+					v = target
+				}
+				cval = v
+
+				chosen := newNominate(crnd, v)
+				c.outs.Put(chosen)
+			}
+		case tick:
 			crnd += uint64(c.cx.Len())
 			goto Start
 		}

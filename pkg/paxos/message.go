@@ -56,6 +56,7 @@ const (
 	rsvp
 	nominate
 	vote
+	tick
 )
 
 const (
@@ -63,6 +64,7 @@ const (
 	rsvpLen     = 16 // not including v
 	nominateLen = 8  // not including v
 	voteLen     = 8  // not including v
+	tickLen     = 0
 )
 
 func newInvite(crnd uint64) Msg {
@@ -122,6 +124,12 @@ func voteParts(m Msg) (i uint64, vval string) {
 	i = util.Unpackui64(m.Body()[0:8])
 	vval = string(m.Body()[8:])
 	return
+}
+
+func newTick() Msg {
+	m := make(Msg, baseLen + tickLen)
+	m[mCmd] = tick
+	return m
 }
 
 func (m Msg) From() int {

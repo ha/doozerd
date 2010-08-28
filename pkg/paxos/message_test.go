@@ -101,6 +101,11 @@ func TestMessageNewVoteAlt(t *testing.T) {
 	assert.Equal(t, "bar", vval, "")
 }
 
+func TestMessageNewTick(t *testing.T) {
+	m := newTick()
+	assert.Equal(t, tick, m.Cmd(), "")
+}
+
 func TestMessageSetFrom(t *testing.T) {
 	m := newInvite(1)
 	m.SetFrom(1)

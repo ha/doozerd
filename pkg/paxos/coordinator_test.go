@@ -25,7 +25,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 
 	<-outs //discard INVITE:1
 
-	c.clock <- 1 // force the start of a new round
+	c.Put(newTick()) // force the start of a new round
 	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 1, 0, ""))
@@ -53,7 +53,7 @@ func TestCoordCloseIns(t *testing.T) {
 
 	<-outs //discard INVITE:1
 
-	c.clock <- 1 // force the start of a new round
+	c.Put(newTick()) // force the start of a new round
 	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 1, 0, ""))
@@ -64,34 +64,6 @@ func TestCoordCloseIns(t *testing.T) {
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 
 	c.chanPutCloser.Close()
-	assert.Equal(t, 1, <-done, "")
-
-	close(outs)
-}
-
-func TestCoordCloseClock(t *testing.T) {
-	outs := SyncPutter(make(chan Msg))
-	done := make(chan int)
-
-	c := newCoord(newCluster("b", tenNodes), outs)
-	go func() {
-		c.process("foo")
-		done <- 1
-	}()
-
-	<-outs //discard INVITE:1
-
-	c.clock <- 1 // force the start of a new round
-	<-outs       //discard INVITE:11
-
-	c.Put(newRsvpFrom(1, 1, 0, ""))
-	c.Put(newRsvpFrom(2, 1, 0, ""))
-	c.Put(newRsvpFrom(3, 1, 0, ""))
-	c.Put(newRsvpFrom(4, 1, 0, ""))
-	c.Put(newRsvpFrom(5, 1, 0, ""))
-	c.Put(newRsvpFrom(6, 1, 0, ""))
-
-	close(c.clock)
 	assert.Equal(t, 1, <-done, "")
 
 	close(outs)
@@ -155,7 +127,7 @@ func TestCoordRestart(t *testing.T) {
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 
-	c.clock <- 1
+	c.Put(newTick()) // force the start of a new round
 	assert.Equal(t, newInviteFrom(1, 11), <-outs, "")
 
 	c.Close()
@@ -224,7 +196,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 	<-outs //discard NOMINATE
 
-	c.clock <- 1 // force the start of a new round
+	c.Put(newTick()) // force the start of a new round
 	<-outs       //discard INVITE:11
 
 	c.Put(newRsvpFrom(1, 11, 0, ""))
