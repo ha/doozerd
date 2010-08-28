@@ -5,7 +5,7 @@ type coord struct {
 	cx   *cluster
 	outs Putter
 
-	ins   chan Msg
+	chanPutCloser
 	clock chan int
 }
 
@@ -13,19 +13,13 @@ func newCoord(c *cluster, outs Putter) *coord {
 	return &coord{
 		cx:    c,
 		outs:  outs,
-		ins:   make(chan Msg),
+		chanPutCloser: chanPutCloser(make(chan Msg)),
 		clock: make(chan int),
 	}
 }
 
-func (c *coord) Put(m Msg) {
-	go func() {
-		c.ins <- m
-	}()
-}
-
 func (c *coord) Close() {
-	close(c.ins)
+	c.chanPutCloser.Close()
 	close(c.clock)
 }
 
@@ -48,8 +42,8 @@ Start:
 
 	for {
 		select {
-		case in := <-c.ins:
-			if closed(c.ins) {
+		case in := <-c.chanPutCloser:
+			if closed(c.chanPutCloser) {
 				goto Done
 			}
 			switch in.Cmd() {
