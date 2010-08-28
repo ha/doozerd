@@ -5,8 +5,6 @@ import (
 )
 
 type instance struct {
-	cx *cluster
-
 	vin  chan string
 	v    string
 	done chan int
@@ -27,7 +25,6 @@ func newInstance(cx *cluster, outs Putter, logger *log.Logger) *instance {
 	c := newCoord(cx, outs)
 	aIns, lIns := make(chan Msg), make(chan Msg)
 	ins := &instance{
-		cx:      cx,
 		vin:     make(chan string),
 		done:    make(chan int),
 		cPutter: c,
