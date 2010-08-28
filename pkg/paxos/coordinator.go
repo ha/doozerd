@@ -47,9 +47,6 @@ func (c *coord) process() {
 	}
 
 	for in := range c.chanPutCloser {
-		if closed(c.chanPutCloser) {
-			goto Done
-		}
 		switch in.Cmd() {
 		case rsvp:
 			i, vrnd, vval := rsvpParts(in)
@@ -93,7 +90,4 @@ func (c *coord) process() {
 			cval = ""
 		}
 	}
-
-Done:
-	return
 }
