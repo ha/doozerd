@@ -198,7 +198,6 @@ func (n node) getp(path string) (string, bool) {
 func (n node) set(parts []string, v string, keep bool) (y *node, c int) {
 	switch len(parts) {
 	case 0:
-		n.v = v
 		y = &node{v:v, ds:n.ds}
 	default:
 		d := 0
