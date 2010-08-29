@@ -8,16 +8,9 @@ type instance struct {
 	vin  chan string
 	v    string
 	done chan int
-
-	// Coordinator
-	cPutter putCloser
-
-	// Acceptor
-	aPutter putCloser
-
-	// Learner
-	lPutter putCloser
-
+	cPutter putCloser // Coordinator
+	aPutter putCloser // Acceptor
+	lPutter putCloser // Learner
 	logger *log.Logger
 }
 
