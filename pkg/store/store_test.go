@@ -544,6 +544,37 @@ func TestWatchSetDirParents(t *testing.T) {
 	assert.Equal(t, Event{Add, 1, "/x", "y"}, expa, "")
 }
 
+func TestWatchApply(t *testing.T) {
+	s := New(logger)
+
+	ch := make(chan Event)
+	s.Watch("/x", Del, ch)
+	s.WatchApply(ch)
+	assert.Equal(t, 1, len(s.watches["/x"]), "")
+
+	mut1, _ := EncodeSet("/x", "a")
+	mut2, _ := EncodeSet("/x", "b")
+	mut3, _ := EncodeSet("/y", "c")
+	mut4, _ := EncodeDel("/x")
+	mut5, _ := EncodeDel("/y")
+	mut6, _ := EncodeDel("/x")
+	s.Apply(1, mut1)
+	s.Apply(2, mut2)
+	s.Apply(3, mut3)
+	s.Apply(4, mut4)
+	s.Apply(5, mut5)
+	s.Apply(6, mut6)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-ch, "")
+	assert.Equal(t, Event{Apply, 2, "", ""}, <-ch, "")
+	assert.Equal(t, Event{Apply, 3, "", ""}, <-ch, "")
+	assert.Equal(t, Event{Del, 4, "/x", ""}, <-ch, "")
+	assert.Equal(t, Event{Apply, 4, "", ""}, <-ch, "")
+	assert.Equal(t, Event{Apply, 5, "", ""}, <-ch, "")
+	assert.Equal(t, Event{Del, 6, "/x", ""}, <-ch, "")
+	assert.Equal(t, Event{Apply, 6, "", ""}, <-ch, "")
+}
+
 func TestSnapshotApply(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	s1 := New(logger)

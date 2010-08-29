@@ -2,6 +2,7 @@ package store
 
 import (
 	"container/heap"
+	"container/list"
 	"container/vector"
 	"gob"
 	"io"
@@ -24,6 +25,7 @@ const (
 	Del
 	Add
 	Rem
+	Apply
 )
 
 var conj = map[uint]uint{Set:Add, Del:Rem}
@@ -46,6 +48,7 @@ type Store struct {
 	snapCh chan snap
 	watchCh chan watch
 	watches map[string][]watch
+	notifyCh chan notify
 	todo map[uint64]apply
 	todoLookup *reqQueue
 	todoSnap *snapQueue
@@ -93,6 +96,11 @@ type watch struct {
 	ready chan int
 }
 
+type notify struct {
+	ch chan Event
+	ev Event
+}
+
 func (r req) Less(y interface{}) bool {
 	return r.seqn < y.(req).seqn
 }
@@ -128,10 +136,12 @@ func New(logger *log.Logger) *Store {
 		todoLookup: new(reqQueue),
 		todoSnap: new(snapQueue),
 		watches: make(map[string][]watch),
+		notifyCh: make(chan notify),
 		logger: logger,
 	}
 	heap.Init(s.todoLookup)
 	heap.Init(s.todoSnap)
+	go s.buffer()
 	go s.process()
 	return s
 }
@@ -271,14 +281,10 @@ func decode(mutation string) (op uint, path, v string, err os.Error) {
 	panic("can't happen")
 }
 
-func (w watch) send(ev Event) {
-	w.ch <- ev
-}
-
 func (s *Store) notify(t uint, seqn uint64, k, v string) {
 	for _, w := range s.watches[k] {
 		if w.mask & t != 0 {
-			go w.send(Event{t, seqn, k, v})
+			s.notifyCh <- notify{w.ch, Event{t, seqn, k, v}}
 		}
 	}
 }
@@ -300,6 +306,24 @@ func append(ws *[]watch, w watch) {
 	}
 	*ws = (*ws)[0:l + 1]
 	(*ws)[l] = w
+}
+
+// Unbounded in-order buffering
+func (s *Store) buffer() {
+	list := list.New()
+	var n notify
+	for {
+		select {
+		case n.ch <- n.ev:
+			n = notify{}
+		case x := <-s.notifyCh:
+			list.PushBack(x)
+		}
+		if x := list.Front(); x != nil && n.ch == nil {
+			n = x.Value.(notify)
+			list.Remove(x)
+		}
+	}
 }
 
 func (s *Store) process() {
@@ -340,12 +364,13 @@ func (s *Store) process() {
 				op, k, v, err := decode(t.mutation)
 				if err == nil {
 					var changed []string
-					s.notify(op, t.seqn, k, v)
 					values, changed = values.setp(k, v, op == Set)
 					s.logger.Logf("store applied %v", t)
+					s.notify(op, t.seqn, k, v)
 					for _, p := range changed {
 						s.notifyDir(conj[op], t.seqn, p)
 					}
+					s.notify(Apply, t.seqn, "", "")
 				}
 			}
 			ver = next
@@ -421,13 +446,28 @@ func (s *Store) SnapshotSync(seqn uint64, w io.Writer) (err os.Error) {
 }
 
 // Subscribes `events` to receive notifications when mutations are applied to
-// the store. Set `mask` to one or more of `Set`, `Del`, `Add`, and `Rem`,
-// bitwise OR-ed together.
+// a path in the store. Set `mask` to one or more of `Set`, `Del`, `Add`, and
+// `Rem`, bitwise OR-ed together.
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
 func (s *Store) Watch(path string, mask uint, events chan Event) {
+	if path == "" && mask != Apply {
+		return
+	}
 	ready := make(chan int)
 	s.watchCh <- watch{events, mask, path, ready}
 	<-ready
+}
+
+// Like `Watch`, but instead sends a placeholder event after every mutation
+// application. The event's `Type` will be equal to `Apply`.
+//
+// This event will be sent after all normal Watch events for each seqn have
+// been delivered. This gives you a reliable way to know when you have recieved
+// all events for a given seqn (even if there were no such events).
+//
+// You probably don't want this. Use sparingly.
+func (s *Store) WatchApply(evs chan Event) {
+	s.Watch("", Apply, evs)
 }
