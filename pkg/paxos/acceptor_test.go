@@ -18,7 +18,7 @@ func TestIgnoreOldMessages(t *testing.T) {
 		ins := make(chan Msg)
 		outs := SyncPutter(make(chan Msg))
 
-		go acceptor(ins, putWrapper{1, 2, outs})
+		go acceptor(ins, outs)
 		ins <- test[0]
 		<-outs // throw away first reply
 		ins <- test[1]
@@ -37,11 +37,11 @@ func TestAcceptsInvite(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
 
-	go acceptor(ins, putWrapper{1, 2, outs})
+	go acceptor(ins, outs)
 	ins <- newInviteFrom(1, 1)
 	close(ins)
 
-	exp := newRsvpFrom(2, 1, 0, "")
+	exp := newRsvp(1, 0, "")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -49,15 +49,15 @@ func TestAcceptsInvite(t *testing.T) {
 
 func TestItVotes(t *testing.T) {
 	totest := [][]Msg{
-		[]Msg{newNominateFrom(1, 1, "foo"), newVoteFrom(2, 1, "foo")},
-		[]Msg{newNominateFrom(1, 1, "bar"), newVoteFrom(2, 1, "bar")},
+		[]Msg{newNominateFrom(1, 1, "foo"), newVote(1, "foo")},
+		[]Msg{newNominateFrom(1, 1, "bar"), newVote(1, "bar")},
 	}
 
 	for _, test := range totest {
 		ins := make(chan Msg)
 		outs := SyncPutter(make(chan Msg))
 
-		go acceptor(ins, putWrapper{1, 2, outs})
+		go acceptor(ins, outs)
 		ins <- test[0]
 		close(ins)
 
@@ -72,12 +72,12 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 
 	val := "bar"
 
-	go acceptor(ins, putWrapper{1, 2, outs})
+	go acceptor(ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- newNominateFrom(1, 2, val)
 	close(ins)
 
-	exp := newVoteFrom(2, 2, val)
+	exp := newVote(2, val)
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -89,12 +89,12 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 
 	val := "bar"
 
-	go acceptor(ins, putWrapper{1, 3, outs})
+	go acceptor(ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
 	ins <- newNominateFrom(1, 2, val)
 	close(ins)
 
-	exp := newVoteFrom(3, 2, val)
+	exp := newVote(2, val)
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -104,13 +104,13 @@ func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
 
-	go acceptor(ins, putWrapper{1, 2, outs})
+	go acceptor(ins, outs)
 	ins <- newNominateFrom(1, 1, "v")
 	<-outs // throw away VOTE message
 	ins <- newInviteFrom(1, 2)
 	close(ins)
 
-	exp := newRsvpFrom(2, 2, 1, "v")
+	exp := newRsvp(2, 1, "v")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, <-outs, "")
@@ -120,7 +120,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	ins := make(chan Msg)
 	outs := SyncPutter(make(chan Msg))
 
-	go acceptor(ins, putWrapper{1, 2, outs})
+	go acceptor(ins, outs)
 	ins <- newNominateFrom(1, 1, "v")
 	got := <-outs
 	ins <- newNominateFrom(1, 1, "v")
@@ -132,7 +132,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 
 	close(ins)
 
-	exp := newVoteFrom(2, 1, "v")
+	exp := newVote(1, "v")
 
 	// outs was closed; therefore all messages have been processed
 	assert.Equal(t, exp, got, "")

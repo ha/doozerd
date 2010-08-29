@@ -74,11 +74,11 @@ func TestCoordCloseIns(t *testing.T) {
 func TestCoordStart(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 
-	c := newCoord(putWrapper{1, 1, outs})
+	c := newCoord(outs)
 	go c.process(newCluster("b", tenNodes))
 	c.Put(newPropose("foo"))
 
-	assert.Equal(t, newInviteFrom(1, 1), <-outs, "")
+	assert.Equal(t, newInvite(1), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -89,11 +89,11 @@ func TestCoordStart(t *testing.T) {
 func TestCoordStartAlt(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 
-	c := newCoord(putWrapper{1, 2, outs})
+	c := newCoord(outs)
 	go c.process(newCluster("c", tenNodes))
 	c.Put(newPropose("foo"))
 
-	assert.Equal(t, newInviteFrom(2, 2), <-outs, "")
+	assert.Equal(t, newInvite(2), <-outs, "")
 
 	close(outs)
 }
@@ -101,7 +101,7 @@ func TestCoordStartAlt(t *testing.T) {
 func TestCoordTargetNomination(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 
-	c := newCoord(putWrapper{1, 1, outs})
+	c := newCoord(outs)
 	go c.process(newCluster("b", tenNodes))
 	c.Put(newPropose("foo"))
 	<-outs //discard INVITE
@@ -112,7 +112,7 @@ func TestCoordTargetNomination(t *testing.T) {
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 	c.Put(newRsvpFrom(7, 1, 0, ""))
-	assert.Equal(t, newNominateFrom(1, 1, "foo"), <-outs, "")
+	assert.Equal(t, newNominate(1, "foo"), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -121,7 +121,7 @@ func TestCoordTargetNomination(t *testing.T) {
 func TestCoordRestart(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 
-	c := newCoord(putWrapper{1, 1, outs})
+	c := newCoord(outs)
 	go c.process(newCluster("b", tenNodes))
 	c.Put(newPropose("foo"))
 	<-outs //discard INVITE
@@ -134,7 +134,7 @@ func TestCoordRestart(t *testing.T) {
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 
 	c.Put(newTick()) // force the start of a new round
-	assert.Equal(t, newInviteFrom(1, 11), <-outs, "")
+	assert.Equal(t, newInvite(11), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -143,7 +143,7 @@ func TestCoordRestart(t *testing.T) {
 func TestCoordNonTargetNomination(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 
-	c := newCoord(putWrapper{1, 1, outs})
+	c := newCoord(outs)
 	go c.process(newCluster("b", tenNodes))
 	c.Put(newPropose("foo"))
 	<-outs //discard INVITE
@@ -154,7 +154,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 	c.Put(newRsvpFrom(4, 1, 0, ""))
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 1, "bar"))
-	assert.Equal(t, newNominateFrom(1, 1, "bar"), <-outs, "")
+	assert.Equal(t, newNominate(1, "bar"), <-outs, "")
 
 	c.Close()
 	close(outs)
@@ -164,7 +164,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 	done := make(chan int)
 
-	c := newCoord(putWrapper{1, 1, outs})
+	c := newCoord(outs)
 	go func() {
 		go c.process(newCluster("b", tenNodes))
 		done <- 1
@@ -179,7 +179,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 	c.Put(newRsvpFrom(4, 1, 0, ""))
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 0, ""))
-	assert.Equal(t, newNominateFrom(1, 1, "foo"), <-outs, "")
+	assert.Equal(t, newNominate(1, "foo"), <-outs, "")
 
 	c.Put(newRsvpFrom(7, 1, 0, ""))
 	c.Close()
@@ -192,7 +192,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 func TestCoordEachRoundResetsCval(t *testing.T) {
 	outs := SyncPutter(make(chan Msg))
 
-	c := newCoord(putWrapper{1, 1, outs})
+	c := newCoord(outs)
 	go c.process(newCluster("b", tenNodes))
 	c.Put(newPropose("foo"))
 	<-outs //discard INVITE
@@ -215,7 +215,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	c.Put(newRsvpFrom(5, 11, 0, ""))
 	c.Put(newRsvpFrom(6, 11, 0, ""))
 
-	exp := newNominateFrom(1, 11, "foo")
+	exp := newNominate(11, "foo")
 	assert.Equal(t, exp, <-outs, "")
 
 	c.Close()

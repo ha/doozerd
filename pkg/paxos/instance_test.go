@@ -16,6 +16,16 @@ func (fp FakePutter) Put(m Msg) {
 	}
 }
 
+type putFromWrapper struct {
+	from int
+	Putter
+}
+
+func (w putFromWrapper) Put(m Msg) {
+	m.SetFrom(w.from)
+	w.Putter.Put(m)
+}
+
 func selfRefNewInstance(self string, nodes []string, logger *log.Logger) *instance {
 	p := make([]Putter, 1)
 	cx := newCluster(self, nodes)
@@ -78,9 +88,9 @@ func TestMultipleInstances(t *testing.T) {
 	cxA := func() *cluster { return newCluster("a", nodes) }
 	cxB := func() *cluster { return newCluster("a", nodes) }
 	cxC := func() *cluster { return newCluster("a", nodes) }
-	insA := newInstance(cxA, putWrapper{1, 3, FakePutter(ps)}, logger)
-	insB := newInstance(cxB, putWrapper{1, 1, FakePutter(ps)}, logger)
-	insC := newInstance(cxC, putWrapper{1, 2, FakePutter(ps)}, logger)
+	insA := newInstance(cxA, putFromWrapper{3, FakePutter(ps)}, logger)
+	insB := newInstance(cxB, putFromWrapper{1, FakePutter(ps)}, logger)
+	insC := newInstance(cxC, putFromWrapper{2, FakePutter(ps)}, logger)
 	ps[0] = insA
 	ps[1] = insB
 	ps[2] = insC
