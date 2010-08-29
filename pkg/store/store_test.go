@@ -571,7 +571,6 @@ func TestWatchApply(t *testing.T) {
 	assert.Equal(t, Event{Del, 4, "/x", ""}, <-ch, "")
 	assert.Equal(t, Event{Apply, 4, "", ""}, <-ch, "")
 	assert.Equal(t, Event{Apply, 5, "", ""}, <-ch, "")
-	assert.Equal(t, Event{Del, 6, "/x", ""}, <-ch, "")
 	assert.Equal(t, Event{Apply, 6, "", ""}, <-ch, "")
 }
 

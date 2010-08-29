@@ -192,7 +192,9 @@ func (n node) getp(path string) (string, bool) {
 	return n.get(split(path))
 }
 
-// Return value: y = replacement node; c = how many levels were changed.
+// Return value:
+//     y = replacement node
+//     c = how many levels were changed (including the leaf)
 func (n node) set(parts []string, v string, keep bool) (y *node, c int) {
 	switch len(parts) {
 	case 0:
@@ -366,7 +368,9 @@ func (s *Store) process() {
 					var changed []string
 					values, changed = values.setp(k, v, op == Set)
 					s.logger.Logf("store applied %v", t)
-					s.notify(op, t.seqn, k, v)
+					if op == Set || len(changed) > 0 {
+						s.notify(op, t.seqn, k, v)
+					}
 					for _, p := range changed {
 						s.notifyDir(conj[op], t.seqn, p)
 					}
