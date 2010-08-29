@@ -36,7 +36,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 			cxf := func() *cluster {
 				return m.rg.clusterFor(req.seqn)
 			}
-			inst = newInstance(cxf, putWrapper{req.seqn, 1, outs}, m.logger)
+			inst = newInstance(cxf, putWrapper{req.seqn, outs}, m.logger)
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}

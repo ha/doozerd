@@ -21,12 +21,10 @@ func (cp chanPutCloser) Close() {
 
 type putWrapper struct {
 	seqn uint64
-	from int
 	Putter
 }
 
 func (w putWrapper) Put(m Msg) {
 	m.SetSeqn(w.seqn)
-	m.SetFrom(w.from)
 	w.Putter.Put(m)
 }
