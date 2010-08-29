@@ -2,7 +2,6 @@ package paxos
 
 import (
 	"borg/assert"
-	"borg/store"
 	"log"
 	"testing"
 )
@@ -19,13 +18,8 @@ func (fp FakePutter) Put(m Msg) {
 
 func selfRefNewInstance(self string, nodes []string, logger *log.Logger) *instance {
 	p := make([]Putter, 1)
-
-	st := store.New(logger)
-	for i, node := range nodes {
-		st.Apply(uint64(i+1), mustEncodeSet("/b/borg/members/" + node, ""))
-	}
-
-	ins := newInstance(self, st, 0, FakePutter(p), logger)
+	cx := newCluster(self, nodes)
+	ins := newInstance(func()*cluster{return cx}, FakePutter(p), logger)
 	p[0] = ins
 	return ins
 }
@@ -81,13 +75,12 @@ func TestStartAtCoord(t *testing.T) {
 func TestMultipleInstances(t *testing.T) {
 	ps := make([]Putter, 3)
 	nodes := []string{"a", "b", "c"}
-	st := store.New(logger)
-	for i, node := range nodes {
-		st.Apply(uint64(i+1), mustEncodeSet("/b/borg/members/" + node, ""))
-	}
-	insA := newInstance("a", st, 0, putWrapper{1, 3, FakePutter(ps)}, logger)
-	insB := newInstance("b", st, 0, putWrapper{1, 1, FakePutter(ps)}, logger)
-	insC := newInstance("c", st, 0, putWrapper{1, 2, FakePutter(ps)}, logger)
+	cxA := func()*cluster{ return newCluster("a", nodes)}
+	cxB := func()*cluster{ return newCluster("a", nodes)}
+	cxC := func()*cluster{ return newCluster("a", nodes)}
+	insA := newInstance(cxA, putWrapper{1, 3, FakePutter(ps)}, logger)
+	insB := newInstance(cxB, putWrapper{1, 1, FakePutter(ps)}, logger)
+	insC := newInstance(cxC, putWrapper{1, 2, FakePutter(ps)}, logger)
 	ps[0] = insA
 	ps[1] = insB
 	ps[2] = insC

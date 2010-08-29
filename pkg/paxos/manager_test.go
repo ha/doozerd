@@ -10,10 +10,11 @@ import (
 func selfRefNewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
 	p := make(FakePutter, 1)
 	st := store.New(logger)
+	rg := newRegistrar(self, st, 1)
 	for i, node := range nodes {
 		st.Apply(uint64(i+1), mustEncodeSet("/b/borg/members/" + node, ""))
 	}
-	m := NewManager(start, self, st, p, logger)
+	m := NewManager(start, rg, p, logger)
 	p[0] = m
 	return m
 }
@@ -132,10 +133,11 @@ func TestReadFromStore(t *testing.T) {
 
 	// The cluster initially has 1 node (quorum of 1).
 	st := store.New(logger)
+	rg := newRegistrar(self, st, 1)
 	st.Apply(1, mustEncodeSet("/b/borg/members/" + self, ""))
 
 	p := make(chanPutCloser)
-	m := NewManager(1, self, st, p, logger)
+	m := NewManager(1, rg, p, logger)
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll

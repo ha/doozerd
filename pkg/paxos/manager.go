@@ -1,9 +1,10 @@
 package paxos
 
 import (
-	"borg/store"
 	"log"
 )
+
+const window = 50
 
 type result struct {
 	seqn uint64
@@ -17,8 +18,7 @@ type instReq struct {
 }
 
 type Manager struct {
-	self    string
-	st      *store.Store
+	rg      *registrar
 	learned chan result
 	reqs    chan instReq
 	logger  *log.Logger
@@ -32,7 +32,12 @@ func (m *Manager) process(next uint64, outs Putter) {
 		}
 		inst, ok := instances[req.seqn]
 		if !ok {
-			inst = newInstance(m.self, m.st, req.cver, putWrapper{req.seqn, 1, outs}, m.logger)
+			// TODO find a nicer way to do this
+			// This is meant to be run in a separate goroutine
+			cxf := func() *cluster {
+				return m.rg.clusterFor(req.seqn)
+			}
+			inst = newInstance(cxf, putWrapper{req.seqn, 1, outs}, m.logger)
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}
@@ -45,10 +50,9 @@ func (m *Manager) process(next uint64, outs Putter) {
 	}
 }
 
-func NewManager(start uint64, self string, st *store.Store, outs Putter, logger *log.Logger) *Manager {
+func NewManager(start uint64, rg *registrar, outs Putter, logger *log.Logger) *Manager {
 	m := &Manager{
-		self:    self,
-		st:      st,
+		rg:      rg,
 		learned: make(chan result),
 		reqs:    make(chan instReq),
 		logger:  logger,
