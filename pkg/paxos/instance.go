@@ -5,13 +5,13 @@ import (
 )
 
 type instance struct {
-	vin  chan string
-	v    string
-	done chan int
+	vin     chan string
+	v       string
+	done    chan int
 	cPutter putCloser // Coordinator
 	aPutter putCloser // Acceptor
 	lPutter putCloser // Learner
-	logger *log.Logger
+	logger  *log.Logger
 }
 
 func newInstance(cxf func() *cluster, outs Putter, logger *log.Logger) *instance {

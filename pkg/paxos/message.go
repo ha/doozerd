@@ -44,8 +44,8 @@ type Msg []byte
 const (
 	mFrom = iota
 	mCmd
-	mSeqn // 2 - 9
-	mBody = 10
+	mSeqn   // 2 - 9
+	mBody   = 10
 	baseLen = mBody
 )
 
@@ -65,11 +65,11 @@ const (
 	nominateLen = 8  // not including v
 	voteLen     = 8  // not including v
 	tickLen     = 0
-	proposeLen  = 0  // not including v
+	proposeLen  = 0 // not including v
 )
 
 func newInvite(crnd uint64) Msg {
-	m := make(Msg, baseLen + inviteLen)
+	m := make(Msg, baseLen+inviteLen)
 	m[mCmd] = invite
 	util.Packui64(m.Body()[0:8], crnd)
 	return m
@@ -128,7 +128,7 @@ func voteParts(m Msg) (i uint64, vval string) {
 }
 
 func newTick() Msg {
-	m := make(Msg, baseLen + tickLen)
+	m := make(Msg, baseLen+tickLen)
 	m[mCmd] = tick
 	return m
 }

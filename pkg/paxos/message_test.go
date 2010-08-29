@@ -130,23 +130,23 @@ func TestMessageSetSeqn(t *testing.T) {
 }
 
 func resize(m Msg, n int) Msg {
-	x := len(m)+n
+	x := len(m) + n
 	if x > cap(m) {
 		y := make(Msg, x)
 		copy(y, m)
 		return y
 	}
-	return m[0:len(m)+n]
+	return m[0 : len(m)+n]
 }
 
 var badMessages = []Msg{
-	Msg{0},      // too short
-	Msg{0, 255}, // bad cmd
-	resize(newInvite(0), -1), // too short for type
-	resize(newInvite(0), 1), // too long for type
-	resize(newRsvp(0, 0, ""), -1), // too short for type
+	Msg{0},                         // too short
+	Msg{0, 255},                    // bad cmd
+	resize(newInvite(0), -1),       // too short for type
+	resize(newInvite(0), 1),        // too long for type
+	resize(newRsvp(0, 0, ""), -1),  // too short for type
 	resize(newNominate(0, ""), -1), // too short for type
-	resize(newVote(0, ""), -1), // too short for type
+	resize(newVote(0, ""), -1),     // too short for type
 }
 
 func TestBadMessagesOk(t *testing.T) {

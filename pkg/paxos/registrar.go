@@ -9,16 +9,16 @@ import (
 )
 
 type registrar struct {
-	self string
-	window int
-	evs chan store.Event
+	self     string
+	window   int
+	evs      chan store.Event
 	lookupCh chan lookup
-	lookups *lookupQueue
+	lookups  *lookupQueue
 }
 
 type lookup struct {
 	cver uint64
-	ch chan *cluster
+	ch   chan *cluster
 }
 
 func (l lookup) Less(y interface{}) bool {
@@ -31,7 +31,7 @@ type lookupQueue struct {
 
 func (q *lookupQueue) peek() lookup {
 	if q.Len() == 0 {
-		return lookup{cver:math.MaxUint64} // ~infinity
+		return lookup{cver: math.MaxUint64} // ~infinity
 	}
 	return q.At(0).(lookup)
 }
@@ -40,11 +40,11 @@ func (q *lookupQueue) peek() lookup {
 // seqn. It also remembers the network address of every member.
 func newRegistrar(self string, st *store.Store, window int) *registrar {
 	rg := &registrar{
-		self: self,
-		window: window,
-		evs: make(chan store.Event),
+		self:     self,
+		window:   window,
+		evs:      make(chan store.Event),
 		lookupCh: make(chan lookup),
-		lookups: new(lookupQueue),
+		lookups:  new(lookupQueue),
 	}
 	heap.Init(rg.lookups)
 	st.Watch("/b/borg/members", store.Add|store.Rem, rg.evs)

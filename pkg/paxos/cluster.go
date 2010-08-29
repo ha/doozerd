@@ -20,7 +20,7 @@ func newCluster(self string, nodes []string) *cluster {
 	validNodes := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		if node != "" {
-			validNodes = validNodes[0:len(validNodes)+1]
+			validNodes = validNodes[0 : len(validNodes)+1]
 			validNodes[len(validNodes)-1] = node
 		}
 	}
