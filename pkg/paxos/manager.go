@@ -13,7 +13,6 @@ type result struct {
 
 type instReq struct {
 	seqn uint64 // 0 means to generate a fresh seqn
-	cver uint64
 	ch   chan *instance
 }
 
@@ -63,9 +62,9 @@ func NewManager(start uint64, rg *registrar, outs Putter, logger *log.Logger) *M
 	return m
 }
 
-func (m *Manager) getInstance(seqn, cver uint64) *instance {
+func (m *Manager) getInstance(seqn uint64) *instance {
 	ch := make(chan *instance)
-	m.reqs <- instReq{seqn, cver, ch}
+	m.reqs <- instReq{seqn, ch}
 	return <-ch
 }
 
@@ -73,11 +72,11 @@ func (m *Manager) Put(msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	m.getInstance(msg.Seqn(), msg.ClusterVersion()).Put(msg)
+	m.getInstance(msg.Seqn()).Put(msg)
 }
 
 func (m *Manager) Propose(v string) string {
-	inst := m.getInstance(0, 0)
+	inst := m.getInstance(0)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
 	return inst.Value()

@@ -144,7 +144,6 @@ func TestReadFromStore(t *testing.T) {
 	// immediately learn the value `x`.
 	in := newVoteFrom(0, 1, "x")
 	in.SetSeqn(3)
-	in.SetClusterVersion(2)
 	m.Put(in)
 
 	// Satisfy the sync read of data members above. After this, there will be
@@ -156,11 +155,9 @@ func TestReadFromStore(t *testing.T) {
 	exp := "y"
 	in = newVoteFrom(0, 2, exp)
 	in.SetSeqn(3)
-	in.SetClusterVersion(2)
 	m.Put(in)
 	in = newVoteFrom(1, 2, exp)
 	in.SetSeqn(3)
-	in.SetClusterVersion(2)
 	m.Put(in)
 
 	seqn, v := m.Recv()

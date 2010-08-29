@@ -44,9 +44,8 @@ type Msg []byte
 const (
 	mFrom = iota
 	mCmd
-	mClusterVersion // 2 - 9
-	mSeqn = 10 // - 17
-	mBody = 18
+	mSeqn // 2 - 9
+	mBody = 10
 	baseLen = mBody
 )
 
@@ -155,10 +154,6 @@ func (m Msg) Cmd() int {
 	return int(m[mCmd])
 }
 
-func (m Msg) ClusterVersion() uint64 {
-	return util.Unpackui64(m[mClusterVersion : mClusterVersion+8])
-}
-
 func (m Msg) Seqn() uint64 {
 	return util.Unpackui64(m[mSeqn : mSeqn+8])
 }
@@ -173,11 +168,6 @@ func (m Msg) Body() []byte {
 // This assumes the number of nodes fits in a byte.
 func (m Msg) SetFrom(from int) {
 	m[mFrom] = byte(from)
-}
-
-// Typically used just before writing `m` to the network.
-func (m Msg) SetClusterVersion(ver uint64) {
-	util.Packui64(m[mClusterVersion:mClusterVersion+8], ver)
 }
 
 // Typically used just before writing `m` to the network.
