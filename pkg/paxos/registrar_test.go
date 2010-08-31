@@ -1,8 +1,8 @@
 package paxos
 
 import (
-	"borg/assert"
-	"borg/store"
+	"junta/assert"
+	"junta/store"
 	"testing"
 )
 
@@ -10,9 +10,9 @@ func TestRegistrar(t *testing.T) {
 	st := store.New(logger)
 	rg := newRegistrar("a", st, 2)
 	go func() {
-		st.Apply(3, mustEncodeSet("/b/borg/members/c", "1"))
-		st.Apply(2, mustEncodeSet("/b/borg/members/b", "1"))
-		st.Apply(1, mustEncodeSet("/b/borg/members/a", "1"))
+		st.Apply(3, mustEncodeSet("/b/junta/members/c", "1"))
+		st.Apply(2, mustEncodeSet("/b/junta/members/b", "1"))
+		st.Apply(1, mustEncodeSet("/b/junta/members/a", "1"))
 	}()
 
 	cx := rg.clusterFor(5)

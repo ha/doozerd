@@ -1,8 +1,8 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=borgd
+TARG=juntad
 GOFILES=\
-	borgd.go\
+	juntad.go\
 
 include $(GOROOT)/src/Make.cmd
 

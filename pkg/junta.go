@@ -1,7 +1,7 @@
-package borg
+package junta
 
-// Think of borg events like inotify events.  We're interested in changes to
-// them all.  All events are sent to your instance of borg.  The filtering
+// Think of junta events like inotify events.  We're interested in changes to
+// them all.  All events are sent to your instance of junta.  The filtering
 // is done once they've arrived.  Let's make keys look like directories to
 // aid this comparison.
 //
@@ -11,7 +11,7 @@ package borg
 //
 // Example interactive session:
 //
-//     $ borgd -i -a :9999
+//     $ juntad -i -a :9999
 //     >> ls /proc/123_a3c_a12b3c45/beanstalkd/12345/
 //     exe
 //     env
@@ -24,7 +24,7 @@ package borg
 //
 // Example code:
 //
-//     me, err := borg.ListenAndServe(listenAddr)
+//     me, err := junta.ListenAndServe(listenAddr)
 //     if err != nil {
 //         log.Exitf("listen failed: %v", err)
 //     }
@@ -33,7 +33,7 @@ package borg
 //     // The : signals a named variable part.
 //     me.HandleFunc(
 //         "/proc/:slug/beanstalkd/:upid/lock",
-//         func (msg *borg.Msg) {
+//         func (msg *junta.Msg) {
 //             if msg.Value == myId {
 //                 cmd := beanstalkd ....
 //                 ... launch beanstalkd ...
@@ -43,10 +43,10 @@ package borg
 //     )
 
 import (
-	"borg/paxos"
-	"borg/proto"
-	"borg/store"
-	"borg/util"
+	"junta/paxos"
+	"junta/proto"
+	"junta/store"
+	"junta/util"
 	"bufio"
 	"fmt"
 	"io"

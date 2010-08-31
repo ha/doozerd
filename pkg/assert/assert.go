@@ -1,5 +1,5 @@
 package assert
-// Testing helpers for borg.
+// Testing helpers for junta.
 
 import (
 	"reflect"

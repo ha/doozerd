@@ -1,7 +1,7 @@
 package paxos
 
 import (
-	"borg/assert"
+	"junta/assert"
 	"testing"
 )
 

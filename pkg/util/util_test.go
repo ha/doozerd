@@ -1,7 +1,7 @@
 package util
 
 import (
-	"borg/assert"
+	"junta/assert"
 	"testing"
 )
 

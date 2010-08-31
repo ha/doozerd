@@ -1,7 +1,7 @@
 package paxos
 
 import (
-	"borg/util"
+	"junta/util"
 )
 
 // In-memory format:

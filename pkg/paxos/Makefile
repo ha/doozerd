@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=borg/paxos
+TARG=junta/paxos
 GOFILES=\
 	paxos.go\
 	cluster.go\

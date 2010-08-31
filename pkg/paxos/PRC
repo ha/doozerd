@@ -25,12 +25,12 @@ Package Responsibility and Collaboration
 * auth
     ^ sasl (??)
     + .Auth
-* borg
+* junta
     ^ tls (??)
     ^ net
     ^ proto
     ^ router (use Msg)
     ^ mgmt
     + .ListenAndServe
-* borgd (cli)
-    + borg
+* juntad (cli)
+    + junta

@@ -3,7 +3,7 @@ package client
 import (
 	"io"
 	"os"
-	"borg/proto"
+	"junta/proto"
 )
 
 type Client struct {

@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=borg/assert
+TARG=junta/assert
 GOFILES=\
 	assert.go\
 

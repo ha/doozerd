@@ -1,7 +1,7 @@
 package store
 
 import (
-	"borg/assert"
+	"junta/assert"
 	"bytes"
 	"log"
 	"os"

@@ -3,4 +3,4 @@ _gotest_.*
 _obj
 _test
 *.out
-cmd/borgd/borgd
+cmd/juntad/juntad

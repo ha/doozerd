@@ -1,7 +1,7 @@
 all: install
 
 DIRS=\
-     borgd\
+     juntad\
 
 %.install:
 	+cd $* && gomake install

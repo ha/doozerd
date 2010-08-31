@@ -1,8 +1,8 @@
 package main
 
 import (
-	"borg"
-	"borg/store"
+	"junta"
+	"junta/store"
 	"flag"
 	"log"
 	"os"
@@ -18,7 +18,7 @@ var (
 
 // Globals
 var (
-	logger *log.Logger = log.New(os.Stderr, nil, "borgd: ", log.Lok)
+	logger *log.Logger = log.New(os.Stderr, nil, "juntad: ", log.Lok)
 )
 
 func acquire(path string) {
@@ -60,7 +60,7 @@ func run(s *store.Store, path string) {
 func main() {
 	flag.Parse()
 	s := store.New(logger)
-	b := borg.New(*id, *listenAddr, s, logger)
+	b := junta.New(*id, *listenAddr, s, logger)
 
 	adds := make(chan store.Event)
 	s.Watch("/service", store.Add, adds)

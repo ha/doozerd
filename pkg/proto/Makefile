@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=borg/proto
+TARG=junta/proto
 GOFILES=\
 	proto.go\
 

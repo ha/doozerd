@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-session_name = ARGV[0] || 'borg'
+session_name = ARGV[0] || 'junta'
 
 
 def _system(*args)
@@ -15,8 +15,8 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
     "-X",
     [
       "screen",
-      "-t", "borgdM",
-      "#{__DIR__}/borgd",
+      "-t", "juntadM",
+      "#{__DIR__}/juntad",
       "-i", master_id,
       "-l", ":8040"
     ],
@@ -30,8 +30,8 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
     "-X",
     [
       "screen",
-      "-t", "borgd#{port}",
-      "#{__DIR__}/borgd",
+      "-t", "juntad#{port}",
+      "#{__DIR__}/juntad",
       "-a", master_id+"=:8040",
       "-l", ":#{port}"
     ]

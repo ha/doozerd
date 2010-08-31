@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"testing"
-	"borg/assert"
+	"junta/assert"
 )
 
 

@@ -6,8 +6,8 @@ import (
 	"bufio"
 	"os"
 
-	"borg/assert"
-	"borg/proto"
+	"junta/assert"
+	"junta/proto"
 )
 
 // TESTING
