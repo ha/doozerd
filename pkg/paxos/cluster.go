@@ -55,7 +55,7 @@ func (cx *cluster) SelfIndex() int {
 	return cx.selfIndex
 }
 
-func (cx *cluster) indexOf(id string) int {
+func (cx *cluster) indexById(id string) int {
 	for i, s := range cx.nodes {
 		if s == id {
 			return i
@@ -69,5 +69,5 @@ func (cx *cluster) idByAddr(addr string) string {
 }
 
 func (cx *cluster) indexByAddr(addr string) int {
-	return cx.indexOf(cx.idByAddr(addr))
+	return cx.indexById(cx.idByAddr(addr))
 }
