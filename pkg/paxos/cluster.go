@@ -16,12 +16,14 @@ type cluster struct {
 	selfIndex int
 }
 
-func newCluster(self string, nodes []string) *cluster {
+func newCluster(self string, nodes map[string]string) *cluster {
 	validNodes := make([]string, 0, len(nodes))
-	for _, node := range nodes {
-		if node != "" {
+	ids := make(map[string]string)
+	for id, addr := range nodes {
+		if id != "" {
 			validNodes = validNodes[0 : len(validNodes)+1]
-			validNodes[len(validNodes)-1] = node
+			validNodes[len(validNodes)-1] = id
+			ids[addr] = id
 		}
 	}
 

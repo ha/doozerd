@@ -5,12 +5,12 @@ import (
 	"container/heap"
 	"container/vector"
 	"math"
-	"sort"
 )
 
 type registrar struct {
 	self     string
 	window   int
+	st       *store.Store
 	evs      chan store.Event
 	lookupCh chan lookup
 	lookups  *lookupQueue
@@ -42,6 +42,7 @@ func newRegistrar(self string, st *store.Store, window int) *registrar {
 	rg := &registrar{
 		self:     self,
 		window:   window,
+		st:       st,
 		evs:      make(chan store.Event),
 		lookupCh: make(chan lookup),
 		lookups:  new(lookupQueue),
@@ -64,7 +65,7 @@ func findString(v []string, s string) (i int) {
 
 func (rg *registrar) process() {
 	known := uint64(0)
-	members := vector.StringVector{}
+	members := make(map[string]string)
 	clusters := make(map[uint64]*cluster)
 
 	for {
@@ -76,13 +77,14 @@ func (rg *registrar) process() {
 			case ev.Path == membersKey:
 				switch ev.Type {
 				case store.Add:
-					members.Push(ev.Body)
+					path := ev.Path + "/" + ev.Body
+					addr, _ := rg.st.LookupSync(path, ev.Seqn)
+					members[ev.Body] = addr
 				case store.Rem:
-					members.Delete(findString(members, ev.Body))
+					members[ev.Body] = "", false
 				}
 			case ev.Type == store.Apply:
 				known++
-				sort.SortStrings(members)
 				clusters[known] = newCluster(rg.self, members)
 			}
 		}

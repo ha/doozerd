@@ -25,7 +25,7 @@ func (w putFromWrapper) Put(m Msg) {
 	w.Putter.Put(m)
 }
 
-func selfRefNewInstance(self string, nodes []string) *instance {
+func selfRefNewInstance(self string, nodes map[string]string) *instance {
 	p := make([]Putter, 1)
 	cx := newCluster(self, nodes)
 	ins := newInstance(func() *cluster { return cx }, FakePutter(p))
@@ -34,14 +34,14 @@ func selfRefNewInstance(self string, nodes []string) *instance {
 }
 
 func TestStartAtLearn(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"})
+	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestStartAtLearnWithDuplicates(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"})
+	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(1, 1, "foo"))
@@ -50,7 +50,7 @@ func TestStartAtLearnWithDuplicates(t *testing.T) {
 }
 
 func TestLearnWithQuorumOf2(t *testing.T) {
-	ins := selfRefNewInstance("b", []string{"a", "b", "c"})
+	ins := selfRefNewInstance("b", map[string]string{"a":"x", "b":"y", "c":"z"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(2, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -58,7 +58,7 @@ func TestLearnWithQuorumOf2(t *testing.T) {
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"})
+	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -66,7 +66,7 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"})
+	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newNominateFrom(1, 1, "foo"))
 	ins.Put(newNominateFrom(1, 1, "foo"))
 	ins.Put(newNominateFrom(1, 1, "foo"))
@@ -75,7 +75,7 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"})
+	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
@@ -83,7 +83,7 @@ func TestStartAtCoord(t *testing.T) {
 
 func TestMultipleInstances(t *testing.T) {
 	ps := make([]Putter, 3)
-	nodes := []string{"a", "b", "c"}
+	nodes := map[string]string{"a":"x", "b":"y", "c":"z"}
 	cxA := func() *cluster { return newCluster("a", nodes) }
 	cxB := func() *cluster { return newCluster("a", nodes) }
 	cxC := func() *cluster { return newCluster("a", nodes) }
