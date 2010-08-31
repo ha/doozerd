@@ -50,3 +50,12 @@ func (cx *cluster) Quorum() int {
 func (cx *cluster) SelfIndex() int {
 	return cx.selfIndex
 }
+
+func (cx *cluster) indexOf(id string) int {
+	for i, s := range cx.nodes {
+		if s == id {
+			return i
+		}
+	}
+	return -1
+}
