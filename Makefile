@@ -12,6 +12,5 @@ bench: bench.pkg
 	cd pkg/store && make $*
 	cd pkg/paxos && make $*
 	cd pkg/proto && make $*
-	cd pkg/shell && make $*
 	cd pkg && make $*
 
