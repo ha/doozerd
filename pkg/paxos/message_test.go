@@ -2,6 +2,8 @@ package paxos
 
 import (
 	"junta/assert"
+	"net"
+	"os"
 	"testing"
 )
 
@@ -178,4 +180,49 @@ func TestWireBytes(t *testing.T) {
 	assert.Equal(t, []byte(m[1:]), b, "")
 	b[0] = 2
 	assert.Equal(t, byte(2), m[1], "")
+}
+
+var notImplementedError = os.NewError("not implemented")
+
+type fakePacketConn struct {
+	a net.Addr
+	b []byte
+}
+
+func (fpc *fakePacketConn) ReadFrom(b []byte) (n int, addr net.Addr, err os.Error) {
+	return copy(b, fpc.b), fpc.a, nil
+}
+
+func (fpc *fakePacketConn) WriteTo([]byte, net.Addr) (n int, err os.Error) {
+	return 0, notImplementedError
+}
+
+func (fpc *fakePacketConn) Close() (err os.Error) {
+	return notImplementedError
+}
+
+func (fpc *fakePacketConn) LocalAddr() (addr net.Addr) {
+	return
+}
+
+func (fpc *fakePacketConn) SetTimeout(int64) (err os.Error) {
+	return notImplementedError
+}
+
+func (fpc *fakePacketConn) SetReadTimeout(int64) (err os.Error) {
+	return notImplementedError
+}
+
+func (fpc *fakePacketConn) SetWriteTimeout(int64) (err os.Error) {
+	return notImplementedError
+}
+
+func TestReadMsg(t *testing.T) {
+	msg := newInvite(2)
+	addr := &net.UDPAddr{net.IP{1, 2, 3, 4}, 123}
+	fpc := &fakePacketConn{addr, msg.WireBytes()}
+	gotMsg, gotAddr, err := ReadMsg(fpc, 3000)
+	assert.Equal(t, nil, err, "")
+	assert.Equal(t, msg, gotMsg, "")
+	assert.Equal(t, addr.String(), gotAddr, "")
 }

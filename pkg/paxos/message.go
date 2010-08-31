@@ -2,6 +2,8 @@ package paxos
 
 import (
 	"junta/util"
+	"net"
+	"os"
 )
 
 // In-memory format:
@@ -24,18 +26,7 @@ import (
 // know some upper bound on the size of a message (for instance, UDP packets
 // can't ever be more than about 1,500 bytes in practice over Ethernet).
 //
-// First, allocate a message that's definitely big enough:
-//
-//     m := make(Msg, 3000) // plenty of space for an Ethernet frame
-//
-// Then, read in bytes from the wire into the "wire format" portion of the
-// Msg:
-//
-//     n, _, _ := conn.ReadFrom(m.WireBytes())
-//
-// Finally, slice off the proper size of the message object:
-//
-//     m = m[0:n+1]
+//     m, addr, err := ReadMsg(conn, 3000) // plenty for an Ethernet frame
 //
 // Of course, you'll want to do error checking and probably fill in the `From`
 // index based on the UDP sender address.
@@ -197,4 +188,19 @@ func (m Msg) Ok() bool {
 
 func (m Msg) WireBytes() []byte {
 	return m[1:]
+}
+
+func (m *Msg) readFrom(c net.PacketConn) (addr string, err os.Error) {
+	n, a, er := c.ReadFrom(m.WireBytes())
+	if er != nil {
+		return "", er
+	}
+	*m = (*m)[0:n+1] // truncate to fit
+	return a.String(), nil
+}
+
+func ReadMsg(c net.PacketConn, bound int) (m Msg, addr string, err os.Error) {
+	m = make(Msg, bound)
+	addr, err = m.readFrom(c)
+	return
 }
