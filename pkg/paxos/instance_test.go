@@ -2,7 +2,6 @@ package paxos
 
 import (
 	"junta/assert"
-	"log"
 	"testing"
 )
 
@@ -26,23 +25,23 @@ func (w putFromWrapper) Put(m Msg) {
 	w.Putter.Put(m)
 }
 
-func selfRefNewInstance(self string, nodes []string, logger *log.Logger) *instance {
+func selfRefNewInstance(self string, nodes []string) *instance {
 	p := make([]Putter, 1)
 	cx := newCluster(self, nodes)
-	ins := newInstance(func() *cluster { return cx }, FakePutter(p), logger)
+	ins := newInstance(func() *cluster { return cx }, FakePutter(p))
 	p[0] = ins
 	return ins
 }
 
 func TestStartAtLearn(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"}, logger)
+	ins := selfRefNewInstance("a", []string{"a"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestStartAtLearnWithDuplicates(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"}, logger)
+	ins := selfRefNewInstance("a", []string{"a"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(1, 1, "foo"))
@@ -51,7 +50,7 @@ func TestStartAtLearnWithDuplicates(t *testing.T) {
 }
 
 func TestLearnWithQuorumOf2(t *testing.T) {
-	ins := selfRefNewInstance("b", []string{"a", "b", "c"}, logger)
+	ins := selfRefNewInstance("b", []string{"a", "b", "c"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(2, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -59,7 +58,7 @@ func TestLearnWithQuorumOf2(t *testing.T) {
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"}, logger)
+	ins := selfRefNewInstance("a", []string{"a"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	assert.Equal(t, "foo", ins.Value(), "")
@@ -67,7 +66,7 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 }
 
 func TestStartAtAccept(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"}, logger)
+	ins := selfRefNewInstance("a", []string{"a"})
 	ins.Put(newNominateFrom(1, 1, "foo"))
 	ins.Put(newNominateFrom(1, 1, "foo"))
 	ins.Put(newNominateFrom(1, 1, "foo"))
@@ -76,7 +75,7 @@ func TestStartAtAccept(t *testing.T) {
 }
 
 func TestStartAtCoord(t *testing.T) {
-	ins := selfRefNewInstance("a", []string{"a"}, logger)
+	ins := selfRefNewInstance("a", []string{"a"})
 	ins.Propose("foo")
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
@@ -88,9 +87,9 @@ func TestMultipleInstances(t *testing.T) {
 	cxA := func() *cluster { return newCluster("a", nodes) }
 	cxB := func() *cluster { return newCluster("a", nodes) }
 	cxC := func() *cluster { return newCluster("a", nodes) }
-	insA := newInstance(cxA, putFromWrapper{3, FakePutter(ps)}, logger)
-	insB := newInstance(cxB, putFromWrapper{1, FakePutter(ps)}, logger)
-	insC := newInstance(cxC, putFromWrapper{2, FakePutter(ps)}, logger)
+	insA := newInstance(cxA, putFromWrapper{3, FakePutter(ps)})
+	insB := newInstance(cxB, putFromWrapper{1, FakePutter(ps)})
+	insC := newInstance(cxC, putFromWrapper{2, FakePutter(ps)})
 	ps[0] = insA
 	ps[1] = insB
 	ps[2] = insC

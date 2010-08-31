@@ -3,10 +3,8 @@ package store
 import (
 	"junta/assert"
 	"bytes"
-	"log"
 	"os"
 	"testing"
-	"testing/iotest"
 )
 
 var SetKVMs = [][3]string{
@@ -49,8 +47,6 @@ var Splits = [][]string{
 	[]string{"/x", "x"},
 	[]string{"/x/y/z", "x", "y", "z"},
 }
-
-var logger = log.New(iotest.TruncateWriter(nil, 0), nil, "", log.Lok)
 
 func TestSplit(t *testing.T) {
 	for _, vals := range Splits {
@@ -122,14 +118,14 @@ func TestDecodeBadMutations(t *testing.T) {
 }
 
 func TestLookupMissing(t *testing.T) {
-	s := New(logger)
+	s := New()
 	v, ok := s.Lookup("/x")
 	assert.Equal(t, false, ok, "")
 	assert.Equal(t, "", v, "")
 }
 
 func TestLookup(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut, _ := EncodeSet("/x", "a")
 	s.Apply(1, mut)
 	v, ok := s.Lookup("/x")
@@ -138,7 +134,7 @@ func TestLookup(t *testing.T) {
 }
 
 func TestLookupDeleted(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut, _ := EncodeSet("/x", "a")
 	s.Apply(1, mut)
 	mut, _ = EncodeDel("/x")
@@ -149,7 +145,7 @@ func TestLookupDeleted(t *testing.T) {
 }
 
 func TestApplyInOrder(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(1, mut1)
@@ -162,7 +158,7 @@ func TestApplyInOrder(t *testing.T) {
 func TestLookupSync(t *testing.T) {
 	chv := make(chan string)
 	chok := make(chan bool)
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	go func() {
@@ -182,7 +178,7 @@ func TestLookupSync(t *testing.T) {
 func TestLookupSyncSeveral(t *testing.T) {
 	chv := make(chan string)
 	chok := make(chan bool)
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	go func() {
@@ -214,7 +210,7 @@ func TestLookupSyncSeveral(t *testing.T) {
 func TestLookupSyncExtra(t *testing.T) {
 	chv := make(chan string)
 	chok := make(chan bool)
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	mut3, _ := EncodeSet("/x", "c")
@@ -250,7 +246,7 @@ func TestLookupSyncExtra(t *testing.T) {
 }
 
 func TestApplyBadThenGood(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut1 := "foo" // bad mutation
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(1, mut1)
@@ -261,7 +257,7 @@ func TestApplyBadThenGood(t *testing.T) {
 }
 
 func TestApplyOutOfOrder(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(2, mut2)
@@ -272,7 +268,7 @@ func TestApplyOutOfOrder(t *testing.T) {
 }
 
 func TestApplyIgnoreDuplicate(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s.Apply(1, mut1)
@@ -286,7 +282,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
-	s := New(logger)
+	s := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	mut3, _ := EncodeSet("/x", "c")
@@ -302,7 +298,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 }
 
 func TestGetDir(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/y", "b")
@@ -315,7 +311,7 @@ func TestGetDir(t *testing.T) {
 }
 
 func TestDirParents(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	mut1, _ := EncodeSet("/x/y/z", "a")
 	s.Apply(1, mut1)
@@ -338,7 +334,7 @@ func TestDirParents(t *testing.T) {
 }
 
 func TestDelDirParents(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	mut1, _ := EncodeSet("/x/y/z", "a")
 	s.Apply(1, mut1)
@@ -364,7 +360,7 @@ func TestDelDirParents(t *testing.T) {
 }
 
 func TestWatchSet(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/x", Set, ch)
@@ -384,7 +380,7 @@ func TestWatchSet(t *testing.T) {
 }
 
 func TestWatchSetOutOfOrder(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/x", Set, ch)
@@ -404,7 +400,7 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 }
 
 func TestWatchDel(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/x", Del, ch)
@@ -428,7 +424,7 @@ func TestWatchDel(t *testing.T) {
 }
 
 func TestWatchAdd(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/", Add, ch)
@@ -448,7 +444,7 @@ func TestWatchAdd(t *testing.T) {
 }
 
 func TestWatchAddOutOfOrder(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/", Add, ch)
@@ -468,7 +464,7 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 }
 
 func TestWatchAddSubdir(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/a", Add, ch)
@@ -488,7 +484,7 @@ func TestWatchAddSubdir(t *testing.T) {
 }
 
 func TestWatchRem(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/", Rem, ch)
@@ -514,7 +510,7 @@ func TestWatchRem(t *testing.T) {
 }
 
 func TestWatchDelDirParents(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/", Rem, ch)
@@ -531,7 +527,7 @@ func TestWatchDelDirParents(t *testing.T) {
 }
 
 func TestWatchSetDirParents(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/x", Add, ch)
@@ -545,7 +541,7 @@ func TestWatchSetDirParents(t *testing.T) {
 }
 
 func TestWatchApply(t *testing.T) {
-	s := New(logger)
+	s := New()
 
 	ch := make(chan Event)
 	s.Watch("/x", Del, ch)
@@ -576,7 +572,7 @@ func TestWatchApply(t *testing.T) {
 
 func TestSnapshotApply(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	s1 := New(logger)
+	s1 := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s1.Apply(1, mut1)
@@ -584,7 +580,7 @@ func TestSnapshotApply(t *testing.T) {
 	err := s1.SnapshotSync(1, buf)
 	assert.Equal(t, nil, err, "")
 
-	s2 := New(logger)
+	s2 := New()
 	s2.Apply(1, buf.String())
 
 	v, ok := s2.Lookup("/x")
@@ -594,7 +590,7 @@ func TestSnapshotApply(t *testing.T) {
 
 func TestSnapshotSeqn(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	s1 := New(logger)
+	s1 := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s1.Apply(1, mut1)
@@ -602,7 +598,7 @@ func TestSnapshotSeqn(t *testing.T) {
 	err := s1.SnapshotSync(1, buf)
 	assert.Equal(t, nil, err, "")
 
-	s2 := New(logger)
+	s2 := New()
 	s2.Apply(1, buf.String())
 	v, ok := s2.Lookup("/x")
 	assert.Equal(t, true, ok, "snap")
@@ -629,7 +625,7 @@ func TestSnapshotSeqn(t *testing.T) {
 
 func TestSnapshotLeak(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	s1 := New(logger)
+	s1 := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	s1.Apply(1, mut1)
@@ -637,7 +633,7 @@ func TestSnapshotLeak(t *testing.T) {
 	err := s1.SnapshotSync(1, buf)
 	assert.Equal(t, nil, err, "")
 
-	s2 := New(logger)
+	s2 := New()
 
 	mut3, _ := EncodeSet("/x", "c")
 	s2.Apply(2, mut3)
@@ -652,7 +648,7 @@ func TestSnapshotLeak(t *testing.T) {
 func TestSnapshotSync(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	ch := make(chan os.Error)
-	s1 := New(logger)
+	s1 := New()
 	mut1, _ := EncodeSet("/x", "a")
 	mut2, _ := EncodeSet("/x", "b")
 	go func() {
@@ -663,7 +659,7 @@ func TestSnapshotSync(t *testing.T) {
 	err := <-ch
 	assert.Equal(t, nil, err, "")
 
-	s2 := New(logger)
+	s2 := New()
 	s2.Apply(1, buf.String())
 
 	v, ok := s2.Lookup("/x")

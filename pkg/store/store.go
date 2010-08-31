@@ -6,7 +6,7 @@ import (
 	"container/vector"
 	"gob"
 	"io"
-	"log"
+	"junta/util"
 	"math"
 	"os"
 	"path"
@@ -34,6 +34,8 @@ var (
 	BadPathError = os.NewError("bad path")
 )
 
+var Logger = util.NullLogger
+
 // This structure should be kept immutable.
 type node struct {
 	v string
@@ -52,7 +54,6 @@ type Store struct {
 	todo map[uint64]apply
 	todoLookup *reqQueue
 	todoSnap *snapQueue
-	logger *log.Logger
 }
 
 type apply struct {
@@ -126,7 +127,7 @@ func (q *snapQueue) peek() snap {
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
-func New(logger *log.Logger) *Store {
+func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		reqCh: make(chan req),
@@ -137,7 +138,6 @@ func New(logger *log.Logger) *Store {
 		todoSnap: new(snapQueue),
 		watches: make(map[string][]watch),
 		notifyCh: make(chan notify),
-		logger: logger,
 	}
 	heap.Init(s.todoLookup)
 	heap.Init(s.todoSnap)
@@ -366,7 +366,7 @@ func (s *Store) process() {
 				if err == nil {
 					var changed []string
 					values, changed = values.setp(k, v, op == Set)
-					s.logger.Logf("store applied %v", t)
+					Logger.Logf("store applied %v", t)
 					if op == Set || len(changed) > 0 {
 						s.notify(op, t.seqn, k, v)
 					}

@@ -1,9 +1,5 @@
 package paxos
 
-import (
-	"log"
-)
-
 type instance struct {
 	vin     chan string
 	v       string
@@ -11,10 +7,9 @@ type instance struct {
 	cPutter putCloser // Coordinator
 	aPutter putCloser // Acceptor
 	lPutter putCloser // Learner
-	logger  *log.Logger
 }
 
-func newInstance(cxf func() *cluster, outs Putter, logger *log.Logger) *instance {
+func newInstance(cxf func() *cluster, outs Putter) *instance {
 	c, aIns, lIns := newCoord(outs), make(chanPutCloser), make(chanPutCloser)
 	ins := &instance{
 		vin:     make(chan string),
@@ -22,7 +17,6 @@ func newInstance(cxf func() *cluster, outs Putter, logger *log.Logger) *instance
 		cPutter: c,
 		aPutter: aIns,
 		lPutter: lIns,
-		logger:  logger,
 	}
 
 	go func() {

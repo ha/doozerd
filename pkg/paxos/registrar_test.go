@@ -7,7 +7,7 @@ import (
 )
 
 func TestRegistrar(t *testing.T) {
-	st := store.New(logger)
+	st := store.New()
 	rg := newRegistrar("a", st, 2)
 	go func() {
 		st.Apply(3, mustEncodeSet("/b/junta/members/c", "1"))

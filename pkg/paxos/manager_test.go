@@ -3,25 +3,24 @@ package paxos
 import (
 	"junta/assert"
 	"junta/store"
-	"log"
 	"testing"
 )
 
-func selfRefNewManager(start uint64, self string, nodes []string, logger *log.Logger) *Manager {
+func selfRefNewManager(start uint64, self string, nodes []string) *Manager {
 	p := make(FakePutter, 1)
-	st := store.New(logger)
+	st := store.New()
 	rg := newRegistrar(self, st, 1)
 	for i, node := range nodes {
 		st.Apply(uint64(i+1), mustEncodeSet("/b/junta/members/"+node, ""))
 	}
-	m := NewManager(start, rg, p, logger)
+	m := NewManager(start, rg, p)
 	p[0] = m
 	return m
 }
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -29,7 +28,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -41,7 +40,7 @@ func TestProposeAndRecv(t *testing.T) {
 
 func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(2, "a", []string{"a"}, logger)
+	m := selfRefNewManager(2, "a", []string{"a"})
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -54,7 +53,7 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 func TestProposeAndRecvMultiple(t *testing.T) {
 	exp := []string{"foo", "bar"}
 	seqnexp := []uint64{1, 2}
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	got0 := m.Propose(exp[0])
 	assert.Equal(t, exp[0], got0, "")
@@ -73,7 +72,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -83,7 +82,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -93,7 +92,7 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 
 func TestUnusedSeqn(t *testing.T) {
 	exp1, exp2 := "foo", "bar"
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	m.Put(newVoteFrom(1, 1, exp1))
 	seqn, v := m.Recv()
@@ -108,7 +107,7 @@ func TestUnusedSeqn(t *testing.T) {
 }
 
 func TestIgnoreMalformedMsg(t *testing.T) {
-	m := selfRefNewManager(1, "a", []string{"a"}, logger)
+	m := selfRefNewManager(1, "a", []string{"a"})
 
 	m.Put(resize(newVoteFrom(1, 1, ""), -1))
 
@@ -132,12 +131,12 @@ func TestReadFromStore(t *testing.T) {
 	self := "a"
 
 	// The cluster initially has 1 node (quorum of 1).
-	st := store.New(logger)
+	st := store.New()
 	rg := newRegistrar(self, st, 1)
 	st.Apply(1, mustEncodeSet("/b/junta/members/"+self, ""))
 
 	p := make(chanPutCloser)
-	m := NewManager(1, rg, p, logger)
+	m := NewManager(1, rg, p)
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll

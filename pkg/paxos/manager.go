@@ -1,9 +1,5 @@
 package paxos
 
-import (
-	"log"
-)
-
 const window = 50
 
 type result struct {
@@ -20,7 +16,6 @@ type Manager struct {
 	rg      *registrar
 	learned chan result
 	reqs    chan instReq
-	logger  *log.Logger
 }
 
 func (m *Manager) process(next uint64, outs Putter) {
@@ -36,7 +31,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 			cxf := func() *cluster {
 				return m.rg.clusterFor(req.seqn)
 			}
-			inst = newInstance(cxf, putWrapper{req.seqn, outs}, m.logger)
+			inst = newInstance(cxf, putWrapper{req.seqn, outs})
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}
@@ -49,12 +44,11 @@ func (m *Manager) process(next uint64, outs Putter) {
 	}
 }
 
-func NewManager(start uint64, rg *registrar, outs Putter, logger *log.Logger) *Manager {
+func NewManager(start uint64, rg *registrar, outs Putter) *Manager {
 	m := &Manager{
 		rg:      rg,
 		learned: make(chan result),
 		reqs:    make(chan instReq),
-		logger:  logger,
 	}
 
 	go m.process(start, outs)
@@ -77,13 +71,13 @@ func (m *Manager) Put(msg Msg) {
 
 func (m *Manager) Propose(v string) string {
 	inst := m.getInstance(0)
-	m.logger.Logf("paxos propose -> %q", v)
+	logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
 	return inst.Value()
 }
 
 func (m *Manager) Recv() (uint64, string) {
 	result := <-m.learned
-	m.logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
+	logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
 	return result.seqn, result.v
 }
