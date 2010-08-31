@@ -13,17 +13,18 @@ type node struct {
 type cluster struct {
 	self      string
 	nodes     []string
+	idsByAddr map[string]string
 	selfIndex int
 }
 
-func newCluster(self string, nodes map[string]string) *cluster {
-	validNodes := make([]string, 0, len(nodes))
-	ids := make(map[string]string)
-	for id, addr := range nodes {
+func newCluster(self string, addrsById map[string]string) *cluster {
+	validNodes := make([]string, 0, len(addrsById))
+	idsByAddr := make(map[string]string)
+	for id, addr := range addrsById {
 		if id != "" {
 			validNodes = validNodes[0 : len(validNodes)+1]
 			validNodes[len(validNodes)-1] = id
-			ids[addr] = id
+			idsByAddr[addr] = id
 		}
 	}
 
@@ -38,6 +39,7 @@ func newCluster(self string, nodes map[string]string) *cluster {
 		self:      self,
 		nodes:     validNodes,
 		selfIndex: selfIndex,
+		idsByAddr: idsByAddr,
 	}
 }
 
@@ -60,4 +62,12 @@ func (cx *cluster) indexOf(id string) int {
 		}
 	}
 	return -1
+}
+
+func (cx *cluster) idByAddr(addr string) string {
+	return cx.idsByAddr[addr]
+}
+
+func (cx *cluster) indexByAddr(addr string) int {
+	return cx.indexOf(cx.idByAddr(addr))
 }
