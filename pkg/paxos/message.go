@@ -31,11 +31,11 @@ import (
 // Then, read in bytes from the wire into the "wire format" portion of the
 // Msg:
 //
-//     n, addr, _ := conn.ReadFrom(m.WireBytes())
+//     n, _, _ := conn.ReadFrom(m.WireBytes())
 //
 // Finally, slice off the proper size of the message object:
 //
-//     m = m[0:n]
+//     m = m[0:n+1]
 //
 // Of course, you'll want to do error checking and probably fill in the `From`
 // index based on the UDP sender address.
