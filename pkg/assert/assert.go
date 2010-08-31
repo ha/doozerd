@@ -5,25 +5,58 @@ import (
 	"reflect"
 	"testing"
 	"runtime"
+	"fmt"
 )
 
-func equal(t *testing.T, expected, result interface{}, message string, cd int) {
-		_, file, line, _ := runtime.Caller(cd)
-		if !reflect.DeepEqual(expected, result) {
-			t.Errorf("%s:%d: (%s)", file, line, message)
-			t.Errorf("    expected: <%#v>", expected)
-			t.Errorf("    but got:  <%#v>", result)
-			t.FailNow()
+func assert(t *testing.T, b bool, f func(), cd int) {
+	if !b {
+		_, file, line, _ := runtime.Caller(cd + 1)
+		t.Errorf("%s:%d", file, line)
+		f()
+		t.FailNow()
+	}
+}
+
+func equal(t *testing.T, exp, got interface{}, cd int, args ... interface{}) {
+	f := func() {
+		t.Errorf("!  Expected: <%#v>", exp)
+		t.Errorf("!  Got:      <%#v>", got)
+		if len(args) > 0 {
+			t.Error("!", " -", fmt.Sprint(args))
 		}
+	}
+	b := reflect.DeepEqual(exp, got)
+	assert(t, b, f, cd + 1)
 }
 
-func Equal(t *testing.T, expected, result interface{}, message string) {
-	equal(t, expected, result, message, 2)
+func T(t *testing.T, b bool, args ... interface{}) {
+	f := func() {
+		t.Errorf("!  Failure")
+		if len(args) > 0 {
+			t.Error("!", " -", fmt.Sprint(args))
+		}
+	}
+	assert(t, b, f, 1)
 }
 
-func Panic(t *testing.T, p interface {},  f func()) {
+func Equal(t *testing.T, exp, got interface{}, args ... interface{}) {
+	equal(t, exp, got, 1, args)
+}
+
+func NotEqual(t *testing.T, exp, got interface{}, args ... interface{}) {
+	f := func() {
+		t.Errorf("!  Unexpected: <%#v>", exp)
+		if len(args) > 0 {
+			t.Error("!", " -", fmt.Sprint(args))
+		}
+	}
+	b := !reflect.DeepEqual(exp, got)
+	assert(t, b, f, 1)
+}
+
+func Panic(t *testing.T, p interface {}, f func()) {
 	defer func() {
-		equal(t, p, recover(), "panic test", 3)
+		equal(t, p, recover(), 3)
 	}()
 	f()
 }
