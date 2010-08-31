@@ -2,7 +2,6 @@ package paxos
 
 import (
 	"junta/util"
-	"net"
 	"os"
 )
 
@@ -190,7 +189,7 @@ func (m Msg) WireBytes() []byte {
 	return m[1:]
 }
 
-func (m *Msg) readFrom(c net.PacketConn) (addr string, err os.Error) {
+func (m *Msg) readFrom(c ReadFromer) (addr string, err os.Error) {
 	n, a, er := c.ReadFrom(m.WireBytes())
 	if er != nil {
 		return "", er
@@ -199,7 +198,7 @@ func (m *Msg) readFrom(c net.PacketConn) (addr string, err os.Error) {
 	return a.String(), nil
 }
 
-func ReadMsg(c net.PacketConn, bound int) (m Msg, addr string, err os.Error) {
+func ReadMsg(c ReadFromer, bound int) (m Msg, addr string, err os.Error) {
 	m = make(Msg, bound)
 	addr, err = m.readFrom(c)
 	return

@@ -182,8 +182,6 @@ func TestWireBytes(t *testing.T) {
 	assert.Equal(t, byte(2), m[1], "")
 }
 
-var notImplementedError = os.NewError("not implemented")
-
 type fakePacketConn struct {
 	a net.Addr
 	b []byte
@@ -193,29 +191,7 @@ func (fpc *fakePacketConn) ReadFrom(b []byte) (n int, addr net.Addr, err os.Erro
 	return copy(b, fpc.b), fpc.a, nil
 }
 
-func (fpc *fakePacketConn) WriteTo([]byte, net.Addr) (n int, err os.Error) {
-	return 0, notImplementedError
-}
-
-func (fpc *fakePacketConn) Close() (err os.Error) {
-	return notImplementedError
-}
-
-func (fpc *fakePacketConn) LocalAddr() (addr net.Addr) {
-	return
-}
-
-func (fpc *fakePacketConn) SetTimeout(int64) (err os.Error) {
-	return notImplementedError
-}
-
-func (fpc *fakePacketConn) SetReadTimeout(int64) (err os.Error) {
-	return notImplementedError
-}
-
-func (fpc *fakePacketConn) SetWriteTimeout(int64) (err os.Error) {
-	return notImplementedError
-}
+// Tests
 
 func TestReadMsg(t *testing.T) {
 	msg := newInvite(2)
