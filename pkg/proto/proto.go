@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"strconv"
+	"net/textproto"
 )
 
 type ReadStringer interface {
@@ -13,7 +14,7 @@ type ReadStringer interface {
 	ReadString(byte) (string, os.Error)
 }
 
-func Decode(r ReadStringer) (parts []string, err os.Error) {
+func Decode(r *textproto.Reader) (parts []string, err os.Error) {
 	var count int = 1
 	var size int
 	var line string
@@ -21,7 +22,7 @@ func Decode(r ReadStringer) (parts []string, err os.Error) {
 Loop:
 	for count > 0 {
 		// TODO: test if len(line) == 0
-		line, err = r.ReadString('\n')
+		line, err = r.ReadLine()
 		switch {
 		case err == os.EOF: break Loop
 		case err != nil: panic(err)
@@ -39,7 +40,7 @@ Loop:
 			size, _ = strconv.Atoi(line[1:])
 			buf := make([]byte, size)
 			// TODO: test for err
-			n, err := io.ReadFull(r, buf)
+			n, err := io.ReadFull(r.R, buf)
 			switch {
 			case n != size: panic(fmt.Sprintf("n:%d\n", n))
 			case err != nil: panic(err)

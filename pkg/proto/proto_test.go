@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"os"
 	"io"
+	"net/textproto"
 
 	"testing"
 	"junta/assert"
@@ -50,22 +51,24 @@ func TestProtoEncodefBodyError(t *testing.T) {
 func TestProtoDecodeEmptyLine(t *testing.T) {
 	b := new(bytes.Buffer)
 	r := bufio.NewReader(b)
+	rr := textproto.NewReader(r)
 
-	_, err := Decode(r)
+	_, err := Decode(rr)
 	assert.T(t, err != nil)
 }
 
 func TestProtoDecodeNonEmpty(t *testing.T) {
 	b := new(bytes.Buffer)
-	br := bufio.NewReader(b)
+	r := bufio.NewReader(b)
+	rr := textproto.NewReader(r)
 
 	Encodef(b, "SET", "foo", "bar")
-	parts, err := Decode(br)
+	parts, err := Decode(rr)
 
 	assert.Equal(t, nil, err, "")
 	assert.Equal(t, []string{"SET", "foo", "bar"}, parts, "")
 
-	parts, err = Decode(br)
+	parts, err = Decode(rr)
 	assert.Equal(t, os.EOF, err, "")
 	assert.Equal(t, []string{}, parts, "")
 }
