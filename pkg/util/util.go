@@ -3,10 +3,19 @@ package util
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 )
 
 var urandom = MustOpen("/dev/urandom", os.O_RDONLY, 0)
+
+var NullLogger = log.New(nullWriter{}, nil, "", 0)
+
+type nullWriter struct{}
+
+func (nw nullWriter) Write(p []byte) (int, os.Error) {
+	return len(p), nil
+}
 
 // MustOpen is like os.Open but panics if the file cannot be opened. It
 // simplifies safe initialization of global variables holding file descriptors.
