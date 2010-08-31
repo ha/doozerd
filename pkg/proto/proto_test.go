@@ -37,14 +37,14 @@ func TestProtoEncodefHeaderError(t *testing.T) {
 	buf := new(bytes.Buffer)
 	ew := &ErroneousWriter{buf, 0}
 	err := Encodef(ew, "GET", "FOO")
-	assert.True(t, err != nil)
+	assert.T(t, err != nil)
 }
 
 func TestProtoEncodefBodyError(t *testing.T) {
 	buf := new(bytes.Buffer)
 	ew := &ErroneousWriter{buf, 1}
 	err := Encodef(ew, "GET", "FOO")
-	assert.True(t, err != nil)
+	assert.T(t, err != nil)
 }
 
 func TestProtoDecodeEmptyLine(t *testing.T) {
@@ -52,7 +52,7 @@ func TestProtoDecodeEmptyLine(t *testing.T) {
 	r := bufio.NewReader(b)
 
 	_, err := Decode(r)
-	assert.True(t, err != nil)
+	assert.T(t, err != nil)
 }
 
 func TestProtoDecodeNonEmpty(t *testing.T) {
