@@ -163,3 +163,48 @@ func TestReadFromStore(t *testing.T) {
 	assert.Equal(t, uint64(3), seqn, "")
 	assert.Equal(t, exp, v, "")
 }
+
+type putFunc func(Msg)
+
+func (pf putFunc) Put(msg Msg) {
+	go pf(msg)
+}
+
+func (pf putFunc) Close() {}
+
+func TestManagerPutFrom(t *testing.T) {
+	exp := "bar"
+	seqnExp := uint64(4)
+	fromAddr := "y"
+	fromIndex := 1 // [a, b, c].indexof(b) => 1
+
+	p := make(FakePutter, 1)
+	st := store.New()
+	rg := newRegistrar("a", st, 1)
+	st.Apply(uint64(1), mustEncodeSet(membersKey+"/a", "x"))
+	st.Apply(uint64(2), mustEncodeSet(membersKey+"/b", "y"))
+	st.Apply(uint64(3), mustEncodeSet(membersKey+"/c", "z"))
+	m := NewManager(4, rg, p)
+	p[0] = m
+
+
+
+	froms := make(chan int)
+
+	fp := putFunc(func (msg Msg) {
+		froms <- msg.From()
+	})
+
+	it := m.getInstance(seqnExp)
+	it.cPutter = fp
+	it.aPutter = fp
+	it.lPutter = fp
+
+	v1 := newVote(1, exp)
+	v1.SetSeqn(seqnExp)
+	m.PutFrom(fromAddr, v1)
+
+	assert.Equal(t, fromIndex, <-froms, "")
+	assert.Equal(t, fromIndex, <-froms, "")
+	assert.Equal(t, fromIndex, <-froms, "")
+}

@@ -69,6 +69,11 @@ func (m *Manager) Put(msg Msg) {
 	m.getInstance(msg.Seqn()).Put(msg)
 }
 
+func (m *Manager) PutFrom(addr string, msg Msg) {
+	msg.SetFrom(m.getInstance(msg.Seqn()).cluster().indexByAddr(addr))
+	m.Put(msg)
+}
+
 func (m *Manager) Propose(v string) string {
 	inst := m.getInstance(0)
 	logger.Logf("paxos propose -> %q", v)
