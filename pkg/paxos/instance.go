@@ -7,6 +7,8 @@ type instance struct {
 	cPutter putCloser // Coordinator
 	aPutter putCloser // Acceptor
 	lPutter putCloser // Learner
+	cx      *cluster
+	cxReady chan int
 }
 
 func newInstance(cxf func() *cluster, outs Putter) *instance {
@@ -17,19 +19,26 @@ func newInstance(cxf func() *cluster, outs Putter) *instance {
 		cPutter: c,
 		aPutter: aIns,
 		lPutter: lIns,
+		cxReady: make(chan int),
 	}
 
 	go func() {
-		cx := cxf()
-		go c.process(cx)
+		ins.cx = cxf()
+		close(ins.cxReady)
+		go c.process(ins.cx)
 		go acceptor(aIns, outs)
 		go func() {
-			ins.v = learner(uint64(cx.Quorum()), lIns)
+			ins.v = learner(uint64(ins.cx.Quorum()), lIns)
 			close(ins.done)
 		}()
 	}()
 
 	return ins
+}
+
+func (it *instance) cluster() *cluster {
+	<-it.cxReady
+	return it.cx
 }
 
 func (ins *instance) Put(m Msg) {
