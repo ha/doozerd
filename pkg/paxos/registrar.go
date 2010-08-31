@@ -47,7 +47,7 @@ func newRegistrar(self string, st *store.Store, window int) *registrar {
 		lookups:  new(lookupQueue),
 	}
 	heap.Init(rg.lookups)
-	st.Watch("/j/junta/members", store.Add|store.Rem, rg.evs)
+	st.Watch(membersKey, store.Add|store.Rem, rg.evs)
 	st.WatchApply(rg.evs)
 	go rg.process()
 	return rg
@@ -73,7 +73,7 @@ func (rg *registrar) process() {
 			heap.Push(rg.lookups, l)
 		case ev := <-rg.evs:
 			switch {
-			case ev.Path == "/j/junta/members":
+			case ev.Path == membersKey:
 				switch ev.Type {
 				case store.Add:
 					members.Push(ev.Body)

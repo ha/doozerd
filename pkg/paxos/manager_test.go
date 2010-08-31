@@ -11,7 +11,7 @@ func selfRefNewManager(start uint64, self string, nodes []string) *Manager {
 	st := store.New()
 	rg := newRegistrar(self, st, 1)
 	for i, node := range nodes {
-		st.Apply(uint64(i+1), mustEncodeSet("/j/junta/members/"+node, ""))
+		st.Apply(uint64(i+1), mustEncodeSet(membersKey+"/"+node, ""))
 	}
 	m := NewManager(start, rg, p)
 	p[0] = m
@@ -133,7 +133,7 @@ func TestReadFromStore(t *testing.T) {
 	// The cluster initially has 1 node (quorum of 1).
 	st := store.New()
 	rg := newRegistrar(self, st, 1)
-	st.Apply(1, mustEncodeSet("/j/junta/members/"+self, ""))
+	st.Apply(1, mustEncodeSet(membersKey+"/"+self, ""))
 
 	p := make(chanPutCloser)
 	m := NewManager(1, rg, p)
@@ -147,7 +147,7 @@ func TestReadFromStore(t *testing.T) {
 
 	// Satisfy the sync read of data members above. After this, there will be
 	// 2 nodes in the cluster, making the quorum 2.
-	st.Apply(2, mustEncodeSet("/j/junta/members/b", ""))
+	st.Apply(2, mustEncodeSet(membersKey+"/b", ""))
 
 	// Now try to make it learn a new value with 2 votes to meet the new
 	// quorum.

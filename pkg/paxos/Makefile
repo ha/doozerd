@@ -7,6 +7,7 @@ GOFILES=\
 	putter.go\
 	manager.go\
 	instance.go\
+	keys.go\
 	coordinator.go\
 	acceptor.go\
 	learner.go\
