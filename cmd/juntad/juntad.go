@@ -17,17 +17,24 @@ var (
 	attachAddr *string = flag.String("a", "", "The address to bind to.")
 )
 
-// Globals
-var (
-	logger *log.Logger = log.New(
+func NewLogger(format string, a ... interface{}) *log.Logger {
+	prefix := fmt.Sprintf(format, a)
+
+	if prefix == "" {
+		panic("always give a prefix!")
+	}
+
+	return log.New(
 		os.Stderr, nil,
-		"juntad: ",
+		"juntad: " + prefix + " ",
 		log.Lok | log.Lshortfile,
 	)
-)
+}
 
 func main() {
 	flag.Parse()
+
+	logger := NewLogger("main")
 
 	logger.Logf("binding to %s", *listenAddr)
 	lisn, err := net.Listen("tcp", *listenAddr)
@@ -43,15 +50,18 @@ func main() {
 			logger.Log("unable to accept on %s: %s", *listenAddr, err)
 			continue
 		}
-
-		go func() {
-			c := proto.NewConn(conn)
-			_, parts, err := c.ReadRequest()
-			if err != nil {
-				logger.Log(err)
-				return
-			}
-			fmt.Println(parts)
-		}()
+		go serveConn(conn)
 	}
+}
+
+func serveConn(conn net.Conn) {
+	c := proto.NewConn(conn)
+	_, parts, err := c.ReadRequest()
+	logger := NewLogger("%v", conn.RemoteAddr())
+	logger.Logf("accepted connection")
+	if err != nil {
+		logger.Log(err)
+		return
+	}
+	logger.Logf("recvd req <%v>", parts)
 }
