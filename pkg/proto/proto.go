@@ -9,11 +9,18 @@ import (
 	"net/textproto"
 )
 
+// Operations
 const (
 	SendReq = "send req"
 	SendRes = "send res"
+	SendErr = "send err"
 	ReadReq = "read req"
 	ReadRes = "read res"
+)
+
+// Errors we can have
+const (
+	InvalidCommand = "invalid command"
 )
 
 type Conn struct {
@@ -36,12 +43,22 @@ func NewConn(conn io.ReadWriteCloser) (*Conn) {
 
 // Server functions
 
-func (c *Conn) SendResponse(id uint, parts ... string) (os.Error) {
+func (c *Conn) SendResponse(id uint, parts ... string) os.Error {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
 	err := encode(&c.Writer, parts)
 	if err != nil {
 		return &ProtoError{id, SendRes, err}
+	}
+	return nil
+}
+
+func (c *Conn) SendError(id uint, msg string) os.Error {
+	c.StartResponse(id)
+	defer c.EndResponse(id)
+	err := c.PrintfLine("-ERR: %s", msg)
+	if err != nil {
+		return &ProtoError{id, SendErr, err}
 	}
 	return nil
 }
