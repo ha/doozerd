@@ -14,7 +14,7 @@ type ReadStringer interface {
 	ReadString(byte) (string, os.Error)
 }
 
-func Decode(r *textproto.Reader) (parts []string, err os.Error) {
+func decode(r *textproto.Reader) (parts []string, err os.Error) {
 	var count int = 1
 	var size int
 	var line string
@@ -52,14 +52,21 @@ Loop:
 	return
 }
 
-func Encodef(w io.Writer, parts ... string) (err os.Error) {
-	return Encode(w, parts)
+func encodef(w *textproto.Writer, parts ... string) (err os.Error) {
+	return encode(w, parts)
 }
 
-func Encode(w io.Writer, parts []string) (err os.Error) {
-	_, err = fmt.Fprintf(w, "*%d\r\n", len(parts))
-	for _, part := range parts {
-		_, err = fmt.Fprintf(w, "$%d\r\n%s\r\n", len(part), part)
+func encode(w *textproto.Writer, parts []string) (err os.Error) {
+	if err = w.PrintfLine("*%d", len(parts)); err != nil {
+		return
 	}
-	return err
+	for _, part := range parts {
+		if err = w.PrintfLine("$%d", len(part)); err != nil {
+			return
+		}
+		if err = w.PrintfLine("%s", part); err != nil {
+			return
+		}
+	}
+	return nil
 }
