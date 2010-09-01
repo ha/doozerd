@@ -9,8 +9,25 @@ import (
 	"net/textproto"
 )
 
+const (
+	SendReq = "send req"
+	SendRes = "send res"
+	ReadReq = "read req"
+	ReadRes = "read res"
+)
+
 type Conn struct {
 	*textproto.Conn
+}
+
+type ProtoError struct {
+	Id uint
+	Op string
+	Error os.Error
+}
+
+func (e *ProtoError) String() string {
+	return fmt.Sprintf("%s %d: %s", e.Op, e.Id, e.Error)
 }
 
 func NewConn(conn io.ReadWriteCloser) (*Conn) {
@@ -22,7 +39,11 @@ func NewConn(conn io.ReadWriteCloser) (*Conn) {
 func (c *Conn) SendResponse(id uint, parts ... string) (os.Error) {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
-	return encode(&c.Writer, parts)
+	err := encode(&c.Writer, parts)
+	if err != nil {
+		return &ProtoError{id, SendRes, err}
+	}
+	return nil
 }
 
 func (c *Conn) ReadRequest() (uint, []string, os.Error) {
@@ -31,7 +52,7 @@ func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 	parts, err := decode(&c.Reader)
 	c.EndRequest(id)
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, &ProtoError{id, ReadReq, err}
 	}
 	return id, parts, nil
 }
@@ -44,7 +65,7 @@ func (c *Conn) SendRequest(parts ... string) (uint, os.Error) {
 	err := encode(&c.Writer, parts)
 	c.EndRequest(id)
 	if err != nil {
-		return 0, err
+		return 0, &ProtoError{id, SendReq, err}
 	}
 	return id, nil
 }
@@ -52,7 +73,11 @@ func (c *Conn) SendRequest(parts ... string) (uint, os.Error) {
 func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
-	return decode(&c.Reader)
+	parts, err := decode(&c.Reader)
+	if err != nil {
+		return nil, &ProtoError{id, ReadRes, err}
+	}
+	return parts, nil
 }
 
 // Helpers
