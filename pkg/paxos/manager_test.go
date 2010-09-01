@@ -11,7 +11,7 @@ func selfRefNewManager(start uint64, self string, nodes []string) *Manager {
 	st := store.New()
 	rg := newRegistrar(self, st, 1)
 	for i, node := range nodes {
-		st.Apply(uint64(i+1), mustEncodeSet(membersKey+"/"+node, ""))
+		st.Apply(uint64(i+1), mustEncodeSet(membersKey+"/"+node, node+"addr"))
 	}
 	m := NewManager(start, rg, p)
 	p[0] = m
@@ -207,4 +207,11 @@ func TestManagerPutFrom(t *testing.T) {
 	assert.Equal(t, fromIndex, <-froms, "")
 	assert.Equal(t, fromIndex, <-froms, "")
 	assert.Equal(t, fromIndex, <-froms, "")
+}
+
+func TestManagerAddrsFor(t *testing.T) {
+	m := selfRefNewManager(2, "a", []string{"a"})
+	msg := newInvite(1)
+	msg.SetSeqn(1)
+	assert.Equal(t, []string{"aaddr"}, m.AddrsFor(msg))
 }
