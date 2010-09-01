@@ -9,6 +9,31 @@ import (
 	"net/textproto"
 )
 
+type Conn struct {
+	*textproto.Conn
+}
+
+func NewConn(conn io.ReadWriteCloser) (*Conn) {
+	return &Conn{textproto.NewConn(conn)}
+}
+
+func (c *Conn) Call(parts ... string) (uint, os.Error) {
+	id := c.Next()
+	c.StartRequest(id)
+	err := encode(&c.Writer, parts)
+	c.EndRequest(id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func (c *Conn) ReadParts(id uint) ([]string, os.Error) {
+	c.StartResponse(id)
+	defer c.EndResponse(id)
+	return decode(&c.Reader)
+}
+
 func decode(r *textproto.Reader) (parts []string, err os.Error) {
 	var count int = 1
 	var size int
@@ -47,11 +72,7 @@ Loop:
 	return
 }
 
-func encodef(w *textproto.Writer, parts ... string) (err os.Error) {
-	return encode(w, parts)
-}
-
-func encode(w *textproto.Writer, parts []string) (err os.Error) {
+func encode(w *textproto.Writer, parts ... string) (err os.Error) {
 	if err = w.PrintfLine("*%d", len(parts)); err != nil {
 		return
 	}

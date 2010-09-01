@@ -28,32 +28,32 @@ func (ew *ErroneousWriter) Write(bytes []byte) (int, os.Error) {
 	return ew.Writer.Write(bytes)
 }
 
-func TestProtoEncodef(t *testing.T) {
+func TestProtoencode(t *testing.T) {
 	b := new(bytes.Buffer)
 	w := bufio.NewWriter(b)
 	ww := textproto.NewWriter(w)
 
-	encodef(ww, "GET", "FOO")
+	encode(ww, "GET", "FOO")
 	assert.Equal(t, "*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n", string(b.Bytes()), "")
 }
 
-func TestProtoEncodefHeaderError(t *testing.T) {
+func TestProtoencodeHeaderError(t *testing.T) {
 	b := new(bytes.Buffer)
 	ew := &ErroneousWriter{b, 0}
 	w := bufio.NewWriter(ew)
 	ww := textproto.NewWriter(w)
 
-	err := encodef(ww, "GET", "FOO")
+	err := encode(ww, "GET", "FOO")
 	assert.T(t, err != nil)
 }
 
-func TestProtoEncodefBodyError(t *testing.T) {
+func TestProtoencodeBodyError(t *testing.T) {
 	b := new(bytes.Buffer)
 	ew := &ErroneousWriter{b, 1}
 	w := bufio.NewWriter(ew)
 	ww := textproto.NewWriter(w)
 
-	err := encodef(ww, "GET", "FOO")
+	err := encode(ww, "GET", "FOO")
 	assert.T(t, err != nil)
 }
 
@@ -73,7 +73,7 @@ func TestProtoDecodeNonEmpty(t *testing.T) {
 	w := bufio.NewWriter(b)
 	ww := textproto.NewWriter(w)
 
-	encodef(ww, "SET", "foo", "bar")
+	encode(ww, "SET", "foo", "bar")
 	parts, err := decode(rr)
 
 	assert.Equal(t, nil, err, "")
