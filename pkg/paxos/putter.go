@@ -9,13 +9,13 @@ type putCloser interface {
 	Close()
 }
 
-type chanPutCloser chan Msg
+type ChanPutCloser chan Msg
 
-func (cp chanPutCloser) Put(m Msg) {
+func (cp ChanPutCloser) Put(m Msg) {
 	go func() { cp <- m }()
 }
 
-func (cp chanPutCloser) Close() {
+func (cp ChanPutCloser) Close() {
 	close(cp)
 }
 

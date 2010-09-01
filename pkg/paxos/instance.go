@@ -12,7 +12,7 @@ type instance struct {
 }
 
 func newInstance(cxf func() *cluster, outs Putter) *instance {
-	c, aIns, lIns := newCoord(outs), make(chanPutCloser), make(chanPutCloser)
+	c, aIns, lIns := newCoord(outs), make(ChanPutCloser), make(ChanPutCloser)
 	ins := &instance{
 		vin:     make(chan string),
 		done:    make(chan int),

@@ -13,7 +13,7 @@ type instReq struct {
 }
 
 type Manager struct {
-	rg      *registrar
+	rg      *Registrar
 	learned chan result
 	reqs    chan instReq
 }
@@ -44,7 +44,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 	}
 }
 
-func NewManager(start uint64, rg *registrar, outs Putter) *Manager {
+func NewManager(start uint64, rg *Registrar, outs Putter) *Manager {
 	m := &Manager{
 		rg:      rg,
 		learned: make(chan result),

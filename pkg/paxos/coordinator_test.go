@@ -7,10 +7,10 @@ import (
 
 func TestCoordPut(t *testing.T) {
 	c := newCoord(nil)
-	c.chanPutCloser = chanPutCloser(make(chan Msg))
+	c.ChanPutCloser = ChanPutCloser(make(chan Msg))
 	msg := newInvite(0) // any old Msg will do here
 	c.Put(msg)
-	assert.Equal(t, msg, <-c.chanPutCloser, "")
+	assert.Equal(t, msg, <-c.ChanPutCloser, "")
 }
 
 func TestCoordIgnoreOldMessages(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCoordCloseIns(t *testing.T) {
 	c.Put(newRsvpFrom(5, 1, 0, ""))
 	c.Put(newRsvpFrom(6, 1, 0, ""))
 
-	c.chanPutCloser.Close()
+	c.ChanPutCloser.Close()
 	assert.Equal(t, 1, <-done, "")
 
 	close(outs)

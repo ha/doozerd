@@ -7,7 +7,7 @@ import (
 	"math"
 )
 
-type registrar struct {
+type Registrar struct {
 	self     string
 	window   int
 	st       *store.Store
@@ -38,8 +38,8 @@ func (q *lookupQueue) peek() lookup {
 
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
-func NewRegistrar(self string, st *store.Store, window int) *registrar {
-	rg := &registrar{
+func NewRegistrar(self string, st *store.Store, window int) *Registrar {
+	rg := &Registrar{
 		self:     self,
 		window:   window,
 		st:       st,
@@ -63,7 +63,7 @@ func findString(v []string, s string) (i int) {
 	return -1
 }
 
-func (rg *registrar) process() {
+func (rg *Registrar) process() {
 	known := uint64(0)
 	members := make(map[string]string)
 	clusters := make(map[uint64]*cluster)
@@ -97,7 +97,7 @@ func (rg *registrar) process() {
 	}
 }
 
-func (rg *registrar) clusterFor(seqn uint64) *cluster {
+func (rg *Registrar) clusterFor(seqn uint64) *cluster {
 	cver := uint64(1)
 	if seqn > uint64(rg.window) {
 		cver = seqn - uint64(rg.window)

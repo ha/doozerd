@@ -138,7 +138,7 @@ func TestReadFromStore(t *testing.T) {
 	rg := NewRegistrar(self, st, 1)
 	st.Apply(1, mustEncodeSet(membersKey+"/"+self, ""))
 
-	p := make(chanPutCloser)
+	p := make(ChanPutCloser)
 	m := NewManager(1, rg, p)
 
 	// Fire up a new instance with a vote message. This instance should block

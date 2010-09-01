@@ -2,12 +2,12 @@ package paxos
 
 // TODO temporary name
 type coord struct {
-	chanPutCloser
+	ChanPutCloser
 	outs Putter
 }
 
 func newCoord(outs Putter) *coord {
-	return &coord{make(chanPutCloser), outs}
+	return &coord{make(ChanPutCloser), outs}
 }
 
 func (c *coord) process(cx *cluster) {
@@ -23,7 +23,7 @@ func (c *coord) process(cx *cluster) {
 	var vv string
 
 	// Wait for the very first proposal
-	for in := range c.chanPutCloser {
+	for in := range c.ChanPutCloser {
 		if in.Cmd() != propose {
 			continue
 		}
@@ -36,7 +36,7 @@ func (c *coord) process(cx *cluster) {
 		break
 	}
 
-	for in := range c.chanPutCloser {
+	for in := range c.ChanPutCloser {
 		switch in.Cmd() {
 		case rsvp:
 			i, vrnd, vval := rsvpParts(in)
