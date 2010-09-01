@@ -3,39 +3,32 @@ package junta
 import (
 	"os"
 	"net"
+	"log"
 	
 	"junta/util"
 	"junta/proto"
 )
 
-func ListenAndServe(addr string) os.Error {
-	logger := util.NewLogger("main")
-
-	logger.Logf("binding to %s", addr)
-	lisn, err := net.Listen("tcp", addr)
-	if err != nil {
-		logger.Log("unable to listen on %s: %s", addr, err)
-		os.Exit(1)
-	}
-
-	logger.Logf("listening on %s", addr)
-
-	for {
-		conn, err := lisn.Accept()
-		if err != nil {
-			logger.Log("unable to accept on %s: %s", addr, err)
-			continue
-		}
-		go serveConn(conn)
-	}
-
-	return nil
+type server struct {
+	net.Listener
+	logger *log.Logger
 }
 
-func serveConn(conn net.Conn) {
+func (s server) acceptAndServe() {
+	for {
+		conn, err := s.Accept()
+		if err != nil {
+			s.logger.Logf("%s: %s", s.Listener, err)
+			continue
+		}
+		go s.serve(conn)
+	}
+}
+
+func (server) serve(conn net.Conn) {
 	c := proto.NewConn(conn)
 	logger := util.NewLogger("%v", conn.RemoteAddr())
-	logger.Logf("accepted connection")
+	logger.Log("accepted connection")
 	for {
 		rid, parts, err := c.ReadRequest()
 		if err != nil {
@@ -51,10 +44,10 @@ func serveConn(conn net.Conn) {
 		rlogger.Logf("received <%v>", parts)
 
 		if len(parts) == 0 {
-			rlogger.Logf("len(parts) == 0")
-			rlogger.Logf("before error")
+			rlogger.Log("len(parts) == 0")
+			rlogger.Log("before error")
 			c.SendError(rid, proto.InvalidCommand)
-			rlogger.Logf("after error")
+			rlogger.Log("after error")
 			continue
 		}
 
@@ -67,7 +60,24 @@ func serveConn(conn net.Conn) {
 			rlogger.Logf("set %q=%q", parts[1], parts[2])
 			c.SendResponse(rid, "OK")
 		}
-		rlogger.Logf("bottom")
+		rlogger.Log("bottom")
 	}
 }
 
+func ListenAndServe(addr string) os.Error {
+	logger := util.NewLogger("server %s", addr)
+
+	logger.Logf("binding to %s", addr)
+	lisn, err := net.Listen("tcp", addr)
+	if err != nil {
+		logger.Log(err)
+		return err
+	}
+
+	logger.Logf("listening on %s", addr)
+
+	server := &server{lisn, logger}
+	server.acceptAndServe()
+
+	return nil
+}
