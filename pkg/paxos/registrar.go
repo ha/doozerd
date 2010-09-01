@@ -38,7 +38,7 @@ func (q *lookupQueue) peek() lookup {
 
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
-func newRegistrar(self string, st *store.Store, window int) *registrar {
+func NewRegistrar(self string, st *store.Store, window int) *registrar {
 	rg := &registrar{
 		self:     self,
 		window:   window,

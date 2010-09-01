@@ -9,7 +9,7 @@ import (
 func selfRefNewManager(self string, nodes []string) (*Manager, *store.Store) {
 	p := make(FakePutter, 1)
 	st := store.New()
-	rg := newRegistrar(self, st, 1)
+	rg := NewRegistrar(self, st, 1)
 	for i, node := range nodes {
 		st.Apply(uint64(i+1), mustEncodeSet(membersKey+"/"+node, node+"addr"))
 	}
@@ -135,7 +135,7 @@ func TestReadFromStore(t *testing.T) {
 
 	// The cluster initially has 1 node (quorum of 1).
 	st := store.New()
-	rg := newRegistrar(self, st, 1)
+	rg := NewRegistrar(self, st, 1)
 	st.Apply(1, mustEncodeSet(membersKey+"/"+self, ""))
 
 	p := make(chanPutCloser)
@@ -183,7 +183,7 @@ func TestManagerPutFrom(t *testing.T) {
 
 	p := make(FakePutter, 1)
 	st := store.New()
-	rg := newRegistrar("a", st, 1)
+	rg := NewRegistrar("a", st, 1)
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/a", "x"))
 	st.Apply(uint64(2), mustEncodeSet(membersKey+"/b", "y"))
 	st.Apply(uint64(3), mustEncodeSet(membersKey+"/c", "z"))

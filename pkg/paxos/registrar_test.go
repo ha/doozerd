@@ -8,7 +8,7 @@ import (
 
 func TestRegistrar(t *testing.T) {
 	st := store.New()
-	rg := newRegistrar("a", st, 2)
+	rg := NewRegistrar("a", st, 2)
 	go func() {
 		st.Apply(3, mustEncodeSet(membersKey+"/c", "1"))
 		st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
