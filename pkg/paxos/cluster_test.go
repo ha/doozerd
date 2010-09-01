@@ -19,6 +19,7 @@ func TestCluster(t *testing.T) {
 	assert.Equal(t, 0, cx.indexByAddr("x"), "indexByAddr(\"a\")")
 	assert.Equal(t, 1, cx.indexByAddr("y"), "indexByAddr(\"a\")")
 	assert.Equal(t, 2, cx.indexByAddr("z"), "indexByAddr(\"a\")")
+	assert.Equal(t, []string{"x", "y", "z"}, cx.addrs(), "addrs")
 }
 
 func TestClusterNil(t *testing.T) {
