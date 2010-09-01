@@ -3,7 +3,6 @@ package junta
 import (
 	"os"
 	"net"
-	"log"
 	
 	"junta/util"
 	"junta/proto"
@@ -15,14 +14,16 @@ type conn struct {
 
 type server struct {
 	net.Listener
-	logger *log.Logger
 }
 
 func Serve(l net.Listener) os.Error {
+	return (&server{l}).Serve()
+}
+
+func (s *server) Serve() os.Error {
 	for {
-		rw, e := l.Accept()
+		rw, e := s.Accept()
 		if e != nil {
-			//s.logger.Logf("%s: %s", s.Listener, err)
 			return e
 		}
 		c := &conn{rw}
@@ -83,5 +84,9 @@ func ListenAndServe(addr string) os.Error {
 	defer l.Close()
 	logger.Logf("listening on %s", addr)
 
-	return Serve(l)
+	err = Serve(l)
+	if err != nil {
+		logger.Logf("%s: %s", l, err)
+	}
+	return err
 }
