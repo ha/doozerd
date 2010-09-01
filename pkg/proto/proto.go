@@ -17,7 +17,28 @@ func NewConn(conn io.ReadWriteCloser) (*Conn) {
 	return &Conn{textproto.NewConn(conn)}
 }
 
-func (c *Conn) Call(parts ... string) (uint, os.Error) {
+// Server functions
+
+func (c *Conn) SendResponse(id uint, parts ... string) (os.Error) {
+	c.StartResponse(id)
+	defer c.EndResponse(id)
+	return encode(&c.Writer, parts)
+}
+
+func (c *Conn) ReadRequest() (uint, []string, os.Error) {
+	id := c.Next()
+	c.StartRequest(id)
+	parts, err := decode(&c.Reader)
+	c.EndRequest(id)
+	if err != nil {
+		return 0, nil, err
+	}
+	return id, parts, nil
+}
+
+// Client functions
+
+func (c *Conn) SendRequest(parts ... string) (uint, os.Error) {
 	id := c.Next()
 	c.StartRequest(id)
 	err := encode(&c.Writer, parts)
@@ -28,11 +49,13 @@ func (c *Conn) Call(parts ... string) (uint, os.Error) {
 	return id, nil
 }
 
-func (c *Conn) ReadParts(id uint) ([]string, os.Error) {
+func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
 	return decode(&c.Reader)
 }
+
+// Helpers
 
 func decode(r *textproto.Reader) (parts []string, err os.Error) {
 	var count int = 1
