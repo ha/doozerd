@@ -75,7 +75,11 @@ func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 	parts, err := decode(&c.Reader)
 	c.EndRequest(id)
 	if err != nil {
-		return 0, nil, &ProtoError{id, ReadReq, err}
+		if err == os.EOF {
+			return 0, nil, err
+		} else {
+			return 0, nil, &ProtoError{id, ReadReq, err}
+		}
 	}
 	return id, parts, nil
 }

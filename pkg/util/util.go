@@ -52,3 +52,17 @@ func Unpackui64(b []byte) (n uint64) {
 	}
 	return
 }
+
+func NewLogger(format string, a ... interface{}) *log.Logger {
+	prefix := fmt.Sprintf(format, a)
+
+	if prefix == "" {
+		panic("always give a prefix!")
+	}
+
+	return log.New(
+		os.Stderr, nil,
+		"juntad: " + prefix + " ",
+		log.Lok | log.Lshortfile,
+	)
+}
