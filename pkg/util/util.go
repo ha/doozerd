@@ -7,15 +7,21 @@ import (
 	"os"
 )
 
-var urandom = MustOpen("/dev/urandom", os.O_RDONLY, 0)
+type NullWriter struct{}
 
-var NullLogger = log.New(nullWriter{}, nil, "", 0)
-
-type nullWriter struct{}
-
-func (nw nullWriter) Write(p []byte) (int, os.Error) {
+func (nw NullWriter) Write(p []byte) (int, os.Error) {
 	return len(p), nil
 }
+
+// Misc
+var (
+	urandom = MustOpen("/dev/urandom", os.O_RDONLY, 0)
+)
+
+// Logging
+var (
+	LogWriter io.Writer = NullWriter{}
+)
 
 // MustOpen is like os.Open but panics if the file cannot be opened. It
 // simplifies safe initialization of global variables holding file descriptors.
@@ -61,7 +67,7 @@ func NewLogger(format string, a ... interface{}) *log.Logger {
 	}
 
 	return log.New(
-		os.Stderr, nil,
+		LogWriter, nil,
 		"juntad: " + prefix + " ",
 		log.Lok | log.Lshortfile,
 	)

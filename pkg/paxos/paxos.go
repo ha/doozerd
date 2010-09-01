@@ -1,7 +1,6 @@
 package paxos
 
 import (
-	"junta/util"
 	"net"
 	"os"
 )
@@ -9,5 +8,3 @@ import (
 type ReadFromer interface {
 	ReadFrom(b []byte) (n int, addr net.Addr, err os.Error)
 }
-
-var logger = util.NullLogger

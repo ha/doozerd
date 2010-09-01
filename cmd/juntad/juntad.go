@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"junta/paxos"
 	"junta/store"
 	"junta/util"
@@ -18,7 +20,9 @@ var (
 
 func main() {
 	flag.Parse()
-	store.Logger = util.NewLogger("store")
+
+	util.LogWriter = os.Stderr
+
 	outs := make(chan paxos.Msg)
 	self := util.RandString(160)
 

@@ -34,7 +34,7 @@ var (
 	BadPathError = os.NewError("bad path")
 )
 
-var Logger = util.NullLogger
+var LogWriter = util.NullWriter{}
 
 // This structure should be kept immutable.
 type node struct {
@@ -328,6 +328,8 @@ func (s *Store) buffer() {
 }
 
 func (s *Store) process() {
+	logger := util.NewLogger("store")
+
 	ver := uint64(0)
 	next := uint64(1)
 	values := emptyNode
@@ -366,7 +368,7 @@ func (s *Store) process() {
 				if err == nil {
 					var changed []string
 					values, changed = values.setp(k, v, op == Set)
-					Logger.Logf("store applied %v", t)
+					logger.Logf("store applied %v", t)
 					if op == Set || len(changed) > 0 {
 						s.notify(op, t.seqn, k, v)
 					}

@@ -1,5 +1,11 @@
 package paxos
 
+import (
+	"log"
+
+	"junta/util"
+)
+
 const window = 50
 
 type result struct {
@@ -16,6 +22,7 @@ type Manager struct {
 	rg      *Registrar
 	learned chan result
 	reqs    chan instReq
+	logger  *log.Logger
 }
 
 func (m *Manager) process(next uint64, outs Putter) {
@@ -49,6 +56,7 @@ func NewManager(start uint64, rg *Registrar, outs Putter) *Manager {
 		rg:      rg,
 		learned: make(chan result),
 		reqs:    make(chan instReq),
+		logger:  util.NewLogger("manager"),
 	}
 
 	go m.process(start, outs)
@@ -80,13 +88,13 @@ func (m *Manager) AddrsFor(msg Msg) []string {
 
 func (m *Manager) Propose(v string) string {
 	inst := m.getInstance(0)
-	logger.Logf("paxos propose -> %q", v)
+	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
 	return inst.Value()
 }
 
 func (m *Manager) Recv() (uint64, string) {
 	result := <-m.learned
-	logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
+	m.logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
 	return result.seqn, result.v
 }
