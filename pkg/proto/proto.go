@@ -9,11 +9,6 @@ import (
 	"net/textproto"
 )
 
-type ReadStringer interface {
-	io.Reader
-	ReadString(byte) (string, os.Error)
-}
-
 func decode(r *textproto.Reader) (parts []string, err os.Error) {
 	var count int = 1
 	var size int
