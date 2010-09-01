@@ -52,10 +52,8 @@ func (c *conn) serve() {
 		rlogger.Logf("received <%v>", parts)
 
 		if len(parts) == 0 {
-			rlogger.Log("len(parts) == 0")
-			rlogger.Log("before error")
+			rlogger.Log("zero parts supplied")
 			pc.SendError(rid, proto.InvalidCommand)
-			rlogger.Log("after error")
 			continue
 		}
 
@@ -68,7 +66,6 @@ func (c *conn) serve() {
 			rlogger.Logf("set %q=%q", parts[1], parts[2])
 			pc.SendResponse(rid, "OK")
 		}
-		rlogger.Log("bottom")
 	}
 }
 
