@@ -55,12 +55,15 @@ func main() {
 
 func serveConn(conn net.Conn) {
 	c := proto.NewConn(conn)
-	_, parts, err := c.ReadRequest()
 	logger := NewLogger("%v", conn.RemoteAddr())
 	logger.Logf("accepted connection")
-	if err != nil {
-		logger.Log(err)
-		return
+	for {
+		rid, parts, err := c.ReadRequest()
+		if err != nil {
+			logger.Log(err)
+			return
+		}
+		rlogger := NewLogger("%v - req [%d]", conn.RemoteAddr(), rid)
+		rlogger.Logf("received <%v>", parts)
 	}
-	logger.Logf("recvd req <%v>", parts)
 }
