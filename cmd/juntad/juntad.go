@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"junta"
 	"junta/paxos"
 	"junta/store"
 	"junta/util"
+	"junta/server"
 )
 
 const alpha = 50
@@ -30,11 +30,11 @@ func main() {
 
 	mg := paxos.NewManager(2, rg, paxos.ChanPutCloser(outs))
 	go func() {
-		panic(junta.ListenAndServe(*listenAddr, st, mg))
+		panic(server.ListenAndServe(*listenAddr, st, mg))
 	}()
 
 	go func() {
-		panic(junta.ListenAndServeUdp(*listenAddr, mg, outs))
+		panic(server.ListenAndServeUdp(*listenAddr, mg, outs))
 	}()
 
 	for {
