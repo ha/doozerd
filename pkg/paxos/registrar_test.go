@@ -30,3 +30,22 @@ func TestRegistrar(t *testing.T) {
 	cx = rg.clusterFor(1)
 	assert.Equal(t, 1, cx.Len(), "1 Len")
 }
+
+func TestRegistrarHistory(t *testing.T) {
+	exp := []map[string]string{
+		map[string]string{"a":"x"},
+		map[string]string{"a":"x", "b":"y"},
+		map[string]string{"a":"x", "b":"y", "c":"z"},
+	}
+
+	st := store.New()
+	rg := NewRegistrar("a", st, 2)
+	go func() {
+		st.Apply(1, mustEncodeSet(membersKey+"/a", "x"))
+		st.Apply(2, mustEncodeSet(membersKey+"/b", "y"))
+		st.Apply(3, mustEncodeSet(membersKey+"/c", "z"))
+	}()
+
+	h := rg.History(1, 4)
+	assert.Equal(t, exp, h)
+}

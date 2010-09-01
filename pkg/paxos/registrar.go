@@ -97,12 +97,24 @@ func (rg *Registrar) process() {
 	}
 }
 
+func (rg *Registrar) clusterAt(cver uint64) *cluster {
+	ch := make(chan *cluster)
+	rg.lookupCh <- lookup{cver, ch}
+	return <-ch
+}
+
 func (rg *Registrar) clusterFor(seqn uint64) *cluster {
 	cver := uint64(1)
 	if seqn > uint64(rg.window) {
 		cver = seqn - uint64(rg.window)
 	}
-	ch := make(chan *cluster)
-	rg.lookupCh <- lookup{cver, ch}
-	return <-ch
+	return rg.clusterAt(cver)
+}
+
+func (rg *Registrar) History(a, b uint64) (res []map[string]string) {
+	res = make([]map[string]string, b - a)
+	for i := a; i < b; i++ {
+		res[i-a] = rg.clusterAt(i).addrsById
+	}
+	return
 }

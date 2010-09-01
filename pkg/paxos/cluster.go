@@ -15,17 +15,20 @@ type cluster struct {
 	self      string
 	nodes     []string
 	idsByAddr map[string]string
+	addrsById map[string]string
 	selfIndex int
 }
 
 func newCluster(self string, addrsById map[string]string) *cluster {
 	validNodes := make([]string, 0, len(addrsById))
 	idsByAddr := make(map[string]string)
+	addrsByIdCopy := make(map[string]string)
 	for id, addr := range addrsById {
 		if id != "" {
 			validNodes = validNodes[0 : len(validNodes)+1]
 			validNodes[len(validNodes)-1] = id
 			idsByAddr[addr] = id
+			addrsByIdCopy[id] = addr
 		}
 	}
 
@@ -41,6 +44,7 @@ func newCluster(self string, addrsById map[string]string) *cluster {
 		nodes:     validNodes,
 		selfIndex: selfIndex,
 		idsByAddr: idsByAddr,
+		addrsById: addrsByIdCopy,
 	}
 }
 
