@@ -80,9 +80,8 @@ func ListenAndServe(addr string) os.Error {
 		logger.Log(err)
 		return err
 	}
+	defer l.Close()
 	logger.Logf("listening on %s", addr)
 
-	err = Serve(l)
-	l.Close()
-	return err
+	return Serve(l)
 }
