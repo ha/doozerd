@@ -6,21 +6,21 @@ import (
 	"testing"
 )
 
-func selfRefNewManager(start uint64, self string, nodes []string) *Manager {
+func selfRefNewManager(self string, nodes []string) (*Manager, *store.Store) {
 	p := make(FakePutter, 1)
 	st := store.New()
 	rg := newRegistrar(self, st, 1)
 	for i, node := range nodes {
 		st.Apply(uint64(i+1), mustEncodeSet(membersKey+"/"+node, node+"addr"))
 	}
-	m := NewManager(start, rg, p)
+	m := NewManager(uint64(len(nodes)+1), rg, p)
 	p[0] = m
-	return m
+	return m, st
 }
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(1, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -28,19 +28,19 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(1, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
-	assert.Equal(t, uint64(1), seqn, "")
+	assert.Equal(t, uint64(2), seqn, "")
 	assert.Equal(t, exp, v, "")
 }
 
 func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(2, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -51,28 +51,31 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 }
 
 func TestProposeAndRecvMultiple(t *testing.T) {
-	exp := []string{"foo", "bar"}
-	seqnexp := []uint64{1, 2}
-	m := selfRefNewManager(1, "a", []string{"a"})
+	exp := []string{"/foo", "/bar"}
+	seqnexp := []uint64{2, 3}
+	m, st := selfRefNewManager("a", []string{"a"})
 
 	got0 := m.Propose(exp[0])
 	assert.Equal(t, exp[0], got0, "")
-
-	got1 := m.Propose(exp[1])
-	assert.Equal(t, exp[1], got1, "")
 
 	seqn0, v0 := m.Recv()
 	assert.Equal(t, seqnexp[0], seqn0, "seqn 1")
 	assert.Equal(t, exp[0], v0, "")
 
+	st.Apply(seqn0, v0)
+
+	got1 := m.Propose(exp[1])
+	assert.Equal(t, exp[1], got1, "")
+
 	seqn1, v1 := m.Recv()
-	assert.Equal(t, seqnexp[1], seqn1, "seqn 2")
+	assert.Equal(t, seqnexp[1], seqn1, "seqn 1")
 	assert.Equal(t, exp[1], v1, "")
+
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m := selfRefNewManager(1, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -82,7 +85,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m := selfRefNewManager(1, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -92,7 +95,7 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 
 func TestUnusedSeqn(t *testing.T) {
 	exp1, exp2 := "foo", "bar"
-	m := selfRefNewManager(1, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	m.Put(newVoteFrom(1, 1, exp1))
 	seqn, v := m.Recv()
@@ -107,7 +110,7 @@ func TestUnusedSeqn(t *testing.T) {
 }
 
 func TestIgnoreMalformedMsg(t *testing.T) {
-	m := selfRefNewManager(1, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 
 	m.Put(resize(newVoteFrom(1, 1, ""), -1))
 
@@ -115,7 +118,7 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 	assert.Equal(t, "y", got, "")
 
 	seqn, v := m.Recv()
-	assert.Equal(t, uint64(1), seqn, "")
+	assert.Equal(t, uint64(2), seqn, "")
 	assert.Equal(t, "y", v, "")
 }
 
@@ -210,7 +213,7 @@ func TestManagerPutFrom(t *testing.T) {
 }
 
 func TestManagerAddrsFor(t *testing.T) {
-	m := selfRefNewManager(2, "a", []string{"a"})
+	m, _ := selfRefNewManager("a", []string{"a"})
 	msg := newInvite(1)
 	msg.SetSeqn(1)
 	assert.Equal(t, []string{"aaddr"}, m.AddrsFor(msg))
