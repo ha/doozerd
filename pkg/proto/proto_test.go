@@ -28,7 +28,7 @@ func (ew *ErroneousWriter) Write(bytes []byte) (int, os.Error) {
 	return ew.Writer.Write(bytes)
 }
 
-func TestProtoencode(t *testing.T) {
+func TestProtoEncode(t *testing.T) {
 	b := new(bytes.Buffer)
 	w := bufio.NewWriter(b)
 	ww := textproto.NewWriter(w)
@@ -37,7 +37,7 @@ func TestProtoencode(t *testing.T) {
 	assert.Equal(t, "*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n", string(b.Bytes()), "")
 }
 
-func TestProtoencodeHeaderError(t *testing.T) {
+func TestProtoEncodeHeaderError(t *testing.T) {
 	b := new(bytes.Buffer)
 	ew := &ErroneousWriter{b, 0}
 	w := bufio.NewWriter(ew)
@@ -47,7 +47,7 @@ func TestProtoencodeHeaderError(t *testing.T) {
 	assert.T(t, err != nil)
 }
 
-func TestProtoencodeBodyError(t *testing.T) {
+func TestProtoEncodeBodyError(t *testing.T) {
 	b := new(bytes.Buffer)
 	ew := &ErroneousWriter{b, 1}
 	w := bufio.NewWriter(ew)
