@@ -12,4 +12,5 @@ shift
   printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
   printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
   printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
+  printf '*0\r\n'
 ) | nc localhost 8040

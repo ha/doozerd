@@ -65,5 +65,11 @@ func serveConn(conn net.Conn) {
 		}
 		rlogger := NewLogger("%v - req [%d]", conn.RemoteAddr(), rid)
 		rlogger.Logf("received <%v>", parts)
+
+		if len(parts) == 0 {
+			rlogger.Logf("len(parts) == 0")
+			c.SendError(rid, proto.InvalidCommand)
+		}
 	}
 }
+

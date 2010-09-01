@@ -66,6 +66,15 @@ func TestProtoDecodeEmptyLine(t *testing.T) {
 	assert.T(t, err != nil)
 }
 
+func TestProtoDecodeRecievedError(t *testing.T) {
+	b := bytes.NewBufferString("-ERR: foo\r\n")
+	r := bufio.NewReader(b)
+	rr := textproto.NewReader(r)
+
+	_, err := decode(rr)
+	assert.Equal(t, "ERR: foo", err.String())
+}
+
 func TestProtoDecodeNonEmpty(t *testing.T) {
 	b := new(bytes.Buffer)
 	r := bufio.NewReader(b)

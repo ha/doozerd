@@ -37,6 +37,12 @@ func (e *ProtoError) String() string {
 	return fmt.Sprintf("%s %d: %s", e.Op, e.Id, e.Error)
 }
 
+type ResponseError string
+
+func (e ResponseError) String() string {
+	return string(e)
+}
+
 func NewConn(conn io.ReadWriteCloser) (*Conn) {
 	return &Conn{textproto.NewConn(conn)}
 }
@@ -90,11 +96,19 @@ func (c *Conn) SendRequest(parts ... string) (uint, os.Error) {
 func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
+
 	parts, err := decode(&c.Reader)
-	if err != nil {
+
+	switch err.(type) {
+	default:
 		return nil, &ProtoError{id, ReadRes, err}
+	case nil:
+		return parts, nil
+	case ResponseError:
+		return nil, err
 	}
-	return parts, nil
+
+	panic("unreachable!")
 }
 
 // Helpers
@@ -109,7 +123,7 @@ Loop:
 		// TODO: test if len(line) == 0
 		line, err = r.ReadLine()
 		switch {
-		case err == os.EOF: break Loop
+		case err == os.EOF: return
 		case err != nil: panic(err)
 		}
 		line = strings.TrimSpace(line)
@@ -117,6 +131,9 @@ Loop:
 			continue Loop
 		}
 		switch line[0] {
+		case '-':
+			err = ResponseError(line[1:])
+			return
 		case '*':
 			count, _ = strconv.Atoi(line[1:])
 			parts = make([]string, count)
