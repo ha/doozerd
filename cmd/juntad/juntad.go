@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"junta/paxos"
 	"junta/store"
 	"junta/util"
@@ -21,7 +20,7 @@ func main() {
 	flag.Parse()
 	store.Logger = util.NewLogger("store")
 	outs := make(chan paxos.Msg)
-	self := randString(160)
+	self := util.RandString(160)
 
 	st := store.New()
 	rg := paxos.NewRegistrar(self, st, alpha)
@@ -49,10 +48,4 @@ func addMember(st *store.Store, self, addr string) {
 		panic(err)
 	}
 	st.Apply(1, mx)
-}
-
-func randString(bits int) string {
-	selfBytes := make([]byte, bits/8)
-	util.RandBytes(selfBytes)
-	return fmt.Sprintf("%x", selfBytes)
 }
