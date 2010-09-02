@@ -47,6 +47,7 @@ const (
 	vote
 	tick
 	propose
+	learn
 )
 
 const (
@@ -56,6 +57,7 @@ const (
 	voteLen     = 8  // not including v
 	tickLen     = 0
 	proposeLen  = 0 // not including v
+	learnLen    = 0 // not including v
 )
 
 func newInvite(crnd uint64) Msg {
@@ -129,6 +131,19 @@ func newPropose(val string) Msg {
 	copy(m.Body()[proposeLen:], []byte(val))
 	return m
 }
+
+func newLearn(val string) Msg {
+	m := make(Msg, baseLen+learnLen+len(val))
+	m[mCmd] = learn
+	copy(m.Body()[learnLen:], []byte(val))
+	return m
+}
+
+func learnParts(m Msg) string {
+	return string(m.Body())
+}
+
+
 
 // Returns the info for `m`. If `m` is not a propose, the result is undefined.
 func proposeParts(m Msg) (val string) {

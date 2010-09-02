@@ -1,10 +1,12 @@
 package paxos
 
 import (
-	"junta/assert"
 	"net"
 	"os"
 	"testing"
+	"testing/quick"
+
+	"junta/assert"
 )
 
 // For testing convenience
@@ -101,6 +103,17 @@ func TestMessageNewVoteAlt(t *testing.T) {
 	i, vval := voteParts(m)
 	assert.Equal(t, uint64(2), i, "")
 	assert.Equal(t, "bar", vval, "")
+}
+
+func TestMessageNewLearn(t *testing.T) {
+	f := func(exp string) bool {
+		m := newLearn(exp)
+		assert.Equal(t, learn, m.Cmd(), "")
+		val := learnParts(m)
+		assert.Equal(t, exp, val, "")
+		return true
+	}
+	quick.Check(f, nil)
 }
 
 func TestMessageNewTick(t *testing.T) {

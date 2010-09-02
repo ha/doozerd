@@ -13,5 +13,6 @@ GOFILES=\
 	learner.go\
 	message.go\
 	registrar.go\
+	sink.go\
 
 include $(GOROOT)/src/Make.pkg
