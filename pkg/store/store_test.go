@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+const Clobber = ^uint64(0)
+
 var SetKVMs = [][3]string{
 	[3]string{"/", "a", "/=a"},
 	[3]string{"/x", "a", "/x=a"},
@@ -73,7 +75,7 @@ func TestCheckGoodPaths(t *testing.T) {
 func TestEncodeSet(t *testing.T) {
 	for _, kvm := range SetKVMs {
 		k, v, exp := kvm[0], kvm[1], kvm[2]
-		got, err := EncodeSet(k, v)
+		got, err := EncodeSet(k, v, Clobber)
 		assert.Equal(t, nil, err, "")
 		assert.Equal(t, exp, got, "")
 	}
@@ -126,7 +128,7 @@ func TestLookupMissing(t *testing.T) {
 
 func TestLookup(t *testing.T) {
 	s := New()
-	mut, _ := EncodeSet("/x", "a")
+	mut, _ := EncodeSet("/x", "a", Clobber)
 	s.Apply(1, mut)
 	v, ok := s.Lookup("/x")
 	assert.Equal(t, true, ok, "")
@@ -135,7 +137,7 @@ func TestLookup(t *testing.T) {
 
 func TestLookupDeleted(t *testing.T) {
 	s := New()
-	mut, _ := EncodeSet("/x", "a")
+	mut, _ := EncodeSet("/x", "a", Clobber)
 	s.Apply(1, mut)
 	mut, _ = EncodeDel("/x")
 	s.Apply(2, mut)
@@ -146,8 +148,8 @@ func TestLookupDeleted(t *testing.T) {
 
 func TestApplyInOrder(t *testing.T) {
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	v, ok := s.Lookup("/x")
@@ -159,8 +161,8 @@ func TestLookupSync(t *testing.T) {
 	chv := make(chan string)
 	chok := make(chan bool)
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
 		v, ok := s.LookupSync("/x", 5)
 		chv <- v
@@ -179,8 +181,8 @@ func TestLookupSyncSeveral(t *testing.T) {
 	chv := make(chan string)
 	chok := make(chan bool)
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
 		v, ok := s.LookupSync("/x", 0)
 		chv <- v
@@ -211,9 +213,9 @@ func TestLookupSyncExtra(t *testing.T) {
 	chv := make(chan string)
 	chok := make(chan bool)
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/x", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/x", "c", Clobber)
 	go func() {
 		v, ok := s.LookupSync("/x", 0)
 		chv <- v
@@ -248,7 +250,7 @@ func TestLookupSyncExtra(t *testing.T) {
 func TestApplyBadThenGood(t *testing.T) {
 	s := New()
 	mut1 := "foo" // bad mutation
-	mut2, _ := EncodeSet("/x", "b")
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	v, ok := s.Lookup("/x")
@@ -258,8 +260,8 @@ func TestApplyBadThenGood(t *testing.T) {
 
 func TestApplyOutOfOrder(t *testing.T) {
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(2, mut2)
 	s.Apply(1, mut1)
 	v, ok := s.Lookup("/x")
@@ -269,8 +271,8 @@ func TestApplyOutOfOrder(t *testing.T) {
 
 func TestApplyIgnoreDuplicate(t *testing.T) {
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(1, mut2)
 	v, ok := s.Lookup("/x")
@@ -283,9 +285,9 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	s := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/x", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/x", "c", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(1, mut3)
@@ -300,8 +302,8 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 func TestGetDir(t *testing.T) {
 	s := New()
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/y", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/y", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 
@@ -313,7 +315,7 @@ func TestGetDir(t *testing.T) {
 func TestDirParents(t *testing.T) {
 	s := New()
 
-	mut1, _ := EncodeSet("/x/y/z", "a")
+	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
 	v, ok := s.Lookup("/")
@@ -336,7 +338,7 @@ func TestDirParents(t *testing.T) {
 func TestDelDirParents(t *testing.T) {
 	s := New()
 
-	mut1, _ := EncodeSet("/x/y/z", "a")
+	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
 	mut2, _ := EncodeDel("/x/y/z")
@@ -366,9 +368,9 @@ func TestWatchSet(t *testing.T) {
 	s.Watch("/x", Set, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
@@ -386,9 +388,9 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 	s.Watch("/x", Set, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	s.Apply(2, mut2)
 	s.Apply(1, mut1)
 	s.Apply(3, mut3)
@@ -406,9 +408,9 @@ func TestWatchDel(t *testing.T) {
 	s.Watch("/x", Del, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	mut4, _ := EncodeDel("/x")
 	mut5, _ := EncodeDel("/y")
 	mut6, _ := EncodeDel("/x")
@@ -430,9 +432,9 @@ func TestWatchAdd(t *testing.T) {
 	s.Watch("/", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
@@ -450,9 +452,9 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	s.Watch("/", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	s.Apply(3, mut3)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
@@ -470,9 +472,9 @@ func TestWatchAddSubdir(t *testing.T) {
 	s.Watch("/a", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/a"]), "")
 
-	mut1, _ := EncodeSet("/a/x", "a")
-	mut2, _ := EncodeSet("/a/x", "b")
-	mut3, _ := EncodeSet("/a/y", "c")
+	mut1, _ := EncodeSet("/a/x", "a", Clobber)
+	mut2, _ := EncodeSet("/a/x", "b", Clobber)
+	mut3, _ := EncodeSet("/a/y", "c", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
@@ -490,9 +492,9 @@ func TestWatchRem(t *testing.T) {
 	s.Watch("/", Rem, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	mut4, _ := EncodeDel("/x")
 	mut5, _ := EncodeDel("/y")
 	mut6, _ := EncodeDel("/x")
@@ -516,7 +518,7 @@ func TestWatchDelDirParents(t *testing.T) {
 	s.Watch("/", Rem, ch)
 	assert.Equal(t, 1, len(s.watches["/"]), "")
 
-	mut1, _ := EncodeSet("/x/y/z", "a")
+	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
 	mut2, _ := EncodeDel("/x/y/z")
@@ -533,7 +535,7 @@ func TestWatchSetDirParents(t *testing.T) {
 	s.Watch("/x", Add, ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
-	mut, _ := EncodeSet("/x/y/z", "a")
+	mut, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut)
 
 	expa := <-ch
@@ -548,9 +550,9 @@ func TestWatchApply(t *testing.T) {
 	s.WatchApply(ch)
 	assert.Equal(t, 1, len(s.watches["/x"]), "")
 
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
-	mut3, _ := EncodeSet("/y", "c")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	mut3, _ := EncodeSet("/y", "c", Clobber)
 	mut4, _ := EncodeDel("/x")
 	mut5, _ := EncodeDel("/y")
 	mut6, _ := EncodeDel("/x")
@@ -573,8 +575,8 @@ func TestWatchApply(t *testing.T) {
 func TestSnapshotApply(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := s1.SnapshotSync(1, buf)
@@ -591,8 +593,8 @@ func TestSnapshotApply(t *testing.T) {
 func TestSnapshotSeqn(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := s1.SnapshotSync(1, buf)
@@ -604,19 +606,19 @@ func TestSnapshotSeqn(t *testing.T) {
 	assert.Equal(t, true, ok, "snap")
 	assert.Equal(t, "b", v, "snap")
 
-	mutx, _ := EncodeSet("/x", "x")
+	mutx, _ := EncodeSet("/x", "x", Clobber)
 	s2.Apply(1, mutx)
 	v, ok = s2.LookupSync("/x", 1)
 	assert.Equal(t, true, ok, "x")
 	assert.Equal(t, "b", v, "x")
 
-	muty, _ := EncodeSet("/x", "y")
+	muty, _ := EncodeSet("/x", "y", Clobber)
 	s2.Apply(2, muty)
 	v, ok = s2.LookupSync("/x", 2)
 	assert.Equal(t, true, ok, "y")
 	assert.Equal(t, "b", v, "y")
 
-	mutz, _ := EncodeSet("/x", "z")
+	mutz, _ := EncodeSet("/x", "z", Clobber)
 	s2.Apply(3, mutz)
 	v, ok = s2.LookupSync("/x", 3)
 	assert.Equal(t, true, ok, "z")
@@ -626,8 +628,8 @@ func TestSnapshotSeqn(t *testing.T) {
 func TestSnapshotLeak(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := s1.SnapshotSync(1, buf)
@@ -635,7 +637,7 @@ func TestSnapshotLeak(t *testing.T) {
 
 	s2 := New()
 
-	mut3, _ := EncodeSet("/x", "c")
+	mut3, _ := EncodeSet("/x", "c", Clobber)
 	s2.Apply(2, mut3)
 	s2.Apply(3, mut3)
 
@@ -649,8 +651,8 @@ func TestSnapshotSync(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	ch := make(chan os.Error)
 	s1 := New()
-	mut1, _ := EncodeSet("/x", "a")
-	mut2, _ := EncodeSet("/x", "b")
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
 		ch <- s1.SnapshotSync(2, buf)
 	}()

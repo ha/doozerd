@@ -254,7 +254,7 @@ func checkPath(k string) os.Error {
 	return nil
 }
 
-func EncodeSet(path, body string) (mutation string, err os.Error) {
+func EncodeSet(path, body string, cas uint64) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
