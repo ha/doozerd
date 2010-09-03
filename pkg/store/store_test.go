@@ -61,7 +61,7 @@ func TestSplit(t *testing.T) {
 func TestCheckBadPaths(t *testing.T) {
 	for _, k := range BadPaths {
 		err := checkPath(k)
-		assert.Equal(t, BadPathError, err, "")
+		assert.Equal(t, BadPathError, err)
 	}
 }
 
@@ -76,8 +76,8 @@ func TestEncodeSet(t *testing.T) {
 	for _, kvm := range SetKVMs {
 		k, v, exp := kvm[0], kvm[1], kvm[2]
 		got, err := EncodeSet(k, v, Clobber)
-		assert.Equal(t, nil, err, "")
-		assert.Equal(t, exp, got, "")
+		assert.Equal(t, nil, err)
+		assert.Equal(t, exp, got)
 	}
 }
 
@@ -85,8 +85,8 @@ func TestEncodeDel(t *testing.T) {
 	for _, kvm := range DelKVMs {
 		k, exp := kvm[0], kvm[1]
 		got, err := EncodeDel(k, Clobber)
-		assert.Equal(t, nil, err, "")
-		assert.Equal(t, exp, got, "")
+		assert.Equal(t, nil, err)
+		assert.Equal(t, exp, got)
 	}
 }
 
@@ -94,7 +94,7 @@ func TestDecodeSet(t *testing.T) {
 	for _, kvm := range SetKVMs {
 		expk, expv, m := kvm[0], kvm[1], kvm[2]
 		op, gotk, gotv, err := decode(m)
-		assert.Equal(t, nil, err, "")
+		assert.Equal(t, nil, err)
 		assert.Equal(t, Set, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, expv, gotv, "value from " + m)
@@ -105,7 +105,7 @@ func TestDecodeDel(t *testing.T) {
 	for _, kvm := range DelKVMs {
 		expk, m := kvm[0], kvm[1]
 		op, gotk, gotv, err := decode(m)
-		assert.Equal(t, nil, err, "")
+		assert.Equal(t, nil, err)
 		assert.Equal(t, Del, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, "", gotv, "value from " + m)
@@ -115,15 +115,15 @@ func TestDecodeDel(t *testing.T) {
 func TestDecodeBadMutations(t *testing.T) {
 	for _, m := range BadMutations {
 		_, _, _, err := decode(m)
-		assert.Equal(t, BadPathError, err, "")
+		assert.Equal(t, BadPathError, err)
 	}
 }
 
 func TestLookupMissing(t *testing.T) {
 	s := New()
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, false, ok, "")
-	assert.Equal(t, "", v, "")
+	assert.Equal(t, false, ok)
+	assert.Equal(t, "", v)
 }
 
 func TestLookup(t *testing.T) {
@@ -131,8 +131,8 @@ func TestLookup(t *testing.T) {
 	mut, _ := EncodeSet("/x", "a", Clobber)
 	s.Apply(1, mut)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "a", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "a", v)
 }
 
 func TestLookupDeleted(t *testing.T) {
@@ -142,8 +142,8 @@ func TestLookupDeleted(t *testing.T) {
 	mut, _ = EncodeDel("/x", Clobber)
 	s.Apply(2, mut)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, false, ok, "")
-	assert.Equal(t, "", v, "")
+	assert.Equal(t, false, ok)
+	assert.Equal(t, "", v)
 }
 
 func TestApplyInOrder(t *testing.T) {
@@ -153,8 +153,8 @@ func TestApplyInOrder(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "b", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "b", v)
 }
 
 func TestLookupSync(t *testing.T) {
@@ -173,8 +173,8 @@ func TestLookupSync(t *testing.T) {
 	s.Apply(3, mut1)
 	s.Apply(4, mut1)
 	s.Apply(5, mut2)
-	assert.Equal(t, "b", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
+	assert.Equal(t, "b", <-chv)
+	assert.Equal(t, true, <-chok)
 }
 
 func TestLookupSyncSeveral(t *testing.T) {
@@ -201,12 +201,12 @@ func TestLookupSyncSeveral(t *testing.T) {
 	s.Apply(3, mut1)
 	s.Apply(4, mut1)
 	s.Apply(5, mut2)
-	assert.Equal(t, "a", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
-	assert.Equal(t, "b", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
-	assert.Equal(t, "b", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
+	assert.Equal(t, "a", <-chv)
+	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "b", <-chv)
+	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "b", <-chv)
+	assert.Equal(t, true, <-chok)
 }
 
 func TestLookupSyncExtra(t *testing.T) {
@@ -239,12 +239,12 @@ func TestLookupSyncExtra(t *testing.T) {
 	s.Apply(8, mut3)
 
 	s.Apply(5, mut2)
-	assert.Equal(t, "a", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
-	assert.Equal(t, "c", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
-	assert.Equal(t, "c", <-chv, "")
-	assert.Equal(t, true, <-chok, "")
+	assert.Equal(t, "a", <-chv)
+	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "c", <-chv)
+	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "c", <-chv)
+	assert.Equal(t, true, <-chok)
 }
 
 func TestApplyBadThenGood(t *testing.T) {
@@ -254,8 +254,8 @@ func TestApplyBadThenGood(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "b", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "b", v)
 }
 
 func TestApplyOutOfOrder(t *testing.T) {
@@ -265,8 +265,8 @@ func TestApplyOutOfOrder(t *testing.T) {
 	s.Apply(2, mut2)
 	s.Apply(1, mut1)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "b", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "b", v)
 }
 
 func TestApplyIgnoreDuplicate(t *testing.T) {
@@ -276,11 +276,11 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(1, mut2)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "a", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "a", v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s.todo), "")
+	assert.Equal(t, 0, len(s.todo))
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
@@ -292,11 +292,11 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	s.Apply(2, mut2)
 	s.Apply(1, mut3)
 	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "b", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "b", v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s.todo), "")
+	assert.Equal(t, 0, len(s.todo))
 }
 
 func TestGetDir(t *testing.T) {
@@ -308,8 +308,8 @@ func TestGetDir(t *testing.T) {
 	s.Apply(2, mut2)
 
 	v, ok := s.Lookup("/")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "x\ny\n", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "x\ny\n", v)
 }
 
 func TestDirParents(t *testing.T) {
@@ -319,20 +319,20 @@ func TestDirParents(t *testing.T) {
 	s.Apply(1, mut1)
 
 	v, ok := s.Lookup("/")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "x\n", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "x\n", v)
 
 	v, ok = s.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "y\n", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "y\n", v)
 
 	v, ok = s.Lookup("/x/y")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "z\n", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "z\n", v)
 
 	v, ok = s.Lookup("/x/y/z")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "a", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "a", v)
 }
 
 func TestDelDirParents(t *testing.T) {
@@ -345,19 +345,19 @@ func TestDelDirParents(t *testing.T) {
 	s.Apply(2, mut2)
 
 	v, ok := s.Lookup("/")
-	assert.Equal(t, true, ok, "")
+	assert.Equal(t, true, ok)
 	assert.Equal(t, "", v, "lookup /")
 
 	v, ok = s.Lookup("/x")
-	assert.Equal(t, false, ok, "")
+	assert.Equal(t, false, ok)
 	assert.Equal(t, "", v, "lookup /x")
 
 	v, ok = s.Lookup("/x/y")
-	assert.Equal(t, false, ok, "")
+	assert.Equal(t, false, ok)
 	assert.Equal(t, "", v, "lookup /x/y")
 
 	v, ok = s.Lookup("/x/y/z")
-	assert.Equal(t, false, ok, "")
+	assert.Equal(t, false, ok)
 	assert.Equal(t, "", v, "lookup /x/y/z")
 }
 
@@ -366,7 +366,7 @@ func TestWatchSet(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/x", Set, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]), "")
+	assert.Equal(t, 1, len(s.watches["/x"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -376,9 +376,9 @@ func TestWatchSet(t *testing.T) {
 	s.Apply(3, mut3)
 
 	expa := <-ch
-	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa, "")
+	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb, "")
+	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb)
 }
 
 func TestWatchSetOutOfOrder(t *testing.T) {
@@ -386,7 +386,7 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/x", Set, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]), "")
+	assert.Equal(t, 1, len(s.watches["/x"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -396,9 +396,9 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 	s.Apply(3, mut3)
 
 	expa := <-ch
-	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa, "")
+	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb, "")
+	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb)
 }
 
 func TestWatchDel(t *testing.T) {
@@ -406,7 +406,7 @@ func TestWatchDel(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/x", Del, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]), "")
+	assert.Equal(t, 1, len(s.watches["/x"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -422,7 +422,7 @@ func TestWatchDel(t *testing.T) {
 	s.Apply(6, mut6)
 
 	exp := <-ch
-	assert.Equal(t, Event{Del, 4, "/x", ""}, exp, "")
+	assert.Equal(t, Event{Del, 4, "/x", ""}, exp)
 }
 
 func TestWatchAdd(t *testing.T) {
@@ -430,7 +430,7 @@ func TestWatchAdd(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/"]), "")
+	assert.Equal(t, 1, len(s.watches["/"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -440,9 +440,9 @@ func TestWatchAdd(t *testing.T) {
 	s.Apply(3, mut3)
 
 	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/", "x"}, expa, "")
+	assert.Equal(t, Event{Add, 1, "/", "x"}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Add, 3, "/", "y"}, expb, "")
+	assert.Equal(t, Event{Add, 3, "/", "y"}, expb)
 }
 
 func TestWatchAddOutOfOrder(t *testing.T) {
@@ -450,7 +450,7 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/"]), "")
+	assert.Equal(t, 1, len(s.watches["/"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -460,9 +460,9 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	s.Apply(2, mut2)
 
 	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/", "x"}, expa, "")
+	assert.Equal(t, Event{Add, 1, "/", "x"}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Add, 3, "/", "y"}, expb, "")
+	assert.Equal(t, Event{Add, 3, "/", "y"}, expb)
 }
 
 func TestWatchAddSubdir(t *testing.T) {
@@ -470,7 +470,7 @@ func TestWatchAddSubdir(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/a", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/a"]), "")
+	assert.Equal(t, 1, len(s.watches["/a"]))
 
 	mut1, _ := EncodeSet("/a/x", "a", Clobber)
 	mut2, _ := EncodeSet("/a/x", "b", Clobber)
@@ -480,9 +480,9 @@ func TestWatchAddSubdir(t *testing.T) {
 	s.Apply(3, mut3)
 
 	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/a", "x"}, expa, "")
+	assert.Equal(t, Event{Add, 1, "/a", "x"}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Add, 3, "/a", "y"}, expb, "")
+	assert.Equal(t, Event{Add, 3, "/a", "y"}, expb)
 }
 
 func TestWatchRem(t *testing.T) {
@@ -490,7 +490,7 @@ func TestWatchRem(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/", Rem, ch)
-	assert.Equal(t, 1, len(s.watches["/"]), "")
+	assert.Equal(t, 1, len(s.watches["/"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -506,9 +506,9 @@ func TestWatchRem(t *testing.T) {
 	s.Apply(6, mut6)
 
 	expa := <-ch
-	assert.Equal(t, Event{Rem, 4, "/", "x"}, expa, "")
+	assert.Equal(t, Event{Rem, 4, "/", "x"}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Rem, 5, "/", "y"}, expb, "")
+	assert.Equal(t, Event{Rem, 5, "/", "y"}, expb)
 }
 
 func TestWatchDelDirParents(t *testing.T) {
@@ -516,7 +516,7 @@ func TestWatchDelDirParents(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/", Rem, ch)
-	assert.Equal(t, 1, len(s.watches["/"]), "")
+	assert.Equal(t, 1, len(s.watches["/"]))
 
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
@@ -525,7 +525,7 @@ func TestWatchDelDirParents(t *testing.T) {
 	s.Apply(2, mut2)
 
 	expa := <-ch
-	assert.Equal(t, Event{Rem, 2, "/", "x"}, expa, "")
+	assert.Equal(t, Event{Rem, 2, "/", "x"}, expa)
 }
 
 func TestWatchSetDirParents(t *testing.T) {
@@ -533,13 +533,13 @@ func TestWatchSetDirParents(t *testing.T) {
 
 	ch := make(chan Event)
 	s.Watch("/x", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]), "")
+	assert.Equal(t, 1, len(s.watches["/x"]))
 
 	mut, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut)
 
 	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/x", "y"}, expa, "")
+	assert.Equal(t, Event{Add, 1, "/x", "y"}, expa)
 }
 
 func TestWatchApply(t *testing.T) {
@@ -548,7 +548,7 @@ func TestWatchApply(t *testing.T) {
 	ch := make(chan Event)
 	s.Watch("/x", Del, ch)
 	s.WatchApply(ch)
-	assert.Equal(t, 1, len(s.watches["/x"]), "")
+	assert.Equal(t, 1, len(s.watches["/x"]))
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -563,13 +563,13 @@ func TestWatchApply(t *testing.T) {
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-ch, "")
-	assert.Equal(t, Event{Apply, 2, "", ""}, <-ch, "")
-	assert.Equal(t, Event{Apply, 3, "", ""}, <-ch, "")
-	assert.Equal(t, Event{Del, 4, "/x", ""}, <-ch, "")
-	assert.Equal(t, Event{Apply, 4, "", ""}, <-ch, "")
-	assert.Equal(t, Event{Apply, 5, "", ""}, <-ch, "")
-	assert.Equal(t, Event{Apply, 6, "", ""}, <-ch, "")
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-ch)
+	assert.Equal(t, Event{Apply, 2, "", ""}, <-ch)
+	assert.Equal(t, Event{Apply, 3, "", ""}, <-ch)
+	assert.Equal(t, Event{Del, 4, "/x", ""}, <-ch)
+	assert.Equal(t, Event{Apply, 4, "", ""}, <-ch)
+	assert.Equal(t, Event{Apply, 5, "", ""}, <-ch)
+	assert.Equal(t, Event{Apply, 6, "", ""}, <-ch)
 }
 
 func TestSnapshotApply(t *testing.T) {
@@ -580,14 +580,14 @@ func TestSnapshotApply(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := s1.SnapshotSync(1, buf)
-	assert.Equal(t, nil, err, "")
+	assert.Equal(t, nil, err)
 
 	s2 := New()
 	s2.Apply(1, buf.String())
 
 	v, ok := s2.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "b", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "b", v)
 }
 
 func TestSnapshotSeqn(t *testing.T) {
@@ -598,7 +598,7 @@ func TestSnapshotSeqn(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := s1.SnapshotSync(1, buf)
-	assert.Equal(t, nil, err, "")
+	assert.Equal(t, nil, err)
 
 	s2 := New()
 	s2.Apply(1, buf.String())
@@ -633,7 +633,7 @@ func TestSnapshotLeak(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := s1.SnapshotSync(1, buf)
-	assert.Equal(t, nil, err, "")
+	assert.Equal(t, nil, err)
 
 	s2 := New()
 
@@ -644,7 +644,7 @@ func TestSnapshotLeak(t *testing.T) {
 	s2.Apply(1, buf.String())
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s2.todo), "")
+	assert.Equal(t, 0, len(s2.todo))
 }
 
 func TestSnapshotSync(t *testing.T) {
@@ -659,12 +659,12 @@ func TestSnapshotSync(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	err := <-ch
-	assert.Equal(t, nil, err, "")
+	assert.Equal(t, nil, err)
 
 	s2 := New()
 	s2.Apply(1, buf.String())
 
 	v, ok := s2.Lookup("/x")
-	assert.Equal(t, true, ok, "")
-	assert.Equal(t, "b", v, "")
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "b", v)
 }
