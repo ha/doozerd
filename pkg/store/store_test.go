@@ -661,6 +661,7 @@ func TestSnapshotLeak(t *testing.T) {
 	s2.Apply(1, buf.String())
 
 	// check that we aren't leaking memory
+	s2.Wait(3, make(chan Status))
 	assert.Equal(t, 0, len(s2.todo))
 }
 
@@ -684,4 +685,40 @@ func TestSnapshotSync(t *testing.T) {
 	v, ok := s2.Lookup("/x")
 	assert.Equal(t, true, ok)
 	assert.Equal(t, "b", v)
+}
+
+func TestStoreWait(t *testing.T) {
+	st := New()
+	mut, _ := EncodeSet("/x", "a", Clobber)
+
+	ch := make(chan Status)
+
+	st.Wait(1, ch)
+	st.Apply(1, mut)
+
+	got := <-ch
+	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, nil, got.Err)
+	assert.Equal(t, mut, got.M)
+	assert.Equal(t, 0, len(st.todo))
+}
+
+func TestStoreWaitOutOfOrder(t *testing.T) {
+	st := New()
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	ch := make(chan Status)
+
+	st.Apply(1, mut1)
+
+	st.Wait(2, ch)
+	st.Apply(2, mut2)
+	<-ch
+
+	st.Wait(1, ch)
+
+	got := <-ch
+	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, TooLateError, got.Err)
+	assert.Equal(t, "", got.M)
 }

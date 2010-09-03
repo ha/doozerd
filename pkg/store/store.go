@@ -35,6 +35,7 @@ var conj = map[uint]uint{Set:Add, Del:Rem}
 var (
 	BadPathError = os.NewError("bad path")
 	BadMutationError = os.NewError("bad mutation")
+	TooLateError = os.NewError("too late")
 )
 
 var LogWriter = util.NullWriter{}
@@ -52,10 +53,12 @@ type Store struct {
 	reqCh chan req
 	snapCh chan snap
 	watchCh chan watch
+	waitCh chan wait
 	watches map[string][]watch
 	notifyCh chan notify
 	todo map[uint64]apply
 	todoLookup *reqQueue
+	todoWait *waitQueue
 	todoSnap *snapQueue
 }
 
@@ -84,6 +87,10 @@ type reqQueue struct {
 	vector.Vector
 }
 
+type waitQueue struct {
+	vector.Vector
+}
+
 type snapQueue struct {
 	vector.Vector
 }
@@ -93,10 +100,22 @@ type reply struct {
 	ok bool
 }
 
+type Status struct {
+	Seqn uint64
+	M string
+	Err os.Error
+}
+
 type watch struct {
 	ch chan Event
 	mask uint
 	k string
+	ready chan int
+}
+
+type wait struct {
+	ch chan Status
+	seqn uint64
 	ready chan int
 }
 
@@ -113,6 +132,10 @@ func (r snap) Less(y interface{}) bool {
 	return r.seqn < y.(snap).seqn
 }
 
+func (w wait) Less(y interface{}) bool {
+	return w.seqn < y.(wait).seqn
+}
+
 func (q *reqQueue) peek() req {
 	if len(q.Vector) == 0 {
 		return req{seqn:math.MaxUint64} // ~infinity
@@ -127,6 +150,14 @@ func (q *snapQueue) peek() snap {
 	return q.Vector[0].(snap)
 }
 
+func (q *waitQueue) peek() wait {
+	if len(q.Vector) == 0 {
+		return wait{seqn:math.MaxUint64} // ~infinity
+	}
+	return q.Vector[0].(wait)
+}
+
+
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
@@ -136,14 +167,17 @@ func New() *Store {
 		reqCh: make(chan req),
 		snapCh: make(chan snap),
 		watchCh: make(chan watch),
+		waitCh: make(chan wait),
 		todo: make(map[uint64]apply),
 		todoLookup: new(reqQueue),
+		todoWait: new(waitQueue),
 		todoSnap: new(snapQueue),
 		watches: make(map[string][]watch),
 		notifyCh: make(chan notify),
 	}
 	heap.Init(s.todoLookup)
 	heap.Init(s.todoSnap)
+	heap.Init(s.todoWait)
 	go s.buffer()
 	go s.process()
 	return s
@@ -361,6 +395,13 @@ func (s *Store) process() {
 			append(&watches, w)
 			s.watches[w.k] = watches
 			w.ready <- 1
+		case wt := <-s.waitCh:
+			wt.ready <- 1
+			if wt.seqn > ver { // in the future?
+				heap.Push(s.todoWait, wt)
+			} else {
+				wt.ch <- Status{wt.seqn, "", TooLateError}
+			}
 		}
 
 		// If we have any mutations that can be applied, do them.
@@ -388,6 +429,12 @@ func (s *Store) process() {
 						s.notifyDir(conj[op], t.seqn, p)
 					}
 					s.notify(Apply, t.seqn, "", "")
+
+					// If we have any waits that can be satisfied, do them.
+					for wt := s.todoWait.peek(); next >= wt.seqn; wt = s.todoWait.peek() {
+						heap.Pop(s.todoWait)
+						wt.ch <- Status{next, t.mutation, nil}
+					}
 				}
 			}
 			ver = next
@@ -487,4 +534,10 @@ func (s *Store) Watch(path string, mask uint, events chan Event) {
 // You probably don't want this. Use sparingly.
 func (s *Store) WatchApply(evs chan Event) {
 	s.Watch("", Apply, evs)
+}
+
+func (s *Store) Wait(seqn uint64, ch chan Status) {
+	ready := make(chan int)
+	s.waitCh <- wait{ch, seqn, ready}
+	<-ready
 }
