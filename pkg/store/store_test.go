@@ -10,15 +10,15 @@ import (
 const Clobber = ""
 
 var SetKVCMs = [][]string{
-	[]string{"/", "a", Clobber, "/=a"},
-	[]string{"/x", "a", Clobber, "/x=a"},
-	[]string{"/x", "a=b", Clobber, "/x=a=b"},
-	[]string{"/x", "a b", Clobber, "/x=a b"},
+	[]string{"/", "a", Clobber, ":/=a"},
+	[]string{"/x", "a", Clobber, ":/x=a"},
+	[]string{"/x", "a=b", Clobber, ":/x=a=b"},
+	[]string{"/x", "a b", Clobber, ":/x=a b"},
 }
 
 var DelKCMs = [][]string{
-	[]string{"/", Clobber, "/"},
-	[]string{"/x", Clobber, "/x"},
+	[]string{"/", Clobber, ":/"},
+	[]string{"/x", Clobber, ":/x"},
 }
 
 var GoodPaths = []string{
@@ -35,13 +35,20 @@ var BadPaths = []string{
 	"/x/",
 }
 
+var BadInstructions = []string{
+	":",
+	":x",
+	":/x y",
+	":=",
+	":x=",
+	":/x y=",
+}
+
+// Anything without a colon is a bad mutation because
+// it is missing cas.
 var BadMutations = []string{
 	"",
 	"x",
-	"/x y",
-	"=",
-	"x=",
-	"/x y=",
 }
 
 var Splits = [][]string{
@@ -92,30 +99,39 @@ func TestEncodeDel(t *testing.T) {
 
 func TestDecodeSet(t *testing.T) {
 	for _, kvcm := range SetKVCMs {
-		expk, expv, _, m := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
-		op, gotk, gotv, err := decode(m)
+		expk, expv, expc, m := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
+		op, gotk, gotv, gotc, err := decode(m)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, Set, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, expv, gotv, "value from " + m)
+		assert.Equal(t, expc, gotc, "cas from " + m)
 	}
 }
 
 func TestDecodeDel(t *testing.T) {
 	for _, kcm := range DelKCMs {
-		expk, _, m := kcm[0], kcm[1], kcm[2]
-		op, gotk, gotv, err := decode(m)
+		expk, expc, m := kcm[0], kcm[1], kcm[2]
+		op, gotk, gotv, gotc, err := decode(m)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, Del, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, "", gotv, "value from " + m)
+		assert.Equal(t, expc, gotc, "cas from " + m)
+	}
+}
+
+func TestDecodeBadInstructions(t *testing.T) {
+	for _, m := range BadInstructions {
+		_, _, _, _, err := decode(m)
+		assert.Equal(t, BadPathError, err)
 	}
 }
 
 func TestDecodeBadMutations(t *testing.T) {
 	for _, m := range BadMutations {
-		_, _, _, err := decode(m)
-		assert.Equal(t, BadPathError, err)
+		_, _, _, _, err := decode(m)
+		assert.Equal(t, BadMutationError, err)
 	}
 }
 

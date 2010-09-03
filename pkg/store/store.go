@@ -32,6 +32,7 @@ var conj = map[uint]uint{Set:Add, Del:Rem}
 
 var (
 	BadPathError = os.NewError("bad path")
+	BadMutationError = os.NewError("bad mutation")
 )
 
 var LogWriter = util.NullWriter{}
@@ -258,26 +259,35 @@ func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
-	return path + "=" + body, nil
+	return ":" + path + "=" + body, nil
 }
 
 func EncodeDel(path string, cas string) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
 	}
-	return path, nil
+	return ":" + path, nil
 }
 
-func decode(mutation string) (op uint, path, v string, err os.Error) {
-	parts := strings.Split(mutation, "=", 2)
-	if err = checkPath(parts[0]); err != nil {
+func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
+	cm := strings.Split(mutation, ":", 2)
+
+	if len(cm) != 2 {
+		err = BadMutationError
 		return
 	}
-	switch len(parts) {
+
+	kv := strings.Split(cm[1], "=", 2)
+
+	if err = checkPath(kv[0]); err != nil {
+		return
+	}
+
+	switch len(kv) {
 	case 1:
-		return Del, parts[0], "", nil
+		return Del, kv[0], "", "", nil
 	case 2:
-		return Set, parts[0], parts[1], nil
+		return Set, kv[0], kv[1], "",  nil
 	}
 	panic("can't happen")
 }
@@ -364,7 +374,7 @@ func (s *Store) process() {
 					s.todo = make(map[uint64]apply)
 				}
 			} else {
-				op, k, v, err := decode(t.mutation)
+				op, k, v, _, err := decode(t.mutation)
 				if err == nil {
 					var changed []string
 					values, changed = values.setp(k, v, op == Set)
