@@ -107,7 +107,7 @@ func (c *conn) serve() {
 		case "set":
 			//go set(c, rid, parts[1:])
 			rlogger.Logf("set %q=%q", parts[1], parts[2])
-			mut, err := store.EncodeSet(parts[1], parts[2])
+			mut, err := store.EncodeSet(parts[1], parts[2], store.Clobber)
 			if err != nil {
 				rlogger.Log(err)
 				pc.SendError(rid, err.String())

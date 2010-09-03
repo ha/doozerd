@@ -47,7 +47,7 @@ func main() {
 
 func addMember(st *store.Store, self, addr string) {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/j/junta/members/"+self, addr)
+	mx, err := store.EncodeSet("/j/junta/members/"+self, addr, store.Clobber)
 	if err != nil {
 		panic(err)
 	}
