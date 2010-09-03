@@ -753,7 +753,54 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	assert.Equal(t, mut, got.M)
 }
 
-func TestStoreWaitCasMismatch(t *testing.T) {
+func TestStoreWaitCasMatchAdd(t *testing.T) {
+	mut, _ := EncodeSet("/a", "foo", "0")
+
+	ch := make(chan Status)
+
+	st := New()
+	st.Wait(1, ch)
+	st.Apply(1, mut)
+
+	got := <-ch
+	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, nil, got.Err)
+	assert.Equal(t, mut, got.M)
+}
+
+func TestStoreWaitCasMatchReplace(t *testing.T) {
+	mut1, _ := EncodeSet("/a", "foo", Clobber)
+	mut2, _ := EncodeSet("/a", "foo", "1")
+
+	ch := make(chan Status)
+
+	st := New()
+	st.Wait(2, ch)
+	st.Apply(1, mut1)
+	st.Apply(2, mut2)
+
+	got := <-ch
+	assert.Equal(t, uint64(2), got.Seqn)
+	assert.Equal(t, nil, got.Err)
+	assert.Equal(t, mut2, got.M)
+}
+
+func TestStoreWaitCasMismatchMissing(t *testing.T) {
+	mut, _ := EncodeSet("/a", "foo", "123")
+
+	ch := make(chan Status)
+
+	st := New()
+	st.Wait(1, ch)
+	st.Apply(1, mut)
+
+	got := <-ch
+	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, CasMismatchError, got.Err)
+	assert.Equal(t, mut, got.M)
+}
+
+func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	mut1, _ := EncodeSet("/a", "foo", Clobber)
 	mut2, _ := EncodeSet("/a", "foo", "123")
 
