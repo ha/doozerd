@@ -234,6 +234,7 @@ func TestLookupSyncExtra(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/x", "c", Clobber)
+
 	go func() {
 		v, cas := s.LookupSync("/x", 0)
 		chV <- v
@@ -247,18 +248,22 @@ func TestLookupSyncExtra(t *testing.T) {
 		chV <- v
 		chCas <- cas
 	}()
-	s.Apply(1, mut1)
-	s.Apply(2, mut1)
-	s.Apply(3, mut1)
-	s.Apply(4, mut1)
 
-	s.Apply(6, mut3)
-	s.Apply(7, mut3)
-	s.Apply(8, mut3)
+	// Assert here to ensure correct ordering
+	assert.Equal(t, "", <-chV)
+	assert.Equal(t, Missing, <-chCas)
 
-	s.Apply(5, mut2)
-	assert.Equal(t, "a", <-chV)
-	assert.Equal(t, "1", <-chCas)
+	go s.Apply(1, mut1)
+	go s.Apply(2, mut1)
+	go s.Apply(3, mut1)
+	go s.Apply(4, mut1)
+	// 5 is below
+	go s.Apply(6, mut3)
+	go s.Apply(7, mut3)
+	go s.Apply(8, mut3)
+	// do 5 last
+	go s.Apply(5, mut2)
+
 	assert.Equal(t, "c", <-chV)
 	assert.Equal(t, "8", <-chCas)
 	assert.Equal(t, "c", <-chV)
@@ -280,9 +285,9 @@ func TestApplyOutOfOrder(t *testing.T) {
 	s := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
-	s.Apply(2, mut2)
+	go s.Apply(2, mut2)
 	s.Apply(1, mut1)
-	v, cas := s.Lookup("/x")
+	v, cas := s.LookupSync("/x", 2)
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
@@ -412,7 +417,8 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
-	s.Apply(2, mut2)
+
+	go s.Apply(2, mut2)
 	s.Apply(1, mut1)
 	s.Apply(3, mut3)
 
@@ -476,7 +482,8 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
-	s.Apply(3, mut3)
+
+	go s.Apply(3, mut3)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 
@@ -659,8 +666,8 @@ func TestSnapshotLeak(t *testing.T) {
 	s2 := New()
 
 	mut3, _ := EncodeSet("/x", "c", Clobber)
-	s2.Apply(2, mut3)
-	s2.Apply(3, mut3)
+	go s2.Apply(2, mut3)
+	go s2.Apply(3, mut3)
 	s2.Apply(1, buf.String())
 
 	// check that we aren't leaking memory

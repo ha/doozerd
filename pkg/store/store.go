@@ -407,13 +407,18 @@ func (s *Store) process() {
 			if wt.seqn > ver { // in the future?
 				heap.Push(s.todoWait, wt)
 			} else {
-				wt.ch <- Status{wt.seqn, "", TooLateError}
+				status := Status{wt.seqn, "", TooLateError}
+				go func(ch chan Status, status Status) {
+					ch <- status
+				}(wt.ch, status)
 			}
 		}
 
 		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
 			var nver uint64
+			var err os.Error
+
 			d := gob.NewDecoder(strings.NewReader(t.mutation))
 			if t.seqn == 1 && d.Decode(&nver) == nil {
 				var vx node
@@ -424,7 +429,9 @@ func (s *Store) process() {
 					s.todo = make(map[uint64]apply)
 				}
 			} else {
-				op, k, v, givenCas, err := decode(t.mutation)
+				var op uint
+				var k, v, givenCas string
+				op, k, v, givenCas, err = decode(t.mutation)
 				if err == nil {
 					_, curCas := values.getp(k)
 					if curCas == givenCas || givenCas == Clobber {
@@ -443,15 +450,21 @@ func (s *Store) process() {
 						err = CasMismatchError
 					}
 				}
-				// If we have any waits that can be satisfied, do them.
-				for wt := s.todoWait.peek(); next >= wt.seqn; wt = s.todoWait.peek() {
-					heap.Pop(s.todoWait)
-					wt.ch <- Status{next, t.mutation, err}
-				}
 			}
+
 			ver = next
 			s.todo[next] = apply{}, false
 			next++
+
+			// If we have any waits that can be satisfied, do them.
+			for wt := s.todoWait.peek(); ver >= wt.seqn; wt = s.todoWait.peek() {
+				heap.Pop(s.todoWait)
+				status := Status{ver, t.mutation, err}
+				go func(ch chan Status, status Status) {
+					ch <- status
+				}(wt.ch, status)
+			}
+
 		}
 
 		// If we have any lookups that can be satisfied, do them.
@@ -475,7 +488,10 @@ func (s *Store) process() {
 //
 // If `mutation` is a snapshot, notifications will not be sent.
 func (s *Store) Apply(seqn uint64, mutation string) {
+	ch := make(chan Status)
+	s.Wait(seqn, ch)
 	s.applyCh <- apply{seqn, mutation}
+	<-ch
 }
 
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
