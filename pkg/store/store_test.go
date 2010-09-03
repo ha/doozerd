@@ -687,7 +687,7 @@ func TestSnapshotSync(t *testing.T) {
 	assert.Equal(t, "b", v)
 }
 
-func TestStoreWait(t *testing.T) {
+func TestStoreWaitWorks(t *testing.T) {
 	st := New()
 	mut, _ := EncodeSet("/x", "a", Clobber)
 
@@ -721,4 +721,34 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, TooLateError, got.Err)
 	assert.Equal(t, "", got.M)
+}
+
+func TestStoreWaitBadMutation(t *testing.T) {
+	st := New()
+	mut := BadMutations[0]
+
+	ch := make(chan Status)
+
+	st.Wait(1, ch)
+	st.Apply(1, mut)
+
+	got := <-ch
+	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, BadMutationError, got.Err)
+	assert.Equal(t, mut, got.M)
+}
+
+func TestStoreWaitBadInstruction(t *testing.T) {
+	st := New()
+	mut := BadInstructions[0]
+
+	ch := make(chan Status)
+
+	st.Wait(1, ch)
+	st.Apply(1, mut)
+
+	got := <-ch
+	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, BadPathError, got.Err)
+	assert.Equal(t, mut, got.M)
 }
