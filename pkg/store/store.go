@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"strconv"
 )
 
 type Event struct {
@@ -36,6 +37,7 @@ var (
 	BadPathError = os.NewError("bad path")
 	BadMutationError = os.NewError("bad mutation")
 	TooLateError = os.NewError("too late")
+	CasMismatchError = os.NewError("cas mismatch")
 )
 
 var LogWriter = util.NullWriter{}
@@ -43,10 +45,11 @@ var LogWriter = util.NullWriter{}
 // This structure should be kept immutable.
 type node struct {
 	v string
+	cas string
 	ds map[string]*node
 }
 
-var emptyNode = node{v:"", ds:make(map[string]*node)}
+var emptyNode = node{v:"", ds:make(map[string]*node), cas:"0"}
 
 type Store struct {
 	applyCh chan apply
@@ -193,19 +196,19 @@ func (n node) readdir() string {
 	return strings.Join(names, "")
 }
 
-func (n node) get(parts []string) (string, bool) {
+func (n node) get(parts []string) (string, string) {
 	switch len(parts) {
 	case 0:
 		if len(n.ds) > 0 {
-			return n.readdir(), true
+			return n.readdir(), n.cas
 		} else {
-			return n.v, true
+			return n.v, n.cas
 		}
 	default:
 		if m, ok := n.ds[parts[0]]; ok {
 			return m.get(parts[1:])
 		}
-		return "", false
+		return "", "0"
 	}
 	panic("can't happen")
 }
@@ -221,9 +224,9 @@ func join(parts []string) string {
 	return "/" + strings.Join(parts, "/")
 }
 
-func (n node) getp(path string) (string, bool) {
+func (n node) getp(path string) (string, string) {
 	if err := checkPath(path); err != nil {
-		return "", false
+		return "", "0"
 	}
 
 	return n.get(split(path))
@@ -232,17 +235,17 @@ func (n node) getp(path string) (string, bool) {
 // Return value:
 //     y = replacement node
 //     c = how many levels were changed (including the leaf)
-func (n node) set(parts []string, v string, keep bool) (y *node, c int) {
+func (n node) set(parts []string, v, cas string, keep bool) (y *node, c int) {
 	switch len(parts) {
 	case 0:
-		y = &node{v:v, ds:n.ds}
+		y = &node{v:v, cas:cas, ds:n.ds}
 	default:
 		d := 0
 		m, ok := n.ds[parts[0]]
 		if m == nil {
 			m = &emptyNode
 		}
-		m, d = m.set(parts[1:], v, keep)
+		m, d = m.set(parts[1:], v, cas, keep)
 		ds := make(map[string]*node)
 		for k,v := range n.ds {
 			ds[k] = v
@@ -251,7 +254,7 @@ func (n node) set(parts []string, v string, keep bool) (y *node, c int) {
 		if ok != (m != nil) {
 			c = 1
 		}
-		y = &node{v:n.v, ds:ds}
+		y = &node{v:n.v, cas:cas, ds:ds}
 		c += d
 	}
 	if !keep && len(y.ds) == 0 {
@@ -260,12 +263,12 @@ func (n node) set(parts []string, v string, keep bool) (y *node, c int) {
 	return
 }
 
-func (n node) setp(k, v string, keep bool) (y node, ps []string) {
+func (n node) setp(k, v, cas string, keep bool) (y node, ps []string) {
 	if err := checkPath(k); err != nil {
 		return n, []string{}
 	}
 
-	r, c := n.set(split(k), v, keep)
+	r, c := n.set(split(k), v, cas, keep)
 	ps = make([]string, c)
 	for i := 0; i < c; i++ {
 		ps[i] = k
@@ -274,7 +277,8 @@ func (n node) setp(k, v string, keep bool) (y node, ps []string) {
 	}
 
 	if r == nil {
-		return emptyNode, ps
+		root := node{v:"", cas:cas, ds:make(map[string]*node)}
+		return root, ps
 	}
 	return *r, ps
 }
@@ -417,18 +421,24 @@ func (s *Store) process() {
 					s.todo = make(map[uint64]apply)
 				}
 			} else {
-				op, k, v, _, err := decode(t.mutation)
+				op, k, v, givenCas, err := decode(t.mutation)
 				if err == nil {
-					var changed []string
-					values, changed = values.setp(k, v, op == Set)
-					logger.Logf("store applied %v", t)
-					if op == Set || len(changed) > 0 {
-						s.notify(op, t.seqn, k, v)
+					_, curCas := values.getp(k)
+					if curCas == givenCas || givenCas == Clobber {
+						var changed []string
+						cas := strconv.Uitoa64(t.seqn)
+						values, changed = values.setp(k, v, cas, op == Set)
+						logger.Logf("store applied %v", t)
+						if op == Set || len(changed) > 0 {
+							s.notify(op, t.seqn, k, v)
+						}
+						for _, p := range changed {
+							s.notifyDir(conj[op], t.seqn, p)
+						}
+						s.notify(Apply, t.seqn, "", "")
+					} else {
+						err = CasMismatchError
 					}
-					for _, p := range changed {
-						s.notifyDir(conj[op], t.seqn, p)
-					}
-					s.notify(Apply, t.seqn, "", "")
 				}
 				// If we have any waits that can be satisfied, do them.
 				for wt := s.todoWait.peek(); next >= wt.seqn; wt = s.todoWait.peek() {
@@ -444,8 +454,8 @@ func (s *Store) process() {
 		// If we have any lookups that can be satisfied, do them.
 		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
 			r := heap.Pop(s.todoLookup).(req)
-			v, ok := values.getp(r.k)
-			r.ch <- reply{v, ok}
+			v, cas := values.getp(r.k)
+			r.ch <- reply{v, cas != "0"}
 		}
 
 		// If we have any snapshots that can be satisfied, do them.

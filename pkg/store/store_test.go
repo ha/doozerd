@@ -752,3 +752,20 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	assert.Equal(t, BadPathError, got.Err)
 	assert.Equal(t, mut, got.M)
 }
+
+func TestStoreWaitCasMismatch(t *testing.T) {
+	mut1, _ := EncodeSet("/a", "foo", Clobber)
+	mut2, _ := EncodeSet("/a", "foo", "123")
+
+	ch := make(chan Status)
+
+	st := New()
+	st.Wait(2, ch)
+	st.Apply(1, mut1)
+	st.Apply(2, mut2)
+
+	got := <-ch
+	assert.Equal(t, uint64(2), got.Seqn)
+	assert.Equal(t, CasMismatchError, got.Err)
+	assert.Equal(t, mut2, got.M)
+}
