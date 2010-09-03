@@ -139,8 +139,8 @@ func TestDecodeBadMutations(t *testing.T) {
 
 func TestLookupMissing(t *testing.T) {
 	s := New()
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, false, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, Missing, cas)
 	assert.Equal(t, "", v)
 }
 
@@ -148,8 +148,8 @@ func TestLookup(t *testing.T) {
 	s := New()
 	mut, _ := EncodeSet("/x", "a", Clobber)
 	s.Apply(1, mut)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, "1", cas)
 	assert.Equal(t, "a", v)
 }
 
@@ -159,8 +159,8 @@ func TestLookupDeleted(t *testing.T) {
 	s.Apply(1, mut)
 	mut, _ = EncodeDel("/x", Clobber)
 	s.Apply(2, mut)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, false, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, Missing, cas)
 	assert.Equal(t, "", v)
 }
 
@@ -170,82 +170,82 @@ func TestApplyInOrder(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
 
 func TestLookupSync(t *testing.T) {
-	chv := make(chan string)
-	chok := make(chan bool)
+	chV := make(chan string)
+	chCas := make(chan string)
 	s := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
-		v, ok := s.LookupSync("/x", 5)
-		chv <- v
-		chok <- ok
+		v, cas := s.LookupSync("/x", 5)
+		chV <- v
+		chCas <- cas
 	}()
 	s.Apply(1, mut1)
 	s.Apply(2, mut1)
 	s.Apply(3, mut1)
 	s.Apply(4, mut1)
 	s.Apply(5, mut2)
-	assert.Equal(t, "b", <-chv)
-	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "b", <-chV)
+	assert.Equal(t, "5", <-chCas)
 }
 
 func TestLookupSyncSeveral(t *testing.T) {
-	chv := make(chan string)
-	chok := make(chan bool)
+	chV := make(chan string)
+	chCas := make(chan string)
 	s := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
-		v, ok := s.LookupSync("/x", 0)
-		chv <- v
-		chok <- ok
+		v, cas := s.LookupSync("/x", 0)
+		chV <- v
+		chCas <- cas
 
-		v, ok = s.LookupSync("/x", 5)
-		chv <- v
-		chok <- ok
+		v, cas = s.LookupSync("/x", 5)
+		chV <- v
+		chCas <- cas
 
-		v, ok = s.LookupSync("/x", 0)
-		chv <- v
-		chok <- ok
+		v, cas = s.LookupSync("/x", 0)
+		chV <- v
+		chCas <- cas
 	}()
 	s.Apply(1, mut1)
 	s.Apply(2, mut1)
 	s.Apply(3, mut1)
 	s.Apply(4, mut1)
 	s.Apply(5, mut2)
-	assert.Equal(t, "a", <-chv)
-	assert.Equal(t, true, <-chok)
-	assert.Equal(t, "b", <-chv)
-	assert.Equal(t, true, <-chok)
-	assert.Equal(t, "b", <-chv)
-	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "a", <-chV)
+	assert.Equal(t, "1", <-chCas)
+	assert.Equal(t, "b", <-chV)
+	assert.Equal(t, "5", <-chCas)
+	assert.Equal(t, "b", <-chV)
+	assert.Equal(t, "5", <-chCas)
 }
 
 func TestLookupSyncExtra(t *testing.T) {
-	chv := make(chan string)
-	chok := make(chan bool)
+	chV := make(chan string)
+	chCas := make(chan string)
 	s := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/x", "c", Clobber)
 	go func() {
-		v, ok := s.LookupSync("/x", 0)
-		chv <- v
-		chok <- ok
+		v, cas := s.LookupSync("/x", 0)
+		chV <- v
+		chCas <- cas
 
-		v, ok = s.LookupSync("/x", 5)
-		chv <- v
-		chok <- ok
+		v, cas = s.LookupSync("/x", 5)
+		chV <- v
+		chCas <- cas
 
-		v, ok = s.LookupSync("/x", 0)
-		chv <- v
-		chok <- ok
+		v, cas = s.LookupSync("/x", 0)
+		chV <- v
+		chCas <- cas
 	}()
 	s.Apply(1, mut1)
 	s.Apply(2, mut1)
@@ -257,12 +257,12 @@ func TestLookupSyncExtra(t *testing.T) {
 	s.Apply(8, mut3)
 
 	s.Apply(5, mut2)
-	assert.Equal(t, "a", <-chv)
-	assert.Equal(t, true, <-chok)
-	assert.Equal(t, "c", <-chv)
-	assert.Equal(t, true, <-chok)
-	assert.Equal(t, "c", <-chv)
-	assert.Equal(t, true, <-chok)
+	assert.Equal(t, "a", <-chV)
+	assert.Equal(t, "1", <-chCas)
+	assert.Equal(t, "c", <-chV)
+	assert.Equal(t, "8", <-chCas)
+	assert.Equal(t, "c", <-chV)
+	assert.Equal(t, "8", <-chCas)
 }
 
 func TestApplyBadThenGood(t *testing.T) {
@@ -271,8 +271,8 @@ func TestApplyBadThenGood(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
 
@@ -282,8 +282,8 @@ func TestApplyOutOfOrder(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(2, mut2)
 	s.Apply(1, mut1)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
 
@@ -293,8 +293,8 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(1, mut2)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, "1", cas)
 	assert.Equal(t, "a", v)
 
 	// check that we aren't leaking memory
@@ -309,8 +309,8 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(1, mut3)
-	v, ok := s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/x")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 
 	// check that we aren't leaking memory
@@ -325,8 +325,9 @@ func TestGetDir(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 
-	v, ok := s.Lookup("/")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/")
+	// TODO: Cas should be "DIR"
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "x\ny\n", v)
 }
 
@@ -336,20 +337,22 @@ func TestDirParents(t *testing.T) {
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
-	v, ok := s.Lookup("/")
-	assert.Equal(t, true, ok)
+	// TODO Cas should be DIR
+	v, cas := s.Lookup("/")
+	assert.Equal(t, "1", cas)
 	assert.Equal(t, "x\n", v)
 
-	v, ok = s.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas = s.Lookup("/x")
+	assert.Equal(t, "1", cas)
 	assert.Equal(t, "y\n", v)
 
-	v, ok = s.Lookup("/x/y")
-	assert.Equal(t, true, ok)
+	v, cas = s.Lookup("/x/y")
+	assert.Equal(t, "1", cas)
 	assert.Equal(t, "z\n", v)
+	// end TODO
 
-	v, ok = s.Lookup("/x/y/z")
-	assert.Equal(t, true, ok)
+	v, cas = s.Lookup("/x/y/z")
+	assert.Equal(t, "1", cas)
 	assert.Equal(t, "a", v)
 }
 
@@ -362,20 +365,20 @@ func TestDelDirParents(t *testing.T) {
 	mut2, _ := EncodeDel("/x/y/z", Clobber)
 	s.Apply(2, mut2)
 
-	v, ok := s.Lookup("/")
-	assert.Equal(t, true, ok)
+	v, cas := s.Lookup("/")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "", v, "lookup /")
 
-	v, ok = s.Lookup("/x")
-	assert.Equal(t, false, ok)
+	v, cas = s.Lookup("/x")
+	assert.Equal(t, Missing, cas)
 	assert.Equal(t, "", v, "lookup /x")
 
-	v, ok = s.Lookup("/x/y")
-	assert.Equal(t, false, ok)
+	v, cas = s.Lookup("/x/y")
+	assert.Equal(t, Missing, cas)
 	assert.Equal(t, "", v, "lookup /x/y")
 
-	v, ok = s.Lookup("/x/y/z")
-	assert.Equal(t, false, ok)
+	v, cas = s.Lookup("/x/y/z")
+	assert.Equal(t, Missing, cas)
 	assert.Equal(t, "", v, "lookup /x/y/z")
 }
 
@@ -603,8 +606,8 @@ func TestSnapshotApply(t *testing.T) {
 	s2 := New()
 	s2.Apply(1, buf.String())
 
-	v, ok := s2.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s2.Lookup("/x")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
 
@@ -620,26 +623,26 @@ func TestSnapshotSeqn(t *testing.T) {
 
 	s2 := New()
 	s2.Apply(1, buf.String())
-	v, ok := s2.Lookup("/x")
-	assert.Equal(t, true, ok, "snap")
+	v, cas := s2.Lookup("/x")
+	assert.Equal(t, "2", cas, "snap")
 	assert.Equal(t, "b", v, "snap")
 
 	mutx, _ := EncodeSet("/x", "x", Clobber)
 	s2.Apply(1, mutx)
-	v, ok = s2.LookupSync("/x", 1)
-	assert.Equal(t, true, ok, "x")
+	v, cas = s2.LookupSync("/x", 1)
+	assert.Equal(t, "2", cas, "x")
 	assert.Equal(t, "b", v, "x")
 
 	muty, _ := EncodeSet("/x", "y", Clobber)
 	s2.Apply(2, muty)
-	v, ok = s2.LookupSync("/x", 2)
-	assert.Equal(t, true, ok, "y")
+	v, cas = s2.LookupSync("/x", 2)
+	assert.Equal(t, "2", cas, "y")
 	assert.Equal(t, "b", v, "y")
 
 	mutz, _ := EncodeSet("/x", "z", Clobber)
 	s2.Apply(3, mutz)
-	v, ok = s2.LookupSync("/x", 3)
-	assert.Equal(t, true, ok, "z")
+	v, cas = s2.LookupSync("/x", 3)
+	assert.Equal(t, "3", cas, "z")
 	assert.Equal(t, "z", v, "z")
 }
 
@@ -682,8 +685,8 @@ func TestSnapshotSync(t *testing.T) {
 	s2 := New()
 	s2.Apply(1, buf.String())
 
-	v, ok := s2.Lookup("/x")
-	assert.Equal(t, true, ok)
+	v, cas := s2.Lookup("/x")
+	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
 

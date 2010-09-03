@@ -103,7 +103,7 @@ type snapQueue struct {
 
 type reply struct {
 	v string
-	ok bool
+	cas string
 }
 
 type Status struct {
@@ -458,7 +458,7 @@ func (s *Store) process() {
 		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
 			r := heap.Pop(s.todoLookup).(req)
 			v, cas := values.getp(r.k)
-			r.ch <- reply{v, cas != Missing}
+			r.ch <- reply{v, cas}
 		}
 
 		// If we have any snapshots that can be satisfied, do them.
@@ -480,17 +480,17 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
 // `ok` is false.
-func (s *Store) Lookup(path string) (body string, ok bool) {
+func (s *Store) Lookup(path string) (body string, cas string) {
 	return s.LookupSync(path, 0)
 }
 
 // Like `Lookup`, but waits until after mutation number `seqn` has been
 // applied before doing the lookup.
-func (s *Store) LookupSync(path string, seqn uint64) (body string, ok bool) {
+func (s *Store) LookupSync(path string, seqn uint64) (body string, cas string) {
 	ch := make(chan reply)
 	s.reqCh <- req{path, seqn, ch}
 	rep := <-ch
-	return rep.v, rep.ok
+	return rep.v, rep.cas
 }
 
 // Encodes the entire storage state, including the current sequence number, as
