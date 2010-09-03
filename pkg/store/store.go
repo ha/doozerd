@@ -261,7 +261,7 @@ func EncodeSet(path, body string, cas uint64) (mutation string, err os.Error) {
 	return path + "=" + body, nil
 }
 
-func EncodeDel(path string) (mutation string, err os.Error) {
+func EncodeDel(path string, cas uint64) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
 	}

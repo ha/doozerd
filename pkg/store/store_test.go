@@ -84,7 +84,7 @@ func TestEncodeSet(t *testing.T) {
 func TestEncodeDel(t *testing.T) {
 	for _, kvm := range DelKVMs {
 		k, exp := kvm[0], kvm[1]
-		got, err := EncodeDel(k)
+		got, err := EncodeDel(k, Clobber)
 		assert.Equal(t, nil, err, "")
 		assert.Equal(t, exp, got, "")
 	}
@@ -139,7 +139,7 @@ func TestLookupDeleted(t *testing.T) {
 	s := New()
 	mut, _ := EncodeSet("/x", "a", Clobber)
 	s.Apply(1, mut)
-	mut, _ = EncodeDel("/x")
+	mut, _ = EncodeDel("/x", Clobber)
 	s.Apply(2, mut)
 	v, ok := s.Lookup("/x")
 	assert.Equal(t, false, ok, "")
@@ -341,7 +341,7 @@ func TestDelDirParents(t *testing.T) {
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
-	mut2, _ := EncodeDel("/x/y/z")
+	mut2, _ := EncodeDel("/x/y/z", Clobber)
 	s.Apply(2, mut2)
 
 	v, ok := s.Lookup("/")
@@ -411,9 +411,9 @@ func TestWatchDel(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
-	mut4, _ := EncodeDel("/x")
-	mut5, _ := EncodeDel("/y")
-	mut6, _ := EncodeDel("/x")
+	mut4, _ := EncodeDel("/x", Clobber)
+	mut5, _ := EncodeDel("/y", Clobber)
+	mut6, _ := EncodeDel("/x", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
@@ -495,9 +495,9 @@ func TestWatchRem(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
-	mut4, _ := EncodeDel("/x")
-	mut5, _ := EncodeDel("/y")
-	mut6, _ := EncodeDel("/x")
+	mut4, _ := EncodeDel("/x", Clobber)
+	mut5, _ := EncodeDel("/y", Clobber)
+	mut6, _ := EncodeDel("/x", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
@@ -521,7 +521,7 @@ func TestWatchDelDirParents(t *testing.T) {
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
-	mut2, _ := EncodeDel("/x/y/z")
+	mut2, _ := EncodeDel("/x/y/z", Clobber)
 	s.Apply(2, mut2)
 
 	expa := <-ch
@@ -553,9 +553,9 @@ func TestWatchApply(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
-	mut4, _ := EncodeDel("/x")
-	mut5, _ := EncodeDel("/y")
-	mut6, _ := EncodeDel("/x")
+	mut4, _ := EncodeDel("/x", Clobber)
+	mut5, _ := EncodeDel("/y", Clobber)
+	mut6, _ := EncodeDel("/x", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
