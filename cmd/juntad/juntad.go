@@ -28,10 +28,10 @@ func main() {
 
 	st := store.New()
 	rg := paxos.NewRegistrar(self, st, alpha)
+	mg := paxos.NewManager(2, rg, paxos.ChanPutCloser(outs))
 
 	addMember(st, self, *listenAddr)
 
-	mg := paxos.NewManager(2, rg, paxos.ChanPutCloser(outs))
 	go func() {
 		panic(server.ListenAndServe(*listenAddr, st, mg))
 	}()
