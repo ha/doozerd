@@ -21,6 +21,8 @@ var SetKVCMs = [][]string{
 var DelKCMs = [][]string{
 	[]string{"/", Clobber, ":/"},
 	[]string{"/x", Clobber, ":/x"},
+	[]string{"/", "0", "0:/"},
+	[]string{"/", "123", "123:/"},
 }
 
 var GoodPaths = []string{

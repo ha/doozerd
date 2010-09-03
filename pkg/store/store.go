@@ -266,7 +266,7 @@ func EncodeDel(path string, cas string) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
 	}
-	return ":" + path, nil
+	return cas + ":" + path, nil
 }
 
 func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
@@ -285,7 +285,7 @@ func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
 
 	switch len(kv) {
 	case 1:
-		return Del, kv[0], "", "", nil
+		return Del, kv[0], "", cm[0], nil
 	case 2:
 		return Set, kv[0], kv[1], cm[0], nil
 	}
