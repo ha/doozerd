@@ -7,18 +7,18 @@ import (
 	"testing"
 )
 
-const Clobber = ^uint64(0)
+const Clobber = ""
 
-var SetKVMs = [][3]string{
-	[3]string{"/", "a", "/=a"},
-	[3]string{"/x", "a", "/x=a"},
-	[3]string{"/x", "a=b", "/x=a=b"},
-	[3]string{"/x", "a b", "/x=a b"},
+var SetKVCMs = [][]string{
+	[]string{"/", "a", Clobber, "/=a"},
+	[]string{"/x", "a", Clobber, "/x=a"},
+	[]string{"/x", "a=b", Clobber, "/x=a=b"},
+	[]string{"/x", "a b", Clobber, "/x=a b"},
 }
 
-var DelKVMs = [][3]string{
-	[3]string{"/", "/"},
-	[3]string{"/x", "/x"},
+var DelKCMs = [][]string{
+	[]string{"/", Clobber, "/"},
+	[]string{"/x", Clobber, "/x"},
 }
 
 var GoodPaths = []string{
@@ -73,26 +73,26 @@ func TestCheckGoodPaths(t *testing.T) {
 }
 
 func TestEncodeSet(t *testing.T) {
-	for _, kvm := range SetKVMs {
-		k, v, exp := kvm[0], kvm[1], kvm[2]
-		got, err := EncodeSet(k, v, Clobber)
+	for _, kvcm := range SetKVCMs {
+		k, v, c, exp := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
+		got, err := EncodeSet(k, v, c)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
 	}
 }
 
 func TestEncodeDel(t *testing.T) {
-	for _, kvm := range DelKVMs {
-		k, exp := kvm[0], kvm[1]
-		got, err := EncodeDel(k, Clobber)
+	for _, kcm := range DelKCMs {
+		k, c, exp := kcm[0], kcm[1], kcm[2]
+		got, err := EncodeDel(k, c)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
 	}
 }
 
 func TestDecodeSet(t *testing.T) {
-	for _, kvm := range SetKVMs {
-		expk, expv, m := kvm[0], kvm[1], kvm[2]
+	for _, kvcm := range SetKVCMs {
+		expk, expv, _, m := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
 		op, gotk, gotv, err := decode(m)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, Set, op, "op from " + m)
@@ -102,8 +102,8 @@ func TestDecodeSet(t *testing.T) {
 }
 
 func TestDecodeDel(t *testing.T) {
-	for _, kvm := range DelKVMs {
-		expk, m := kvm[0], kvm[1]
+	for _, kcm := range DelKCMs {
+		expk, _, m := kcm[0], kcm[1], kcm[2]
 		op, gotk, gotv, err := decode(m)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, Del, op, "op from " + m)
