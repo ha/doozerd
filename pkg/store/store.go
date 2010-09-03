@@ -28,6 +28,8 @@ const (
 	Apply
 )
 
+const Clobber = ""
+
 var conj = map[uint]uint{Set:Add, Del:Rem}
 
 var (

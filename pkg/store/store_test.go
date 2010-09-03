@@ -7,8 +7,6 @@ import (
 	"testing"
 )
 
-const Clobber = ""
-
 var SetKVCMs = [][]string{
 	[]string{"/", "a", Clobber, ":/=a"},
 	[]string{"/x", "a", Clobber, ":/x=a"},
