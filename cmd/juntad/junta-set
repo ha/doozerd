@@ -1,16 +1,19 @@
 #!/bin/sh
 
-k=$1
-shift
+encstr() {
+  printf '$%d\r\n%s\r\n' ${#1} "$1"
+}
 
-v=$1
-shift
+encstrs() {
+  printf '*%d\r\n' $#
+  for x in "$@"
+  do
+    encstr "$x"
+  done
+}
 
-(
-  printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
-  printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
-  printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
-  printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
-  printf '*3\r\n$3\r\nset\r\n$%d\r\n%s\r\n$%d\r\n%s\r\n' ${#k} "$k" ${#v} "$v"
-  printf '*0\r\n'
-) | nc localhost 8040
+jset() {
+  encstrs set "$@"
+}
+
+jset "$@" | nc localhost 8040
