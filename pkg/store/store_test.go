@@ -12,14 +12,14 @@ var SetKVCMs = [][]string{
 	[]string{"/x", "a", Clobber, ":/x=a"},
 	[]string{"/x", "a=b", Clobber, ":/x=a=b"},
 	[]string{"/x", "a b", Clobber, ":/x=a b"},
-	[]string{"/", "a", "0", "0:/=a"},
+	[]string{"/", "a", Missing, "0:/=a"},
 	[]string{"/", "a", "123", "123:/=a"},
 }
 
 var DelKCMs = [][]string{
 	[]string{"/", Clobber, ":/"},
 	[]string{"/x", Clobber, ":/x"},
-	[]string{"/", "0", "0:/"},
+	[]string{"/", Missing, "0:/"},
 	[]string{"/", "123", "123:/"},
 }
 
@@ -754,7 +754,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 }
 
 func TestStoreWaitCasMatchAdd(t *testing.T) {
-	mut, _ := EncodeSet("/a", "foo", "0")
+	mut, _ := EncodeSet("/a", "foo", Missing)
 
 	ch := make(chan Status)
 

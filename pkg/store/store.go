@@ -29,7 +29,10 @@ const (
 	Apply
 )
 
-const Clobber = ""
+const (
+	Clobber = ""
+	Missing = "0"
+)
 
 var conj = map[uint]uint{Set:Add, Del:Rem}
 
@@ -49,7 +52,7 @@ type node struct {
 	ds map[string]*node
 }
 
-var emptyNode = node{v:"", ds:make(map[string]*node), cas:"0"}
+var emptyNode = node{v:"", ds:make(map[string]*node), cas:Missing}
 
 type Store struct {
 	applyCh chan apply
@@ -208,7 +211,7 @@ func (n node) get(parts []string) (string, string) {
 		if m, ok := n.ds[parts[0]]; ok {
 			return m.get(parts[1:])
 		}
-		return "", "0"
+		return "", Missing
 	}
 	panic("can't happen")
 }
@@ -226,7 +229,7 @@ func join(parts []string) string {
 
 func (n node) getp(path string) (string, string) {
 	if err := checkPath(path); err != nil {
-		return "", "0"
+		return "", Missing
 	}
 
 	return n.get(split(path))
@@ -455,7 +458,7 @@ func (s *Store) process() {
 		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
 			r := heap.Pop(s.todoLookup).(req)
 			v, cas := values.getp(r.k)
-			r.ch <- reply{v, cas != "0"}
+			r.ch <- reply{v, cas != Missing}
 		}
 
 		// If we have any snapshots that can be satisfied, do them.
