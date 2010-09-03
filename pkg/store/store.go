@@ -429,18 +429,11 @@ func (s *Store) process() {
 						s.notifyDir(conj[op], t.seqn, p)
 					}
 					s.notify(Apply, t.seqn, "", "")
-
-					// If we have any waits that can be satisfied, do them.
-					for wt := s.todoWait.peek(); next >= wt.seqn; wt = s.todoWait.peek() {
-						heap.Pop(s.todoWait)
-						wt.ch <- Status{next, t.mutation, nil}
-					}
-				} else {
-					// If we have any waits that can be satisfied, do them.
-					for wt := s.todoWait.peek(); next >= wt.seqn; wt = s.todoWait.peek() {
-						heap.Pop(s.todoWait)
-						wt.ch <- Status{next, t.mutation, err}
-					}
+				}
+				// If we have any waits that can be satisfied, do them.
+				for wt := s.todoWait.peek(); next >= wt.seqn; wt = s.todoWait.peek() {
+					heap.Pop(s.todoWait)
+					wt.ch <- Status{next, t.mutation, err}
 				}
 			}
 			ver = next
