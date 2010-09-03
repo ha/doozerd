@@ -73,7 +73,7 @@ func NewLogger(format string, a ... interface{}) *log.Logger {
 	)
 }
 
-func RandString(bits int) string {
+func RandHexString(bits int) string {
 	buf := make([]byte, bits/8)
 	RandBytes(buf)
 	return fmt.Sprintf("%x", buf)

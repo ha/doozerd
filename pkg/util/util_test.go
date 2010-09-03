@@ -18,8 +18,8 @@ func TestUnpackui64(t *testing.T) {
 	assert.Equal(t, uint64(0xabcd12344321dcba), got)
 }
 
-func TestRandString(t *testing.T) {
-	got := RandString(160)
+func TestRandHexString(t *testing.T) {
+	got := RandHexString(160)
 	assert.Equal(t, 40, len(got))
 	// Is Hex?
 	for _, x := range got {

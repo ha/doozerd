@@ -24,7 +24,7 @@ func main() {
 	util.LogWriter = os.Stderr
 
 	outs := make(chan paxos.Msg)
-	self := util.RandString(160)
+	self := util.RandHexString(160)
 
 	st := store.New()
 	rg := paxos.NewRegistrar(self, st, alpha)
