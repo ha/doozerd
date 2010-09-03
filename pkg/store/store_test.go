@@ -14,6 +14,8 @@ var SetKVCMs = [][]string{
 	[]string{"/x", "a", Clobber, ":/x=a"},
 	[]string{"/x", "a=b", Clobber, ":/x=a=b"},
 	[]string{"/x", "a b", Clobber, ":/x=a b"},
+	[]string{"/", "a", "0", "0:/=a"},
+	[]string{"/", "a", "123", "123:/=a"},
 }
 
 var DelKCMs = [][]string{
@@ -656,7 +658,6 @@ func TestSnapshotLeak(t *testing.T) {
 	mut3, _ := EncodeSet("/x", "c", Clobber)
 	s2.Apply(2, mut3)
 	s2.Apply(3, mut3)
-
 	s2.Apply(1, buf.String())
 
 	// check that we aren't leaking memory

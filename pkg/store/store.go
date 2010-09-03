@@ -259,7 +259,7 @@ func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
-	return ":" + path + "=" + body, nil
+	return cas + ":" + path + "=" + body, nil
 }
 
 func EncodeDel(path string, cas string) (mutation string, err os.Error) {
@@ -287,7 +287,7 @@ func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
 	case 1:
 		return Del, kv[0], "", "", nil
 	case 2:
-		return Set, kv[0], kv[1], "",  nil
+		return Set, kv[0], kv[1], cm[0], nil
 	}
 	panic("can't happen")
 }
