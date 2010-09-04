@@ -22,7 +22,7 @@ func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	got := m.Propose(exp)
+	got, _ := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
 }
 
@@ -30,7 +30,7 @@ func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	got := m.Propose(exp)
+	got, _ := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
@@ -42,7 +42,7 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	got := m.Propose(exp)
+	got, _ := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
@@ -55,7 +55,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 	seqnexp := []uint64{2, 3}
 	m, st := selfRefNewManager()
 
-	got0 := m.Propose(exp[0])
+	got0, _ := m.Propose(exp[0])
 	assert.Equal(t, exp[0], got0, "")
 
 	seqn0, v0 := m.Recv()
@@ -64,7 +64,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 	st.Apply(seqn0, v0)
 
-	got1 := m.Propose(exp[1])
+	got1, _ := m.Propose(exp[1])
 	assert.Equal(t, exp[1], got1, "")
 
 	seqn1, v1 := m.Recv()
@@ -101,7 +101,7 @@ func TestUnusedSeqn(t *testing.T) {
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp1, v, "")
 
-	got := m.Propose(exp2)
+	got, _ := m.Propose(exp2)
 	assert.Equal(t, exp2, got, "")
 	seqn, v = m.Recv()
 	assert.Equal(t, uint64(2), seqn, "")
@@ -113,7 +113,7 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 
 	m.Put(resize(newVoteFrom(1, 1, ""), -1))
 
-	got := m.Propose("y")
+	got, _ := m.Propose("y")
 	assert.Equal(t, "y", got, "")
 
 	seqn, v := m.Recv()
@@ -191,7 +191,8 @@ func TestManagerPutFrom(t *testing.T) {
 		froms <- msg.From()
 	})
 
-	it := m.getInstance(seqnExp)
+	seqn, it := m.getInstance(seqnExp)
+	assert.Equal(t, seqnExp, seqn)
 	it.cPutter = fp
 	it.aPutter = fp
 	it.lPutter = fp
@@ -210,4 +211,10 @@ func TestManagerAddrsFor(t *testing.T) {
 	msg := newInvite(1)
 	msg.SetSeqn(1)
 	assert.Equal(t, []string{"aaddr"}, m.AddrsFor(msg))
+}
+
+func TestManagerGetInstanceForPropose(t *testing.T) {
+	m, _ := selfRefNewManager()
+	seqn, _ := m.getInstance(0)
+	assert.Equal(t, uint64(2), seqn)
 }

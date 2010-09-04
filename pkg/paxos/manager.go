@@ -2,6 +2,7 @@ package paxos
 
 import (
 	"log"
+	"os"
 
 	"junta/store"
 	"junta/util"
@@ -15,14 +16,14 @@ type result struct {
 }
 
 type instReq struct {
-	seqn uint64 // 0 means to generate a fresh seqn
+	seqn uint64 // 0 means to fill in a fresh seqn
 	ch   chan *instance
 }
 
 type Manager struct {
 	rg      *Registrar
 	learned chan result
-	reqs    chan instReq
+	reqs    chan *instReq
 	logger  *log.Logger
 	Self    string
 }
@@ -59,7 +60,7 @@ func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager 
 	m := &Manager{
 		rg:      rg,
 		learned: make(chan result),
-		reqs:    make(chan instReq),
+		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),
 		Self:    self,
 	}
@@ -69,33 +70,37 @@ func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager 
 	return m
 }
 
-func (m *Manager) getInstance(seqn uint64) *instance {
-	ch := make(chan *instance)
-	m.reqs <- instReq{seqn, ch}
-	return <-ch
+func (m *Manager) getInstance(seqn uint64) (uint64, *instance) {
+	r := &instReq{seqn, make(chan *instance)}
+	m.reqs <- r
+	it := <-r.ch
+	return r.seqn, it
 }
 
 func (m *Manager) Put(msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	m.getInstance(msg.Seqn()).Put(msg)
+	_, it := m.getInstance(msg.Seqn())
+	it.Put(msg)
 }
 
 func (m *Manager) PutFrom(addr string, msg Msg) {
-	msg.SetFrom(m.getInstance(msg.Seqn()).cluster().indexByAddr(addr))
+	_, it := m.getInstance(msg.Seqn())
+	msg.SetFrom(it.cluster().indexByAddr(addr))
 	m.Put(msg)
 }
 
 func (m *Manager) AddrsFor(msg Msg) []string {
-	return m.getInstance(msg.Seqn()).cluster().addrs()
+	_, it := m.getInstance(msg.Seqn())
+	return it.cluster().addrs()
 }
 
-func (m *Manager) Propose(v string) string {
-	inst := m.getInstance(0)
+func (m *Manager) Propose(v string) (string, os.Error) {
+	_, inst := m.getInstance(0)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
-	return inst.Value()
+	return inst.Value(), nil
 }
 
 func (m *Manager) Recv() (uint64, string) {
