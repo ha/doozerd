@@ -31,6 +31,22 @@ type Manager struct {
 	Self    string
 }
 
+func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager {
+	self := util.RandHexString(selfBits)
+	m := &Manager{
+		st:      st,
+		rg:      NewRegistrar(self, st, alpha),
+		learned: make(chan result),
+		reqs:    make(chan *instReq),
+		logger:  util.NewLogger("manager"),
+		Self:    self,
+	}
+
+	go m.process(start, outs)
+
+	return m
+}
+
 func (m *Manager) process(next uint64, outs Putter) {
 	instances := make(map[uint64]*instance)
 	for req := range m.reqs {
@@ -55,22 +71,6 @@ func (m *Manager) process(next uint64, outs Putter) {
 			next = req.seqn + 1
 		}
 	}
-}
-
-func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager {
-	self := util.RandHexString(selfBits)
-	m := &Manager{
-		st:      st,
-		rg:      NewRegistrar(self, st, alpha),
-		learned: make(chan result),
-		reqs:    make(chan *instReq),
-		logger:  util.NewLogger("manager"),
-		Self:    self,
-	}
-
-	go m.process(start, outs)
-
-	return m
 }
 
 func (m *Manager) getInstance(seqn uint64) (uint64, *instance) {
