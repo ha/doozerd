@@ -109,6 +109,26 @@ func (s *Server) Serve(l net.Listener) os.Error {
 	panic("not reached")
 }
 
+func (sv *Server) Set(path, body, cas string) os.Error {
+	mut, err := store.EncodeSet(path, body, cas)
+	if err != nil {
+		return err
+	}
+
+	v, err := sv.Mg.Propose(mut)
+	if err != nil {
+		return err
+	}
+
+	// We failed, but only because of a competing proposal. The client should
+	// retry.
+	if v != mut {
+		return os.EAGAIN
+	}
+
+	return nil
+}
+
 func (c *conn) serve() {
 	pc := proto.NewConn(c)
 	logger := util.NewLogger("%v", c.RemoteAddr())
@@ -138,25 +158,14 @@ func (c *conn) serve() {
 			rlogger.Logf("unknown command <%s>", parts[0])
 			pc.SendError(rid, proto.InvalidCommand)
 		case "set":
-			//go set(c, rid, parts[1:])
 			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-			mut, err := store.EncodeSet(parts[1], parts[2], parts[3])
+			err := c.s.Set(parts[1], parts[2], parts[3])
 			if err != nil {
-				rlogger.Log(err)
+				rlogger.Logf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Logf("propose %q", mut)
-				v, err := c.s.Mg.Propose(mut)
-				if err != nil {
-					rlogger.Logf("bad: %s", err)
-					pc.SendError(rid, err.String())
-				} else if v == mut {
-					rlogger.Logf("good")
-					pc.SendResponse(rid, "true")
-				} else {
-					rlogger.Logf("bad")
-					pc.SendError(rid, "false")
-				}
+				rlogger.Logf("good")
+				pc.SendResponse(rid, "true")
 			}
 		}
 	}
