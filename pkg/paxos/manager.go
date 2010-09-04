@@ -10,6 +10,8 @@ import (
 
 const window = 50
 
+const selfBits = 160
+
 type result struct {
 	seqn uint64
 	v    string
@@ -56,7 +58,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 }
 
 func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager {
-	self := "a"
+	self := util.RandHexString(selfBits)
 	m := &Manager{
 		st:      st,
 		rg:      NewRegistrar(self, st, alpha),

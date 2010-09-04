@@ -221,6 +221,8 @@ func TestManagerPutFrom(t *testing.T) {
 	p := make(FakePutter, 1)
 	st := store.New()
 	m := NewManager(4, 1, st, p)
+	m.Self = "a"
+	m.rg.self = "a"
 	p[0] = m
 
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+m.Self, "x"))
@@ -252,11 +254,16 @@ func TestManagerAddrsFor(t *testing.T) {
 	m, _ := selfRefNewManager()
 	msg := newInvite(1)
 	msg.SetSeqn(1)
-	assert.Equal(t, []string{"aaddr"}, m.AddrsFor(msg))
+	assert.Equal(t, []string{m.Self+"addr"}, m.AddrsFor(msg))
 }
 
 func TestManagerGetInstanceForPropose(t *testing.T) {
 	m, _ := selfRefNewManager()
 	seqn, _ := m.getInstance(0)
 	assert.Equal(t, uint64(2), seqn)
+}
+
+func TestManagerSelfLen(t *testing.T) {
+	m, _ := selfRefNewManager()
+	assert.Equal(t, 40, len(m.Self))
 }
