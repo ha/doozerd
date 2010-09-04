@@ -10,9 +10,9 @@ func TestRegistrar(t *testing.T) {
 	st := store.New()
 	rg := NewRegistrar("a", st, 2)
 	go func() {
-		st.Apply(3, mustEncodeSet(membersKey+"/c", "1"))
-		st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
-		st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+		go st.Apply(3, mustEncodeSet(membersKey+"/c", "1"))
+		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
+		go st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
 	}()
 
 	cx := rg.clusterFor(5)

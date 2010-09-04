@@ -70,7 +70,6 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 	seqn1, v1 := m.Recv()
 	assert.Equal(t, seqnexp[1], seqn1, "seqn 1")
 	assert.Equal(t, exp[1], v1, "")
-
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
@@ -123,7 +122,7 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 }
 
 func mustEncodeSet(k, v string) string {
-	m, err := store.EncodeSet(k, v)
+	m, err := store.EncodeSet(k, v, store.Clobber)
 	if err != nil {
 		panic(err)
 	}
