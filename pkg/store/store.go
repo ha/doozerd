@@ -445,7 +445,6 @@ func (s *Store) process() {
 						for _, p := range changed {
 							s.notifyDir(conj[op], t.seqn, p)
 						}
-						s.notify(Apply, t.seqn, "", "")
 					} else {
 						err = CasMismatchError
 					}
@@ -455,6 +454,8 @@ func (s *Store) process() {
 			ver = next
 			s.todo[next] = apply{}, false
 			next++
+
+			s.notify(Apply, t.seqn, "", "")
 
 			// If we have any waits that can be satisfied, do them.
 			for wt := s.todoWait.peek(); ver >= wt.seqn; wt = s.todoWait.peek() {

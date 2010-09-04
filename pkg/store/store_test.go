@@ -701,128 +701,171 @@ func TestStoreWaitWorks(t *testing.T) {
 	st := New()
 	mut, _ := EncodeSet("/x", "a", Clobber)
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
-	st.Wait(1, ch)
+	st.WatchApply(evCh)
+
+	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut, got.M)
 	assert.Equal(t, 0, len(st.todo))
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
 }
 
 func TestStoreWaitOutOfOrder(t *testing.T) {
 	st := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
+
+	st.WatchApply(evCh)
 
 	st.Apply(1, mut1)
 
-	st.Wait(2, ch)
+	st.Wait(2, statusCh)
 	st.Apply(2, mut2)
-	<-ch
+	<-statusCh
 
-	st.Wait(1, ch)
+	st.Wait(1, statusCh)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, TooLateError, got.Err)
 	assert.Equal(t, "", got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, Event{Apply, 2, "", ""}, <-evCh)
 }
 
 func TestStoreWaitBadMutation(t *testing.T) {
 	st := New()
 	mut := BadMutations[0]
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
-	st.Wait(1, ch)
+	st.WatchApply(evCh)
+
+	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, BadMutationError, got.Err)
 	assert.Equal(t, mut, got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
 }
 
 func TestStoreWaitBadInstruction(t *testing.T) {
 	st := New()
 	mut := BadInstructions[0]
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
-	st.Wait(1, ch)
+	st.WatchApply(evCh)
+
+	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, BadPathError, got.Err)
 	assert.Equal(t, mut, got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
 }
 
 func TestStoreWaitCasMatchAdd(t *testing.T) {
 	mut, _ := EncodeSet("/a", "foo", Missing)
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
 	st := New()
-	st.Wait(1, ch)
+
+	st.WatchApply(evCh)
+	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut, got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
 }
 
 func TestStoreWaitCasMatchReplace(t *testing.T) {
 	mut1, _ := EncodeSet("/a", "foo", Clobber)
 	mut2, _ := EncodeSet("/a", "foo", "1")
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
 	st := New()
-	st.Wait(2, ch)
+
+	st.WatchApply(evCh)
+	st.Wait(2, statusCh)
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(2), got.Seqn)
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut2, got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, Event{Apply, 2, "", ""}, <-evCh)
 }
 
 func TestStoreWaitCasMismatchMissing(t *testing.T) {
 	mut, _ := EncodeSet("/a", "foo", "123")
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
 	st := New()
-	st.Wait(1, ch)
+
+	st.WatchApply(evCh)
+	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, CasMismatchError, got.Err)
 	assert.Equal(t, mut, got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
 }
 
 func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	mut1, _ := EncodeSet("/a", "foo", Clobber)
 	mut2, _ := EncodeSet("/a", "foo", "123")
 
-	ch := make(chan Status)
+	evCh := make(chan Event)
+	statusCh := make(chan Status)
 
 	st := New()
-	st.Wait(2, ch)
+
+	st.WatchApply(evCh)
+	st.Wait(2, statusCh)
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
 
-	got := <-ch
+	got := <-statusCh
 	assert.Equal(t, uint64(2), got.Seqn)
 	assert.Equal(t, CasMismatchError, got.Err)
 	assert.Equal(t, mut2, got.M)
+
+	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, Event{Apply, 2, "", ""}, <-evCh)
 }
