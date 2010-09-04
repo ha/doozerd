@@ -158,6 +158,11 @@ func (c *conn) serve() {
 			rlogger.Logf("unknown command <%s>", parts[0])
 			pc.SendError(rid, proto.InvalidCommand)
 		case "set":
+			if len(parts) != 4 {
+				rlogger.Logf("invalid set command: %#v", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
 			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
 			err := c.s.Set(parts[1], parts[2], parts[3])
 			if err != nil {
