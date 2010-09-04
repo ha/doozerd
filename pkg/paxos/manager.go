@@ -57,10 +57,9 @@ func (m *Manager) process(next uint64, outs Putter) {
 
 func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager {
 	self := "a"
-	rg := NewRegistrar(self, st, alpha)
 	m := &Manager{
 		st:      st,
-		rg:      rg,
+		rg:      NewRegistrar(self, st, alpha),
 		learned: make(chan result),
 		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),
