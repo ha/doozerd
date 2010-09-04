@@ -14,20 +14,54 @@ const window = 50
 
 type conn struct {
 	net.Conn
-	s *server
+	s *Server
 }
 
-type server struct {
-	net.Listener
-	st *store.Store
-	mg *paxos.Manager
+type Server struct {
+	Addr string
+	St *store.Store
+	Mg *paxos.Manager
 }
 
-func Serve(l net.Listener, st *store.Store, mg *paxos.Manager) os.Error {
-	return (&server{l, st, mg}).Serve()
+func (sv *Server) ListenAndServe() os.Error {
+	logger := util.NewLogger("server %s", sv.Addr)
+
+	logger.Log("binding")
+	l, err := net.Listen("tcp", sv.Addr)
+	if err != nil {
+		logger.Log(err)
+		return err
+	}
+	defer l.Close()
+	logger.Log("listening")
+
+	err = sv.Serve(l)
+	if err != nil {
+		logger.Logf("%s: %s", l, err)
+	}
+	return err
 }
 
-func ServeUdp(u net.PacketConn, mg *paxos.Manager, outs chan paxos.Msg) os.Error {
+func (sv *Server) ListenAndServeUdp(outs chan paxos.Msg) os.Error {
+	logger := util.NewLogger("udp server %s", sv.Addr)
+
+	logger.Log("binding")
+	u, err := net.ListenPacket("udp", sv.Addr)
+	if err != nil {
+		logger.Log(err)
+		return err
+	}
+	defer u.Close()
+	logger.Log("listening")
+
+	err = sv.ServeUdp(u, outs)
+	if err != nil {
+		logger.Logf("%s: %s", u, err)
+	}
+	return err
+}
+
+func (sv *Server) ServeUdp(u net.PacketConn, outs chan paxos.Msg) os.Error {
 	logger := util.NewLogger("udp server %s", u.LocalAddr())
 	go func() {
 		logger.Log("reading messages...")
@@ -39,14 +73,14 @@ func ServeUdp(u net.PacketConn, mg *paxos.Manager, outs chan paxos.Msg) os.Error
 				continue
 			}
 			logger.Logf("read %v from %s", msg, addr)
-			mg.PutFrom(addr, msg)
+			sv.Mg.PutFrom(addr, msg)
 		}
 	}()
 
 	logger.Log("sending messages...")
 	for msg := range outs {
 		logger.Logf("sending %v", msg)
-		for _, addr := range mg.AddrsFor(msg) {
+		for _, addr := range sv.Mg.AddrsFor(msg) {
 			logger.Logf("sending to %s", addr)
 			udpAddr, err := net.ResolveUDPAddr(addr)
 			if err != nil {
@@ -64,9 +98,9 @@ func ServeUdp(u net.PacketConn, mg *paxos.Manager, outs chan paxos.Msg) os.Error
 	panic("not reached")
 }
 
-func (s *server) Serve() os.Error {
+func (s *Server) Serve(l net.Listener) os.Error {
 	for {
-		rw, e := s.Accept()
+		rw, e := l.Accept()
 		if e != nil {
 			return e
 		}
@@ -114,7 +148,7 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("propose %q", mut)
-				v, err := c.s.mg.Propose(mut)
+				v, err := c.s.Mg.Propose(mut)
 				if err != nil {
 					rlogger.Logf("bad: %s", err)
 					pc.SendError(rid, err.String())
@@ -128,42 +162,4 @@ func (c *conn) serve() {
 			}
 		}
 	}
-}
-
-func ListenAndServe(addr string, st *store.Store, mg *paxos.Manager) os.Error {
-	logger := util.NewLogger("server %s", addr)
-
-	logger.Log("binding")
-	l, err := net.Listen("tcp", addr)
-	if err != nil {
-		logger.Log(err)
-		return err
-	}
-	defer l.Close()
-	logger.Log("listening")
-
-	err = Serve(l, st, mg)
-	if err != nil {
-		logger.Logf("%s: %s", l, err)
-	}
-	return err
-}
-
-func ListenAndServeUdp(addr string, mg *paxos.Manager, outs chan paxos.Msg) os.Error {
-	logger := util.NewLogger("udp server %s", addr)
-
-	logger.Log("binding")
-	u, err := net.ListenPacket("udp", addr)
-	if err != nil {
-		logger.Log(err)
-		return err
-	}
-	defer u.Close()
-	logger.Log("listening")
-
-	err = ServeUdp(u, mg, outs)
-	if err != nil {
-		logger.Logf("%s: %s", u, err)
-	}
-	return err
 }

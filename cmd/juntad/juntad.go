@@ -30,12 +30,14 @@ func main() {
 
 	addMember(st, mg.Self, *listenAddr)
 
+	sv := &server.Server{*listenAddr, st, mg}
+
 	go func() {
-		panic(server.ListenAndServe(*listenAddr, st, mg))
+		panic(sv.ListenAndServe())
 	}()
 
 	go func() {
-		panic(server.ListenAndServeUdp(*listenAddr, mg, outs))
+		panic(sv.ListenAndServeUdp(outs))
 	}()
 
 	for {
