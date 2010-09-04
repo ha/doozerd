@@ -19,11 +19,12 @@ type conn struct {
 
 type server struct {
 	net.Listener
+	st *store.Store
 	mg *paxos.Manager
 }
 
-func Serve(l net.Listener, mg *paxos.Manager) os.Error {
-	return (&server{l, mg}).Serve()
+func Serve(l net.Listener, st *store.Store, mg *paxos.Manager) os.Error {
+	return (&server{l, st, mg}).Serve()
 }
 
 func ServeUdp(u net.PacketConn, mg *paxos.Manager, outs chan paxos.Msg) os.Error {
@@ -138,7 +139,7 @@ func ListenAndServe(addr string, st *store.Store, mg *paxos.Manager) os.Error {
 	defer l.Close()
 	logger.Log("listening")
 
-	err = Serve(l, mg)
+	err = Serve(l, st, mg)
 	if err != nil {
 		logger.Logf("%s: %s", l, err)
 	}
