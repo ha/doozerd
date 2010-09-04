@@ -10,8 +10,6 @@ import (
 	"junta/store"
 )
 
-const window = 50
-
 type conn struct {
 	net.Conn
 	s *Server
