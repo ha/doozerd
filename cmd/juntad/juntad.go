@@ -24,13 +24,11 @@ func main() {
 	util.LogWriter = os.Stderr
 
 	outs := make(chan paxos.Msg)
-	self := util.RandHexString(160)
 
 	st := store.New()
-	rg := paxos.NewRegistrar(self, st, alpha)
-	mg := paxos.NewManager(2, rg, paxos.ChanPutCloser(outs))
+	mg := paxos.NewManager(2, alpha, st, paxos.ChanPutCloser(outs))
 
-	addMember(st, self, *listenAddr)
+	addMember(st, mg.Self, *listenAddr)
 
 	go func() {
 		panic(server.ListenAndServe(*listenAddr, st, mg))

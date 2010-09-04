@@ -3,6 +3,7 @@ package paxos
 import (
 	"log"
 
+	"junta/store"
 	"junta/util"
 )
 
@@ -23,6 +24,7 @@ type Manager struct {
 	learned chan result
 	reqs    chan instReq
 	logger  *log.Logger
+	Self    string
 }
 
 func (m *Manager) process(next uint64, outs Putter) {
@@ -51,12 +53,15 @@ func (m *Manager) process(next uint64, outs Putter) {
 	}
 }
 
-func NewManager(start uint64, rg *Registrar, outs Putter) *Manager {
+func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager {
+	self := "a"
+	rg := NewRegistrar(self, st, alpha)
 	m := &Manager{
 		rg:      rg,
 		learned: make(chan result),
 		reqs:    make(chan instReq),
 		logger:  util.NewLogger("manager"),
+		Self:    self,
 	}
 
 	go m.process(start, outs)

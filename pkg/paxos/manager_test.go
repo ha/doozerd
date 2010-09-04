@@ -6,21 +6,21 @@ import (
 	"testing"
 )
 
-func selfRefNewManager(self string, nodes []string) (*Manager, *store.Store) {
+func selfRefNewManager(extraNodes ...string) (*Manager, *store.Store) {
 	p := make(FakePutter, 1)
 	st := store.New()
-	rg := NewRegistrar(self, st, 1)
-	for i, node := range nodes {
-		st.Apply(uint64(i+1), mustEncodeSet(membersKey+"/"+node, node+"addr"))
+	m := NewManager(uint64(len(extraNodes)+2), 1, st, p)
+	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+m.Self, m.Self+"addr"))
+	for i, node := range extraNodes {
+		st.Apply(uint64(i+2), mustEncodeSet(membersKey+"/"+node, node+"addr"))
 	}
-	m := NewManager(uint64(len(nodes)+1), rg, p)
 	p[0] = m
 	return m, st
 }
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -28,7 +28,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -40,7 +40,7 @@ func TestProposeAndRecv(t *testing.T) {
 
 func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	got := m.Propose(exp)
 	assert.Equal(t, exp, got, "")
@@ -53,7 +53,7 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 func TestProposeAndRecvMultiple(t *testing.T) {
 	exp := []string{"/foo", "/bar"}
 	seqnexp := []uint64{2, 3}
-	m, st := selfRefNewManager("a", []string{"a"})
+	m, st := selfRefNewManager()
 
 	got0 := m.Propose(exp[0])
 	assert.Equal(t, exp[0], got0, "")
@@ -74,7 +74,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -84,7 +84,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	m.Put(newVoteFrom(1, 1, exp))
 	seqn, v := m.Recv()
@@ -94,7 +94,7 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 
 func TestUnusedSeqn(t *testing.T) {
 	exp1, exp2 := "foo", "bar"
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	m.Put(newVoteFrom(1, 1, exp1))
 	seqn, v := m.Recv()
@@ -109,7 +109,7 @@ func TestUnusedSeqn(t *testing.T) {
 }
 
 func TestIgnoreMalformedMsg(t *testing.T) {
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 
 	m.Put(resize(newVoteFrom(1, 1, ""), -1))
 
@@ -130,15 +130,11 @@ func mustEncodeSet(k, v string) string {
 }
 
 func TestReadFromStore(t *testing.T) {
-	self := "a"
-
 	// The cluster initially has 1 node (quorum of 1).
 	st := store.New()
-	rg := NewRegistrar(self, st, 1)
-	st.Apply(1, mustEncodeSet(membersKey+"/"+self, ""))
-
 	p := make(ChanPutCloser)
-	m := NewManager(1, rg, p)
+	m := NewManager(1, 1, st, p)
+	st.Apply(1, mustEncodeSet(membersKey+"/"+m.Self, ""))
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll
@@ -182,14 +178,12 @@ func TestManagerPutFrom(t *testing.T) {
 
 	p := make(FakePutter, 1)
 	st := store.New()
-	rg := NewRegistrar("a", st, 1)
-	st.Apply(uint64(1), mustEncodeSet(membersKey+"/a", "x"))
-	st.Apply(uint64(2), mustEncodeSet(membersKey+"/b", "y"))
-	st.Apply(uint64(3), mustEncodeSet(membersKey+"/c", "z"))
-	m := NewManager(4, rg, p)
+	m := NewManager(4, 1, st, p)
 	p[0] = m
 
-
+	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+m.Self, "x"))
+	st.Apply(uint64(2), mustEncodeSet(membersKey+"/b", "y"))
+	st.Apply(uint64(3), mustEncodeSet(membersKey+"/c", "z"))
 
 	froms := make(chan int)
 
@@ -212,7 +206,7 @@ func TestManagerPutFrom(t *testing.T) {
 }
 
 func TestManagerAddrsFor(t *testing.T) {
-	m, _ := selfRefNewManager("a", []string{"a"})
+	m, _ := selfRefNewManager()
 	msg := newInvite(1)
 	msg.SetSeqn(1)
 	assert.Equal(t, []string{"aaddr"}, m.AddrsFor(msg))
