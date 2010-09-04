@@ -164,7 +164,10 @@ func (c *conn) serve() {
 				break
 			}
 			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-			err := c.s.Set(parts[1], parts[2], parts[3])
+			err := os.EAGAIN
+			for err == os.EAGAIN {
+				err = c.s.Set(parts[1], parts[2], parts[3])
+			}
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
 				pc.SendError(rid, err.String())
