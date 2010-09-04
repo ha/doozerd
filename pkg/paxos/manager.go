@@ -8,8 +8,6 @@ import (
 	"junta/util"
 )
 
-const window = 50
-
 const selfBits = 160
 
 type result struct {
