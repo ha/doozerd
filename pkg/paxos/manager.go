@@ -21,6 +21,7 @@ type instReq struct {
 }
 
 type Manager struct {
+	st      *store.Store
 	rg      *Registrar
 	learned chan result
 	reqs    chan *instReq
@@ -58,6 +59,7 @@ func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager 
 	self := "a"
 	rg := NewRegistrar(self, st, alpha)
 	m := &Manager{
+		st:      st,
 		rg:      rg,
 		learned: make(chan result),
 		reqs:    make(chan *instReq),
@@ -97,10 +99,13 @@ func (m *Manager) AddrsFor(msg Msg) []string {
 }
 
 func (m *Manager) Propose(v string) (string, os.Error) {
-	_, inst := m.getInstance(0)
+	ch := make(chan store.Status)
+	seqn, inst := m.getInstance(0)
+	m.st.Wait(seqn, ch)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
-	return inst.Value(), nil
+	status := <-ch
+	return status.M, status.Err
 }
 
 func (m *Manager) Recv() (uint64, string) {

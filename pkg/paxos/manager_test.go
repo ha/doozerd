@@ -22,7 +22,10 @@ func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	got, _ := m.Propose(exp)
+	_, ix := m.getInstance(0)
+	ix.Propose(exp)
+	got := ix.Value()
+
 	assert.Equal(t, exp, got, "")
 }
 
@@ -30,7 +33,9 @@ func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	got, _ := m.Propose(exp)
+	_, ix := m.getInstance(0)
+	ix.Propose(exp)
+	got := ix.Value()
 	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
@@ -42,7 +47,9 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	got, _ := m.Propose(exp)
+	_, ix := m.getInstance(0)
+	ix.Propose(exp)
+	got := ix.Value()
 	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
@@ -55,7 +62,9 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 	seqnexp := []uint64{2, 3}
 	m, st := selfRefNewManager()
 
-	got0, _ := m.Propose(exp[0])
+	_, ix := m.getInstance(0)
+	ix.Propose(exp[0])
+	got0 := ix.Value()
 	assert.Equal(t, exp[0], got0, "")
 
 	seqn0, v0 := m.Recv()
@@ -64,7 +73,9 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 	st.Apply(seqn0, v0)
 
-	got1, _ := m.Propose(exp[1])
+	_, ix = m.getInstance(0)
+	ix.Propose(exp[1])
+	got1 := ix.Value()
 	assert.Equal(t, exp[1], got1, "")
 
 	seqn1, v1 := m.Recv()
@@ -101,7 +112,9 @@ func TestUnusedSeqn(t *testing.T) {
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp1, v, "")
 
-	got, _ := m.Propose(exp2)
+	_, ix := m.getInstance(0)
+	ix.Propose(exp2)
+	got := ix.Value()
 	assert.Equal(t, exp2, got, "")
 	seqn, v = m.Recv()
 	assert.Equal(t, uint64(2), seqn, "")
@@ -113,12 +126,41 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 
 	m.Put(resize(newVoteFrom(1, 1, ""), -1))
 
-	got, _ := m.Propose("y")
+	_, ix := m.getInstance(0)
+	ix.Propose("y")
+	got := ix.Value()
 	assert.Equal(t, "y", got, "")
 
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(2), seqn, "")
 	assert.Equal(t, "y", v, "")
+}
+
+func TestProposeAndStore(t *testing.T) {
+	exp := "foo"
+	mg, st := selfRefNewManager()
+
+	go func() {
+		for {
+			st.Apply(mg.Recv())
+		}
+	}()
+
+	got, _ := mg.Propose(exp)
+	assert.Equal(t, exp, got, "")
+}
+
+func TestProposeBadMutation(t *testing.T) {
+	mg, st := selfRefNewManager()
+
+	go func() {
+		for {
+			st.Apply(mg.Recv())
+		}
+	}()
+
+	_, err := mg.Propose("foo")
+	assert.Equal(t, store.BadMutationError, err)
 }
 
 func mustEncodeSet(k, v string) string {
