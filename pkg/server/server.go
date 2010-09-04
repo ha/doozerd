@@ -114,8 +114,11 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("propose %q", mut)
-				v := c.s.mg.Propose(mut)
-				if v == mut {
+				v, err := c.s.mg.Propose(mut)
+				if err != nil {
+					rlogger.Logf("bad: %s", err)
+					pc.SendError(rid, err.String())
+				} else if v == mut {
 					rlogger.Logf("good")
 					pc.SendResponse(rid, "true")
 				} else {
