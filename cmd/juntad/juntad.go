@@ -31,9 +31,10 @@ func main() {
 
 	self := util.RandHexString(idBits)
 	st := store.New()
-	mg := paxos.NewManager(self, 2, alpha, st, paxos.ChanPutCloser(outs))
 
-	addMember(st, mg.Self, *listenAddr)
+	addMember(st, self, *listenAddr)
+
+	mg := paxos.NewManager(self, 2, alpha, st, paxos.ChanPutCloser(outs))
 
 	sv := &server.Server{*listenAddr, st, mg}
 
