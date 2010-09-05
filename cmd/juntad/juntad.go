@@ -39,6 +39,8 @@ func main() {
 
 	mg := paxos.NewManager(self, seqn, alpha, st, paxos.ChanPutCloser(outs))
 
+	// Skip ahead alpha steps so that the registrar can provide a meaningful
+	// cluster.
 	for i := seqn + 1; i < seqn + alpha; i++ {
 		go st.Apply(i, "") // nop
 	}
