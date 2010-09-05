@@ -10,7 +10,11 @@ import (
 	"junta/server"
 )
 
-const alpha = 50
+const (
+	alpha = 50
+	idBits = 160
+)
+
 
 // Flags
 var (
@@ -25,8 +29,9 @@ func main() {
 
 	outs := make(chan paxos.Msg)
 
+	self := util.RandHexString(idBits)
 	st := store.New()
-	mg := paxos.NewManager(2, alpha, st, paxos.ChanPutCloser(outs))
+	mg := paxos.NewManager(self, 2, alpha, st, paxos.ChanPutCloser(outs))
 
 	addMember(st, mg.Self, *listenAddr)
 

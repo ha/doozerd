@@ -9,7 +9,7 @@ import (
 func selfRefNewManager(extraNodes ...string) (*Manager, *store.Store) {
 	p := make(FakePutter, 1)
 	st := store.New()
-	m := NewManager(uint64(len(extraNodes)+2), 1, st, p)
+	m := NewManager("a", uint64(len(extraNodes)+2), 1, st, p)
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+m.Self, m.Self+"addr"))
 	for i, node := range extraNodes {
 		st.Apply(uint64(i+2), mustEncodeSet(membersKey+"/"+node, node+"addr"))
@@ -175,7 +175,7 @@ func TestReadFromStore(t *testing.T) {
 	// The cluster initially has 1 node (quorum of 1).
 	st := store.New()
 	p := make(ChanPutCloser)
-	m := NewManager(1, 1, st, p)
+	m := NewManager("a", 1, 1, st, p)
 	st.Apply(1, mustEncodeSet(membersKey+"/"+m.Self, ""))
 
 	// Fire up a new instance with a vote message. This instance should block
@@ -220,7 +220,7 @@ func TestManagerPutFrom(t *testing.T) {
 
 	p := make(FakePutter, 1)
 	st := store.New()
-	m := NewManager(4, 1, st, p)
+	m := NewManager("a", 4, 1, st, p)
 	m.Self = "a"
 	p[0] = m
 
@@ -260,9 +260,4 @@ func TestManagerGetInstanceForPropose(t *testing.T) {
 	m, _ := selfRefNewManager()
 	seqn, _ := m.getInstance(0)
 	assert.Equal(t, uint64(2), seqn)
-}
-
-func TestManagerSelfLen(t *testing.T) {
-	m, _ := selfRefNewManager()
-	assert.Equal(t, 40, len(m.Self))
 }

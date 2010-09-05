@@ -8,8 +8,6 @@ import (
 	"junta/util"
 )
 
-const selfBits = 160
-
 type result struct {
 	seqn uint64
 	v    string
@@ -29,8 +27,7 @@ type Manager struct {
 	Self    string
 }
 
-func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager {
-	self := util.RandHexString(selfBits)
+func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putter) *Manager {
 	m := &Manager{
 		st:      st,
 		rg:      NewRegistrar(st, alpha),
