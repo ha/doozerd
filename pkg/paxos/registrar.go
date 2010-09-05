@@ -65,7 +65,7 @@ func findString(v []string, s string) (i int) {
 
 func (rg *Registrar) process(known uint64, members map[string]string) {
 	clusters := make(map[uint64]map[string]string)
-	clusters[known] = members
+	copyMap(clusters, known, members)
 
 	for {
 		select {
@@ -85,10 +85,7 @@ func (rg *Registrar) process(known uint64, members map[string]string) {
 				}
 			case ev.Type == store.Apply:
 				known = ev.Seqn
-				clusters[known] = map[string]string{}
-				for k,v := range members {
-					clusters[known][k] = v
-				}
+				copyMap(clusters, known, members)
 			}
 		}
 
@@ -97,6 +94,13 @@ func (rg *Registrar) process(known uint64, members map[string]string) {
 			l := heap.Pop(rg.lookups).(lookup)
 			l.ch <- clusters[l.cver]
 		}
+	}
+}
+
+func copyMap(c map[uint64]map[string]string, n uint64, m map[string]string) {
+	c[n] = map[string]string{}
+	for k,v := range m {
+		c[n][k] = v
 	}
 }
 

@@ -64,6 +64,9 @@ func TestRegistrarInitNext(t *testing.T) {
 
 	members := rg.membersAt(2)
 	assert.Equal(t, 2, len(members), "2 Len")
+
+	members = rg.membersAt(1)
+	assert.Equal(t, 1, len(members), "1 Len")
 }
 
 func TestRegistrarTooOld(t *testing.T) {
