@@ -5,6 +5,7 @@ import (
 	"container/heap"
 	"container/vector"
 	"math"
+	"strings"
 )
 
 type Registrar struct {
@@ -50,7 +51,7 @@ func NewRegistrar(self string, st *store.Store, window int) *Registrar {
 	heap.Init(rg.lookups)
 	st.Watch(membersKey, store.Add|store.Rem, rg.evs)
 	st.WatchApply(rg.evs)
-	go rg.process()
+	go rg.process(members(st))
 	return rg
 }
 
@@ -63,9 +64,8 @@ func findString(v []string, s string) (i int) {
 	return -1
 }
 
-func (rg *Registrar) process() {
+func (rg *Registrar) process(members map[string]string) {
 	known := uint64(0)
-	members := make(map[string]string)
 	clusters := make(map[uint64]*cluster)
 
 	for {
@@ -95,6 +95,17 @@ func (rg *Registrar) process() {
 			l.ch <- clusters[l.cver]
 		}
 	}
+}
+
+func members(st *store.Store) map[string]string {
+	members := map[string]string{}
+	body, _ := st.Lookup(membersKey)
+	ids := strings.Split(body, "\n", -1)
+	for _, id := range ids {
+		addr, _ := st.Lookup(membersKey + "/" + id)
+		members[id] = addr
+	}
+	return members
 }
 
 func (rg *Registrar) clusterAt(cver uint64) *cluster {

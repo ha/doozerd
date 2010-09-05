@@ -37,6 +37,19 @@ func sync(st *store.Store, seqn uint64) {
 	<-ch
 }
 
+func TestRegistrarInit(t *testing.T) {
+	st := store.New()
+	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+	sync(st, 1)
+	rg := NewRegistrar("b", st, 0)
+	go func() {
+		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
+	}()
+
+	cx := rg.clusterAt(2)
+	assert.Equal(t, 2, cx.Len(), "2 Len")
+}
+
 func TestRegistrarTooOld(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
