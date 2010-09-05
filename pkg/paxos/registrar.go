@@ -121,11 +121,3 @@ func (rg *Registrar) clusterFor(seqn uint64) *cluster {
 	}
 	return rg.clusterAt(cver)
 }
-
-func (rg *Registrar) History(a, b uint64) (res []map[string]string) {
-	res = make([]map[string]string, b - a)
-	for i := a; i < b; i++ {
-		res[i-a] = rg.clusterAt(i).addrsById
-	}
-	return
-}

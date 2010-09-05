@@ -71,22 +71,3 @@ func TestRegistrarTooOld(t *testing.T) {
 	cx := rg.clusterAt(1)
 	assert.Equal(t, (*cluster)(nil), cx, "cx 1")
 }
-
-func TestRegistrarHistory(t *testing.T) {
-	exp := []map[string]string{
-		map[string]string{"a":"x"},
-		map[string]string{"a":"x", "b":"y"},
-		map[string]string{"a":"x", "b":"y", "c":"z"},
-	}
-
-	st := store.New()
-	rg := NewRegistrar(st, 0, 2)
-	go func() {
-		st.Apply(1, mustEncodeSet(membersKey+"/a", "x"))
-		st.Apply(2, mustEncodeSet(membersKey+"/b", "y"))
-		st.Apply(3, mustEncodeSet(membersKey+"/c", "z"))
-	}()
-
-	h := rg.History(1, 4)
-	assert.Equal(t, exp, h)
-}
