@@ -10,11 +10,11 @@ func selfRefNewManager(extraNodes ...string) (*Manager, *store.Store) {
 	p := make(FakePutter, 1)
 	st := store.New()
 	self := "a"
-	m := NewManager(self, uint64(len(extraNodes)+2), 1, st, p)
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+self, self+"addr"))
 	for i, node := range extraNodes {
 		st.Apply(uint64(i+2), mustEncodeSet(membersKey+"/"+node, node+"addr"))
 	}
+	m := NewManager(self, uint64(len(extraNodes)+1), 1, st, p)
 	p[0] = m
 	return m, st
 }
@@ -178,7 +178,7 @@ func TestReadFromStore(t *testing.T) {
 	p := make(ChanPutCloser)
 	self := "a"
 	st.Apply(1, mustEncodeSet(membersKey+"/"+self, ""))
-	m := NewManager(self, 2, 1, st, p)
+	m := NewManager(self, 1, 1, st, p)
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll
@@ -226,7 +226,7 @@ func TestManagerPutFrom(t *testing.T) {
 	st.Apply(uint64(2), mustEncodeSet(membersKey+"/b", "y"))
 	st.Apply(uint64(3), mustEncodeSet(membersKey+"/c", "z"))
 	p := make(FakePutter, 1)
-	m := NewManager(self, 4, 1, st, p)
+	m := NewManager(self, 3, 1, st, p)
 	p[0] = m
 
 	froms := make(chan int)

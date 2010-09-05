@@ -32,10 +32,14 @@ func main() {
 	self := util.RandHexString(idBits)
 	st := store.New()
 
-	seqn := uint64(1)
-	seqn = addMember(st, seqn, self, *listenAddr)
+	seqn := uint64(0)
+	seqn = addMember(st, seqn + 1, self, *listenAddr)
 
 	mg := paxos.NewManager(self, seqn, alpha, st, paxos.ChanPutCloser(outs))
+
+	for i := seqn + 1; i < seqn + alpha; i++ {
+		go st.Apply(i, "") // nop
+	}
 
 	sv := &server.Server{*listenAddr, st, mg}
 
@@ -59,5 +63,5 @@ func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 		panic(err)
 	}
 	st.Apply(seqn, mx)
-	return seqn + 1
+	return seqn
 }
