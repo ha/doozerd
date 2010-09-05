@@ -84,7 +84,7 @@ func (rg *Registrar) process() {
 					members[ev.Body] = "", false
 				}
 			case ev.Type == store.Apply:
-				known++
+				known = ev.Seqn
 				clusters[known] = newCluster(rg.self, members)
 			}
 		}

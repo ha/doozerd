@@ -31,6 +31,25 @@ func TestRegistrar(t *testing.T) {
 	assert.Equal(t, 1, cx.Len(), "1 Len")
 }
 
+func sync(st *store.Store, seqn uint64) {
+	ch := make(chan store.Status)
+	st.Wait(seqn, ch)
+	<-ch
+}
+
+func TestRegistrarTooOld(t *testing.T) {
+	st := store.New()
+	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+	sync(st, 1)
+	rg := NewRegistrar("b", st, 0)
+	go func() {
+		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
+	}()
+
+	cx := rg.clusterAt(1)
+	assert.Equal(t, (*cluster)(nil), cx, "cx 1")
+}
+
 func TestRegistrarHistory(t *testing.T) {
 	exp := []map[string]string{
 		map[string]string{"a":"x"},
