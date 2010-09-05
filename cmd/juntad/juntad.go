@@ -60,7 +60,7 @@ func main() {
 
 func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/j/junta/members/"+self, addr, store.Clobber)
+	mx, err := store.EncodeSet("/j/junta/members/"+self, addr, store.Missing)
 	if err != nil {
 		panic(err)
 	}
