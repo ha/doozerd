@@ -9,7 +9,6 @@ import (
 )
 
 type Registrar struct {
-	self     string
 	window   int
 	st       *store.Store
 	evs      chan store.Event
@@ -39,9 +38,8 @@ func (q *lookupQueue) peek() lookup {
 
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
-func NewRegistrar(self string, st *store.Store, window int) *Registrar {
+func NewRegistrar(st *store.Store, window int) *Registrar {
 	rg := &Registrar{
-		self:     self,
 		window:   window,
 		st:       st,
 		evs:      make(chan store.Event),
@@ -85,7 +83,7 @@ func (rg *Registrar) process(members map[string]string) {
 				}
 			case ev.Type == store.Apply:
 				known = ev.Seqn
-				clusters[known] = newCluster(rg.self, members)
+				clusters[known] = newCluster(members)
 			}
 		}
 

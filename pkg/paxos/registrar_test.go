@@ -8,7 +8,7 @@ import (
 
 func TestRegistrar(t *testing.T) {
 	st := store.New()
-	rg := NewRegistrar("a", st, 2)
+	rg := NewRegistrar(st, 2)
 	go func() {
 		go st.Apply(3, mustEncodeSet(membersKey+"/c", "1"))
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
@@ -41,7 +41,7 @@ func TestRegistrarInit(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
 	sync(st, 1)
-	rg := NewRegistrar("b", st, 0)
+	rg := NewRegistrar(st, 0)
 	go func() {
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
 	}()
@@ -54,7 +54,7 @@ func TestRegistrarTooOld(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
 	sync(st, 1)
-	rg := NewRegistrar("b", st, 0)
+	rg := NewRegistrar(st, 0)
 	go func() {
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
 	}()
@@ -71,7 +71,7 @@ func TestRegistrarHistory(t *testing.T) {
 	}
 
 	st := store.New()
-	rg := NewRegistrar("a", st, 2)
+	rg := NewRegistrar(st, 2)
 	go func() {
 		st.Apply(1, mustEncodeSet(membersKey+"/a", "x"))
 		st.Apply(2, mustEncodeSet(membersKey+"/b", "y"))

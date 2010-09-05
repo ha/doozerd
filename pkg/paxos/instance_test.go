@@ -27,7 +27,7 @@ func (w putFromWrapper) Put(m Msg) {
 
 func selfRefNewInstance(self string, nodes map[string]string) *instance {
 	p := make([]Putter, 1)
-	cx := newCluster(self, nodes)
+	cx := newClusterWithId(self, nodes)
 	ins := newInstance(func() *cluster { return cx }, FakePutter(p))
 	p[0] = ins
 	return ins
@@ -84,9 +84,9 @@ func TestStartAtCoord(t *testing.T) {
 func TestMultipleInstances(t *testing.T) {
 	ps := make([]Putter, 3)
 	nodes := map[string]string{"a":"x", "b":"y", "c":"z"}
-	cxA := func() *cluster { return newCluster("a", nodes) }
-	cxB := func() *cluster { return newCluster("a", nodes) }
-	cxC := func() *cluster { return newCluster("a", nodes) }
+	cxA := func() *cluster { return newClusterWithId("a", nodes) }
+	cxB := func() *cluster { return newClusterWithId("a", nodes) }
+	cxC := func() *cluster { return newClusterWithId("a", nodes) }
 	insA := newInstance(cxA, putFromWrapper{3, FakePutter(ps)})
 	insB := newInstance(cxB, putFromWrapper{1, FakePutter(ps)})
 	insC := newInstance(cxC, putFromWrapper{2, FakePutter(ps)})
@@ -105,7 +105,7 @@ func TestInstanceCluster(t *testing.T) {
 	ch := make(chan *cluster)
 	nodes := map[string]string{"a":"x"}
 	p := make([]Putter, 1)
-	cx := newCluster("a", nodes)
+	cx := newClusterWithId("a", nodes)
 	it := newInstance(func() *cluster { return cx }, FakePutter(p))
 	p[0] = it
 

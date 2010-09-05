@@ -16,10 +16,10 @@ type cluster struct {
 	nodes     []string
 	idsByAddr map[string]string
 	addrsById map[string]string
-	selfIndex int
 }
 
-func newCluster(self string, addrsById map[string]string) *cluster {
+func newCluster(addrsById map[string]string) *cluster {
+	self := ""
 	validNodes := make([]string, 0, len(addrsById))
 	idsByAddr := make(map[string]string)
 	addrsByIdCopy := make(map[string]string)
@@ -33,16 +33,9 @@ func newCluster(self string, addrsById map[string]string) *cluster {
 	}
 
 	sort.SortStrings(validNodes)
-	selfIndex := -1
-	for i, id := range validNodes {
-		if id == self {
-			selfIndex = i
-		}
-	}
 	return &cluster{
 		self:      self,
 		nodes:     validNodes,
-		selfIndex: selfIndex,
 		idsByAddr: idsByAddr,
 		addrsById: addrsByIdCopy,
 	}
@@ -57,7 +50,7 @@ func (cx *cluster) Quorum() int {
 }
 
 func (cx *cluster) SelfIndex() int {
-	return cx.selfIndex
+	return cx.indexById(cx.self)
 }
 
 func (cx *cluster) indexById(id string) int {

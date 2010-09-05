@@ -18,3 +18,9 @@ var tenNodes = map[string]string{
 func (sp SyncPutter) Put(m Msg) {
 	sp <- m
 }
+
+func newClusterWithId(self string, addrsById map[string]string) *cluster {
+	cx := newCluster(addrsById)
+	cx.self = self
+	return cx
+}

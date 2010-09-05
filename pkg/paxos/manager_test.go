@@ -222,7 +222,6 @@ func TestManagerPutFrom(t *testing.T) {
 	st := store.New()
 	m := NewManager(4, 1, st, p)
 	m.Self = "a"
-	m.rg.self = "a"
 	p[0] = m
 
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+m.Self, "x"))

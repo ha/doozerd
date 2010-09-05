@@ -33,7 +33,7 @@ func NewManager(start uint64, alpha int, st *store.Store, outs Putter) *Manager 
 	self := util.RandHexString(selfBits)
 	m := &Manager{
 		st:      st,
-		rg:      NewRegistrar(self, st, alpha),
+		rg:      NewRegistrar(st, alpha),
 		learned: make(chan result),
 		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),
@@ -56,7 +56,9 @@ func (m *Manager) process(next uint64, outs Putter) {
 			// TODO find a nicer way to do this
 			// This is meant to be run in a separate goroutine
 			cxf := func() *cluster {
-				return m.rg.clusterFor(req.seqn)
+				cx := m.rg.clusterFor(req.seqn)
+				cx.self = m.Self
+				return cx
 			}
 			inst = newInstance(cxf, putWrapper{req.seqn, outs})
 			instances[req.seqn] = inst

@@ -7,7 +7,8 @@ import (
 
 func TestCluster(t *testing.T) {
 	membership := map[string]string{"a":"x", "b":"y", "c":"z"}
-	cx := newCluster("c", membership)
+	cx := newCluster(membership)
+	cx.self = "c"
 	assert.Equal(t, 3, cx.Len(), "Len")
 	assert.Equal(t, 2, cx.Quorum(), "Quorum")
 	assert.Equal(t, 2, cx.SelfIndex(), "SelfIndex")
@@ -30,13 +31,15 @@ func TestClusterCopiesData(t *testing.T) {
 	for k,v := range membership {
 		exp[k] = v
 	}
-	cx := newCluster("c", membership)
+	cx := newCluster(membership)
+	cx.self = "c"
 	membership["d"] = "w"
 	assert.Equal(t, exp, cx.addrsById)
 }
 
 func TestClusterNil(t *testing.T) {
-	cx := newCluster("c", map[string]string{"a":"x", "b":"y", "c":"z", "":""})
+	cx := newCluster(map[string]string{"a":"x", "b":"y", "c":"z", "":""})
+	cx.self = "c"
 	assert.Equal(t, 3, cx.Len(), "Len")
 	assert.Equal(t, 2, cx.Quorum(), "Quorum")
 	assert.Equal(t, 2, cx.SelfIndex(), "SelfIndex")
