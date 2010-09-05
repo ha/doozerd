@@ -18,8 +18,7 @@ type cluster struct {
 	addrsById map[string]string
 }
 
-func newCluster(addrsById map[string]string) *cluster {
-	self := ""
+func newCluster(self string, addrsById map[string]string) *cluster {
 	validNodes := make([]string, 0, len(addrsById))
 	idsByAddr := make(map[string]string)
 	addrsByIdCopy := make(map[string]string)

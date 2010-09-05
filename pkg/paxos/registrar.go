@@ -18,7 +18,7 @@ type Registrar struct {
 
 type lookup struct {
 	cver uint64
-	ch   chan *cluster
+	ch   chan map[string]string
 }
 
 func (l lookup) Less(y interface{}) bool {
@@ -64,8 +64,8 @@ func findString(v []string, s string) (i int) {
 }
 
 func (rg *Registrar) process(known uint64, members map[string]string) {
-	clusters := make(map[uint64]*cluster)
-	clusters[known] = newCluster(members)
+	clusters := make(map[uint64]map[string]string)
+	clusters[known] = members
 
 	for {
 		select {
@@ -85,7 +85,10 @@ func (rg *Registrar) process(known uint64, members map[string]string) {
 				}
 			case ev.Type == store.Apply:
 				known = ev.Seqn
-				clusters[known] = newCluster(members)
+				clusters[known] = map[string]string{}
+				for k,v := range members {
+					clusters[known][k] = v
+				}
 			}
 		}
 
@@ -102,22 +105,24 @@ func members(st *store.Store) map[string]string {
 	body, _ := st.Lookup(membersKey)
 	ids := strings.Split(body, "\n", -1)
 	for _, id := range ids {
-		addr, _ := st.Lookup(membersKey + "/" + id)
-		members[id] = addr
+		if id != "" {
+			addr, _ := st.Lookup(membersKey + "/" + id)
+			members[id] = addr
+		}
 	}
 	return members
 }
 
-func (rg *Registrar) clusterAt(cver uint64) *cluster {
-	ch := make(chan *cluster)
+func (rg *Registrar) membersAt(cver uint64) map[string]string {
+	ch := make(chan map[string]string)
 	rg.lookupCh <- lookup{cver, ch}
 	return <-ch
 }
 
-func (rg *Registrar) clusterFor(seqn uint64) *cluster {
+func (rg *Registrar) membersFor(seqn uint64) map[string]string {
 	cver := uint64(1)
 	if seqn > uint64(rg.window) {
 		cver = seqn - uint64(rg.window)
 	}
-	return rg.clusterAt(cver)
+	return rg.membersAt(cver)
 }

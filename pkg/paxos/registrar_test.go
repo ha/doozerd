@@ -15,20 +15,25 @@ func TestRegistrar(t *testing.T) {
 		go st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
 	}()
 
-	cx := rg.clusterFor(5)
-	assert.Equal(t, 3, cx.Len(), "5 Len")
+	members := rg.membersFor(5)
+	t.Logf("members for %d = %v", 5, members)
+	assert.Equal(t, 3, len(members), "5 Len")
 
-	cx = rg.clusterFor(4)
-	assert.Equal(t, 2, cx.Len(), "4 Len")
+	members = rg.membersFor(4)
+	t.Logf("members for %d = %v", 4, members)
+	assert.Equal(t, 2, len(members), "4 Len")
 
-	cx = rg.clusterFor(3)
-	assert.Equal(t, 1, cx.Len(), "3 Len")
+	members = rg.membersFor(3)
+	t.Logf("members for %d = %v", 3, members)
+	assert.Equal(t, 1, len(members), "3 Len")
 
-	cx = rg.clusterFor(2)
-	assert.Equal(t, 1, cx.Len(), "2 Len")
+	members = rg.membersFor(2)
+	t.Logf("members for %d = %v", 2, members)
+	assert.Equal(t, 1, len(members), "2 Len")
 
-	cx = rg.clusterFor(1)
-	assert.Equal(t, 1, cx.Len(), "1 Len")
+	members = rg.membersFor(1)
+	t.Logf("members for %d = %v", 1, members)
+	assert.Equal(t, 1, len(members), "1 Len")
 }
 
 // TODO use store.Sync once that has been implemented
@@ -44,8 +49,8 @@ func TestRegistrarInitFirst(t *testing.T) {
 	sync(st, 1)
 	rg := NewRegistrar(st, 1, 0)
 
-	cx := rg.clusterAt(1)
-	assert.Equal(t, 1, cx.Len())
+	members := rg.membersAt(1)
+	assert.Equal(t, 1, len(members))
 }
 
 func TestRegistrarInitNext(t *testing.T) {
@@ -57,8 +62,8 @@ func TestRegistrarInitNext(t *testing.T) {
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
 	}()
 
-	cx := rg.clusterAt(2)
-	assert.Equal(t, 2, cx.Len(), "2 Len")
+	members := rg.membersAt(2)
+	assert.Equal(t, 2, len(members), "2 Len")
 }
 
 func TestRegistrarTooOld(t *testing.T) {
@@ -68,6 +73,6 @@ func TestRegistrarTooOld(t *testing.T) {
 	sync(st, 2)
 	rg := NewRegistrar(st, 2, 0)
 
-	cx := rg.clusterAt(1)
-	assert.Equal(t, (*cluster)(nil), cx, "cx 1")
+	members := rg.membersAt(1)
+	assert.Equal(t, map[string]string{}, members, "members 1")
 }
