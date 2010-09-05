@@ -32,9 +32,10 @@ func main() {
 	self := util.RandHexString(idBits)
 	st := store.New()
 
-	addMember(st, self, *listenAddr)
+	seqn := uint64(1)
+	seqn = addMember(st, seqn, self, *listenAddr)
 
-	mg := paxos.NewManager(self, 2, alpha, st, paxos.ChanPutCloser(outs))
+	mg := paxos.NewManager(self, seqn, alpha, st, paxos.ChanPutCloser(outs))
 
 	sv := &server.Server{*listenAddr, st, mg}
 
@@ -51,11 +52,12 @@ func main() {
 	}
 }
 
-func addMember(st *store.Store, self, addr string) {
+func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
 	mx, err := store.EncodeSet("/j/junta/members/"+self, addr, store.Clobber)
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(1, mx)
+	st.Apply(seqn, mx)
+	return seqn + 1
 }
