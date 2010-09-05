@@ -77,6 +77,7 @@ func (rg *Registrar) process(known uint64, members map[string]string) {
 				switch ev.Type {
 				case store.Add:
 					path := ev.Path + "/" + ev.Body
+					// TODO use store.Sync+store.Lookup once available
 					addr, _ := rg.st.LookupSync(path, ev.Seqn)
 					members[ev.Body] = addr
 				case store.Rem:

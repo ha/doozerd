@@ -31,6 +31,7 @@ func TestRegistrar(t *testing.T) {
 	assert.Equal(t, 1, cx.Len(), "1 Len")
 }
 
+// TODO use store.Sync once that has been implemented
 func sync(st *store.Store, seqn uint64) {
 	ch := make(chan store.Status)
 	st.Wait(seqn, ch)
