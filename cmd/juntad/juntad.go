@@ -34,6 +34,8 @@ func main() {
 
 	seqn := uint64(0)
 	seqn = addMember(st, seqn + 1, self, *listenAddr)
+	seqn = addSlot(st, seqn + 1, "1")
+	seqn = lockSlot(st, seqn + 1, "1", self)
 
 	mg := paxos.NewManager(self, seqn, alpha, st, paxos.ChanPutCloser(outs))
 
@@ -59,6 +61,26 @@ func main() {
 func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
 	mx, err := store.EncodeSet("/j/junta/members/"+self, addr, store.Clobber)
+	if err != nil {
+		panic(err)
+	}
+	st.Apply(seqn, mx)
+	return seqn
+}
+
+func addSlot(st *store.Store, seqn uint64, slot string) uint64 {
+	// TODO pull out path as a const
+	mx, err := store.EncodeSet("/j/junta/slot/"+slot, "", store.Missing)
+	if err != nil {
+		panic(err)
+	}
+	st.Apply(seqn, mx)
+	return seqn
+}
+
+func lockSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
+	// TODO pull out path as a const
+	mx, err := store.EncodeSet("/j/lock/junta/slot/"+slot, self, store.Missing)
 	if err != nil {
 		panic(err)
 	}
