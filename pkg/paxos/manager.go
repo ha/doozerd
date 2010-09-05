@@ -30,7 +30,7 @@ type Manager struct {
 func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putter) *Manager {
 	m := &Manager{
 		st:      st,
-		rg:      NewRegistrar(st, alpha),
+		rg:      NewRegistrar(st, start - 1, alpha),
 		learned: make(chan result),
 		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),

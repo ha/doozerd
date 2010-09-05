@@ -8,7 +8,7 @@ import (
 
 func TestRegistrar(t *testing.T) {
 	st := store.New()
-	rg := NewRegistrar(st, 2)
+	rg := NewRegistrar(st, 0, 2)
 	go func() {
 		go st.Apply(3, mustEncodeSet(membersKey+"/c", "1"))
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
@@ -37,11 +37,21 @@ func sync(st *store.Store, seqn uint64) {
 	<-ch
 }
 
-func TestRegistrarInit(t *testing.T) {
+func TestRegistrarInitFirst(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
 	sync(st, 1)
-	rg := NewRegistrar(st, 0)
+	rg := NewRegistrar(st, 1, 0)
+
+	cx := rg.clusterAt(1)
+	assert.Equal(t, 1, cx.Len())
+}
+
+func TestRegistrarInitNext(t *testing.T) {
+	st := store.New()
+	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+	sync(st, 1)
+	rg := NewRegistrar(st, 1, 0)
 	go func() {
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
 	}()
@@ -53,11 +63,9 @@ func TestRegistrarInit(t *testing.T) {
 func TestRegistrarTooOld(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
-	sync(st, 1)
-	rg := NewRegistrar(st, 0)
-	go func() {
-		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
-	}()
+	st.Apply(2, mustEncodeSet(membersKey+"/a", "1"))
+	sync(st, 2)
+	rg := NewRegistrar(st, 2, 0)
 
 	cx := rg.clusterAt(1)
 	assert.Equal(t, (*cluster)(nil), cx, "cx 1")
@@ -71,7 +79,7 @@ func TestRegistrarHistory(t *testing.T) {
 	}
 
 	st := store.New()
-	rg := NewRegistrar(st, 2)
+	rg := NewRegistrar(st, 0, 2)
 	go func() {
 		st.Apply(1, mustEncodeSet(membersKey+"/a", "x"))
 		st.Apply(2, mustEncodeSet(membersKey+"/b", "y"))

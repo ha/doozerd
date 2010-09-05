@@ -38,7 +38,7 @@ func (q *lookupQueue) peek() lookup {
 
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
-func NewRegistrar(st *store.Store, window int) *Registrar {
+func NewRegistrar(st *store.Store, start uint64, window int) *Registrar {
 	rg := &Registrar{
 		window:   window,
 		st:       st,
@@ -49,7 +49,7 @@ func NewRegistrar(st *store.Store, window int) *Registrar {
 	heap.Init(rg.lookups)
 	st.Watch(membersKey, store.Add|store.Rem, rg.evs)
 	st.WatchApply(rg.evs)
-	go rg.process(members(st))
+	go rg.process(start, members(st))
 	return rg
 }
 
@@ -62,9 +62,9 @@ func findString(v []string, s string) (i int) {
 	return -1
 }
 
-func (rg *Registrar) process(members map[string]string) {
-	known := uint64(0)
+func (rg *Registrar) process(known uint64, members map[string]string) {
 	clusters := make(map[uint64]*cluster)
+	clusters[known] = newCluster(members)
 
 	for {
 		select {
