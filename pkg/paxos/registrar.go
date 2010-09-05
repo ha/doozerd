@@ -38,6 +38,7 @@ func (q *lookupQueue) peek() lookup {
 
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
+// TODO remove the `start` param when store.Lookup provides a version
 func NewRegistrar(st *store.Store, start uint64, window int) *Registrar {
 	rg := &Registrar{
 		window:   window,
