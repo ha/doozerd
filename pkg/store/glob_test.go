@@ -9,6 +9,7 @@ var globs = [][]string{
 	[]string{"/a", `^/a$`},
 	[]string{"/a.b", `^/a\.b$`},
 	[]string{"/a世界", `^/a世界$`},
+	[]string{"/a?", `^/a.$`},
 	[]string{"/a/", `^/a/$`},
 	[]string{"/a/b", `^/a/b$`},
 	[]string{"/*", `^/[^/]*$`},

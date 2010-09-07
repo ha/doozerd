@@ -5,6 +5,7 @@ import (
 )
 
 // Supports unix/ruby-style glob patterns:
+//  - `?` matches a single char
 //  - `*` matches zero or more chars in a single path component
 //  - `**` matches zero or more chars in zero or more components
 func translateGlob(pattern string) (regexp string) {
@@ -17,6 +18,9 @@ func translateGlob(pattern string) (regexp string) {
 			double = false
 		case '.':
 			outs[i] = `\.`
+			double = false
+		case '?':
+			outs[i] = `.`
 			double = false
 		case '*':
 			if double {
