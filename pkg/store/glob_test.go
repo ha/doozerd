@@ -26,11 +26,15 @@ var globs = [][]string{
 var matches = [][]string{
 	[]string{"/a/b", "/a/b"},
 	[]string{"/a?", "/ab", "/ac"},
+	[]string{"/a*", "/a", "/ab", "/abc"},
+	[]string{"/a**", "/a", "/ab", "/abc", "/a/", "/a/b", "/ab/c"},
 }
 
 var nonMatches = [][]string{
 	[]string{"/a/b", "/a/c", "/a/", "/a/b/", "/a/bc"},
-	[]string{"/a?", "/abc", "/a", "/a/"},
+	[]string{"/a?", "/", "/abc", "/a", "/a/"},
+	[]string{"/a*", "/", "/a/", "/ba"},
+	[]string{"/a**", "/", "/ba"},
 }
 
 func TestGlobTranslate(t *testing.T) {
