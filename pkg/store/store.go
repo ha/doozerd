@@ -244,7 +244,7 @@ func append(ws *[]watch, w watch) {
 }
 
 // Unbounded in-order buffering
-func wbuffer(in, out chan Event) {
+func buffer(in, out chan Event) {
 	list := list.New()
 	for {
 		f, e := list.Front(), Event{}
@@ -392,7 +392,7 @@ func (s *Store) Snapshot(w io.Writer) (err os.Error) {
 func (s *Store) Watch(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
 	in := make(chan Event)
-	go wbuffer(in, ch)
+	go buffer(in, ch)
 	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re, stop:math.MaxUint64}
 }
 
