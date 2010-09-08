@@ -54,6 +54,8 @@ var (
 	CasMismatchError = os.NewError("cas mismatch")
 )
 
+var waitRegexp = regexp.MustCompile(``)
+
 var LogWriter = util.NullWriter{}
 
 // This structure should be kept immutable.
@@ -70,12 +72,9 @@ type Store struct {
 	reqCh chan req
 	snapCh chan snap
 	watchCh chan watch
-	waitCh chan wait
 	watches []watch
-	notifyCh chan notify
 	todo map[uint64]apply
 	todoLookup *reqQueue
-	todoWait *waitQueue
 	todoSnap *snapQueue
 }
 
@@ -104,10 +103,6 @@ type reqQueue struct {
 	vector.Vector
 }
 
-type waitQueue struct {
-	vector.Vector
-}
-
 type snapQueue struct {
 	vector.Vector
 }
@@ -127,17 +122,7 @@ type watch struct {
 	pat string
 	in, out chan Event
 	re *regexp.Regexp
-}
-
-type wait struct {
-	ch chan Status
-	seqn uint64
-	ready chan int
-}
-
-type notify struct {
-	ch chan Event
-	ev Event
+	stop uint64
 }
 
 func (r req) Less(y interface{}) bool {
@@ -146,10 +131,6 @@ func (r req) Less(y interface{}) bool {
 
 func (r snap) Less(y interface{}) bool {
 	return r.seqn < y.(snap).seqn
-}
-
-func (w wait) Less(y interface{}) bool {
-	return w.seqn < y.(wait).seqn
 }
 
 func (q *reqQueue) peek() req {
@@ -166,13 +147,6 @@ func (q *snapQueue) peek() snap {
 	return q.Vector[0].(snap)
 }
 
-func (q *waitQueue) peek() wait {
-	if len(q.Vector) == 0 {
-		return wait{seqn:math.MaxUint64} // ~infinity
-	}
-	return q.Vector[0].(wait)
-}
-
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
@@ -182,18 +156,13 @@ func New() *Store {
 		reqCh: make(chan req),
 		snapCh: make(chan snap),
 		watchCh: make(chan watch),
-		waitCh: make(chan wait),
 		todo: make(map[uint64]apply),
 		todoLookup: new(reqQueue),
-		todoWait: new(waitQueue),
 		todoSnap: new(snapQueue),
 		watches: []watch{},
-		notifyCh: make(chan notify),
 	}
 	heap.Init(s.todoLookup)
 	heap.Init(s.todoSnap)
-	heap.Init(s.todoWait)
-	go s.buffer()
 	go s.process()
 	return s
 }
@@ -375,27 +344,12 @@ func wbuffer(in, out chan Event) {
 		}
 		select {
 		case x := <-in:
+			if closed(in) {
+				return
+			}
 			list.PushBack(x)
 		case ch <- e:
 			list.Remove(f)
-		}
-	}
-}
-
-// Unbounded in-order buffering
-func (s *Store) buffer() {
-	list := list.New()
-	var n notify
-	for {
-		select {
-		case n.ch <- n.ev:
-			n = notify{}
-		case x := <-s.notifyCh:
-			list.PushBack(x)
-		}
-		if x := list.Front(); x != nil && n.ch == nil {
-			n = x.Value.(notify)
-			list.Remove(x)
 		}
 	}
 }
@@ -418,16 +372,11 @@ func (s *Store) process() {
 		case r := <-s.snapCh:
 			heap.Push(s.todoSnap, r)
 		case w := <-s.watchCh:
-			append(&s.watches, w)
-		case wt := <-s.waitCh:
-			wt.ready <- 1
-			if wt.seqn > ver { // in the future?
-				heap.Push(s.todoWait, wt)
+			if w.stop > ver {
+				append(&s.watches, w)
 			} else {
-				status := Status{wt.seqn, "", TooLateError}
-				go func(ch chan Status, status Status) {
-					ch <- status
-				}(wt.ch, status)
+				w.in <- Event{Seqn:w.stop, Err:TooLateError}
+				close(w.in)
 			}
 		}
 
@@ -465,24 +414,12 @@ func (s *Store) process() {
 				} else {
 					k = "/store/error"
 				}
-				s.notify(Event{t.seqn, k, v, cas, t.mutation, nil})
+				s.notify(Event{t.seqn, k, v, cas, t.mutation, err})
 			}
 
 			ver = next
 			s.todo[next] = apply{}, false
 			next++
-
-			//s.notify(Event{t.seqn, "", "", "", "", nil})
-
-			// If we have any waits that can be satisfied, do them.
-			for wt := s.todoWait.peek(); ver >= wt.seqn; wt = s.todoWait.peek() {
-				heap.Pop(s.todoWait)
-				status := Status{ver, t.mutation, err}
-				go func(ch chan Status, status Status) {
-					ch <- status
-				}(wt.ch, status)
-			}
-
 		}
 
 		// If we have any lookups that can be satisfied, do them.
@@ -506,10 +443,7 @@ func (s *Store) process() {
 //
 // If `mutation` is a snapshot, notifications will not be sent.
 func (s *Store) Apply(seqn uint64, mutation string) {
-	ch := make(chan Status)
-	s.Wait(seqn, ch)
 	s.applyCh <- apply{seqn, mutation}
-	<-ch
 }
 
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
@@ -565,7 +499,7 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
 	in := make(chan Event)
 	go wbuffer(in, ch)
-	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re}
+	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re, stop:math.MaxUint64}
 }
 
 // Like `Watch`, but instead sends a placeholder event after every mutation
@@ -580,8 +514,28 @@ func (s *Store) WatchApply(evs chan Event) {
 	s.Watch("/**", evs)
 }
 
-func (s *Store) Wait(seqn uint64, ch chan Status) {
-	ready := make(chan int)
-	s.waitCh <- wait{ch, seqn, ready}
-	<-ready
+func (s *Store) Wait(seqn uint64, ch chan Event) {
+	all := make(chan Event)
+	s.watchCh <- watch{in:all, re:waitRegexp, stop:seqn}
+	go func() {
+		for e := range all {
+			if e.Seqn < seqn {
+				continue
+			}
+
+			close(all)
+
+			if e.Seqn > seqn {
+				e = Event{Seqn:seqn, Err:TooLateError}
+			}
+
+			ch <- e
+		}
+	}()
+}
+
+func (st *Store) Sync(seqn uint64) {
+	ch := make(chan Event)
+	st.Wait(seqn, ch)
+	<-ch
 }

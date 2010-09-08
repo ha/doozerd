@@ -148,6 +148,7 @@ func TestLookup(t *testing.T) {
 	s := New()
 	mut, _ := EncodeSet("/x", "a", Clobber)
 	s.Apply(1, mut)
+	s.Sync(1)
 	v, cas := s.Lookup("/x")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, "a", v)
@@ -159,6 +160,7 @@ func TestLookupDeleted(t *testing.T) {
 	s.Apply(1, mut)
 	mut, _ = EncodeDel("/x", Clobber)
 	s.Apply(2, mut)
+	s.Sync(2)
 	v, cas := s.Lookup("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, "", v)
@@ -170,6 +172,7 @@ func TestApplyInOrder(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
+	s.Sync(2)
 	v, cas := s.Lookup("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
@@ -191,6 +194,7 @@ func TestLookupSync(t *testing.T) {
 	s.Apply(3, mut1)
 	s.Apply(4, mut1)
 	s.Apply(5, mut2)
+	s.Sync(5)
 	assert.Equal(t, "b", <-chV)
 	assert.Equal(t, "5", <-chCas)
 }
@@ -215,10 +219,12 @@ func TestLookupSyncSeveral(t *testing.T) {
 		chCas <- cas
 	}()
 	s.Apply(1, mut1)
+	s.Sync(1)
 	s.Apply(2, mut1)
 	s.Apply(3, mut1)
 	s.Apply(4, mut1)
 	s.Apply(5, mut2)
+	s.Sync(5)
 	assert.Equal(t, "a", <-chV)
 	assert.Equal(t, "1", <-chCas)
 	assert.Equal(t, "b", <-chV)
@@ -253,16 +259,16 @@ func TestLookupSyncExtra(t *testing.T) {
 	assert.Equal(t, "", <-chV)
 	assert.Equal(t, Missing, <-chCas)
 
-	go s.Apply(1, mut1)
-	go s.Apply(2, mut1)
-	go s.Apply(3, mut1)
-	go s.Apply(4, mut1)
+	s.Apply(1, mut1)
+	s.Apply(2, mut1)
+	s.Apply(3, mut1)
+	s.Apply(4, mut1)
 	// 5 is below
-	go s.Apply(6, mut3)
-	go s.Apply(7, mut3)
-	go s.Apply(8, mut3)
+	s.Apply(6, mut3)
+	s.Apply(7, mut3)
+	s.Apply(8, mut3)
 	// do 5 last
-	go s.Apply(5, mut2)
+	s.Apply(5, mut2)
 
 	assert.Equal(t, "c", <-chV)
 	assert.Equal(t, "8", <-chCas)
@@ -276,6 +282,7 @@ func TestApplyBadThenGood(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
+	s.Sync(2)
 	v, cas := s.Lookup("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
@@ -285,8 +292,9 @@ func TestApplyOutOfOrder(t *testing.T) {
 	s := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
-	go s.Apply(2, mut2)
+	s.Apply(2, mut2)
 	s.Apply(1, mut1)
+	s.Sync(1)
 	v, cas := s.LookupSync("/x", 2)
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
@@ -298,6 +306,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(1, mut2)
+	s.Sync(1)
 	v, cas := s.Lookup("/x")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, "a", v)
@@ -314,6 +323,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(1, mut3)
+	s.Sync(1)
 	v, cas := s.Lookup("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
@@ -329,6 +339,7 @@ func TestGetDir(t *testing.T) {
 	mut2, _ := EncodeSet("/y", "b", Clobber)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
+	s.Sync(2)
 
 	v, cas := s.Lookup("/")
 	assert.Equal(t, Dir, cas)
@@ -340,6 +351,7 @@ func TestDirParents(t *testing.T) {
 
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
+	s.Sync(1)
 
 	v, cas := s.Lookup("/")
 	assert.Equal(t, Dir, cas)
@@ -366,6 +378,7 @@ func TestDelDirParents(t *testing.T) {
 
 	mut2, _ := EncodeDel("/x/y/z", Clobber)
 	s.Apply(2, mut2)
+	s.Sync(2)
 
 	v, cas := s.Lookup("/")
 	assert.Equal(t, Dir, cas)
@@ -396,6 +409,7 @@ func TestWatchSet(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
+	s.Sync(3)
 
 	expa := <-ch
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, expa)
@@ -413,9 +427,10 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
 
-	go s.Apply(2, mut2)
+	s.Apply(2, mut2)
 	s.Apply(1, mut1)
 	s.Apply(3, mut3)
+	s.Sync(3)
 
 	expa := <-ch
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, expa)
@@ -441,6 +456,7 @@ func TestWatchDel(t *testing.T) {
 	s.Apply(4, mut4)
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
+	s.Sync(6)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
@@ -460,6 +476,7 @@ func TestWatchAdd(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
+	s.Sync(3)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
@@ -476,9 +493,10 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	mut3, _ := EncodeSet("/y", "c", Clobber)
 
-	go s.Apply(3, mut3)
+	s.Apply(3, mut3)
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
+	s.Sync(2)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
@@ -503,6 +521,7 @@ func TestWatchRem(t *testing.T) {
 	s.Apply(4, mut4)
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
+	s.Sync(6)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
@@ -521,6 +540,7 @@ func TestWatchSetDirParents(t *testing.T) {
 
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
+	s.Sync(1)
 
 	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil}, <-ch)
 }
@@ -536,6 +556,7 @@ func TestWatchDelDirParents(t *testing.T) {
 
 	mut2, _ := EncodeDel("/x/y/z", Clobber)
 	s.Apply(2, mut2)
+	s.Sync(2)
 
 	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil}, <-ch)
 	assert.Equal(t, Event{2, "/x/y/z", "", Missing, mut2, nil}, <-ch)
@@ -559,6 +580,7 @@ func TestWatchApply(t *testing.T) {
 	s.Apply(4, mut4)
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
+	s.Sync(6)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
@@ -575,11 +597,13 @@ func TestSnapshotApply(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
+	s1.Sync(2)
 	err := s1.SnapshotSync(1, buf)
 	assert.Equal(t, nil, err)
 
 	s2 := New()
 	s2.Apply(1, buf.String())
+	s2.Sync(1)
 
 	v, cas := s2.Lookup("/x")
 	assert.Equal(t, "2", cas)
@@ -593,29 +617,34 @@ func TestSnapshotSeqn(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
+	s1.Sync(2)
 	err := s1.SnapshotSync(1, buf)
 	assert.Equal(t, nil, err)
 
 	s2 := New()
 	s2.Apply(1, buf.String())
+	s2.Sync(1)
 	v, cas := s2.Lookup("/x")
 	assert.Equal(t, "2", cas, "snap")
 	assert.Equal(t, "b", v, "snap")
 
 	mutx, _ := EncodeSet("/x", "x", Clobber)
 	s2.Apply(1, mutx)
+	s2.Sync(1)
 	v, cas = s2.LookupSync("/x", 1)
 	assert.Equal(t, "2", cas, "x")
 	assert.Equal(t, "b", v, "x")
 
 	muty, _ := EncodeSet("/x", "y", Clobber)
 	s2.Apply(2, muty)
+	s2.Sync(2)
 	v, cas = s2.LookupSync("/x", 2)
 	assert.Equal(t, "2", cas, "y")
 	assert.Equal(t, "b", v, "y")
 
 	mutz, _ := EncodeSet("/x", "z", Clobber)
 	s2.Apply(3, mutz)
+	s2.Sync(3)
 	v, cas = s2.LookupSync("/x", 3)
 	assert.Equal(t, "3", cas, "z")
 	assert.Equal(t, "z", v, "z")
@@ -628,18 +657,20 @@ func TestSnapshotLeak(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
+	s1.Sync(2)
 	err := s1.SnapshotSync(1, buf)
 	assert.Equal(t, nil, err)
 
 	s2 := New()
 
 	mut3, _ := EncodeSet("/x", "c", Clobber)
-	go s2.Apply(2, mut3)
-	go s2.Apply(3, mut3)
+	s2.Apply(2, mut3)
+	s2.Apply(3, mut3)
 	s2.Apply(1, buf.String())
+	s2.Sync(1)
 
 	// check that we aren't leaking memory
-	s2.Wait(3, make(chan Status))
+	s2.Wait(3, make(chan Event))
 	assert.Equal(t, 0, len(s2.todo))
 }
 
@@ -654,11 +685,13 @@ func TestSnapshotSync(t *testing.T) {
 	}()
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
+	s1.Sync(2)
 	err := <-ch
 	assert.Equal(t, nil, err)
 
 	s2 := New()
 	s2.Apply(1, buf.String())
+	s2.Sync(1)
 
 	v, cas := s2.Lookup("/x")
 	assert.Equal(t, "2", cas)
@@ -670,17 +703,18 @@ func TestStoreWaitWorks(t *testing.T) {
 	mut, _ := EncodeSet("/x", "a", Clobber)
 
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st.Watch("/**", evCh)
 
 	st.Wait(1, statusCh)
 	st.Apply(1, mut)
+	st.Sync(1)
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, nil, got.Err)
-	assert.Equal(t, mut, got.M)
+	assert.Equal(t, mut, got.Mut)
 	assert.Equal(t, 0, len(st.todo))
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
@@ -691,22 +725,20 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st.WatchApply(evCh)
 
 	st.Apply(1, mut1)
-
-	st.Wait(2, statusCh)
 	st.Apply(2, mut2)
-	<-statusCh
+	st.Sync(2)
 
 	st.Wait(1, statusCh)
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, TooLateError, got.Err)
-	assert.Equal(t, "", got.M)
+	assert.Equal(t, "", got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
@@ -718,7 +750,7 @@ func TestStoreWaitBadMutation(t *testing.T) {
 
 	evCh := make(chan Event)
 	t.Logf("evCh=%v", evCh)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st.WatchApply(evCh)
 
@@ -728,7 +760,7 @@ func TestStoreWaitBadMutation(t *testing.T) {
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, BadMutationError, got.Err)
-	assert.Equal(t, mut, got.M)
+	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
@@ -738,7 +770,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	mut := BadInstructions[0]
 
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st.WatchApply(evCh)
 
@@ -748,7 +780,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, BadPathError, got.Err)
-	assert.Equal(t, mut, got.M)
+	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
@@ -757,7 +789,7 @@ func TestStoreWaitCasMatchAdd(t *testing.T) {
 	mut, _ := EncodeSet("/a", "foo", Missing)
 
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st := New()
 
@@ -768,7 +800,7 @@ func TestStoreWaitCasMatchAdd(t *testing.T) {
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, nil, got.Err)
-	assert.Equal(t, mut, got.M)
+	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
@@ -778,7 +810,7 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 	mut2, _ := EncodeSet("/a", "foo", "1")
 
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st := New()
 
@@ -790,7 +822,7 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 	got := <-statusCh
 	assert.Equal(t, uint64(2), got.Seqn)
 	assert.Equal(t, nil, got.Err)
-	assert.Equal(t, mut2, got.M)
+	assert.Equal(t, mut2, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
@@ -800,7 +832,7 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 	mut, _ := EncodeSet("/a", "foo", "123")
 
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st := New()
 
@@ -811,7 +843,7 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
 	assert.Equal(t, CasMismatchError, got.Err)
-	assert.Equal(t, mut, got.M)
+	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
@@ -821,7 +853,7 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	mut2, _ := EncodeSet("/a", "foo", "123")
 
 	evCh := make(chan Event)
-	statusCh := make(chan Status)
+	statusCh := make(chan Event)
 
 	st := New()
 
@@ -833,7 +865,7 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	got := <-statusCh
 	assert.Equal(t, uint64(2), got.Seqn)
 	assert.Equal(t, CasMismatchError, got.Err)
-	assert.Equal(t, mut2, got.M)
+	assert.Equal(t, mut2, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
