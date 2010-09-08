@@ -104,7 +104,7 @@ func TestDecodeSet(t *testing.T) {
 		expk, expv, expc, m := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
 		op, gotk, gotv, gotc, err := decode(m)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, Set, op, "op from " + m)
+		assert.Equal(t, set, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, expv, gotv, "value from " + m)
 		assert.Equal(t, expc, gotc, "cas from " + m)
@@ -116,7 +116,7 @@ func TestDecodeDel(t *testing.T) {
 		expk, expc, m := kcm[0], kcm[1], kcm[2]
 		op, gotk, gotv, gotc, err := decode(m)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, Del, op, "op from " + m)
+		assert.Equal(t, del, op, "op from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, "", gotv, "value from " + m)
 		assert.Equal(t, expc, gotc, "cas from " + m)

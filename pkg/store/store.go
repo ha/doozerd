@@ -32,8 +32,8 @@ type Event struct {
 }
 
 const (
-	Set = uint(1<<iota)
-	Del
+	set = uint(1<<iota)
+	del
 )
 
 const (
@@ -50,8 +50,6 @@ var (
 )
 
 var waitRegexp = regexp.MustCompile(``)
-
-var LogWriter = util.NullWriter{}
 
 // This structure should be kept immutable.
 type node struct {
@@ -105,12 +103,6 @@ type snapQueue struct {
 type reply struct {
 	v string
 	cas string
-}
-
-type Status struct {
-	Seqn uint64
-	M string
-	Err os.Error
 }
 
 type watch struct {
@@ -301,9 +293,9 @@ func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
 
 	switch len(kv) {
 	case 1:
-		return Del, kv[0], "", cm[0], nil
+		return del, kv[0], "", cm[0], nil
 	case 2:
-		return Set, kv[0], kv[1], cm[0], nil
+		return set, kv[0], kv[1], cm[0], nil
 	}
 	panic("can't happen")
 }
@@ -397,10 +389,10 @@ func (s *Store) process() {
 					_, curCas := values.getp(k)
 					if curCas == givenCas || givenCas == Clobber {
 						cas = strconv.Uitoa64(t.seqn)
-						if op == Del {
+						if op == del {
 							cas = Missing
 						}
-						values, _ = values.setp(k, v, cas, op == Set)
+						values, _ = values.setp(k, v, cas, op == set)
 						logger.Logf("store applied %v", t)
 					} else {
 						err = CasMismatchError
