@@ -507,17 +507,10 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 	s.watchCh <- watch{in:all, re:waitRegexp, stop:seqn}
 	go func() {
 		for e := range all {
-			if e.Seqn < seqn {
-				continue
+			if e.Seqn == seqn {
+				close(all)
+				ch <- e
 			}
-
-			close(all)
-
-			if e.Seqn > seqn {
-				e = Event{Seqn:seqn, Err:TooLateError}
-			}
-
-			ch <- e
 		}
 	}()
 }
