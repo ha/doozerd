@@ -52,10 +52,8 @@ var waitRegexp = regexp.MustCompile(``)
 type node struct {
 	v string
 	cas string
-	ds map[string]*node
+	ds map[string]node
 }
-
-var emptyNode = node{v:"", ds:make(map[string]*node), cas:Missing}
 
 type Store struct {
 	applyCh chan apply
@@ -155,43 +153,34 @@ func (n node) getp(path string) (string, string) {
 	return n.get(split(path))
 }
 
-// Return value:
-//     y = replacement node
-func (n node) set(parts []string, v, cas string, keep bool) (y *node) {
-	switch len(parts) {
-	case 0:
-		y = &node{v:v, cas:cas, ds:n.ds}
-	default:
-		m := n.ds[parts[0]]
-		if m == nil {
-			m = &emptyNode
-		}
-		m = m.set(parts[1:], v, cas, keep)
-		ds := make(map[string]*node)
-		for k,v := range n.ds {
-			ds[k] = v
-		}
-		ds[parts[0]] = m, m != nil
-		y = &node{v:n.v, cas:Dir, ds:ds}
+func copyMap(a map[string]node) map[string]node {
+	b := make(map[string]node)
+	for k,v := range a {
+		b[k] = v
 	}
-	if !keep && len(y.ds) == 0 {
-		y = nil
-	}
-	return
+	return b
 }
 
-func (n node) setp(k, v, cas string, keep bool) (y node) {
+// Return value is replacement node
+func (n node) set(parts []string, v, cas string, keep bool) (node, bool) {
+	if len(parts) == 0 {
+		return node{v, cas, n.ds}, keep
+	}
+
+	n.ds = copyMap(n.ds)
+	p, ok := n.ds[parts[0]].set(parts[1:], v, cas, keep)
+	n.ds[parts[0]] = p, ok
+	n.cas = Dir
+	return n, len(n.ds) > 0
+}
+
+func (n node) setp(k, v, cas string, keep bool) node {
 	if err := checkPath(k); err != nil {
 		return n
 	}
 
-	r := n.set(split(k), v, cas, keep)
-
-	if r == nil {
-		root := node{v:"", cas:Dir, ds:make(map[string]*node)}
-		return root
-	}
-	return *r
+	n, _ = n.set(split(k), v, cas, keep)
+	return n
 }
 
 func checkPath(k string) os.Error {
@@ -288,7 +277,8 @@ func (s *Store) process() {
 	logger := util.NewLogger("store")
 
 	ver := uint64(0)
-	values := emptyNode
+	values := node{v:"", ds:make(map[string]node), cas:Dir}
+
 	for {
 		// Take any incoming requests and queue them up.
 		select {
