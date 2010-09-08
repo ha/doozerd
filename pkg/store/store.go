@@ -336,7 +336,9 @@ func (s *Store) process() {
 				if err == nil {
 					values = vx
 					next = nver
-					s.todo = make(map[uint64]apply)
+					for i := uint64(1); i < next; i++ {
+						s.todo[i] = apply{}, false
+					}
 				}
 			} else {
 				var op uint

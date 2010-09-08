@@ -673,12 +673,37 @@ func TestSnapshotLeak(t *testing.T) {
 
 	mut3, _ := EncodeSet("/x", "c", Clobber)
 	s2.Apply(2, mut3)
-	s2.Apply(3, mut3)
 	s2.Apply(1, buf.String())
 	s2.Sync(1)
 
 	// check that we aren't leaking memory
-	s2.Wait(3, make(chan Event))
+	assert.Equal(t, 0, len(s2.todo))
+}
+
+func TestSnapshotOutOfOrder(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	s1 := New()
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	s1.Apply(1, mut1)
+	s1.Apply(2, mut2)
+	s1.Sync(2)
+	err := s1.Snapshot(buf)
+	assert.Equal(t, nil, err)
+
+	s2 := New()
+
+	mut3, _ := EncodeSet("/x", "c", Clobber)
+	s2.Apply(2, mut3)
+	s2.Apply(3, mut3)
+	s2.Apply(1, buf.String())
+	s2.Sync(3)
+
+	body, cas := s2.Lookup("/x")
+	assert.Equal(t, "c", body)
+	assert.Equal(t, "3", cas)
+
+	// check that we aren't leaking memory
 	assert.Equal(t, 0, len(s2.todo))
 }
 
