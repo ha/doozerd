@@ -1,9 +1,7 @@
 package store
 
 import (
-	"container/heap"
 	"container/list"
-	"container/vector"
 	"gob"
 	"io"
 	"junta/util"
@@ -63,11 +61,10 @@ var emptyNode = node{v:"", ds:make(map[string]*node), cas:Missing}
 type Store struct {
 	applyCh chan apply
 	reqCh chan req
-	snapCh chan snap
+	snapCh chan chan snap
 	watchCh chan watch
 	watches []watch
 	todo map[uint64]apply
-	todoSnap *snapQueue
 }
 
 type apply struct {
@@ -81,17 +78,8 @@ type req struct {
 }
 
 type snap struct {
-	seqn uint64
-	ch chan state
-}
-
-type state struct {
 	ver uint64
 	root node
-}
-
-type snapQueue struct {
-	vector.Vector
 }
 
 type reply struct {
@@ -106,17 +94,6 @@ type watch struct {
 	stop uint64
 }
 
-func (r snap) Less(y interface{}) bool {
-	return r.seqn < y.(snap).seqn
-}
-
-func (q *snapQueue) peek() snap {
-	if len(q.Vector) == 0 {
-		return snap{seqn:math.MaxUint64} // ~infinity
-	}
-	return q.Vector[0].(snap)
-}
-
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
@@ -124,13 +101,11 @@ func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		reqCh: make(chan req),
-		snapCh: make(chan snap),
+		snapCh: make(chan chan snap),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
-		todoSnap: new(snapQueue),
 		watches: []watch{},
 	}
-	heap.Init(s.todoSnap)
 	go s.process()
 	return s
 }
@@ -338,8 +313,8 @@ func (s *Store) process() {
 		case r := <-s.reqCh:
 			v, cas := values.getp(r.k)
 			r.ch <- reply{v, cas}
-		case r := <-s.snapCh:
-			heap.Push(s.todoSnap, r)
+		case ch := <-s.snapCh:
+			ch <- snap{ver, values}
 		case w := <-s.watchCh:
 			if w.stop > ver {
 				append(&s.watches, w)
@@ -390,12 +365,6 @@ func (s *Store) process() {
 			s.todo[next] = apply{}, false
 			next++
 		}
-
-		// If we have any snapshots that can be satisfied, do them.
-		for r := s.todoSnap.peek(); ver >= r.seqn; r = s.todoSnap.peek() {
-			r := heap.Pop(s.todoSnap).(snap)
-			r.ch <- state{ver, values}
-		}
 	}
 }
 
@@ -427,21 +396,15 @@ func (s *Store) Lookup(path string) (body string, cas string) {
 //
 // Note that applying a snapshot does not send notifications.
 func (s *Store) Snapshot(w io.Writer) (err os.Error) {
-	return s.SnapshotSync(0, w)
-}
-
-// Like `Snapshot`, but waits until after mutation number `seqn` has been
-// applied before making the snapshot.
-func (s *Store) SnapshotSync(seqn uint64, w io.Writer) (err os.Error) {
-	ch := make(chan state)
-	s.snapCh <- snap{seqn, ch}
-	st := <-ch
-	err = gob.NewEncoder(w).Encode(st.ver)
+	ch := make(chan snap)
+	s.snapCh <- ch
+	ss := <-ch
+	err = gob.NewEncoder(w).Encode(ss.ver)
 	if err != nil {
 		return
 	}
 
-	err = gob.NewEncoder(w).Encode(st.root)
+	err = gob.NewEncoder(w).Encode(ss.root)
 	return
 }
 

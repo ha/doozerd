@@ -606,7 +606,7 @@ func TestSnapshotApply(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	err := s1.SnapshotSync(1, buf)
+	err := s1.Snapshot(buf)
 	assert.Equal(t, nil, err)
 
 	s2 := New()
@@ -626,7 +626,7 @@ func TestSnapshotSeqn(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	err := s1.SnapshotSync(1, buf)
+	err := s1.Snapshot(buf)
 	assert.Equal(t, nil, err)
 
 	s2 := New()
@@ -666,7 +666,7 @@ func TestSnapshotLeak(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	err := s1.SnapshotSync(1, buf)
+	err := s1.Snapshot(buf)
 	assert.Equal(t, nil, err)
 
 	s2 := New()
@@ -689,7 +689,8 @@ func TestSnapshotSync(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
-		ch <- s1.SnapshotSync(2, buf)
+		s1.Sync(2)
+		ch <- s1.Snapshot(buf)
 	}()
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
