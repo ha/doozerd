@@ -301,13 +301,12 @@ func (s *Store) process() {
 	logger := util.NewLogger("store")
 
 	ver := uint64(0)
-	next := uint64(1)
 	values := emptyNode
 	for {
 		// Take any incoming requests and queue them up.
 		select {
 		case a := <-s.applyCh:
-			if a.seqn >= next {
+			if a.seqn > ver {
 				s.todo[a.seqn] = a
 			}
 		case r := <-s.reqCh:
@@ -325,7 +324,7 @@ func (s *Store) process() {
 		}
 
 		// If we have any mutations that can be applied, do them.
-		for t, ok := s.todo[next]; ok; t, ok = s.todo[next] {
+		for t, ok := s.todo[ver+1]; ok; t, ok = s.todo[ver+1] {
 			var nver uint64
 			var err os.Error
 
@@ -335,10 +334,12 @@ func (s *Store) process() {
 				err := d.Decode(&vx)
 				if err == nil {
 					values = vx
-					next = nver
-					for i := uint64(1); i < next; i++ {
+					for i := ver+1; i <= nver; i++ {
 						s.todo[i] = apply{}, false
 					}
+					ver = nver
+				} else {
+					ver++
 				}
 			} else {
 				var op uint
@@ -361,11 +362,9 @@ func (s *Store) process() {
 					k = "/store/error"
 				}
 				s.notify(Event{t.seqn, k, v, cas, t.mutation, err})
+				s.todo[ver+1] = apply{}, false
+				ver++
 			}
-
-			ver = next
-			s.todo[next] = apply{}, false
-			next++
 		}
 	}
 }
