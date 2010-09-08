@@ -7,7 +7,6 @@ import (
 	"junta/util"
 	"math"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 	"strconv"
@@ -158,28 +157,22 @@ func (n node) getp(path string) (string, string) {
 
 // Return value:
 //     y = replacement node
-//     c = how many levels were changed (including the leaf)
-func (n node) set(parts []string, v, cas string, keep bool) (y *node, c int) {
+func (n node) set(parts []string, v, cas string, keep bool) (y *node) {
 	switch len(parts) {
 	case 0:
 		y = &node{v:v, cas:cas, ds:n.ds}
 	default:
-		d := 0
-		m, ok := n.ds[parts[0]]
+		m := n.ds[parts[0]]
 		if m == nil {
 			m = &emptyNode
 		}
-		m, d = m.set(parts[1:], v, cas, keep)
+		m = m.set(parts[1:], v, cas, keep)
 		ds := make(map[string]*node)
 		for k,v := range n.ds {
 			ds[k] = v
 		}
 		ds[parts[0]] = m, m != nil
-		if ok != (m != nil) {
-			c = 1
-		}
 		y = &node{v:n.v, cas:Dir, ds:ds}
-		c += d
 	}
 	if !keep && len(y.ds) == 0 {
 		y = nil
@@ -187,24 +180,18 @@ func (n node) set(parts []string, v, cas string, keep bool) (y *node, c int) {
 	return
 }
 
-func (n node) setp(k, v, cas string, keep bool) (y node, ps []string) {
+func (n node) setp(k, v, cas string, keep bool) (y node) {
 	if err := checkPath(k); err != nil {
-		return n, []string{}
+		return n
 	}
 
-	r, c := n.set(split(k), v, cas, keep)
-	ps = make([]string, c)
-	for i := 0; i < c; i++ {
-		ps[i] = k
-		d, _ := path.Split(k)
-		k = d[0:len(d) - 1]
-	}
+	r := n.set(split(k), v, cas, keep)
 
 	if r == nil {
 		root := node{v:"", cas:Dir, ds:make(map[string]*node)}
-		return root, ps
+		return root
 	}
-	return *r, ps
+	return *r
 }
 
 func checkPath(k string) os.Error {
@@ -352,7 +339,7 @@ func (s *Store) process() {
 						if op == del {
 							cas = Missing
 						}
-						values, _ = values.setp(k, v, cas, op == set)
+						values = values.setp(k, v, cas, op == set)
 						logger.Logf("store applied %v", t)
 					} else {
 						err = CasMismatchError
