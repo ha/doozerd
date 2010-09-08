@@ -34,9 +34,6 @@ type Event struct {
 const (
 	Set = uint(1<<iota)
 	Del
-	Add
-	Rem
-	Apply
 )
 
 const (
@@ -44,8 +41,6 @@ const (
 	Missing = "0"
 	Dir = "dir"
 )
-
-var conj = map[uint]uint{Set:Add, Del:Rem}
 
 var (
 	BadPathError = os.NewError("bad path")
@@ -489,9 +484,14 @@ func (s *Store) SnapshotSync(seqn uint64, w io.Writer) (err os.Error) {
 	return
 }
 
-// Subscribes `events` to receive notifications when mutations are applied to
-// a path in the store. Set `mask` to one or more of `Set`, `Del`, `Add`, and
-// `Rem`, bitwise OR-ed together.
+// Subscribes `ch` to receive notifications when mutations are applied to paths
+// in the store. One event will be sent for each mutation iff the event's path
+// matches `pattern`, a Unix-style glob pattern.
+//
+// Glob notation:
+//  - `?` matches a single char in a single path component
+//  - `*` matches zero or more chars in a single path component
+//  - `**` matches zero or more chars in zero or more components
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
@@ -500,18 +500,6 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	in := make(chan Event)
 	go wbuffer(in, ch)
 	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re, stop:math.MaxUint64}
-}
-
-// Like `Watch`, but instead sends a placeholder event after every mutation
-// application. The event's `Type` will be equal to `Apply`.
-//
-// This event will be sent after all normal Watch events for each seqn have
-// been delivered. This gives you a reliable way to know when you have recieved
-// all events for a given seqn (even if there were no such events).
-//
-// You probably don't want this. Use sparingly.
-func (s *Store) WatchApply(evs chan Event) {
-	s.Watch("/**", evs)
 }
 
 func (s *Store) Wait(seqn uint64, ch chan Event) {

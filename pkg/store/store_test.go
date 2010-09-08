@@ -727,7 +727,7 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 	evCh := make(chan Event)
 	statusCh := make(chan Event)
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
@@ -752,7 +752,7 @@ func TestStoreWaitBadMutation(t *testing.T) {
 	t.Logf("evCh=%v", evCh)
 	statusCh := make(chan Event)
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 
 	st.Wait(1, statusCh)
 	st.Apply(1, mut)
@@ -772,7 +772,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	evCh := make(chan Event)
 	statusCh := make(chan Event)
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 
 	st.Wait(1, statusCh)
 	st.Apply(1, mut)
@@ -793,7 +793,7 @@ func TestStoreWaitCasMatchAdd(t *testing.T) {
 
 	st := New()
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
@@ -814,7 +814,7 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 
 	st := New()
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 	st.Wait(2, statusCh)
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
@@ -836,7 +836,7 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 
 	st := New()
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 	st.Wait(1, statusCh)
 	st.Apply(1, mut)
 
@@ -857,7 +857,7 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 
 	st := New()
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 	st.Wait(2, statusCh)
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
