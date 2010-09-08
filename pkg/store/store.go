@@ -29,11 +29,6 @@ type Event struct {
 }
 
 const (
-	set = uint(1<<iota)
-	del
-)
-
-const (
 	Clobber = ""
 	Missing = "0"
 	Dir = "dir"
@@ -206,7 +201,7 @@ func EncodeDel(path string, cas string) (mutation string, err os.Error) {
 	return cas + ":" + path, nil
 }
 
-func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
+func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	cm := strings.Split(mutation, ":", 2)
 
 	if len(cm) != 2 {
@@ -222,9 +217,9 @@ func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
 
 	switch len(kv) {
 	case 1:
-		return del, kv[0], "", cm[0], nil
+		return kv[0], "", cm[0], false, nil
 	case 2:
-		return set, kv[0], kv[1], cm[0], nil
+		return kv[0], kv[1], cm[0], true, nil
 	}
 	panic("can't happen")
 }
@@ -316,17 +311,17 @@ func (s *Store) process() {
 					ver++
 				}
 			} else {
-				var op uint
+				var keep bool
 				var k, v, givenCas, cas string
-				op, k, v, givenCas, err = decode(t.mutation)
+				k, v, givenCas, keep, err = decode(t.mutation)
 				if err == nil {
 					_, curCas := values.getp(k)
 					if curCas == givenCas || givenCas == Clobber {
 						cas = strconv.Uitoa64(t.seqn)
-						if op == del {
+						if !keep {
 							cas = Missing
 						}
-						values = values.setp(k, v, cas, op == set)
+						values = values.setp(k, v, cas, keep)
 						logger.Logf("store applied %v", t)
 					} else {
 						err = CasMismatchError

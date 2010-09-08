@@ -102,9 +102,9 @@ func TestEncodeDel(t *testing.T) {
 func TestDecodeSet(t *testing.T) {
 	for _, kvcm := range SetKVCMs {
 		expk, expv, expc, m := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
-		op, gotk, gotv, gotc, err := decode(m)
+		gotk, gotv, gotc, keep, err := decode(m)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, set, op, "op from " + m)
+		assert.Equal(t, true, keep, "keep from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, expv, gotv, "value from " + m)
 		assert.Equal(t, expc, gotc, "cas from " + m)
@@ -114,9 +114,9 @@ func TestDecodeSet(t *testing.T) {
 func TestDecodeDel(t *testing.T) {
 	for _, kcm := range DelKCMs {
 		expk, expc, m := kcm[0], kcm[1], kcm[2]
-		op, gotk, gotv, gotc, err := decode(m)
+		gotk, gotv, gotc, keep, err := decode(m)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, del, op, "op from " + m)
+		assert.Equal(t, false, keep, "keep from " + m)
 		assert.Equal(t, expk, gotk, "key from " + m)
 		assert.Equal(t, "", gotv, "value from " + m)
 		assert.Equal(t, expc, gotc, "cas from " + m)
