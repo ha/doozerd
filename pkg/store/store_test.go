@@ -185,7 +185,8 @@ func TestLookupSync(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
-		v, cas := s.LookupSync("/x", 5)
+		s.Sync(5)
+		v, cas := s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -206,15 +207,18 @@ func TestLookupSyncSeveral(t *testing.T) {
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	go func() {
-		v, cas := s.LookupSync("/x", 0)
+		s.Sync(0)
+		v, cas := s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 
-		v, cas = s.LookupSync("/x", 5)
+		s.Sync(5)
+		v, cas = s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 
-		v, cas = s.LookupSync("/x", 0)
+		s.Sync(0)
+		v, cas = s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -242,15 +246,18 @@ func TestLookupSyncExtra(t *testing.T) {
 	mut3, _ := EncodeSet("/x", "c", Clobber)
 
 	go func() {
-		v, cas := s.LookupSync("/x", 0)
+		s.Sync(0)
+		v, cas := s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 
-		v, cas = s.LookupSync("/x", 5)
+		s.Sync(5)
+		v, cas = s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 
-		v, cas = s.LookupSync("/x", 0)
+		s.Sync(0)
+		v, cas = s.Lookup("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -294,8 +301,9 @@ func TestApplyOutOfOrder(t *testing.T) {
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s.Apply(2, mut2)
 	s.Apply(1, mut1)
-	s.Sync(1)
-	v, cas := s.LookupSync("/x", 2)
+
+	s.Sync(2)
+	v, cas := s.Lookup("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
 }
@@ -631,21 +639,21 @@ func TestSnapshotSeqn(t *testing.T) {
 	mutx, _ := EncodeSet("/x", "x", Clobber)
 	s2.Apply(1, mutx)
 	s2.Sync(1)
-	v, cas = s2.LookupSync("/x", 1)
+	v, cas = s2.Lookup("/x")
 	assert.Equal(t, "2", cas, "x")
 	assert.Equal(t, "b", v, "x")
 
 	muty, _ := EncodeSet("/x", "y", Clobber)
 	s2.Apply(2, muty)
 	s2.Sync(2)
-	v, cas = s2.LookupSync("/x", 2)
+	v, cas = s2.Lookup("/x")
 	assert.Equal(t, "2", cas, "y")
 	assert.Equal(t, "b", v, "y")
 
 	mutz, _ := EncodeSet("/x", "z", Clobber)
 	s2.Apply(3, mutz)
 	s2.Sync(3)
-	v, cas = s2.LookupSync("/x", 3)
+	v, cas = s2.Lookup("/x")
 	assert.Equal(t, "3", cas, "z")
 	assert.Equal(t, "z", v, "z")
 }

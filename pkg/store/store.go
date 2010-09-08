@@ -67,7 +67,6 @@ type Store struct {
 	watchCh chan watch
 	watches []watch
 	todo map[uint64]apply
-	todoLookup *reqQueue
 	todoSnap *snapQueue
 }
 
@@ -78,7 +77,6 @@ type apply struct {
 
 type req struct {
 	k string
-	seqn uint64
 	ch chan reply
 }
 
@@ -90,10 +88,6 @@ type snap struct {
 type state struct {
 	ver uint64
 	root node
-}
-
-type reqQueue struct {
-	vector.Vector
 }
 
 type snapQueue struct {
@@ -112,19 +106,8 @@ type watch struct {
 	stop uint64
 }
 
-func (r req) Less(y interface{}) bool {
-	return r.seqn < y.(req).seqn
-}
-
 func (r snap) Less(y interface{}) bool {
 	return r.seqn < y.(snap).seqn
-}
-
-func (q *reqQueue) peek() req {
-	if len(q.Vector) == 0 {
-		return req{seqn:math.MaxUint64} // ~infinity
-	}
-	return q.Vector[0].(req)
 }
 
 func (q *snapQueue) peek() snap {
@@ -144,11 +127,9 @@ func New() *Store {
 		snapCh: make(chan snap),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
-		todoLookup: new(reqQueue),
 		todoSnap: new(snapQueue),
 		watches: []watch{},
 	}
-	heap.Init(s.todoLookup)
 	heap.Init(s.todoSnap)
 	go s.process()
 	return s
@@ -355,7 +336,8 @@ func (s *Store) process() {
 				s.todo[a.seqn] = a
 			}
 		case r := <-s.reqCh:
-			heap.Push(s.todoLookup, r)
+			v, cas := values.getp(r.k)
+			r.ch <- reply{v, cas}
 		case r := <-s.snapCh:
 			heap.Push(s.todoSnap, r)
 		case w := <-s.watchCh:
@@ -409,13 +391,6 @@ func (s *Store) process() {
 			next++
 		}
 
-		// If we have any lookups that can be satisfied, do them.
-		for r := s.todoLookup.peek(); ver >= r.seqn; r = s.todoLookup.peek() {
-			r := heap.Pop(s.todoLookup).(req)
-			v, cas := values.getp(r.k)
-			r.ch <- reply{v, cas}
-		}
-
 		// If we have any snapshots that can be satisfied, do them.
 		for r := s.todoSnap.peek(); ver >= r.seqn; r = s.todoSnap.peek() {
 			r := heap.Pop(s.todoSnap).(snap)
@@ -436,14 +411,8 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
 // `ok` is false.
 func (s *Store) Lookup(path string) (body string, cas string) {
-	return s.LookupSync(path, 0)
-}
-
-// Like `Lookup`, but waits until after mutation number `seqn` has been
-// applied before doing the lookup.
-func (s *Store) LookupSync(path string, seqn uint64) (body string, cas string) {
 	ch := make(chan reply)
-	s.reqCh <- req{path, seqn, ch}
+	s.reqCh <- req{path, ch}
 	rep := <-ch
 	return rep.v, rep.cas
 }
