@@ -331,8 +331,7 @@ func TestGetDir(t *testing.T) {
 	s.Apply(2, mut2)
 
 	v, cas := s.Lookup("/")
-	// TODO: Cas should be "DIR"
-	assert.Equal(t, "2", cas)
+	assert.Equal(t, Dir, cas)
 	assert.Equal(t, "x\ny\n", v)
 }
 
@@ -342,19 +341,17 @@ func TestDirParents(t *testing.T) {
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
 
-	// TODO Cas should be DIR
 	v, cas := s.Lookup("/")
-	assert.Equal(t, "1", cas)
+	assert.Equal(t, Dir, cas)
 	assert.Equal(t, "x\n", v)
 
 	v, cas = s.Lookup("/x")
-	assert.Equal(t, "1", cas)
+	assert.Equal(t, Dir, cas)
 	assert.Equal(t, "y\n", v)
 
 	v, cas = s.Lookup("/x/y")
-	assert.Equal(t, "1", cas)
+	assert.Equal(t, Dir, cas)
 	assert.Equal(t, "z\n", v)
-	// end TODO
 
 	v, cas = s.Lookup("/x/y/z")
 	assert.Equal(t, "1", cas)
@@ -371,7 +368,7 @@ func TestDelDirParents(t *testing.T) {
 	s.Apply(2, mut2)
 
 	v, cas := s.Lookup("/")
-	assert.Equal(t, "2", cas)
+	assert.Equal(t, Dir, cas)
 	assert.Equal(t, "", v, "lookup /")
 
 	v, cas = s.Lookup("/x")
@@ -391,8 +388,7 @@ func TestWatchSet(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/x", Set, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]))
+	s.Watch("/x", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -402,17 +398,16 @@ func TestWatchSet(t *testing.T) {
 	s.Apply(3, mut3)
 
 	expa := <-ch
-	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, expb)
 }
 
 func TestWatchSetOutOfOrder(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/x", Set, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]))
+	s.Watch("/x", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -423,17 +418,16 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 	s.Apply(3, mut3)
 
 	expa := <-ch
-	assert.Equal(t, Event{Set, 1, "/x", "a"}, expa)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, expa)
 	expb := <-ch
-	assert.Equal(t, Event{Set, 2, "/x", "b"}, expb)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, expb)
 }
 
 func TestWatchDel(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/x", Del, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]))
+	s.Watch("/x", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -448,16 +442,17 @@ func TestWatchDel(t *testing.T) {
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
 
-	exp := <-ch
-	assert.Equal(t, Event{Del, 4, "/x", ""}, exp)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
+	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil}, <-ch)
+	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil}, <-ch)
 }
 
 func TestWatchAdd(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/"]))
+	s.Watch("/*", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -466,18 +461,16 @@ func TestWatchAdd(t *testing.T) {
 	s.Apply(2, mut2)
 	s.Apply(3, mut3)
 
-	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/", "x"}, expa)
-	expb := <-ch
-	assert.Equal(t, Event{Add, 3, "/", "y"}, expb)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
 }
 
 func TestWatchAddOutOfOrder(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/"]))
+	s.Watch("/*", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -487,38 +480,16 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Apply(2, mut2)
 
-	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/", "x"}, expa)
-	expb := <-ch
-	assert.Equal(t, Event{Add, 3, "/", "y"}, expb)
-}
-
-func TestWatchAddSubdir(t *testing.T) {
-	s := New()
-
-	ch := make(chan Event)
-	s.Watch("/a", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/a"]))
-
-	mut1, _ := EncodeSet("/a/x", "a", Clobber)
-	mut2, _ := EncodeSet("/a/x", "b", Clobber)
-	mut3, _ := EncodeSet("/a/y", "c", Clobber)
-	s.Apply(1, mut1)
-	s.Apply(2, mut2)
-	s.Apply(3, mut3)
-
-	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/a", "x"}, expa)
-	expb := <-ch
-	assert.Equal(t, Event{Add, 3, "/a", "y"}, expb)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
 }
 
 func TestWatchRem(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/", Rem, ch)
-	assert.Equal(t, 1, len(s.watches["/"]))
+	s.Watch("/*", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -533,18 +504,32 @@ func TestWatchRem(t *testing.T) {
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
 
-	expa := <-ch
-	assert.Equal(t, Event{Rem, 4, "/", "x"}, expa)
-	expb := <-ch
-	assert.Equal(t, Event{Rem, 5, "/", "y"}, expb)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
+
+	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil}, <-ch)
+	assert.Equal(t, Event{5, "/y", "", Missing, mut5, nil}, <-ch)
+	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil}, <-ch)
+}
+
+func TestWatchSetDirParents(t *testing.T) {
+	s := New()
+
+	ch := make(chan Event)
+	s.Watch("/x/**", ch)
+
+	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
+	s.Apply(1, mut1)
+
+	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil}, <-ch)
 }
 
 func TestWatchDelDirParents(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/", Rem, ch)
-	assert.Equal(t, 1, len(s.watches["/"]))
+	s.Watch("/**", ch)
 
 	mut1, _ := EncodeSet("/x/y/z", "a", Clobber)
 	s.Apply(1, mut1)
@@ -552,31 +537,15 @@ func TestWatchDelDirParents(t *testing.T) {
 	mut2, _ := EncodeDel("/x/y/z", Clobber)
 	s.Apply(2, mut2)
 
-	expa := <-ch
-	assert.Equal(t, Event{Rem, 2, "/", "x"}, expa)
-}
-
-func TestWatchSetDirParents(t *testing.T) {
-	s := New()
-
-	ch := make(chan Event)
-	s.Watch("/x", Add, ch)
-	assert.Equal(t, 1, len(s.watches["/x"]))
-
-	mut, _ := EncodeSet("/x/y/z", "a", Clobber)
-	s.Apply(1, mut)
-
-	expa := <-ch
-	assert.Equal(t, Event{Add, 1, "/x", "y"}, expa)
+	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{2, "/x/y/z", "", Missing, mut2, nil}, <-ch)
 }
 
 func TestWatchApply(t *testing.T) {
 	s := New()
 
 	ch := make(chan Event)
-	s.Watch("/x", Del, ch)
-	s.WatchApply(ch)
-	assert.Equal(t, 1, len(s.watches["/x"]))
+	s.Watch("/**", ch)
 
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
@@ -591,13 +560,12 @@ func TestWatchApply(t *testing.T) {
 	s.Apply(5, mut5)
 	s.Apply(6, mut6)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-ch)
-	assert.Equal(t, Event{Apply, 2, "", ""}, <-ch)
-	assert.Equal(t, Event{Apply, 3, "", ""}, <-ch)
-	assert.Equal(t, Event{Del, 4, "/x", ""}, <-ch)
-	assert.Equal(t, Event{Apply, 4, "", ""}, <-ch)
-	assert.Equal(t, Event{Apply, 5, "", ""}, <-ch)
-	assert.Equal(t, Event{Apply, 6, "", ""}, <-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
+	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil}, <-ch)
+	assert.Equal(t, Event{5, "/y", "", Missing, mut5, nil}, <-ch)
+	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil}, <-ch)
 }
 
 func TestSnapshotApply(t *testing.T) {
@@ -704,7 +672,7 @@ func TestStoreWaitWorks(t *testing.T) {
 	evCh := make(chan Event)
 	statusCh := make(chan Status)
 
-	st.WatchApply(evCh)
+	st.Watch("/**", evCh)
 
 	st.Wait(1, statusCh)
 	st.Apply(1, mut)
@@ -715,7 +683,7 @@ func TestStoreWaitWorks(t *testing.T) {
 	assert.Equal(t, mut, got.M)
 	assert.Equal(t, 0, len(st.todo))
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
 
 func TestStoreWaitOutOfOrder(t *testing.T) {
@@ -740,8 +708,8 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 	assert.Equal(t, TooLateError, got.Err)
 	assert.Equal(t, "", got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
-	assert.Equal(t, Event{Apply, 2, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
+	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
 
 func TestStoreWaitBadMutation(t *testing.T) {
@@ -749,6 +717,7 @@ func TestStoreWaitBadMutation(t *testing.T) {
 	mut := BadMutations[0]
 
 	evCh := make(chan Event)
+	t.Logf("evCh=%v", evCh)
 	statusCh := make(chan Status)
 
 	st.WatchApply(evCh)
@@ -761,7 +730,7 @@ func TestStoreWaitBadMutation(t *testing.T) {
 	assert.Equal(t, BadMutationError, got.Err)
 	assert.Equal(t, mut, got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
 
 func TestStoreWaitBadInstruction(t *testing.T) {
@@ -781,7 +750,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	assert.Equal(t, BadPathError, got.Err)
 	assert.Equal(t, mut, got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
 
 func TestStoreWaitCasMatchAdd(t *testing.T) {
@@ -801,7 +770,7 @@ func TestStoreWaitCasMatchAdd(t *testing.T) {
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut, got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
 
 func TestStoreWaitCasMatchReplace(t *testing.T) {
@@ -823,8 +792,8 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut2, got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
-	assert.Equal(t, Event{Apply, 2, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
+	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
 
 func TestStoreWaitCasMismatchMissing(t *testing.T) {
@@ -844,7 +813,7 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 	assert.Equal(t, CasMismatchError, got.Err)
 	assert.Equal(t, mut, got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 }
 
 func TestStoreWaitCasMismatchReplace(t *testing.T) {
@@ -866,6 +835,6 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	assert.Equal(t, CasMismatchError, got.Err)
 	assert.Equal(t, mut2, got.M)
 
-	assert.Equal(t, Event{Apply, 1, "", ""}, <-evCh)
-	assert.Equal(t, Event{Apply, 2, "", ""}, <-evCh)
+	assert.Equal(t, uint64(1), (<-evCh).Seqn)
+	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }

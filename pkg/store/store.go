@@ -10,15 +10,25 @@ import (
 	"math"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"strconv"
 )
 
 type Event struct {
-	Type uint
-	Seqn uint64
-	Path string
-	Body string
+	Seqn  uint64
+	Path  string
+	Body  string
+
+	// the cas token for the key/value pair as of this event.
+	// if the operation set a value, `Cas` is `Seqn` in decimal.
+	// if the operation deleted a value, `Cas` is `Missing`.
+	Cas   string
+
+	// the mutation that caused this event
+	Mut   string
+
+	Err   os.Error
 }
 
 const (
@@ -32,6 +42,7 @@ const (
 const (
 	Clobber = ""
 	Missing = "0"
+	Dir = "dir"
 )
 
 var conj = map[uint]uint{Set:Add, Del:Rem}
@@ -60,7 +71,7 @@ type Store struct {
 	snapCh chan snap
 	watchCh chan watch
 	waitCh chan wait
-	watches map[string][]watch
+	watches []watch
 	notifyCh chan notify
 	todo map[uint64]apply
 	todoLookup *reqQueue
@@ -113,10 +124,9 @@ type Status struct {
 }
 
 type watch struct {
-	ch chan Event
-	mask uint
-	k string
-	ready chan int
+	pat string
+	in, out chan Event
+	re *regexp.Regexp
 }
 
 type wait struct {
@@ -163,7 +173,6 @@ func (q *waitQueue) peek() wait {
 	return q.Vector[0].(wait)
 }
 
-
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
@@ -178,7 +187,7 @@ func New() *Store {
 		todoLookup: new(reqQueue),
 		todoWait: new(waitQueue),
 		todoSnap: new(snapQueue),
-		watches: make(map[string][]watch),
+		watches: []watch{},
 		notifyCh: make(chan notify),
 	}
 	heap.Init(s.todoLookup)
@@ -257,7 +266,7 @@ func (n node) set(parts []string, v, cas string, keep bool) (y *node, c int) {
 		if ok != (m != nil) {
 			c = 1
 		}
-		y = &node{v:n.v, cas:cas, ds:ds}
+		y = &node{v:n.v, cas:Dir, ds:ds}
 		c += d
 	}
 	if !keep && len(y.ds) == 0 {
@@ -280,7 +289,7 @@ func (n node) setp(k, v, cas string, keep bool) (y node, ps []string) {
 	}
 
 	if r == nil {
-		root := node{v:"", cas:cas, ds:make(map[string]*node)}
+		root := node{v:"", cas:Dir, ds:make(map[string]*node)}
 		return root, ps
 	}
 	return *r, ps
@@ -335,20 +344,12 @@ func decode(mutation string) (op uint, path, v, cas string, err os.Error) {
 	panic("can't happen")
 }
 
-func (s *Store) notify(t uint, seqn uint64, k, v string) {
-	for _, w := range s.watches[k] {
-		if w.mask & t != 0 {
-			s.notifyCh <- notify{w.ch, Event{t, seqn, k, v}}
+func (s *Store) notify(e Event) {
+	for _, w := range s.watches {
+		if w.re.MatchString(e.Path) {
+			w.in <- e
 		}
 	}
-}
-
-func (s *Store) notifyDir(t uint, seqn uint64, p string) {
-	dirname, basename := path.Split(p)
-	if dirname != "/" {
-		dirname = dirname[0:len(dirname) - 1] // strip slash
-	}
-	s.notify(t, seqn, dirname, basename)
 }
 
 func append(ws *[]watch, w watch) {
@@ -360,6 +361,25 @@ func append(ws *[]watch, w watch) {
 	}
 	*ws = (*ws)[0:l + 1]
 	(*ws)[l] = w
+}
+
+// Unbounded in-order buffering
+func wbuffer(in, out chan Event) {
+	list := list.New()
+	for {
+		f, e := list.Front(), Event{}
+		var ch chan Event
+		if f != nil {
+			e = f.Value.(Event)
+			ch = out
+		}
+		select {
+		case x := <-in:
+			list.PushBack(x)
+		case ch <- e:
+			list.Remove(f)
+		}
+	}
 }
 
 // Unbounded in-order buffering
@@ -398,10 +418,7 @@ func (s *Store) process() {
 		case r := <-s.snapCh:
 			heap.Push(s.todoSnap, r)
 		case w := <-s.watchCh:
-			watches := s.watches[w.k]
-			append(&watches, w)
-			s.watches[w.k] = watches
-			w.ready <- 1
+			append(&s.watches, w)
 		case wt := <-s.waitCh:
 			wt.ready <- 1
 			if wt.seqn > ver { // in the future?
@@ -430,32 +447,32 @@ func (s *Store) process() {
 				}
 			} else {
 				var op uint
-				var k, v, givenCas string
+				var k, v, givenCas, cas string
 				op, k, v, givenCas, err = decode(t.mutation)
 				if err == nil {
 					_, curCas := values.getp(k)
 					if curCas == givenCas || givenCas == Clobber {
-						var changed []string
-						cas := strconv.Uitoa64(t.seqn)
-						values, changed = values.setp(k, v, cas, op == Set)
+						cas = strconv.Uitoa64(t.seqn)
+						if op == Del {
+							cas = Missing
+						}
+						values, _ = values.setp(k, v, cas, op == Set)
 						logger.Logf("store applied %v", t)
-						if op == Set || len(changed) > 0 {
-							s.notify(op, t.seqn, k, v)
-						}
-						for _, p := range changed {
-							s.notifyDir(conj[op], t.seqn, p)
-						}
 					} else {
 						err = CasMismatchError
+						k = "/store/error"
 					}
+				} else {
+					k = "/store/error"
 				}
+				s.notify(Event{t.seqn, k, v, cas, t.mutation, nil})
 			}
 
 			ver = next
 			s.todo[next] = apply{}, false
 			next++
 
-			s.notify(Apply, t.seqn, "", "")
+			//s.notify(Event{t.seqn, "", "", "", "", nil})
 
 			// If we have any waits that can be satisfied, do them.
 			for wt := s.todoWait.peek(); ver >= wt.seqn; wt = s.todoWait.peek() {
@@ -544,13 +561,11 @@ func (s *Store) SnapshotSync(seqn uint64, w io.Writer) (err os.Error) {
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
-func (s *Store) Watch(path string, mask uint, events chan Event) {
-	if path == "" && mask != Apply {
-		return
-	}
-	ready := make(chan int)
-	s.watchCh <- watch{events, mask, path, ready}
-	<-ready
+func (s *Store) Watch(pattern string, ch chan Event) {
+	re, _ := compileGlob(pattern)
+	in := make(chan Event)
+	go wbuffer(in, ch)
+	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re}
 }
 
 // Like `Watch`, but instead sends a placeholder event after every mutation
@@ -562,7 +577,7 @@ func (s *Store) Watch(path string, mask uint, events chan Event) {
 //
 // You probably don't want this. Use sparingly.
 func (s *Store) WatchApply(evs chan Event) {
-	s.Watch("", Apply, evs)
+	s.Watch("/**", evs)
 }
 
 func (s *Store) Wait(seqn uint64, ch chan Status) {
