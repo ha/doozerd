@@ -57,7 +57,7 @@ type node struct {
 
 type Store struct {
 	applyCh chan apply
-	reqCh chan req
+	lookupCh chan *lookup
 	snapCh chan chan snap
 	watchCh chan watch
 	watches []watch
@@ -69,19 +69,16 @@ type apply struct {
 	mutation string
 }
 
-type req struct {
+type lookup struct {
 	k string
-	ch chan reply
+	ch chan int
+	v string
+	cas string
 }
 
 type snap struct {
 	ver uint64
 	root node
-}
-
-type reply struct {
-	v string
-	cas string
 }
 
 type watch struct {
@@ -97,7 +94,7 @@ type watch struct {
 func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
-		reqCh: make(chan req),
+		lookupCh: make(chan *lookup),
 		snapCh: make(chan chan snap),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
@@ -286,9 +283,9 @@ func (s *Store) process() {
 			if a.seqn > ver {
 				s.todo[a.seqn] = a
 			}
-		case r := <-s.reqCh:
-			v, cas := values.getp(r.k)
-			r.ch <- reply{v, cas}
+		case r := <-s.lookupCh:
+			r.v, r.cas = values.getp(r.k)
+			r.ch <- 1
 		case ch := <-s.snapCh:
 			ch <- snap{ver, values}
 		case w := <-s.watchCh:
@@ -358,10 +355,10 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 // Gets the value stored at `path`, if any. If no value is stored at `path`,
 // `ok` is false.
 func (s *Store) Lookup(path string) (body string, cas string) {
-	ch := make(chan reply)
-	s.reqCh <- req{path, ch}
-	rep := <-ch
-	return rep.v, rep.cas
+	l := lookup{k:path, ch:make(chan int)}
+	s.lookupCh <- &l
+	<-l.ch
+	return l.v, l.cas
 }
 
 // Encodes the entire storage state, including the current sequence number, as
