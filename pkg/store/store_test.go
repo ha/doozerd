@@ -3,6 +3,7 @@ package store
 import (
 	"junta/assert"
 	"bytes"
+	"gob"
 	"os"
 	"testing"
 )
@@ -616,6 +617,27 @@ func TestSnapshotApply(t *testing.T) {
 	v, cas := s2.Lookup("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, "b", v)
+}
+
+func TestSnapshotBad(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	err := gob.NewEncoder(buf).Encode(uint64(1))
+	assert.Equal(t, nil, err)
+	seqnPart := buf.String()
+
+	buf = bytes.NewBuffer([]byte{})
+	err = gob.NewEncoder(buf).Encode(root)
+	assert.Equal(t, nil, err)
+	valPart := buf.String()
+	valPart = valPart[0:len(valPart)/2]
+
+
+	st := New()
+	st.Apply(1, seqnPart+valPart)
+	st.Sync(1)
+
+	// check that we aren't leaking memory
+	assert.Equal(t, 0, len(st.todo))
 }
 
 func TestSnapshotSeqn(t *testing.T) {

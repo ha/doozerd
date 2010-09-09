@@ -256,6 +256,7 @@ func (s *Store) process() {
 					}
 					ver = nver
 				} else {
+					s.todo[ver+1] = apply{}, false
 					ver++
 				}
 			} else {
