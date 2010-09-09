@@ -95,13 +95,13 @@ func (m *Manager) AddrsFor(msg Msg) []string {
 }
 
 func (m *Manager) Propose(v string) (string, os.Error) {
-	ch := make(chan store.Status)
+	ch := make(chan store.Event)
 	seqn, inst := m.getInstance(0)
 	m.st.Wait(seqn, ch)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
-	status := <-ch
-	return status.M, status.Err
+	ev := <-ch
+	return ev.Mut, ev.Err
 }
 
 func (m *Manager) Recv() (uint64, string) {

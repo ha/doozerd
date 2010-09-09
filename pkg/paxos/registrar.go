@@ -5,6 +5,7 @@ import (
 	"container/heap"
 	"container/vector"
 	"math"
+	"path"
 	"strings"
 )
 
@@ -48,8 +49,7 @@ func NewRegistrar(st *store.Store, start uint64, window int) *Registrar {
 		lookups:  new(lookupQueue),
 	}
 	heap.Init(rg.lookups)
-	st.Watch(membersKey, store.Add|store.Rem, rg.evs)
-	st.WatchApply(rg.evs)
+	st.Watch("**", rg.evs) // watch absolutely everything
 	go rg.process(start, members(st))
 	return rg
 }
@@ -72,21 +72,13 @@ func (rg *Registrar) process(known uint64, members map[string]string) {
 		case l := <-rg.lookupCh:
 			heap.Push(rg.lookups, l)
 		case ev := <-rg.evs:
-			switch {
-			case ev.Path == membersKey:
-				switch ev.Type {
-				case store.Add:
-					path := ev.Path + "/" + ev.Body
-					// TODO use store.Sync+store.Lookup once available
-					addr, _ := rg.st.LookupSync(path, ev.Seqn)
-					members[ev.Body] = addr
-				case store.Rem:
-					members[ev.Body] = "", false
-				}
-			case ev.Type == store.Apply:
-				known = ev.Seqn
-				copyMap(clusters, known, members)
+			dir, name := path.Split(ev.Path)
+			switch dir {
+			case membersDir:
+				members[name] = ev.Body, ev.IsSet()
 			}
+			known = ev.Seqn
+			copyMap(clusters, known, members)
 		}
 
 		// If we have any lookups that can be satisfied, do them.
@@ -110,7 +102,7 @@ func members(st *store.Store) map[string]string {
 	ids := strings.Split(body, "\n", -1)
 	for _, id := range ids {
 		if id != "" {
-			addr, _ := st.Lookup(membersKey + "/" + id)
+			addr, _ := st.Lookup(membersDir + id)
 			members[id] = addr
 		}
 	}

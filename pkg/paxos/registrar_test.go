@@ -36,17 +36,10 @@ func TestRegistrar(t *testing.T) {
 	assert.Equal(t, 1, len(members), "1 Len")
 }
 
-// TODO use store.Sync once that has been implemented
-func sync(st *store.Store, seqn uint64) {
-	ch := make(chan store.Status)
-	st.Wait(seqn, ch)
-	<-ch
-}
-
 func TestRegistrarInitFirst(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
-	sync(st, 1)
+	st.Sync(1)
 	rg := NewRegistrar(st, 1, 0)
 
 	members := rg.membersAt(1)
@@ -56,7 +49,7 @@ func TestRegistrarInitFirst(t *testing.T) {
 func TestRegistrarInitNext(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
-	sync(st, 1)
+	st.Sync(1)
 	rg := NewRegistrar(st, 1, 0)
 	go func() {
 		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
@@ -73,7 +66,7 @@ func TestRegistrarTooOld(t *testing.T) {
 	st := store.New()
 	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
 	st.Apply(2, mustEncodeSet(membersKey+"/a", "1"))
-	sync(st, 2)
+	st.Sync(2)
 	rg := NewRegistrar(st, 2, 0)
 
 	members := rg.membersAt(1)
