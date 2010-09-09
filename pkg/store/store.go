@@ -36,6 +36,7 @@ const (
 var (
 	BadPathError = os.NewError("bad path")
 	BadMutationError = os.NewError("bad mutation")
+	BadSnapshotError = os.NewError("bad snapshot")
 	TooLateError = os.NewError("too late")
 	CasMismatchError = os.NewError("cas mismatch")
 )
@@ -243,28 +244,14 @@ func (s *Store) process() {
 
 		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[ver+1]; ok; t, ok = s.todo[ver+1] {
-			var nver uint64
-
-			d := gob.NewDecoder(strings.NewReader(t.mutation))
-			if t.seqn == 1 && d.Decode(&nver) == nil {
-				var vx node
-				err := d.Decode(&vx)
-				if err == nil {
-					values = vx
-				} else {
-					nver = ver + 1
-				}
-			} else {
-				var ev Event
-				values, ev = values.apply(t.seqn, t.mutation)
-				logger.Logf("%v", ev)
-				s.notify(ev)
-				nver = ev.Seqn
-			}
-			for i := ver+1; i <= nver; i++ {
+			var ev Event
+			values, ev = values.apply(t.seqn, t.mutation)
+			logger.Logf("%v", ev)
+			s.notify(ev)
+			for i := ver+1; i <= ev.Seqn; i++ {
 				s.todo[i] = apply{}, false
 			}
-			ver = nver
+			ver = ev.Seqn
 		}
 	}
 }

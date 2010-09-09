@@ -1,6 +1,9 @@
 package store
 
 import (
+	"bytes"
+	"gob"
+	"io"
 	"junta/assert"
 	"testing"
 )
@@ -51,4 +54,40 @@ func TestNodeApplyCasMismatch(t *testing.T) {
 	assert.Equal(t, root, n)
 	expPath := "/store/error"
 	assert.Equal(t, Event{seqn, expPath, "", "", m, CasMismatchError}, e)
+}
+
+func TestNodeSnapshotApply(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	s1 := New()
+	mut1, _ := EncodeSet("/x", "a", Clobber)
+	mut2, _ := EncodeSet("/x", "b", Clobber)
+	s1.Apply(1, mut1)
+	s1.Apply(2, mut2)
+	s1.Sync(2)
+	err := s1.Snapshot(buf)
+	assert.Equal(t, nil, err)
+
+	m := buf.String()
+	n, e := root.apply(1, m)
+	exp := node{"", Dir, map[string]node{"x":node{"b", "2", nil}}}
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{2, "", "", "", m, nil}, e)
+}
+
+func TestNodeSnapshotBad(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	err := gob.NewEncoder(buf).Encode(uint64(1))
+	assert.Equal(t, nil, err)
+	seqnPart := buf.String()
+
+	buf = bytes.NewBuffer([]byte{})
+	err = gob.NewEncoder(buf).Encode(root)
+	assert.Equal(t, nil, err)
+	valPart := buf.String()
+	valPart = valPart[0:len(valPart)/2]
+
+	m := seqnPart+valPart
+	n, e := root.apply(1, m)
+	assert.Equal(t, root, n)
+	assert.Equal(t, Event{2, "", "", "", m, io.ErrUnexpectedEOF}, e)
 }

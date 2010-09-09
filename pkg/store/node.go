@@ -1,6 +1,7 @@
 package store
 
 import (
+	"gob"
 	"strconv"
 	"strings"
 )
@@ -80,8 +81,21 @@ func (n node) setp(k, v, cas string, keep bool) node {
 }
 
 func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
-	cas, keep := "", false
 	ev.Seqn, ev.Cas, ev.Mut = seqn, strconv.Uitoa64(seqn), mut
+	if seqn == 1 {
+		d := gob.NewDecoder(strings.NewReader(mut))
+		if d.Decode(&ev.Seqn) == nil {
+			ev.Cas = ""
+			ev.Err = d.Decode(&rep)
+			if ev.Err != nil {
+				ev.Seqn = seqn + 1
+				rep = n
+			}
+			return
+		}
+	}
+
+	cas, keep := "", false
 	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
 	if ev.Err != nil {
 		ev.Path, ev.Cas = "/store/error", ""
