@@ -248,10 +248,10 @@ func (s *Store) process() {
 			values, ev = values.apply(t.seqn, t.mutation)
 			logger.Logf("%v", ev)
 			s.notify(ev)
-			for i := ver+1; i <= ev.Seqn; i++ {
-				s.todo[i] = apply{}, false
+			for ver < ev.Seqn {
+				ver++
+				s.todo[ver] = apply{}, false
 			}
-			ver = ev.Seqn
 		}
 	}
 }
