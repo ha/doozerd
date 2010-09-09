@@ -99,16 +99,16 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 
 	cas, keep := "", false
 	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
-	if ev.Err != nil {
-		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
-	}
 
-	if cas != Clobber {
+	if ev.Err == nil && cas != Clobber {
 		_, curCas := n.getp(ev.Path)
 		if cas != curCas {
 			ev.Err = CasMismatchError
-			ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
 		}
+	}
+
+	if ev.Err != nil {
+		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
 	}
 
 	if !keep {
