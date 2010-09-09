@@ -1,7 +1,6 @@
 package paxos
 
 import (
-	"container/vector"
 	"sort"
 )
 
@@ -73,8 +72,5 @@ func (cx *cluster) indexByAddr(addr string) int {
 }
 
 func (cx *cluster) addrs() (addrs []string) {
-	for addr, _ := range cx.idsByAddr {
-		(*vector.StringVector)(&addrs).Push(addr)
-	}
-	return
+	return stringKeys(cx.idsByAddr)
 }
