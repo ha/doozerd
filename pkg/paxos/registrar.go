@@ -6,7 +6,6 @@ import (
 	"container/vector"
 	"math"
 	"path"
-	"strings"
 )
 
 type Registrar struct {
@@ -98,12 +97,11 @@ func copyMap(c map[uint64]map[string]string, n uint64, m map[string]string) {
 
 func members(st *store.Store) map[string]string {
 	members := map[string]string{}
-	body, _ := st.Lookup(membersKey)
-	ids := strings.Split(body, "\n", -1)
+	ids, _ := st.Lookup(membersKey)
 	for _, id := range ids {
 		if id != "" {
 			addr, _ := st.Lookup(membersDir + id)
-			members[id] = addr
+			members[id] = addr[0]
 		}
 	}
 	return members
