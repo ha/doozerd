@@ -15,6 +15,8 @@ var tenNodes = map[string]string{
 	"j":"y",
 }
 
+var tenIds = stringKeys(tenNodes)
+
 func (sp SyncPutter) Put(m Msg) {
 	sp <- m
 }

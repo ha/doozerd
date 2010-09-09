@@ -25,9 +25,7 @@ func stringKeys(m map[string]string) []string {
 	return keys
 }
 
-func newCluster(self string, addrsById map[string]string) *cluster {
-	active := stringKeys(addrsById)
-
+func newCluster(self string, addrsById map[string]string, active []string) *cluster {
 	idsByAddr := make(map[string]string)
 	for id, addr := range addrsById {
 		idsByAddr[addr] = id

@@ -53,7 +53,9 @@ func (m *Manager) process(next uint64, outs Putter) {
 			// TODO find a nicer way to do this
 			// This is meant to be run in a separate goroutine
 			cxf := func() *cluster {
-				return newCluster(m.Self, m.rg.membersFor(req.seqn))
+				ms := m.rg.membersFor(req.seqn)
+				active := stringKeys(ms)
+				return newCluster(m.Self, ms, active)
 			}
 			inst = newInstance(cxf, putWrapper{req.seqn, outs})
 			instances[req.seqn] = inst
