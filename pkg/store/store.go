@@ -16,9 +16,8 @@ type Event struct {
 	Path  string
 	Body  string
 
-	// the cas token for the key/value pair as of this event.
-	// if the operation set a value, `Cas` is `Seqn` in decimal.
-	// if the operation deleted a value, `Cas` is `Missing`.
+	// the cas token for `Path` as of this event.
+	// undefined if the event does not represent a path operation.
 	Cas   string
 
 	// the mutation that caused this event
