@@ -29,31 +29,31 @@ func TestNodeApplyDel(t *testing.T) {
 }
 
 func TestNodeApplyBadMutation(t *testing.T) {
-	seqn := uint64(1)
+	seqn, cas := uint64(1), "1"
 	m := BadMutations[0]
 	n, e := root.apply(seqn, m)
-	assert.Equal(t, root, n)
-	expPath := "/store/error"
-	assert.Equal(t, Event{seqn, expPath, "", "", m, BadMutationError}, e)
+	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{BadMutationError.String(), cas, nil}}}}}
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{seqn, errPath, BadMutationError.String(), cas, m, BadMutationError}, e)
 }
 
 func TestNodeApplyBadInstruction(t *testing.T) {
-	seqn := uint64(1)
+	seqn, cas := uint64(1), "1"
 	m := BadInstructions[0]
 	n, e := root.apply(seqn, m)
-	assert.Equal(t, root, n)
-	expPath := "/store/error"
-	assert.Equal(t, Event{seqn, expPath, "", "", m, BadPathError}, e)
+	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{BadPathError.String(), cas, nil}}}}}
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{seqn, errPath, BadPathError.String(), cas, m, BadPathError}, e)
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {
-	k, v, seqn := "x", "a", uint64(1)
+	k, v, seqn, cas := "x", "a", uint64(1), "1"
 	p := "/"+k
 	m := MustEncodeSet(p, v, "123")
 	n, e := root.apply(seqn, m)
-	assert.Equal(t, root, n)
-	expPath := "/store/error"
-	assert.Equal(t, Event{seqn, expPath, "", "", m, CasMismatchError}, e)
+	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{CasMismatchError.String(), cas, nil}}}}}
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{seqn, errPath, CasMismatchError.String(), cas, m, CasMismatchError}, e)
 }
 
 func TestNodeSnapshotApply(t *testing.T) {

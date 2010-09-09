@@ -8,6 +8,8 @@ import (
 
 var root = node{v:"", ds:make(map[string]node), cas:Dir}
 
+var errPath = "/store/error"
+
 // This structure should be kept immutable.
 type node struct {
 	v string
@@ -98,14 +100,13 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 	cas, keep := "", false
 	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
 	if ev.Err != nil {
-		ev.Path, ev.Cas = "/store/error", ""
-		return n, ev
+		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
 	}
 
 	_, curCas := n.getp(ev.Path)
 	if cas != curCas && cas != Clobber {
-		ev.Path, ev.Body, ev.Cas, ev.Err = "/store/error", "", "", CasMismatchError
-		return n, ev
+		ev.Err = CasMismatchError
+		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
 	}
 
 	if !keep {
