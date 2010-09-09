@@ -103,10 +103,12 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
 	}
 
-	_, curCas := n.getp(ev.Path)
-	if cas != curCas && cas != Clobber {
-		ev.Err = CasMismatchError
-		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
+	if cas != Clobber {
+		_, curCas := n.getp(ev.Path)
+		if cas != curCas {
+			ev.Err = CasMismatchError
+			ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
+		}
 	}
 
 	if !keep {
