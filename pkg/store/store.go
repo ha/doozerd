@@ -251,22 +251,20 @@ func (s *Store) process() {
 				err := d.Decode(&vx)
 				if err == nil {
 					values = vx
-					for i := ver+1; i <= nver; i++ {
-						s.todo[i] = apply{}, false
-					}
-					ver = nver
 				} else {
-					s.todo[ver+1] = apply{}, false
-					ver++
+					nver = ver + 1
 				}
 			} else {
 				var ev Event
 				values, ev = values.apply(t.seqn, t.mutation)
 				logger.Logf("%v", ev)
 				s.notify(ev)
-				s.todo[ver+1] = apply{}, false
-				ver++
+				nver = ev.Seqn
 			}
+			for i := ver+1; i <= nver; i++ {
+				s.todo[i] = apply{}, false
+			}
+			ver = nver
 		}
 	}
 }
