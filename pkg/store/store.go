@@ -129,6 +129,28 @@ func EncodeDel(path string, cas string) (mutation string, err os.Error) {
 	return cas + ":" + path, nil
 }
 
+// MustEncodeSet is like EncodeSet but panics if the mutation cannot be
+// encoded. It simplifies safe initialization of global variables holding
+// mutations.
+func MustEncodeSet(path, body, cas string) (mutation string) {
+	m, err := EncodeSet(path, body, cas)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+// MustEncodeDel is like EncodeDel but panics if the mutation cannot be
+// encoded. It simplifies safe initialization of global variables holding
+// mutations.
+func MustEncodeDel(path, cas string) (mutation string) {
+	m, err := EncodeDel(path, cas)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
 func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	cm := strings.Split(mutation, ":", 2)
 
