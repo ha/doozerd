@@ -9,7 +9,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"strconv"
 )
 
 type Event struct {
@@ -245,7 +244,6 @@ func (s *Store) process() {
 		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[ver+1]; ok; t, ok = s.todo[ver+1] {
 			var nver uint64
-			var err os.Error
 
 			d := gob.NewDecoder(strings.NewReader(t.mutation))
 			if t.seqn == 1 && d.Decode(&nver) == nil {
@@ -261,26 +259,10 @@ func (s *Store) process() {
 					ver++
 				}
 			} else {
-				var keep bool
-				var k, v, givenCas, cas string
-				k, v, givenCas, keep, err = decode(t.mutation)
-				if err == nil {
-					_, curCas := values.getp(k)
-					if curCas == givenCas || givenCas == Clobber {
-						cas = strconv.Uitoa64(t.seqn)
-						if !keep {
-							cas = Missing
-						}
-						values = values.setp(k, v, cas, keep)
-						logger.Logf("store applied %v", t)
-					} else {
-						err = CasMismatchError
-						k = "/store/error"
-					}
-				} else {
-					k = "/store/error"
-				}
-				s.notify(Event{t.seqn, k, v, cas, t.mutation, err})
+				var ev Event
+				values, ev = values.apply(t.seqn, t.mutation)
+				logger.Logf("%v", ev)
+				s.notify(ev)
 				s.todo[ver+1] = apply{}, false
 				ver++
 			}

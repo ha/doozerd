@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -76,4 +77,27 @@ func (n node) setp(k, v, cas string, keep bool) node {
 
 	n, _ = n.set(split(k), v, cas, keep)
 	return n
+}
+
+func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
+	cas, keep := "", false
+	ev.Seqn, ev.Cas, ev.Mut = seqn, strconv.Uitoa64(seqn), mut
+	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
+	if ev.Err != nil {
+		ev.Path, ev.Cas = "/store/error", ""
+		return n, ev
+	}
+
+	_, curCas := n.getp(ev.Path)
+	if cas != curCas && cas != Clobber {
+		ev.Path, ev.Body, ev.Cas, ev.Err = "/store/error", "", "", CasMismatchError
+		return n, ev
+	}
+
+	if !keep {
+		ev.Cas = Missing
+	}
+
+	rep = n.setp(ev.Path, ev.Body, ev.Cas, keep)
+	return
 }
