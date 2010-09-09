@@ -44,7 +44,7 @@ type apply struct {
 type lookup struct {
 	k string
 	ch chan int
-	v string
+	v []string
 	cas string
 }
 
@@ -249,9 +249,14 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 	s.applyCh <- apply{seqn, mutation}
 }
 
-// Gets the value stored at `path`, if any. If no value is stored at `path`,
-// `ok` is false.
-func (s *Store) Lookup(path string) (body string, cas string) {
+// Gets the value stored at `path`, if any.
+//
+// If no value is stored at `path`, `cas` is `Missing` and `value` is nil.
+//
+// if `path` is a directory, `cas` is `Dir` and `value` is a list of entries.
+//
+// Otherwise, `cas` is the cas token and `value[0]` is the body.
+func (s *Store) Lookup(path string) (value []string, cas string) {
 	l := lookup{k:path, ch:make(chan int)}
 	s.lookupCh <- &l
 	<-l.ch

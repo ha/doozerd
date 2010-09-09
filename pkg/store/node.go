@@ -17,36 +17,36 @@ type node struct {
 	ds map[string]node
 }
 
-func (n node) readdir() string {
+func (n node) readdir() []string {
 	names := make([]string, len(n.ds))
 	i := 0
 	for name, _ := range n.ds {
-		names[i] = name + "\n"
+		names[i] = name
 		i++
 	}
-	return strings.Join(names, "")
+	return names
 }
 
-func (n node) get(parts []string) (string, string) {
+func (n node) get(parts []string) ([]string, string) {
 	switch len(parts) {
 	case 0:
 		if len(n.ds) > 0 {
 			return n.readdir(), n.cas
 		} else {
-			return n.v, n.cas
+			return []string{n.v}, n.cas
 		}
 	default:
 		if m, ok := n.ds[parts[0]]; ok {
 			return m.get(parts[1:])
 		}
-		return "", Missing
+		return []string{""}, Missing
 	}
 	panic("can't happen")
 }
 
-func (n node) getp(path string) (string, string) {
+func (n node) getp(path string) ([]string, string) {
 	if err := checkPath(path); err != nil {
-		return "", Missing
+		return []string{""}, Missing
 	}
 
 	return n.get(split(path))
