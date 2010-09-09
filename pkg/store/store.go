@@ -314,10 +314,11 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re, stop:math.MaxUint64}
 }
 
-// Waits for `seqn` and sends a single event representing the change made at
-// that position.
+// Subscribes `ch` to receive a single event representing the change made at
+// position `seqn`.
 //
-// If `seqn` is in the past, the event's `Err` will be `TooLateError`.
+// If `seqn` was applied before the call to `Wait`, a dummy event will be
+// sent with its `Err` set to `TooLateError`.
 func (s *Store) Wait(seqn uint64, ch chan Event) {
 	all := make(chan Event)
 	s.watchCh <- watch{in:all, re:waitRegexp, stop:seqn}
@@ -331,6 +332,8 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 	}()
 }
 
+// Ensures that the application of mutation at `seqn` happens before the call
+// to `Sync` returns.
 func (st *Store) Sync(seqn uint64) {
 	ch := make(chan Event)
 	st.Wait(seqn, ch)
