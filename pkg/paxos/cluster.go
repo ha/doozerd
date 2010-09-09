@@ -9,39 +9,42 @@ type node struct {
 	id string
 }
 
-// SelfIndex is the position of the local node in the alphabetized list of all
-// nodes in the cluster.
 type cluster struct {
 	self      string
-	nodes     []string
+	active    []string
 	idsByAddr map[string]string
 	addrsById map[string]string
 }
 
+func stringKeys(m map[string]string) []string {
+	keys := make([]string, len(m))
+	i := 0
+	for k, _ := range m {
+		keys[i] = k
+		i++
+	}
+	return keys
+}
+
 func newCluster(self string, addrsById map[string]string) *cluster {
-	validNodes := make([]string, 0, len(addrsById))
+	active := stringKeys(addrsById)
+
 	idsByAddr := make(map[string]string)
-	addrsByIdCopy := make(map[string]string)
 	for id, addr := range addrsById {
-		if id != "" {
-			validNodes = validNodes[0 : len(validNodes)+1]
-			validNodes[len(validNodes)-1] = id
-			idsByAddr[addr] = id
-			addrsByIdCopy[id] = addr
-		}
+		idsByAddr[addr] = id
 	}
 
-	sort.SortStrings(validNodes)
+	sort.SortStrings(active)
 	return &cluster{
 		self:      self,
-		nodes:     validNodes,
+		active:    active,
 		idsByAddr: idsByAddr,
-		addrsById: addrsByIdCopy,
+		addrsById: addrsById,
 	}
 }
 
 func (cx *cluster) Len() int {
-	return len(cx.nodes)
+	return len(cx.active)
 }
 
 func (cx *cluster) Quorum() int {
@@ -53,7 +56,7 @@ func (cx *cluster) SelfIndex() int {
 }
 
 func (cx *cluster) indexById(id string) int {
-	for i, s := range cx.nodes {
+	for i, s := range cx.active {
 		if s == id {
 			return i
 		}
