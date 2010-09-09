@@ -107,13 +107,14 @@ func members(st *store.Store) map[string]string {
 	return members
 }
 
-func (rg *Registrar) membersAt(cver uint64) map[string]string {
+func (rg *Registrar) membersAt(cver uint64) (map[string]string, []string) {
 	ch := make(chan map[string]string)
 	rg.lookupCh <- lookup{cver, ch}
-	return <-ch
+	ms := <-ch
+	return ms, stringKeys(ms)
 }
 
-func (rg *Registrar) membersFor(seqn uint64) map[string]string {
+func (rg *Registrar) membersFor(seqn uint64) (map[string]string, []string) {
 	cver := uint64(1)
 	if seqn > uint64(rg.window) {
 		cver = seqn - uint64(rg.window)
