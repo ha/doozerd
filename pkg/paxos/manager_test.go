@@ -177,32 +177,34 @@ func TestReadFromStore(t *testing.T) {
 	st := store.New()
 	p := make(ChanPutCloser)
 	self := "a"
-	st.Apply(1, mustEncodeSet(membersKey+"/"+self, ""))
-	m := NewManager(self, 1, 1, st, p)
+	st.Apply(1, mustEncodeSet(membersDir+self, ""))
+	st.Apply(2, mustEncodeSet(slotDir+"0", self))
+	m := NewManager(self, 2, 1, st, p)
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll
 	// immediately learn the value `x`.
 	in := newVoteFrom(0, 1, "x")
-	in.SetSeqn(3)
+	in.SetSeqn(5)
 	m.Put(in)
 
 	// Satisfy the sync read of data members above. After this, there will be
 	// 2 nodes in the cluster, making the quorum 2.
-	st.Apply(2, mustEncodeSet(membersKey+"/b", ""))
+	st.Apply(3, mustEncodeSet(membersDir+"b", ""))
+	st.Apply(4, mustEncodeSet(slotDir+"1", "b"))
 
 	// Now try to make it learn a new value with 2 votes to meet the new
 	// quorum.
 	exp := "y"
 	in = newVoteFrom(0, 2, exp)
-	in.SetSeqn(3)
+	in.SetSeqn(5)
 	m.Put(in)
 	in = newVoteFrom(1, 2, exp)
-	in.SetSeqn(3)
+	in.SetSeqn(5)
 	m.Put(in)
 
 	seqn, v := m.Recv()
-	assert.Equal(t, uint64(3), seqn, "")
+	assert.Equal(t, uint64(5), seqn, "")
 	assert.Equal(t, exp, v, "")
 }
 
@@ -216,17 +218,20 @@ func (pf putFunc) Close() {}
 
 func TestManagerPutFrom(t *testing.T) {
 	exp := "bar"
-	seqnExp := uint64(4)
+	seqnExp := uint64(7)
 	fromAddr := "y"
 	fromIndex := 1 // [a, b, c].indexof(b) => 1
 
 	st := store.New()
 	self := "a"
-	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+self, "x"))
-	st.Apply(uint64(2), mustEncodeSet(membersKey+"/b", "y"))
-	st.Apply(uint64(3), mustEncodeSet(membersKey+"/c", "z"))
+	st.Apply(uint64(1), mustEncodeSet(membersDir+self, "x"))
+	st.Apply(uint64(2), mustEncodeSet(slotDir+"0", self))
+	st.Apply(uint64(3), mustEncodeSet(membersDir+"b", "y"))
+	st.Apply(uint64(4), mustEncodeSet(slotDir+"1", "b"))
+	st.Apply(uint64(5), mustEncodeSet(membersDir+"c", "z"))
+	st.Apply(uint64(6), mustEncodeSet(slotDir+"2", "c"))
 	p := make(FakePutter, 1)
-	m := NewManager(self, 3, 1, st, p)
+	m := NewManager(self, 6, 1, st, p)
 	p[0] = m
 
 	froms := make(chan int)
