@@ -5,16 +5,6 @@ import (
 	"testing"
 )
 
-func sink(ch chan Msg) string {
-	for m := range ch {
-		switch m.Cmd() {
-		case learn:
-			return learnParts(m)
-		}
-	}
-	return ""
-}
-
 func TestSinkLearnsAValue(t *testing.T) {
 	msgs := make(chan Msg)
 	taught := make(chan string)
