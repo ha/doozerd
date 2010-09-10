@@ -48,3 +48,24 @@ func Join(c Conn, id, addr string) (seqn uint64, snapshot string, err os.Error) 
 	snapshot = parts[1]
 	return
 }
+
+func Set(c Conn, path, body, cas string) (seqn uint64, err os.Error) {
+	var rid uint
+	rid, err = c.SendRequest("set", path, body, cas)
+	if err != nil {
+		return
+	}
+
+	var parts []string
+	parts, err = c.ReadResponse(rid)
+	if err != nil {
+		return
+	}
+
+	if len(parts) != 1 {
+		err = ErrInvalidResponse
+		return
+	}
+
+	return strconv.Btoui64(parts[0], 10)
+}
