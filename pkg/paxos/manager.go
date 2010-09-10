@@ -25,6 +25,7 @@ type Manager struct {
 	reqs    chan *instReq
 	logger  *log.Logger
 	Self    string
+	Alpha   int
 }
 
 func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putter) *Manager {
@@ -35,6 +36,7 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),
 		Self:    self,
+		Alpha:   alpha,
 	}
 
 	go m.process(start + uint64(alpha), outs)
@@ -54,6 +56,9 @@ func (m *Manager) process(next uint64, outs Putter) {
 			// This is meant to be run in a separate goroutine
 			cxf := func() *cluster {
 				ms, active := m.rg.membersFor(req.seqn)
+				m.logger.Logf("cluster %d has %d members and %d active", req.seqn, len(ms), len(active))
+				m.logger.Logf("  members: %v", ms)
+				m.logger.Logf("  active: %v", active)
 				return newCluster(m.Self, ms, active)
 			}
 			inst = newInstance(cxf, putWrapper{req.seqn, outs})
@@ -95,14 +100,14 @@ func (m *Manager) AddrsFor(msg Msg) []string {
 	return it.cluster().addrs()
 }
 
-func (m *Manager) Propose(v string) (string, os.Error) {
+func (m *Manager) Propose(v string) (uint64, string, os.Error) {
 	ch := make(chan store.Event)
 	seqn, inst := m.getInstance(0)
 	m.st.Wait(seqn, ch)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
 	ev := <-ch
-	return ev.Mut, ev.Err
+	return seqn, ev.Mut, ev.Err
 }
 
 func (m *Manager) Recv() (uint64, string) {

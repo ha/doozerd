@@ -9,22 +9,28 @@ import (
 
 var ErrInvalidResponse = os.NewError("invalid response")
 
-func Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
-	var c net.Conn
-	c, err = net.Dial("tcp", "", addr)
-	if err != nil {
-		return
-	}
-	p := proto.NewConn(c)
+type Conn interface {
+	SendRequest(...string) (uint, os.Error)
+	ReadResponse(uint) ([]string, os.Error)
+}
 
+func Dial(addr string) (Conn, os.Error) {
+	c, err := net.Dial("tcp", "", addr)
+	if err != nil {
+		return nil, err
+	}
+	return proto.NewConn(c), nil
+}
+
+func Join(c Conn, id, addr string) (seqn uint64, snapshot string, err os.Error) {
 	var rid uint
-	rid, err = p.SendRequest("join", id)
+	rid, err = c.SendRequest("join", id, addr)
 	if err != nil {
 		return
 	}
 
 	var parts []string
-	parts, err = p.ReadResponse(rid)
+	parts, err = c.ReadResponse(rid)
 	if err != nil {
 		return
 	}

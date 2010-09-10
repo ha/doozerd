@@ -8,6 +8,7 @@ import (
 	"junta/paxos"
 	"junta/proto"
 	"junta/store"
+	"strconv"
 )
 
 type conn struct {
@@ -109,24 +110,24 @@ func (s *Server) Serve(l net.Listener) os.Error {
 	panic("not reached")
 }
 
-func (sv *Server) Set(path, body, cas string) os.Error {
+func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
 	mut, err := store.EncodeSet(path, body, cas)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	v, err := sv.Mg.Propose(mut)
+	seqn, v, err := sv.Mg.Propose(mut)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// We failed, but only because of a competing proposal. The client should
 	// retry.
 	if v != mut {
-		return os.EAGAIN
+		return 0, os.EAGAIN
 	}
 
-	return nil
+	return seqn, nil
 }
 
 func (c *conn) serve() {
@@ -166,7 +167,7 @@ func (c *conn) serve() {
 			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
 			err := os.EAGAIN
 			for err == os.EAGAIN {
-				err = c.s.Set(parts[1], parts[2], parts[3])
+				_, err = c.s.Set(parts[1], parts[2], parts[3])
 			}
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
@@ -174,6 +175,33 @@ func (c *conn) serve() {
 			} else {
 				rlogger.Logf("good")
 				pc.SendResponse(rid, "true")
+			}
+		case "join":
+			// join abc123 1.2.3.4:999
+			if len(parts) != 3 {
+				rlogger.Logf("invalid join command: %v", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+
+			who, addr := parts[1], parts[2]
+			rlogger.Logf("membership requested for %s at %s", who, addr)
+
+			key := "/j/junta/members/" + who
+
+			var seqn uint64
+			err := os.EAGAIN
+			for err == os.EAGAIN {
+				seqn, err = c.s.Set(key, addr, store.Missing)
+			}
+			if err != nil {
+				rlogger.Logf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Logf("good")
+				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha))
+				seqn, snap := c.s.St.Snapshot()
+				pc.SendResponse(rid, strconv.Uitoa64(seqn), snap)
 			}
 		}
 	}
