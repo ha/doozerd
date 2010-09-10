@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"net"
 	"os"
 
 	"junta/paxos"
+	"junta/proc"
 	"junta/store"
 	"junta/util"
 	"junta/client"
@@ -72,10 +74,19 @@ func main() {
 		}
 	}
 
+	listener, err := net.Listen("tcp", *listenAddr)
+	if err != nil {
+		panic(err)
+	}
+
 	sv := &server.Server{*listenAddr, st, mg}
 
 	go func() {
-		panic(sv.ListenAndServe())
+		panic(proc.Monitor(self, st))
+	}()
+
+	go func() {
+		panic(sv.Serve(listener))
 	}()
 
 	go func() {
