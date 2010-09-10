@@ -63,7 +63,7 @@ func TestNodeSnapshotApply(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	m := s1.Snapshot()
+	_, m := s1.Snapshot()
 
 	n, e := root.apply(1, m)
 	exp := node{"", Dir, map[string]node{"x":node{"b", "2", nil}}}

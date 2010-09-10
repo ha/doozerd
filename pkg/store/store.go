@@ -267,12 +267,14 @@ func (s *Store) Lookup(path string) (value []string, cas string) {
 // a mutation. This mutation can be applied to an empty store to reproduce the
 // state of `s`.
 //
+// Returns the sequence number of the snapshot and the mutation itself.
+//
 // A snapshot must be applied at sequence number `1`. Once a snapshot has been
 // applied, the store's current sequence number will be set to that of the
 // snapshot.
 //
 // Note that applying a snapshot does not send notifications.
-func (s *Store) Snapshot() string {
+func (s *Store) Snapshot() (seqn uint64, mutation string) {
 	w := new(bytes.Buffer)
 	ch := make(chan snap)
 	s.snapCh <- ch
@@ -287,7 +289,7 @@ func (s *Store) Snapshot() string {
 		panic(err)
 	}
 
-	return w.String()
+	return ss.ver, w.String()
 }
 
 // Subscribes `ch` to receive notifications when mutations are applied to paths

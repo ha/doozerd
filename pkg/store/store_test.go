@@ -576,7 +576,8 @@ func TestSnapshotApply(t *testing.T) {
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	snap := s1.Snapshot()
+	seqn, snap := s1.Snapshot()
+	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
 	s2.Apply(1, snap)
@@ -611,7 +612,8 @@ func TestSnapshotSeqn(t *testing.T) {
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	snap := s1.Snapshot()
+	seqn, snap := s1.Snapshot()
+	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
 	s2.Apply(1, snap)
@@ -644,7 +646,8 @@ func TestSnapshotLeak(t *testing.T) {
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	snap := s1.Snapshot()
+	seqn, snap := s1.Snapshot()
+	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
 
@@ -661,7 +664,8 @@ func TestSnapshotOutOfOrder(t *testing.T) {
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	snap := s1.Snapshot()
+	seqn, snap := s1.Snapshot()
+	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
 
@@ -679,16 +683,21 @@ func TestSnapshotOutOfOrder(t *testing.T) {
 }
 
 func TestSnapshotSync(t *testing.T) {
-	ch := make(chan string)
+	seqnCh := make(chan uint64)
+	snapCh := make(chan string)
 	s1 := New()
 	go func() {
 		s1.Sync(2)
-		ch <- s1.Snapshot()
+		seqn, snap := s1.Snapshot()
+		seqnCh <- seqn
+		snapCh <- snap
 	}()
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	snap := <-ch
+	seqn := <-seqnCh
+	assert.Equal(t, uint64(2), seqn)
+	snap := <-snapCh
 
 	s2 := New()
 	s2.Apply(1, snap)
