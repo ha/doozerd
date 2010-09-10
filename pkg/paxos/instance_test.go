@@ -47,6 +47,13 @@ func TestStartAtLearn(t *testing.T) {
 	ins.Close()
 }
 
+func TestLearnInEmptyCluster(t *testing.T) {
+	ins := selfRefNewInstance("a", map[string]string{})
+	ins.Put(newLearn("foo"))
+	assert.Equal(t, "foo", ins.Value(), "")
+	ins.Close()
+}
+
 func TestStartAtVoteWithDuplicates(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
