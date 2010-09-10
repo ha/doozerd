@@ -130,6 +130,26 @@ func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
 	return seqn, nil
 }
 
+func (sv *Server) Del(path, cas string) (uint64, os.Error) {
+	mut, err := store.EncodeDel(path, cas)
+	if err != nil {
+		return 0, err
+	}
+
+	seqn, v, err := sv.Mg.Propose(mut)
+	if err != nil {
+		return 0, err
+	}
+
+	// We failed, but only because of a competing proposal. The client should
+	// retry.
+	if v != mut {
+		return 0, os.EAGAIN
+	}
+
+	return seqn, nil
+}
+
 func (c *conn) serve() {
 	pc := proto.NewConn(c)
 	logger := util.NewLogger("%v", c.RemoteAddr())
@@ -168,6 +188,24 @@ func (c *conn) serve() {
 			err := os.EAGAIN
 			for err == os.EAGAIN {
 				_, err = c.s.Set(parts[1], parts[2], parts[3])
+			}
+			if err != nil {
+				rlogger.Logf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Logf("good")
+				pc.SendResponse(rid, "true")
+			}
+		case "del":
+			if len(parts) != 3 {
+				rlogger.Logf("invalid del command: %v", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+			rlogger.Logf("del %q (cas %q)", parts[1], parts[2])
+			err := os.EAGAIN
+			for err == os.EAGAIN {
+				_, err = c.s.Del(parts[1], parts[2])
 			}
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
