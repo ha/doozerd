@@ -33,14 +33,14 @@ func selfRefNewInstance(self string, nodes map[string]string) *instance {
 	return ins
 }
 
-func TestStartAtLearn(t *testing.T) {
+func TestStartAtVote(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
-func TestStartAtLearnWithDuplicates(t *testing.T) {
+func TestStartAtVoteWithDuplicates(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a":"x"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(1, 1, "foo"))
@@ -49,7 +49,7 @@ func TestStartAtLearnWithDuplicates(t *testing.T) {
 	ins.Close()
 }
 
-func TestLearnWithQuorumOf2(t *testing.T) {
+func TestVoteWithQuorumOf2(t *testing.T) {
 	ins := selfRefNewInstance("b", map[string]string{"a":"x", "b":"y", "c":"z"})
 	ins.Put(newVoteFrom(1, 1, "foo"))
 	ins.Put(newVoteFrom(2, 1, "foo"))
