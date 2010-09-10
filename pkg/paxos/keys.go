@@ -5,6 +5,6 @@ const (
 	clusterKey = prefixKey+"/junta"
 	membersKey = clusterKey+"/members"
 	membersDir = membersKey+"/"
-	slotKey    = prefixKey+"/slot"
+	slotKey    = clusterKey+"/slot"
 	slotDir    = slotKey+"/"
 )
