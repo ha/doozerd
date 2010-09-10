@@ -69,3 +69,24 @@ func Set(c Conn, path, body, cas string) (seqn uint64, err os.Error) {
 
 	return strconv.Btoui64(parts[0], 10)
 }
+
+func Del(c Conn, path, cas string) (seqn uint64, err os.Error) {
+	var rid uint
+	rid, err = c.SendRequest("del", path, cas)
+	if err != nil {
+		return
+	}
+
+	var parts []string
+	parts, err = c.ReadResponse(rid)
+	if err != nil {
+		return
+	}
+
+	if len(parts) != 1 {
+		err = ErrInvalidResponse
+		return
+	}
+
+	return strconv.Btoui64(parts[0], 10)
+}
