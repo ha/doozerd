@@ -1,9 +1,9 @@
 package store
 
 import (
+	"bytes"
 	"container/list"
 	"gob"
-	"io"
 	"junta/util"
 	"math"
 	"os"
@@ -264,25 +264,30 @@ func (s *Store) Lookup(path string) (value []string, cas string) {
 }
 
 // Encodes the entire storage state, including the current sequence number, as
-// a mutation, and writes the mutation to `w`. This mutation can be applied to
-// an empty store to reproduce the state of this one.
+// a mutation. This mutation can be applied to an empty store to reproduce the
+// state of `s`.
 //
 // A snapshot must be applied at sequence number `1`. Once a snapshot has been
 // applied, the store's current sequence number will be set to that of the
 // snapshot.
 //
 // Note that applying a snapshot does not send notifications.
-func (s *Store) Snapshot(w io.Writer) (err os.Error) {
+func (s *Store) Snapshot() string {
+	w := new(bytes.Buffer)
 	ch := make(chan snap)
 	s.snapCh <- ch
 	ss := <-ch
-	err = gob.NewEncoder(w).Encode(ss.ver)
+	err := gob.NewEncoder(w).Encode(ss.ver)
 	if err != nil {
-		return
+		panic(err)
 	}
 
 	err = gob.NewEncoder(w).Encode(ss.root)
-	return
+	if err != nil {
+		panic(err)
+	}
+
+	return w.String()
 }
 
 // Subscribes `ch` to receive notifications when mutations are applied to paths

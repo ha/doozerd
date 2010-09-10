@@ -4,7 +4,6 @@ import (
 	"junta/assert"
 	"bytes"
 	"gob"
-	"os"
 	"testing"
 )
 
@@ -571,18 +570,16 @@ func TestWatchApply(t *testing.T) {
 }
 
 func TestSnapshotApply(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	err := s1.Snapshot(buf)
-	assert.Equal(t, nil, err)
+	snap := s1.Snapshot()
 
 	s2 := New()
-	s2.Apply(1, buf.String())
+	s2.Apply(1, snap)
 	s2.Sync(1)
 
 	v, cas := s2.Lookup("/x")
@@ -592,13 +589,11 @@ func TestSnapshotApply(t *testing.T) {
 
 func TestSnapshotBad(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	err := gob.NewEncoder(buf).Encode(uint64(1))
-	assert.Equal(t, nil, err)
+	gob.NewEncoder(buf).Encode(uint64(1))
 	seqnPart := buf.String()
 
 	buf = bytes.NewBuffer([]byte{})
-	err = gob.NewEncoder(buf).Encode(root)
-	assert.Equal(t, nil, err)
+	gob.NewEncoder(buf).Encode(root)
 	valPart := buf.String()
 	valPart = valPart[0:len(valPart)/2]
 
@@ -612,16 +607,14 @@ func TestSnapshotBad(t *testing.T) {
 }
 
 func TestSnapshotSeqn(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	err := s1.Snapshot(buf)
-	assert.Equal(t, nil, err)
+	snap := s1.Snapshot()
 
 	s2 := New()
-	s2.Apply(1, buf.String())
+	s2.Apply(1, snap)
 	s2.Sync(1)
 	v, cas := s2.Lookup("/x")
 	assert.Equal(t, "2", cas, "snap")
@@ -647,18 +640,16 @@ func TestSnapshotSeqn(t *testing.T) {
 }
 
 func TestSnapshotLeak(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	err := s1.Snapshot(buf)
-	assert.Equal(t, nil, err)
+	snap := s1.Snapshot()
 
 	s2 := New()
 
 	s2.Apply(2, MustEncodeSet("/x", "c", Clobber))
-	s2.Apply(1, buf.String())
+	s2.Apply(1, snap)
 	s2.Sync(1)
 
 	// check that we aren't leaking memory
@@ -666,19 +657,17 @@ func TestSnapshotLeak(t *testing.T) {
 }
 
 func TestSnapshotOutOfOrder(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	err := s1.Snapshot(buf)
-	assert.Equal(t, nil, err)
+	snap := s1.Snapshot()
 
 	s2 := New()
 
 	s2.Apply(2, MustEncodeSet("/x", "c", Clobber))
 	s2.Apply(3, MustEncodeSet("/x", "c", Clobber))
-	s2.Apply(1, buf.String())
+	s2.Apply(1, snap)
 	s2.Sync(3)
 
 	body, cas := s2.Lookup("/x")
@@ -690,21 +679,19 @@ func TestSnapshotOutOfOrder(t *testing.T) {
 }
 
 func TestSnapshotSync(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
-	ch := make(chan os.Error)
+	ch := make(chan string)
 	s1 := New()
 	go func() {
 		s1.Sync(2)
-		ch <- s1.Snapshot(buf)
+		ch <- s1.Snapshot()
 	}()
 	s1.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s1.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s1.Sync(2)
-	err := <-ch
-	assert.Equal(t, nil, err)
+	snap := <-ch
 
 	s2 := New()
-	s2.Apply(1, buf.String())
+	s2.Apply(1, snap)
 	s2.Sync(1)
 
 	v, cas := s2.Lookup("/x")

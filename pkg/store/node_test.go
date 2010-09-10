@@ -57,17 +57,14 @@ func TestNodeApplyCasMismatch(t *testing.T) {
 }
 
 func TestNodeSnapshotApply(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
 	s1 := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
 	s1.Apply(1, mut1)
 	s1.Apply(2, mut2)
 	s1.Sync(2)
-	err := s1.Snapshot(buf)
-	assert.Equal(t, nil, err)
+	m := s1.Snapshot()
 
-	m := buf.String()
 	n, e := root.apply(1, m)
 	exp := node{"", Dir, map[string]node{"x":node{"b", "2", nil}}}
 	assert.Equal(t, exp, n)
@@ -76,13 +73,11 @@ func TestNodeSnapshotApply(t *testing.T) {
 
 func TestNodeSnapshotBad(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	err := gob.NewEncoder(buf).Encode(uint64(1))
-	assert.Equal(t, nil, err)
+	gob.NewEncoder(buf).Encode(uint64(1))
 	seqnPart := buf.String()
 
 	buf = bytes.NewBuffer([]byte{})
-	err = gob.NewEncoder(buf).Encode(root)
-	assert.Equal(t, nil, err)
+	gob.NewEncoder(buf).Encode(root)
 	valPart := buf.String()
 	valPart = valPart[0:len(valPart)/2]
 
