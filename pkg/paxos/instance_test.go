@@ -131,6 +131,22 @@ func TestInstanceCluster(t *testing.T) {
 	it.Close()
 }
 
+func TestInstanceSendsLearn(t *testing.T) {
+	ch := make(ChanPutCloser)
+	nodes := map[string]string{"a":"x"}
+	p := make([]Putter, 2)
+	cx := newCluster("a", nodes, stringKeys(nodes))
+	it := newInstance(func() *cluster { return cx }, FakePutter(p))
+	p[0] = it
+	p[1] = ch
+
+	it.Put(newVoteFrom(0, 1, "foo"))
+
+	assert.Equal(t, newLearn("foo"), <-ch)
+
+	it.Close()
+}
+
 //func TestDeadlock(t *testing.T) {
 //	<-make(chan int)
 //}

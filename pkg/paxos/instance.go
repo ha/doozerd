@@ -26,18 +26,22 @@ func newInstance(cxf func() *cluster, outs Putter) *instance {
 	}
 
 	go func() {
+		ch := make(chan string)
 		ins.cx = cxf()
 		close(ins.cxReady)
 		go c.process(ins.cx)
 		go acceptor(aIns, outs)
 		go func() {
-			ins.v = learner(uint64(ins.cx.Quorum()), lIns)
-			close(ins.done)
+			ch <- learner(uint64(ins.cx.Quorum()), lIns)
 		}()
 		go func() {
-			ins.v = sink(sIns)
-			close(ins.done)
+			ch <- sink(sIns)
 		}()
+
+		ins.v = <-ch
+		close(ch)
+		close(ins.done)
+		outs.Put(newLearn(ins.v))
 	}()
 
 	return ins
