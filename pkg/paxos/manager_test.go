@@ -161,7 +161,7 @@ func TestProposeBadMutation(t *testing.T) {
 	}()
 
 	_, _, err := mg.Propose("foo")
-	assert.Equal(t, store.BadMutationError, err)
+	assert.Equal(t, store.ErrBadMutation, err)
 }
 
 func mustEncodeSet(k, v string) string {
