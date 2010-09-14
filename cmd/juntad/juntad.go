@@ -25,9 +25,20 @@ var (
 	attachAddr *string = flag.String("a", "", "The address to bind to.")
 )
 
-func activate(ch chan store.Event) {
-	// TODO implement this
-	close(ch)
+func activate(st *store.Store, self string, c client.Conn) {
+	logger := util.NewLogger("activate")
+	ch := make(chan store.Event)
+	st.Watch("/j/junta/slot/*", ch)
+	for ev := range ch {
+		// TODO ev.IsEmpty()
+		if ev.IsSet() && ev.Body == "" {
+			_, err := client.Set(c, ev.Path, self, ev.Cas)
+			if err == nil {
+				return
+			}
+			logger.Log(err)
+		}
+	}
 }
 
 func main() {
@@ -55,7 +66,11 @@ func main() {
 		ch := make(chan store.Event)
 		st.Wait(seqn + alpha, ch)
 		st.Apply(1, snap)
-		go activate(ch)
+
+		go func() {
+			<-ch
+			activate(st, self, c)
+		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
 		// gaps in its sequence
