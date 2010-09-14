@@ -11,6 +11,8 @@ import (
 	"strconv"
 )
 
+const packetSize = 3000
+
 type conn struct {
 	net.Conn
 	s *Server
@@ -65,8 +67,7 @@ func (sv *Server) ServeUdp(u net.PacketConn, outs chan paxos.Msg) os.Error {
 	go func() {
 		logger.Log("reading messages...")
 		for {
-			// TODO pull out this magic number into a const
-			msg, addr, err := paxos.ReadMsg(u, 3000)
+			msg, addr, err := paxos.ReadMsg(u, packetSize)
 			if err != nil {
 				logger.Log(err)
 				continue
