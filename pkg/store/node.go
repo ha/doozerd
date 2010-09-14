@@ -8,7 +8,7 @@ import (
 
 var root = node{v:"", ds:make(map[string]node), cas:Dir}
 
-var errPath = "/store/error"
+const ErrorPath = "/store/error"
 
 // This structure should be kept immutable.
 type node struct {
@@ -108,7 +108,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 	}
 
 	if ev.Err != nil {
-		ev.Path, ev.Body, cas, keep = errPath, ev.Err.String(), Clobber, true
+		ev.Path, ev.Body, cas, keep = ErrorPath, ev.Err.String(), Clobber, true
 	}
 
 	if !keep {

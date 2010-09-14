@@ -240,9 +240,9 @@ func (s *Store) process() {
 	}
 }
 
-// Applies `mutation` in sequence at position `seqn`. A malformed mutation is
-// treated as a no-op. If a mutation has already been applied at this position,
-// this one is sliently ignored.
+// Applies `mutation` in sequence at position `seqn`. Any error that occurs
+// will be written to `ErrorPath`. If a mutation has already been applied at
+// this position, this one is sliently ignored.
 //
 // If `mutation` is a snapshot, notifications will not be sent.
 func (s *Store) Apply(seqn uint64, mutation string) {
@@ -269,9 +269,8 @@ func (s *Store) Lookup(path string) (value []string, cas string) {
 //
 // Returns the sequence number of the snapshot and the mutation itself.
 //
-// A snapshot must be applied at sequence number `1`. Once a snapshot has been
-// applied, the store's current sequence number will be set to that of the
-// snapshot.
+// A snapshot must be applied at sequence number 1. Once a snapshot has been
+// applied, the store's sequence number will be set to `seqn`.
 //
 // Note that applying a snapshot does not send notifications.
 func (s *Store) Snapshot() (seqn uint64, mutation string) {

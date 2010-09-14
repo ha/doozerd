@@ -34,7 +34,7 @@ func TestNodeApplyBadMutation(t *testing.T) {
 	n, e := root.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{BadMutationError.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, errPath, BadMutationError.String(), cas, m, BadMutationError}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, BadMutationError.String(), cas, m, BadMutationError}, e)
 }
 
 func TestNodeApplyBadInstruction(t *testing.T) {
@@ -43,7 +43,7 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 	n, e := root.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{BadPathError.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, errPath, BadPathError.String(), cas, m, BadPathError}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, BadPathError.String(), cas, m, BadPathError}, e)
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {
@@ -53,7 +53,7 @@ func TestNodeApplyCasMismatch(t *testing.T) {
 	n, e := root.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{CasMismatchError.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, errPath, CasMismatchError.String(), cas, m, CasMismatchError}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, CasMismatchError.String(), cas, m, CasMismatchError}, e)
 }
 
 func TestNodeSnapshotApply(t *testing.T) {
