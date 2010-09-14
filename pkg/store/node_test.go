@@ -28,6 +28,14 @@ func TestNodeApplyDel(t *testing.T) {
 	assert.Equal(t, Event{seqn, p, "", Missing, m, nil}, e)
 }
 
+func TestNodeApplyNop(t *testing.T) {
+	seqn := uint64(1)
+	m := Nop
+	n, e := root.apply(seqn, m)
+	assert.Equal(t, root, n)
+	assert.Equal(t, Event{seqn, "", "", "", m, nil}, e)
+}
+
 func TestNodeApplyBadMutation(t *testing.T) {
 	seqn, cas := uint64(1), "1"
 	m := BadMutations[0]

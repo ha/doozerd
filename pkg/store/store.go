@@ -245,6 +245,9 @@ func (s *Store) process() {
 // this position, this one is sliently ignored.
 //
 // If `mutation` is a snapshot, notifications will not be sent.
+//
+// If `mutation` is `Nop`, no change will be made, but a dummy event will still
+// be sent.
 func (s *Store) Apply(seqn uint64, mutation string) {
 	s.applyCh <- apply{seqn, mutation}
 }

@@ -10,6 +10,8 @@ var root = node{v:"", ds:make(map[string]node), cas:Dir}
 
 const ErrorPath = "/store/error"
 
+const Nop = "nop:"
+
 // This structure should be kept immutable.
 type node struct {
 	v string
@@ -95,6 +97,12 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 			}
 			return
 		}
+	}
+
+	if mut == Nop {
+		ev.Cas = ""
+		rep = n
+		return
 	}
 
 	cas, keep := "", false
