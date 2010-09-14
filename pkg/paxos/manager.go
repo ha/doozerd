@@ -55,7 +55,7 @@ func (m *Manager) process(next uint64, outs Putter) {
 			// TODO find a nicer way to do this
 			// This is meant to be run in a separate goroutine
 			cxf := func() *cluster {
-				ms, active := m.rg.membersFor(req.seqn)
+				ms, active := m.rg.setsForSeqn(req.seqn)
 				m.logger.Logf("cluster %d has %d members and %d active", req.seqn, len(ms), len(active))
 				m.logger.Logf("  members: %v", ms)
 				m.logger.Logf("  active: %v", active)

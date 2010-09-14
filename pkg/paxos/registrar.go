@@ -10,7 +10,7 @@ import (
 )
 
 type Registrar struct {
-	window   int
+	alpha    int
 	st       *store.Store
 	evs      chan store.Event
 	lookupCh chan *lookup
@@ -18,10 +18,10 @@ type Registrar struct {
 }
 
 type lookup struct {
-	cver    uint64
-	ch      chan int
-	members map[string]string
-	actives []string
+	cver      uint64
+	done      chan int
+	memberSet map[string]string
+	calSet    []string
 }
 
 func (l *lookup) Less(y interface{}) bool {
@@ -42,9 +42,9 @@ func (q *lookupQueue) peek() *lookup {
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
 // TODO remove the `start` param when store.Lookup provides a version
-func NewRegistrar(st *store.Store, start uint64, window int) *Registrar {
+func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
 	rg := &Registrar{
-		window:   window,
+		alpha:   alpha,
 		st:       st,
 		evs:      make(chan store.Event),
 		lookupCh: make(chan *lookup),
@@ -65,12 +65,12 @@ func findString(v []string, s string) (i int) {
 	return -1
 }
 
-func (rg *Registrar) process(known uint64, members, actives map[string]string) {
-	clusters := make(map[uint64]map[string]string)
-	copyMap(clusters, known, members)
+func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
+	memberSets := make(map[uint64]map[string]string)
+	copyMap(memberSets, seqn, memberSet)
 
-	clusterActives := make(map[uint64][]string)
-	copyActives(clusterActives, known, actives)
+	calSets := make(map[uint64][]string)
+	copyActives(calSets, seqn, calSet)
 
 	for {
 		select {
@@ -80,21 +80,21 @@ func (rg *Registrar) process(known uint64, members, actives map[string]string) {
 			dir, name := path.Split(ev.Path)
 			switch dir {
 			case membersDir:
-				members[name] = ev.Body, ev.IsSet()
+				memberSet[name] = ev.Body, ev.IsSet()
 			case slotDir:
-				actives[name] = ev.Body, ev.IsSet()
+				calSet[name] = ev.Body, ev.IsSet()
 			}
-			known = ev.Seqn
-			copyMap(clusters, known, members)
-			copyActives(clusterActives, known, actives)
+			seqn = ev.Seqn
+			copyMap(memberSets, seqn, memberSet)
+			copyActives(calSets, seqn, calSet)
 		}
 
 		// If we have any lookups that can be satisfied, do them.
-		for l := rg.lookups.peek(); known >= l.cver; l = rg.lookups.peek() {
+		for l := rg.lookups.peek(); seqn >= l.cver; l = rg.lookups.peek() {
 			l := heap.Pop(rg.lookups).(*lookup)
-			l.members = clusters[l.cver]
-			l.actives = clusterActives[l.cver]
-			l.ch <- 1
+			l.memberSet = memberSets[l.cver]
+			l.calSet = calSets[l.cver]
+			l.done <- 1
 		}
 	}
 }
@@ -134,17 +134,17 @@ func readdirMap(st *store.Store, path string) map[string]string {
 	return m
 }
 
-func (rg *Registrar) membersAt(cver uint64) (map[string]string, []string) {
-	lk := lookup{cver:cver, ch:make(chan int)}
+func (rg *Registrar) setsForVersion(cver uint64) (map[string]string, []string) {
+	lk := lookup{cver:cver, done:make(chan int)}
 	rg.lookupCh <- &lk
-	<-lk.ch
-	return lk.members, lk.actives
+	<-lk.done
+	return lk.memberSet, lk.calSet
 }
 
-func (rg *Registrar) membersFor(seqn uint64) (map[string]string, []string) {
+func (rg *Registrar) setsForSeqn(seqn uint64) (map[string]string, []string) {
 	cver := uint64(1)
-	if seqn > uint64(rg.window) {
-		cver = seqn - uint64(rg.window)
+	if seqn > uint64(rg.alpha) {
+		cver = seqn - uint64(rg.alpha)
 	}
-	return rg.membersAt(cver)
+	return rg.setsForVersion(cver)
 }
