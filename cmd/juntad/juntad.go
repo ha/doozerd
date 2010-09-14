@@ -70,7 +70,7 @@ func main() {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
 		for i := seqn + 1; i < seqn + alpha; i++ {
-			go st.Apply(i, "") // nop
+			go st.Apply(i, store.Nop)
 		}
 	}
 
