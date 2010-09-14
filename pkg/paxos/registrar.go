@@ -93,7 +93,7 @@ func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
 
 		// If we have any lookups that can be satisfied, do them.
 		for l := rg.lookups.peek(); seqn >= l.cver; l = rg.lookups.peek() {
-			l := heap.Pop(rg.lookups).(*lookup)
+			heap.Pop(rg.lookups)
 			l.memberSet = memberSets[l.cver]
 			l.calSet = calSets[l.cver]
 			l.done <- 1
