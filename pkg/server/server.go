@@ -159,6 +159,13 @@ func (sv *Server) Del(path, cas string) (uint64, os.Error) {
 	return seqn, nil
 }
 
+// Repeatedly propose nop values until a successful read from `done`.
+func (sv *Server) AdvanceUntil(done chan int) {
+	for _, ok := <-done; !ok; _, ok = <-done {
+		sv.Mg.Propose(store.Nop)
+	}
+}
+
 func (c *conn) serve() {
 	pc := proto.NewConn(c)
 	logger := util.NewLogger("%v", c.RemoteAddr())
@@ -239,7 +246,10 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("good")
+				done := make(chan int)
+				go c.s.AdvanceUntil(done)
 				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha))
+				close(done)
 				seqn, snap := c.s.St.Snapshot()
 				pc.SendResponse(rid, strconv.Uitoa64(seqn), snap)
 			}
