@@ -111,7 +111,7 @@ func (s *Server) Serve(l net.Listener) os.Error {
 	panic("not reached")
 }
 
-func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
+func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
 	mut, err := store.EncodeSet(path, body, cas)
 	if err != nil {
 		return 0, err
@@ -129,6 +129,14 @@ func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
 	}
 
 	return seqn, nil
+}
+
+func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
+	err = os.EAGAIN
+	for err == os.EAGAIN {
+		seqn, err = sv.setOnce(path, body, cas)
+	}
+	return
 }
 
 func (sv *Server) Del(path, cas string) (uint64, os.Error) {
@@ -186,10 +194,7 @@ func (c *conn) serve() {
 				break
 			}
 			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-			err := os.EAGAIN
-			for err == os.EAGAIN {
-				_, err = c.s.Set(parts[1], parts[2], parts[3])
-			}
+			_, err := c.s.Set(parts[1], parts[2], parts[3])
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
 				pc.SendError(rid, err.String())
@@ -228,11 +233,7 @@ func (c *conn) serve() {
 
 			key := "/j/junta/members/" + who
 
-			var seqn uint64
-			err := os.EAGAIN
-			for err == os.EAGAIN {
-				seqn, err = c.s.Set(key, addr, store.Missing)
-			}
+			seqn, err := c.s.Set(key, addr, store.Missing)
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
 				pc.SendError(rid, err.String())
