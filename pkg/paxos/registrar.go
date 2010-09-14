@@ -67,10 +67,11 @@ func findString(v []string, s string) (i int) {
 
 func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
 	memberSets := make(map[uint64]map[string]string)
-	copyMap(memberSets, seqn, memberSet)
+	memberSets[seqn] = dup(memberSet)
 
 	calSets := make(map[uint64][]string)
-	copyActives(calSets, seqn, calSet)
+	calSets[seqn] = nonEmpty(values(calSet))
+	sort.SortStrings(calSets[seqn])
 
 	for {
 		select {
@@ -85,8 +86,9 @@ func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
 				calSet[name] = ev.Body, ev.IsSet()
 			}
 			seqn = ev.Seqn
-			copyMap(memberSets, seqn, memberSet)
-			copyActives(calSets, seqn, calSet)
+			memberSets[seqn] = dup(memberSet)
+			calSets[seqn] = nonEmpty(values(calSet))
+			sort.SortStrings(calSets[seqn])
 		}
 
 		// If we have any lookups that can be satisfied, do them.
@@ -99,24 +101,32 @@ func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
 	}
 }
 
-func copyMap(c map[uint64]map[string]string, n uint64, m map[string]string) {
-	c[n] = map[string]string{}
+func dup(m map[string]string) map[string]string {
+	o := map[string]string{}
 	for k, v := range m {
-		c[n][k] = v
+		o[k] = v
 	}
+	return o
 }
 
-func copyActives(c map[uint64][]string, n uint64, a map[string]string) {
-	c[n] = make([]string, len(a))
-	i := 0
-	for _, v := range a {
+func values(m map[string]string) []string {
+	i, o := 0, make([]string, len(m))
+	for _, v := range m {
+		o[i] = v
+		i++
+	}
+	return o[0:i]
+}
+
+func nonEmpty(s []string) []string {
+	i, o := 0, make([]string, len(s))
+	for _, v := range s {
 		if v != "" {
-			c[n][i] = v
+			o[i] = v
 			i++
 		}
 	}
-	c[n] = c[n][0:i]
-	sort.SortStrings(c[n])
+	return o[0:i]
 }
 
 func readdirMap(st *store.Store, path string) map[string]string {
