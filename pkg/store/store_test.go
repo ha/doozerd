@@ -70,7 +70,7 @@ func TestSplit(t *testing.T) {
 func TestCheckBadPaths(t *testing.T) {
 	for _, k := range BadPaths {
 		err := checkPath(k)
-		assert.Equal(t, BadPathError, err)
+		assert.Equal(t, ErrBadPath, err)
 	}
 }
 
@@ -126,14 +126,14 @@ func TestDecodeDel(t *testing.T) {
 func TestDecodeBadInstructions(t *testing.T) {
 	for _, m := range BadInstructions {
 		_, _, _, _, err := decode(m)
-		assert.Equal(t, BadPathError, err)
+		assert.Equal(t, ErrBadPath, err)
 	}
 }
 
 func TestDecodeBadMutations(t *testing.T) {
 	for _, m := range BadMutations {
 		_, _, _, _, err := decode(m)
-		assert.Equal(t, BadMutationError, err)
+		assert.Equal(t, ErrBadMutation, err)
 	}
 }
 
@@ -745,7 +745,7 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, TooLateError, got.Err)
+	assert.Equal(t, ErrTooLate, got.Err)
 	assert.Equal(t, "", got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
@@ -767,7 +767,7 @@ func TestStoreWaitBadMutation(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, BadMutationError, got.Err)
+	assert.Equal(t, ErrBadMutation, got.Err)
 	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
@@ -787,7 +787,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, BadPathError, got.Err)
+	assert.Equal(t, ErrBadPath, got.Err)
 	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
@@ -850,7 +850,7 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, CasMismatchError, got.Err)
+	assert.Equal(t, ErrCasMismatch, got.Err)
 	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
@@ -872,7 +872,7 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, uint64(2), got.Seqn)
-	assert.Equal(t, CasMismatchError, got.Err)
+	assert.Equal(t, ErrCasMismatch, got.Err)
 	assert.Equal(t, mut2, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)

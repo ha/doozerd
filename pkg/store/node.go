@@ -103,7 +103,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 	if ev.Err == nil && cas != Clobber {
 		_, curCas := n.getp(ev.Path)
 		if cas != curCas {
-			ev.Err = CasMismatchError
+			ev.Err = ErrCasMismatch
 		}
 	}
 

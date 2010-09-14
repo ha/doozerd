@@ -18,11 +18,11 @@ const (
 )
 
 var (
-	BadPathError = os.NewError("bad path")
-	BadMutationError = os.NewError("bad mutation")
-	BadSnapshotError = os.NewError("bad snapshot")
-	TooLateError = os.NewError("too late")
-	CasMismatchError = os.NewError("cas mismatch")
+	ErrBadPath = os.NewError("bad path")
+	ErrBadMutation = os.NewError("bad mutation")
+	ErrBadSnapshot = os.NewError("bad snapshot")
+	ErrTooLate = os.NewError("too late")
+	ErrCasMismatch = os.NewError("cas mismatch")
 )
 
 var waitRegexp = regexp.MustCompile(``)
@@ -94,7 +94,7 @@ func checkPath(k string) os.Error {
 	     len(k) > 1 && k[len(k) - 1] == '/',
 	     strings.Count(k, "=") > 0,
 	     strings.Count(k, " ") > 0:
-		return BadPathError
+		return ErrBadPath
 	}
 	return nil
 }
@@ -139,7 +139,7 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	cm := strings.Split(mutation, ":", 2)
 
 	if len(cm) != 2 {
-		err = BadMutationError
+		err = ErrBadMutation
 		return
 	}
 
@@ -221,7 +221,7 @@ func (s *Store) process() {
 			if w.stop > ver {
 				append(&s.watches, w)
 			} else {
-				w.in <- Event{Seqn:w.stop, Err:TooLateError}
+				w.in <- Event{Seqn:w.stop, Err:ErrTooLate}
 				close(w.in)
 			}
 		}
@@ -313,7 +313,7 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 // position `seqn`.
 //
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
-// sent with its `Err` set to `TooLateError`.
+// sent with its `Err` set to `ErrTooLate`.
 func (s *Store) Wait(seqn uint64, ch chan Event) {
 	all := make(chan Event)
 	s.watchCh <- watch{in:all, re:waitRegexp, stop:seqn}
