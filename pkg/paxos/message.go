@@ -144,7 +144,6 @@ func learnParts(m Msg) string {
 }
 
 
-
 // Returns the info for `m`. If `m` is not a propose, the result is undefined.
 func proposeParts(m Msg) (val string) {
 	val = string(m.Body()[proposeLen:])
@@ -209,7 +208,7 @@ func (m *Msg) readFrom(c ReadFromer) (addr string, err os.Error) {
 	if er != nil {
 		return "", er
 	}
-	*m = (*m)[0:n+1] // truncate to fit
+	*m = (*m)[0 : n+1] // truncate to fit
 	return a.String(), nil
 }
 

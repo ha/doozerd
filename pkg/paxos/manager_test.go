@@ -236,7 +236,7 @@ func TestManagerPutFrom(t *testing.T) {
 
 	froms := make(chan int)
 
-	fp := putFunc(func (msg Msg) {
+	fp := putFunc(func(msg Msg) {
 		froms <- msg.From()
 	})
 
@@ -259,7 +259,7 @@ func TestManagerAddrsFor(t *testing.T) {
 	m, _ := selfRefNewManager()
 	msg := newInvite(1)
 	msg.SetSeqn(1)
-	assert.Equal(t, []string{m.Self+"addr"}, m.AddrsFor(msg))
+	assert.Equal(t, []string{m.Self + "addr"}, m.AddrsFor(msg))
 }
 
 func TestManagerGetInstanceForPropose(t *testing.T) {

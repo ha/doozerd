@@ -6,7 +6,7 @@ import (
 )
 
 func TestCluster(t *testing.T) {
-	membership := map[string]string{"a":"x", "b":"y", "c":"z"}
+	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a", "b", "c"}
 	cx := newCluster("c", membership, active)
 	assert.Equal(t, 3, cx.Len(), "Len")
@@ -26,7 +26,7 @@ func TestCluster(t *testing.T) {
 }
 
 func TestClusterActive(t *testing.T) {
-	membership := map[string]string{"a":"x", "b":"y", "c":"z"}
+	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a"}
 	cx := newCluster("a", membership, active)
 	assert.Equal(t, 1, cx.Len(), "Len")

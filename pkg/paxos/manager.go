@@ -39,7 +39,7 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		Alpha:   alpha,
 	}
 
-	go m.process(start + uint64(alpha), outs)
+	go m.process(start+uint64(alpha), outs)
 
 	return m
 }

@@ -44,7 +44,7 @@ func (q *lookupQueue) peek() *lookup {
 // TODO remove the `start` param when store.Lookup provides a version
 func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
 	rg := &Registrar{
-		alpha:   alpha,
+		alpha:    alpha,
 		st:       st,
 		evs:      make(chan store.Event),
 		lookupCh: make(chan *lookup),
@@ -101,7 +101,7 @@ func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
 
 func copyMap(c map[uint64]map[string]string, n uint64, m map[string]string) {
 	c[n] = map[string]string{}
-	for k,v := range m {
+	for k, v := range m {
 		c[n][k] = v
 	}
 }
@@ -109,7 +109,7 @@ func copyMap(c map[uint64]map[string]string, n uint64, m map[string]string) {
 func copyActives(c map[uint64][]string, n uint64, a map[string]string) {
 	c[n] = make([]string, len(a))
 	i := 0
-	for _,v := range a {
+	for _, v := range a {
 		if v != "" {
 			c[n][i] = v
 			i++
@@ -135,7 +135,7 @@ func readdirMap(st *store.Store, path string) map[string]string {
 }
 
 func (rg *Registrar) setsForVersion(cver uint64) (map[string]string, []string) {
-	lk := lookup{cver:cver, done:make(chan int)}
+	lk := lookup{cver: cver, done: make(chan int)}
 	rg.lookupCh <- &lk
 	<-lk.done
 	return lk.memberSet, lk.calSet
