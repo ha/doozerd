@@ -25,7 +25,7 @@ type Manager struct {
 	reqs    chan *instReq
 	logger  *log.Logger
 	Self    string
-	Alpha   int
+	alpha   int
 }
 
 func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putter) *Manager {
@@ -36,12 +36,16 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),
 		Self:    self,
-		Alpha:   alpha,
+		alpha:   alpha,
 	}
 
 	go m.process(start+uint64(alpha), outs)
 
 	return m
+}
+
+func (m *Manager) Alpha() int {
+	return m.alpha
 }
 
 func (m *Manager) process(next uint64, outs Putter) {

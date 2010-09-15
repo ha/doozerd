@@ -11,6 +11,12 @@ import (
 	"strconv"
 )
 
+type ReadFromWriteToer interface {
+	ReadFrom([]byte) (int, net.Addr, os.Error)
+	WriteTo([]byte, net.Addr) (int, os.Error)
+	LocalAddr() net.Addr
+}
+
 const packetSize = 3000
 
 type conn struct {
@@ -18,10 +24,17 @@ type conn struct {
 	s *Server
 }
 
+type Manager interface {
+	PutFrom(string, paxos.Msg)
+	AddrsFor(paxos.Msg) []string
+	Propose(string) (uint64, string, os.Error)
+	Alpha() int
+}
+
 type Server struct {
 	Addr string
 	St *store.Store
-	Mg *paxos.Manager
+	Mg Manager
 }
 
 func (sv *Server) ListenAndServe() os.Error {
@@ -39,7 +52,7 @@ func (sv *Server) ListenAndServe() os.Error {
 	err = sv.Serve(l)
 	if err != nil {
 		logger.Logf("%s: %s", l, err)
-	}
+}
 	return err
 }
 
@@ -84,7 +97,7 @@ func ackify(m paxos.Msg) paxos.Msg {
 	return o
 }
 
-func (sv *Server) ServeUdp(u net.PacketConn, outs chan paxos.Msg) os.Error {
+func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 	recvd := make(chan packet)
 	sent := make(chan packet)
 
@@ -309,7 +322,7 @@ func (c *conn) serve() {
 				rlogger.Logf("good")
 				done := make(chan int)
 				go c.s.AdvanceUntil(done)
-				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha))
+				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
 				close(done)
 				seqn, snap := c.s.St.Snapshot()
 				pc.SendResponse(rid, strconv.Uitoa64(seqn), snap)
