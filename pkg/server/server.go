@@ -152,7 +152,7 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 		select {
 		case pk := <-recvd:
 			if isAck(pk.Msg) {
-				logger.Logf("got ack (but ignoring) %s %v", pk.addr, pk.Msg)
+				logger.Logf("got ack %s %v", pk.addr, pk.Msg)
 				needsAck[pk.id()] = false
 			} else {
 				logger.Logf("sending ack %s %v", pk.addr, pk.Msg)
