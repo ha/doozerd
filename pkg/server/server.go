@@ -62,7 +62,32 @@ func (sv *Server) ListenAndServeUdp(outs chan paxos.Msg) os.Error {
 	return err
 }
 
+type packet struct {
+	paxos.Msg
+	addr string
+}
+
+func (pk packet) id() string {
+	return pk.addr + " " + string(pk.Msg.WireBytes())
+}
+
+const ack = 0x80
+
+func isAck(m paxos.Msg) bool {
+	return (m.Cmd() & ack) != 0
+}
+
+func ackify(m paxos.Msg) paxos.Msg {
+	o := make(paxos.Msg, len(m))
+	copy(o, m)
+	o[1] = byte(m.Cmd() | ack)
+	return o
+}
+
 func (sv *Server) ServeUdp(u net.PacketConn, outs chan paxos.Msg) os.Error {
+	recvd := make(chan packet)
+	sent := make(chan packet)
+
 	logger := util.NewLogger("udp server %s", u.LocalAddr())
 	go func() {
 		logger.Log("reading messages...")
@@ -73,24 +98,60 @@ func (sv *Server) ServeUdp(u net.PacketConn, outs chan paxos.Msg) os.Error {
 				continue
 			}
 			logger.Logf("read %v from %s", msg, addr)
+			recvd <- packet{msg, addr}
 			sv.Mg.PutFrom(addr, msg)
 		}
 	}()
 
-	logger.Log("sending messages...")
-	for msg := range outs {
-		logger.Logf("sending %v", msg)
-		for _, addr := range sv.Mg.AddrsFor(msg) {
-			logger.Logf("sending to %s", addr)
-			udpAddr, err := net.ResolveUDPAddr(addr)
-			if err != nil {
-				logger.Log(err)
-				continue
+	go func() {
+		logger.Log("sending messages...")
+		for msg := range outs {
+			logger.Logf("sending %v", msg)
+			for _, addr := range sv.Mg.AddrsFor(msg) {
+				logger.Logf("sending to %s", addr)
+				udpAddr, err := net.ResolveUDPAddr(addr)
+				if err != nil {
+					logger.Log(err)
+					continue
+				}
+
+				_, err = u.WriteTo(msg.WireBytes(), udpAddr)
+				if err != nil {
+					logger.Log(err)
+					continue
+				}
+				sent <- packet{msg, addr}
 			}
-			_, err = u.WriteTo(msg.WireBytes(), udpAddr)
-			if err != nil {
-				logger.Log(err)
-				continue
+		}
+	}()
+
+	needsAck := make(map[string]bool)
+	resend := make(chan packet)
+	for {
+		select {
+		case pk := <-recvd:
+			if isAck(pk.Msg) {
+				logger.Logf("got ack (but ignoring) %s %v", pk.addr, pk.Msg)
+				//needsAck[pk.id()] = false, false
+			} else {
+				logger.Logf("sending ack %s %v", pk.addr, pk.Msg)
+				udpAddr, err := net.ResolveUDPAddr(pk.addr)
+				if err != nil {
+					break
+				}
+				u.WriteTo(ackify(pk.Msg).WireBytes(), udpAddr)
+			}
+		case pk := <-sent:
+			needsAck[pk.id()] = true
+			logger.Logf("needs ack %s %v", pk.addr, pk.Msg)
+			go func() {
+				//sleep(0.1)
+				resend <- pk
+			}()
+		case pk := <-resend:
+			if needsAck[pk.id()] {
+				logger.Logf("resending %s %v", pk.addr, pk.Msg)
+				outs <- pk.Msg
 			}
 		}
 	}
