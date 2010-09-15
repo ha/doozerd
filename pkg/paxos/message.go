@@ -237,12 +237,14 @@ func (m *Msg) HasFlags(flags int) bool {
 	return (*m)[mFlags] & byte(flags) != 0
 }
 
-func (m *Msg) SetFlags(flags int) {
+func (m *Msg) SetFlags(flags int) Msg {
 	(*m)[mFlags] |= byte(flags)
+	return *m
 }
 
-func (m *Msg) ClearFlags(flags int) {
+func (m *Msg) ClearFlags(flags int) Msg {
 	(*m)[mFlags] &= ^byte(flags)
+	return *m
 }
 
 func (m *Msg) Dup() Msg {

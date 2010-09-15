@@ -220,12 +220,14 @@ func TestFlags(t *testing.T) {
 		f := 1 << i
 		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
 	}
-	msg.SetFlags(Ack)
+	x := msg.SetFlags(Ack)
+	assert.Equal(t, x, msg)
 	for i := uint(0); i < 8; i++ {
 		f := 1 << i
 		assert.Equal(t, f == Ack, msg.HasFlags(f), "f=%d", f)
 	}
-	msg.ClearFlags(Ack)
+	x = msg.ClearFlags(Ack)
+	assert.Equal(t, x, msg)
 	for i := uint(0); i < 8; i++ {
 		f := 1 << i
 		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
