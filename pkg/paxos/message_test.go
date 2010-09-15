@@ -204,8 +204,6 @@ func (fpc *fakePacketConn) ReadFrom(b []byte) (n int, addr net.Addr, err os.Erro
 	return copy(b, fpc.b), fpc.a, nil
 }
 
-// Tests
-
 func TestReadMsg(t *testing.T) {
 	msg := newInvite(2)
 	addr := &net.UDPAddr{net.IP{1, 2, 3, 4}, 123}
