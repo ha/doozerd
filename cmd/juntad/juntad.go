@@ -51,7 +51,11 @@ func main() {
 	self := util.RandHexString(idBits)
 	st := store.New()
 	seqn := uint64(0)
-	if *attachAddr != "" {
+	if *attachAddr == "" { // we are the only node in a new cluster
+		seqn = addMember(st, seqn + 1, self, *listenAddr)
+		seqn = claimSlot(st, seqn + 1, "1", self)
+		seqn = claimLeader(st, seqn + 1, self)
+	} else {
 		c, err := client.Dial(*attachAddr)
 		if err != nil {
 			panic(err)
@@ -74,10 +78,6 @@ func main() {
 
 		// TODO sink needs a way to pick up missing values if there are any
 		// gaps in its sequence
-	} else {
-		seqn = addMember(st, seqn + 1, self, *listenAddr)
-		seqn = claimSlot(st, seqn + 1, "1", self)
-		seqn = claimLeader(st, seqn + 1, self)
 	}
 	mg := paxos.NewManager(self, seqn, alpha, st, outs)
 
