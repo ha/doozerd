@@ -82,25 +82,8 @@ type packet struct {
 }
 
 func (pk packet) id() string {
-	return pk.addr + " " + string(deackify(pk.Msg).WireBytes())
-}
-
-func isAck(m paxos.Msg) bool {
-	return m.HasFlags(paxos.Ack)
-}
-
-func ackify(m paxos.Msg) paxos.Msg {
-	o := make(paxos.Msg, len(m))
-	copy(o, m)
-	o.SetFlags(paxos.Ack)
-	return o
-}
-
-func deackify(m paxos.Msg) paxos.Msg {
-	o := make(paxos.Msg, len(m))
-	copy(o, m)
-	o.ClearFlags(paxos.Ack)
-	return o
+	m := pk.Msg.Dup().ClearFlags(paxos.Ack)
+	return pk.addr + " " + string(m.WireBytes())
 }
 
 func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
@@ -149,7 +132,7 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 	for {
 		select {
 		case pk := <-recvd:
-			if isAck(pk.Msg) {
+			if pk.Msg.HasFlags(paxos.Ack) {
 				logger.Logf("got ack %s %v", pk.addr, pk.Msg)
 				needsAck[pk.id()] = false
 			} else {
@@ -158,7 +141,8 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 				if err != nil {
 					break
 				}
-				u.WriteTo(ackify(pk.Msg).WireBytes(), udpAddr)
+				ack := pk.Msg.Dup().SetFlags(paxos.Ack)
+				u.WriteTo(ack.WireBytes(), udpAddr)
 			}
 		case pk := <-sent:
 			needsAck[pk.id()] = true
