@@ -85,23 +85,21 @@ func (pk packet) id() string {
 	return pk.addr + " " + string(deackify(pk.Msg).WireBytes())
 }
 
-const ack = 0x80
-
 func isAck(m paxos.Msg) bool {
-	return (m.Cmd() & ack) != 0
+	return m.HasFlags(paxos.Ack)
 }
 
 func ackify(m paxos.Msg) paxos.Msg {
 	o := make(paxos.Msg, len(m))
 	copy(o, m)
-	o[1] = byte(m.Cmd() | ack)
+	o.SetFlags(paxos.Ack)
 	return o
 }
 
 func deackify(m paxos.Msg) paxos.Msg {
 	o := make(paxos.Msg, len(m))
 	copy(o, m)
-	o[1] = byte(m.Cmd() & ^ack)
+	o.ClearFlags(paxos.Ack)
 	return o
 }
 
