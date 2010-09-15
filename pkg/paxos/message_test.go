@@ -213,3 +213,21 @@ func TestReadMsg(t *testing.T) {
 	assert.Equal(t, msg, gotMsg, "")
 	assert.Equal(t, addr.String(), gotAddr, "")
 }
+
+func TestFlags(t *testing.T) {
+	msg := newInvite(1)
+	for i := uint(0); i < 8; i++ {
+		f := 1 << i
+		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
+	}
+	msg.SetFlags(Ack)
+	for i := uint(0); i < 8; i++ {
+		f := 1 << i
+		assert.Equal(t, f == Ack, msg.HasFlags(f), "f=%d", f)
+	}
+	msg.ClearFlags(Ack)
+	for i := uint(0); i < 8; i++ {
+		f := 1 << i
+		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
+	}
+}

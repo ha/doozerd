@@ -9,17 +9,19 @@ import (
 //
 //     0      -- index of sender
 //     1      -- cmd
-//     2..9   -- cluster version
-//     10..17 -- seqn
+//     2      -- flags
+//     3..10   -- cluster version
+//     11..17 -- seqn
 //     18..   -- body -- format depends on command
 //
 // Wire format is same as in-memory format, but without the first byte (the
 // sender index). Here it is for clarity:
 //
 //     0     -- cmd
-//     1..8  -- cluster version
-//     9..15 -- seqn
-//     16..  -- body -- format depends on command
+//     1     -- flags
+//     2..9  -- cluster version
+//     10..16 -- seqn
+//     17..  -- body -- format depends on command
 //
 // Here's how you create a `Msg` from incoming network data. This assumes you
 // know some upper bound on the size of a message (for instance, UDP packets
@@ -34,8 +36,16 @@ type Msg []byte
 const (
 	mFrom = iota
 	mCmd
-	mSeqn   // 2 - 9
-	mBody   = 10
+	mFlags
+	mSeqn
+	mSeqn1
+	mSeqn2
+	mSeqn3
+	mSeqn4
+	mSeqn5
+	mSeqn6
+	mSeqn7
+	mBody
 	baseLen = mBody
 )
 
@@ -48,6 +58,11 @@ const (
 	tick
 	propose
 	learn
+)
+
+// Flags
+const (
+	Ack = 1 << iota
 )
 
 const (
@@ -200,7 +215,7 @@ func (m Msg) Ok() bool {
 }
 
 func (m Msg) WireBytes() []byte {
-	return m[1:]
+	return m[mCmd:]
 }
 
 func (m *Msg) readFrom(c ReadFromer) (addr string, err os.Error) {
@@ -216,4 +231,16 @@ func ReadMsg(c ReadFromer, bound int) (m Msg, addr string, err os.Error) {
 	m = make(Msg, bound)
 	addr, err = m.readFrom(c)
 	return
+}
+
+func (m *Msg) HasFlags(flags int) bool {
+	return (*m)[mFlags] & byte(flags) != 0
+}
+
+func (m *Msg) SetFlags(flags int) {
+	(*m)[mFlags] |= byte(flags)
+}
+
+func (m *Msg) ClearFlags(flags int) {
+	(*m)[mFlags] &= ^byte(flags)
 }
