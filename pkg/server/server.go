@@ -9,6 +9,7 @@ import (
 	"junta/proto"
 	"junta/store"
 	"strconv"
+	"time"
 )
 
 type ReadFromWriteToer interface {
@@ -81,7 +82,7 @@ type packet struct {
 }
 
 func (pk packet) id() string {
-	return pk.addr + " " + string(pk.Msg.WireBytes())
+	return pk.addr + " " + string(deackify(pk.Msg).WireBytes())
 }
 
 const ack = 0x80
@@ -94,6 +95,13 @@ func ackify(m paxos.Msg) paxos.Msg {
 	o := make(paxos.Msg, len(m))
 	copy(o, m)
 	o[1] = byte(m.Cmd() | ack)
+	return o
+}
+
+func deackify(m paxos.Msg) paxos.Msg {
+	o := make(paxos.Msg, len(m))
+	copy(o, m)
+	o[1] = byte(m.Cmd() & ^ack)
 	return o
 }
 
@@ -145,7 +153,7 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 		case pk := <-recvd:
 			if isAck(pk.Msg) {
 				logger.Logf("got ack (but ignoring) %s %v", pk.addr, pk.Msg)
-				//needsAck[pk.id()] = false, false
+				needsAck[pk.id()] = false
 			} else {
 				logger.Logf("sending ack %s %v", pk.addr, pk.Msg)
 				udpAddr, err := net.ResolveUDPAddr(pk.addr)
@@ -158,13 +166,17 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 			needsAck[pk.id()] = true
 			logger.Logf("needs ack %s %v", pk.addr, pk.Msg)
 			go func() {
-				//sleep(0.1)
+				time.Sleep(100000000) // ns == 0.1s
 				resend <- pk
 			}()
 		case pk := <-resend:
 			if needsAck[pk.id()] {
 				logger.Logf("resending %s %v", pk.addr, pk.Msg)
-				outs <- pk.Msg
+				go func() {
+					outs <- pk.Msg
+				}()
+			} else {
+				needsAck[pk.id()] = false, false
 			}
 		}
 	}
