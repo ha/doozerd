@@ -244,3 +244,9 @@ func (m *Msg) SetFlags(flags int) {
 func (m *Msg) ClearFlags(flags int) {
 	(*m)[mFlags] &= ^byte(flags)
 }
+
+func (m *Msg) Dup() Msg {
+	o := make(Msg, len(*m))
+	copy(o, *m)
+	return o
+}

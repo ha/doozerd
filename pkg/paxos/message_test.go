@@ -231,3 +231,11 @@ func TestFlags(t *testing.T) {
 		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
 	}
 }
+
+func TestDup(t *testing.T) {
+	m := newInvite(1)
+	o := m.Dup()
+	assert.Equal(t, m, o)
+	o.SetFlags(1)
+	assert.NotEqual(t, m, o)
+}
