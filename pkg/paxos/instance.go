@@ -12,7 +12,7 @@ type instance struct {
 	cxReady chan int
 }
 
-func newInstance(cxf func() *cluster) *instance {
+func newInstance() *instance {
 	cIns, aIns, lIns := make(ChanPutCloser), make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
@@ -26,9 +26,8 @@ func newInstance(cxf func() *cluster) *instance {
 	}
 
 	go func() {
+		<-ins.cxReady
 		ch := make(chan string)
-		ins.cx = cxf()
-		close(ins.cxReady)
 		go coordinator(cIns, ins.cx, ins.cx)
 		go acceptor(aIns, ins.cx)
 		go func() {
@@ -45,6 +44,11 @@ func newInstance(cxf func() *cluster) *instance {
 	}()
 
 	return ins
+}
+
+func (it *instance) setCluster(cx *cluster) {
+	it.cx = cx
+	close(it.cxReady)
 }
 
 func (it *instance) cluster() *cluster {

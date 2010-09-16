@@ -32,7 +32,8 @@ func selfRefNewInstance(self string, nodes map[string]string) *instance {
 		i++
 	}
 	cx := newCluster(self, nodes, cals, p)
-	ins := newInstance(func() *cluster { return cx })
+	ins := newInstance()
+	ins.setCluster(cx)
 	p[0] = PutPutterTo{ins}
 	return ins
 }
@@ -113,18 +114,15 @@ func TestMultipleInstances(t *testing.T) {
 	ps := make(FakePutterTo, 3)
 	nodes := map[string]string{"a": "x", "b": "y", "c": "z"}
 	cals := []string{"a", "b", "c"}
-	pA := putFromWrapperTo{3, ps}
-	pB := putFromWrapperTo{1, ps}
-	pC := putFromWrapperTo{2, ps}
-	cxA := newCluster("a", nodes, cals, pA)
-	cxB := newCluster("b", nodes, cals, pB)
-	cxC := newCluster("c", nodes, cals, pC)
-	insA := newInstance(func() *cluster { return cxA })
-	insB := newInstance(func() *cluster { return cxB })
-	insC := newInstance(func() *cluster { return cxC })
+	insA := newInstance()
+	insB := newInstance()
+	insC := newInstance()
 	ps[0] = PutPutterTo{insA}
 	ps[1] = PutPutterTo{insB}
 	ps[2] = PutPutterTo{insC}
+	insA.setCluster(newCluster("a", nodes, cals, putFromWrapperTo{3, ps}))
+	insB.setCluster(newCluster("b", nodes, cals, putFromWrapperTo{1, ps}))
+	insC.setCluster(newCluster("c", nodes, cals, putFromWrapperTo{2, ps}))
 
 	insA.Propose("bar")
 	assert.Equal(t, "bar", insA.Value(), "")
@@ -138,7 +136,8 @@ func TestInstanceCluster(t *testing.T) {
 	nodes := map[string]string{"a": "x"}
 	p := make(FakePutterTo, 1)
 	cx := newCluster("a", nodes, []string{"a"}, p)
-	it := newInstance(func() *cluster { return cx })
+	it := newInstance()
+	it.setCluster(cx)
 	p[0] = PutPutterTo{it}
 
 	go func() {
@@ -154,7 +153,8 @@ func TestInstanceSendsLearn(t *testing.T) {
 	nodes := map[string]string{"a": "x"}
 	p := make(FakePutterTo, 2)
 	cx := newCluster("a", nodes, []string{"a"}, p)
-	it := newInstance(func() *cluster { return cx })
+	it := newInstance()
+	it.setCluster(cx)
 	p[0] = PutPutterTo{it}
 	p[1] = ch
 

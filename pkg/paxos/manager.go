@@ -56,16 +56,14 @@ func (m *Manager) process(next uint64, outs PutterTo) {
 		}
 		inst, ok := instances[req.seqn]
 		if !ok {
-			// TODO find a nicer way to do this
-			// This is meant to be run in a separate goroutine
-			cxf := func() *cluster {
+			inst = newInstance()
+			go func() {
 				ms, active := m.rg.setsForSeqn(req.seqn)
 				m.logger.Logf("cluster %d has %d members and %d active", req.seqn, len(ms), len(active))
 				m.logger.Logf("  members: %v", ms)
 				m.logger.Logf("  active: %v", active)
-				return newCluster(m.Self, ms, active, putToWrapper{req.seqn, outs})
-			}
-			inst = newInstance(cxf)
+				inst.setCluster(newCluster(m.Self, ms, active, putToWrapper{req.seqn, outs}))
+			}()
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}
