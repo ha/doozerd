@@ -22,7 +22,7 @@ const (
 // Flags
 var (
 	listenAddr *string = flag.String("l", "[::1]:8040", "The address to bind to.")
-	attachAddr *string = flag.String("a", "", "The address to bind to.")
+	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 )
 
 func activate(st *store.Store, self string, c client.Conn) {
