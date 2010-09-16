@@ -10,8 +10,11 @@ import (
 	"strings"
 )
 
-const serviceKey = "/j/proc/service"
-const lockKey = "/j/proc/lock"
+const (
+	serviceKey = "/j/proc/service"
+	lockKey = "/j/proc/lock"
+	runKey = "/j/proc/run"
+)
 
 type service struct {
 	name string
@@ -72,8 +75,11 @@ func (sv *service) once() bool {
 	pid, err := os.ForkExec(args[0], args, nil, "", nil)
 	if err != nil {
 		sv.logger.Log(err)
+		go client.Set(sv.c, runKey+"/"+sv.name, err.String(), store.Clobber)
 		return false
 	}
+
+	go client.Set(sv.c, runKey+"/"+sv.name, ":11300", store.Clobber)
 
 	w, err := os.Wait(pid, 0)
 	if err != nil {
@@ -84,6 +90,7 @@ func (sv *service) once() bool {
 	sv.logger.Log(w)
 
 	if (w.Exited() && w.ExitStatus() > 0) || w.Signaled() {
+		go client.Set(sv.c, runKey+"/"+sv.name, w.String(), store.Clobber)
 		return false
 	}
 	return true
