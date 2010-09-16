@@ -267,14 +267,14 @@ func (c *conn) serve() {
 
 		if len(parts) == 0 {
 			rlogger.Log("zero parts supplied")
-			pc.SendError(rid, proto.InvalidCommand)
+			pc.SendError(rid, proto.InvalidCommand + ": no command")
 			continue
 		}
 
 		switch parts[0] {
 		default:
 			rlogger.Logf("unknown command <%s>", parts[0])
-			pc.SendError(rid, proto.InvalidCommand)
+			pc.SendError(rid, proto.InvalidCommand + " " + parts[0])
 		case "set":
 			if len(parts) != 4 {
 				rlogger.Logf("invalid set command: %#v", parts)
@@ -307,7 +307,7 @@ func (c *conn) serve() {
 			}
 		case "wait-for-path-set": // TODO this is for demo purposes only
 			if len(parts) != 2 {
-				rlogger.Logf("invalid del command: %v", parts)
+				rlogger.Logf("invalid wait-for-path-set command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
