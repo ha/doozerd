@@ -69,9 +69,9 @@ func (m *Manager) process(next uint64) {
 			inst = newInstance()
 			instances[req.seqn] = inst
 			go m.setCluster(req.seqn, inst)
-			go func() {
-				m.learned <- result{req.seqn, inst.Value()}
-			}()
+			go func(seqn uint64, it *instance) {
+				m.learned <- result{seqn, it.Value()}
+			}(req.seqn, inst)
 		}
 		req.ch <- inst
 		if req.seqn >= next {
