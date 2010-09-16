@@ -1,15 +1,6 @@
 package paxos
 
-// TODO temporary name
-type coord struct {
-	ChanPutCloser
-}
-
-func newCoord() *coord {
-	return &coord{make(ChanPutCloser)}
-}
-
-func (c *coord) process(cx *cluster, outs Putter) {
+func coordinator(ins chan Msg, cx *cluster, outs Putter) {
 	crnd := uint64(cx.SelfIndex())
 	if crnd == 0 {
 		crnd += uint64(cx.Len())
@@ -22,7 +13,7 @@ func (c *coord) process(cx *cluster, outs Putter) {
 	var vv string
 
 	// Wait for the very first proposal
-	for in := range c.ChanPutCloser {
+	for in := range ins {
 		if in.Cmd() != propose {
 			continue
 		}
@@ -35,7 +26,7 @@ func (c *coord) process(cx *cluster, outs Putter) {
 		break
 	}
 
-	for in := range c.ChanPutCloser {
+	for in := range ins {
 		switch in.Cmd() {
 		case rsvp:
 			i, vrnd, vval := rsvpParts(in)

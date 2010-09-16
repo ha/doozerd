@@ -13,12 +13,12 @@ type instance struct {
 }
 
 func newInstance(cxf func() *cluster) *instance {
-	c, aIns, lIns := newCoord(), make(ChanPutCloser), make(ChanPutCloser)
+	cIns, aIns, lIns := make(ChanPutCloser), make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
 		vin:     make(chan string),
 		done:    make(chan int),
-		cPutter: c,
+		cPutter: cIns,
 		aPutter: aIns,
 		lPutter: lIns,
 		sPutter: sIns,
@@ -29,7 +29,7 @@ func newInstance(cxf func() *cluster) *instance {
 		ch := make(chan string)
 		ins.cx = cxf()
 		close(ins.cxReady)
-		go c.process(ins.cx, ins.cx)
+		go coordinator(cIns, ins.cx, ins.cx)
 		go acceptor(aIns, ins.cx)
 		go func() {
 			ch <- learner(uint64(ins.cx.Quorum()), lIns)
