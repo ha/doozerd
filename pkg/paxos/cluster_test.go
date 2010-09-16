@@ -8,7 +8,8 @@ import (
 func TestCluster(t *testing.T) {
 	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a", "b", "c"}
-	cx := newCluster("c", membership, active)
+	outs := make(ChanPutCloserTo)
+	cx := newCluster("c", membership, active, outs)
 	assert.Equal(t, 3, cx.Len(), "Len")
 	assert.Equal(t, 2, cx.Quorum(), "Quorum")
 	assert.Equal(t, 2, cx.SelfIndex(), "SelfIndex")
@@ -21,14 +22,20 @@ func TestCluster(t *testing.T) {
 	assert.Equal(t, 0, cx.indexByAddr("x"), "indexByAddr(\"a\")")
 	assert.Equal(t, 1, cx.indexByAddr("y"), "indexByAddr(\"a\")")
 	assert.Equal(t, 2, cx.indexByAddr("z"), "indexByAddr(\"a\")")
-	assert.Equal(t, []string{"x", "y", "z"}, cx.addrs(), "addrs")
 	assert.Equal(t, membership, cx.addrsById)
+
+	m := newInvite(1)
+	cx.Put(m)
+	assert.Equal(t, Packet{m, "x"}, <-outs)
+	assert.Equal(t, Packet{m, "y"}, <-outs)
+	assert.Equal(t, Packet{m, "z"}, <-outs)
 }
 
 func TestClusterActive(t *testing.T) {
 	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a"}
-	cx := newCluster("a", membership, active)
+	outs := make(ChanPutCloserTo)
+	cx := newCluster("a", membership, active, outs)
 	assert.Equal(t, 1, cx.Len(), "Len")
 	assert.Equal(t, 1, cx.Quorum(), "Quorum")
 	assert.Equal(t, 0, cx.SelfIndex(), "SelfIndex")
@@ -41,14 +48,14 @@ func TestClusterActive(t *testing.T) {
 	assert.Equal(t, 0, cx.indexByAddr("x"), "indexByAddr(\"a\")")
 	assert.Equal(t, -1, cx.indexByAddr("y"), "indexByAddr(\"a\")")
 	assert.Equal(t, -1, cx.indexByAddr("z"), "indexByAddr(\"a\")")
-	assert.Equal(t, []string{"x", "y", "z"}, cx.addrs(), "addrs")
 	assert.Equal(t, membership, cx.addrsById)
 }
 
 func TestClusterEmpty(t *testing.T) {
 	membership := map[string]string{}
 	active := []string{}
-	cx := newCluster("a", membership, active)
+	outs := make(ChanPutCloserTo)
+	cx := newCluster("a", membership, active, outs)
 	assert.Equal(t, 0, cx.Len(), "Len")
 	assert.Equal(t, 1, cx.Quorum(), "Quorum")
 	assert.Equal(t, -1, cx.SelfIndex(), "SelfIndex")
@@ -61,6 +68,5 @@ func TestClusterEmpty(t *testing.T) {
 	assert.Equal(t, -1, cx.indexByAddr("x"), "indexByAddr(\"a\")")
 	assert.Equal(t, -1, cx.indexByAddr("y"), "indexByAddr(\"a\")")
 	assert.Equal(t, -1, cx.indexByAddr("z"), "indexByAddr(\"a\")")
-	assert.Equal(t, []string{}, cx.addrs(), "addrs")
 	assert.Equal(t, membership, cx.addrsById)
 }

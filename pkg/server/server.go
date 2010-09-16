@@ -27,7 +27,6 @@ type conn struct {
 
 type Manager interface {
 	PutFrom(string, paxos.Msg)
-	AddrsFor(paxos.Msg) []string
 	Propose(string) (uint64, string, os.Error)
 	Alpha() int
 }
@@ -57,7 +56,7 @@ func (sv *Server) ListenAndServe() os.Error {
 	return err
 }
 
-func (sv *Server) ListenAndServeUdp(outs chan paxos.Msg) os.Error {
+func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
 	logger := util.NewLogger("udp server %s", sv.Addr)
 
 	logger.Log("binding")
@@ -76,7 +75,7 @@ func (sv *Server) ListenAndServeUdp(outs chan paxos.Msg) os.Error {
 	return err
 }
 
-func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
+func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Packet) os.Error {
 	recvd := make(chan paxos.Packet)
 	sent := make(chan paxos.Packet)
 
@@ -97,23 +96,20 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 
 	go func() {
 		logger.Log("sending messages...")
-		for msg := range outs {
-			logger.Logf("sending %v", msg)
-			for _, addr := range sv.Mg.AddrsFor(msg) {
-				logger.Logf("sending to %s", addr)
-				udpAddr, err := net.ResolveUDPAddr(addr)
-				if err != nil {
-					logger.Log(err)
-					continue
-				}
-
-				_, err = u.WriteTo(msg.WireBytes(), udpAddr)
-				if err != nil {
-					logger.Log(err)
-					continue
-				}
-				sent <- paxos.Packet{msg, addr}
+		for pk := range outs {
+			logger.Logf("sending %v", pk)
+			udpAddr, err := net.ResolveUDPAddr(pk.Addr)
+			if err != nil {
+				logger.Log(err)
+				continue
 			}
+
+			_, err = u.WriteTo(pk.Msg.WireBytes(), udpAddr)
+			if err != nil {
+				logger.Log(err)
+				continue
+			}
+			sent <- paxos.Packet{pk.Msg, pk.Addr}
 		}
 	}()
 
@@ -145,7 +141,7 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 			if needsAck[pk.Id()] {
 				logger.Logf("resending %s %v", pk.Addr, pk.Msg)
 				go func() {
-					outs <- pk.Msg
+					outs <- pk
 				}()
 			} else {
 				needsAck[pk.Id()] = false, false

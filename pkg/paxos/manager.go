@@ -28,7 +28,7 @@ type Manager struct {
 	alpha   int
 }
 
-func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putter) *Manager {
+func NewManager(self string, start uint64, alpha int, st *store.Store, outs PutterTo) *Manager {
 	m := &Manager{
 		st:      st,
 		rg:      NewRegistrar(st, start, alpha),
@@ -48,7 +48,7 @@ func (m *Manager) Alpha() int {
 	return m.alpha
 }
 
-func (m *Manager) process(next uint64, outs Putter) {
+func (m *Manager) process(next uint64, outs PutterTo) {
 	instances := make(map[uint64]*instance)
 	for req := range m.reqs {
 		if req.seqn == 0 {
@@ -63,9 +63,9 @@ func (m *Manager) process(next uint64, outs Putter) {
 				m.logger.Logf("cluster %d has %d members and %d active", req.seqn, len(ms), len(active))
 				m.logger.Logf("  members: %v", ms)
 				m.logger.Logf("  active: %v", active)
-				return newCluster(m.Self, ms, active)
+				return newCluster(m.Self, ms, active, putToWrapper{req.seqn, outs})
 			}
-			inst = newInstance(cxf, putWrapper{req.seqn, outs})
+			inst = newInstance(cxf)
 			instances[req.seqn] = inst
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}
@@ -97,11 +97,6 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 	_, it := m.getInstance(msg.Seqn())
 	msg.SetFrom(it.cluster().indexByAddr(addr))
 	m.Put(msg)
-}
-
-func (m *Manager) AddrsFor(msg Msg) []string {
-	_, it := m.getInstance(msg.Seqn())
-	return it.cluster().addrs()
 }
 
 func (m *Manager) Propose(v string) (uint64, string, os.Error) {

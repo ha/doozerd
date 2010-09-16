@@ -13,19 +13,10 @@ type cluster struct {
 	active    []string
 	idsByAddr map[string]string
 	addrsById map[string]string
+	outs      PutterTo
 }
 
-func stringKeys(m map[string]string) []string {
-	keys := make([]string, len(m))
-	i := 0
-	for k, _ := range m {
-		keys[i] = k
-		i++
-	}
-	return keys
-}
-
-func newCluster(self string, addrsById map[string]string, active []string) *cluster {
+func newCluster(self string, addrsById map[string]string, active []string, outs PutterTo) *cluster {
 	idsByAddr := make(map[string]string)
 	for id, addr := range addrsById {
 		idsByAddr[addr] = id
@@ -37,6 +28,7 @@ func newCluster(self string, addrsById map[string]string, active []string) *clus
 		active:    active,
 		idsByAddr: idsByAddr,
 		addrsById: addrsById,
+		outs:      outs,
 	}
 }
 
@@ -69,6 +61,8 @@ func (cx *cluster) indexByAddr(addr string) int {
 	return cx.indexById(cx.idByAddr(addr))
 }
 
-func (cx *cluster) addrs() (addrs []string) {
-	return stringKeys(cx.idsByAddr)
+func (cx *cluster) Put(m Msg) {
+	for addr := range cx.idsByAddr {
+		cx.outs.PutTo(m, addr)
+	}
 }

@@ -15,7 +15,15 @@ var tenNodes = map[string]string{
 	"j": "y",
 }
 
-var tenIds = stringKeys(tenNodes)
+var tenIds = make([]string, len(tenNodes))
+
+func init() {
+	i := 0
+	for id := range tenNodes {
+		tenIds[i] = id
+		i++
+	}
+}
 
 func (sp SyncPutter) Put(m Msg) {
 	sp <- m

@@ -14,6 +14,10 @@ type Putter interface {
 	Put(m Msg)
 }
 
+type PutterTo interface {
+	PutTo(m Msg, addr string)
+}
+
 type putCloser interface {
 	Putter
 	Close()
@@ -29,12 +33,22 @@ func (cp ChanPutCloser) Close() {
 	close(cp)
 }
 
-type putWrapper struct {
-	seqn uint64
-	Putter
+type ChanPutCloserTo chan Packet
+
+func (cp ChanPutCloserTo) PutTo(m Msg, addr string) {
+	go func() { cp <- Packet{m, addr} }()
 }
 
-func (w putWrapper) Put(m Msg) {
+func (cp ChanPutCloserTo) Close() {
+	close(cp)
+}
+
+type putToWrapper struct {
+	seqn uint64
+	pt PutterTo
+}
+
+func (w putToWrapper) PutTo(m Msg, addr string) {
 	m.SetSeqn(w.seqn)
-	w.Putter.Put(m)
+	w.pt.PutTo(m, addr)
 }

@@ -12,8 +12,8 @@ type instance struct {
 	cxReady chan int
 }
 
-func newInstance(cxf func() *cluster, outs Putter) *instance {
-	c, aIns, lIns := newCoord(outs), make(ChanPutCloser), make(ChanPutCloser)
+func newInstance(cxf func() *cluster) *instance {
+	c, aIns, lIns := newCoord(), make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
 		vin:     make(chan string),
@@ -29,8 +29,8 @@ func newInstance(cxf func() *cluster, outs Putter) *instance {
 		ch := make(chan string)
 		ins.cx = cxf()
 		close(ins.cxReady)
-		go c.process(ins.cx)
-		go acceptor(aIns, outs)
+		go c.process(ins.cx, ins.cx)
+		go acceptor(aIns, ins.cx)
 		go func() {
 			ch <- learner(uint64(ins.cx.Quorum()), lIns)
 		}()
@@ -41,7 +41,7 @@ func newInstance(cxf func() *cluster, outs Putter) *instance {
 		ins.v = <-ch
 		close(ch)
 		close(ins.done)
-		outs.Put(newLearn(ins.v))
+		ins.cx.Put(newLearn(ins.v))
 	}()
 
 	return ins

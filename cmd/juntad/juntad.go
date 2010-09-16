@@ -46,7 +46,7 @@ func main() {
 
 	util.LogWriter = os.Stderr
 
-	outs := make(paxos.ChanPutCloser)
+	outs := make(paxos.ChanPutCloserTo)
 
 	self := util.RandHexString(idBits)
 	st := store.New()

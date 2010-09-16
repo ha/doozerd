@@ -7,7 +7,7 @@ import (
 )
 
 func selfRefNewManager(extraNodes ...string) (*Manager, *store.Store) {
-	p := make(FakePutter, 1)
+	p := make(FakePutterTo, 1)
 	st := store.New()
 	self := "a"
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+self, self+"addr"))
@@ -15,7 +15,7 @@ func selfRefNewManager(extraNodes ...string) (*Manager, *store.Store) {
 		st.Apply(uint64(i+2), mustEncodeSet(membersKey+"/"+node, node+"addr"))
 	}
 	m := NewManager(self, uint64(len(extraNodes)+1), 1, st, p)
-	p[0] = m
+	p[0] = PutPutterTo{m}
 	return m, st
 }
 
@@ -175,7 +175,7 @@ func mustEncodeSet(k, v string) string {
 func TestReadFromStore(t *testing.T) {
 	// The cluster initially has 1 node (quorum of 1).
 	st := store.New()
-	p := make(ChanPutCloser)
+	p := make(ChanPutCloserTo)
 	self := "a"
 	st.Apply(1, mustEncodeSet(membersDir+self, ""))
 	st.Apply(2, mustEncodeSet(slotDir+"0", self))
@@ -230,9 +230,9 @@ func TestManagerPutFrom(t *testing.T) {
 	st.Apply(uint64(4), mustEncodeSet(slotDir+"1", "b"))
 	st.Apply(uint64(5), mustEncodeSet(membersDir+"c", "z"))
 	st.Apply(uint64(6), mustEncodeSet(slotDir+"2", "c"))
-	p := make(FakePutter, 1)
+	p := make(FakePutterTo, 1)
 	m := NewManager(self, 6, 1, st, p)
-	p[0] = m
+	p[0] = PutPutterTo{m}
 
 	froms := make(chan int)
 
@@ -253,13 +253,6 @@ func TestManagerPutFrom(t *testing.T) {
 	assert.Equal(t, fromIndex, <-froms, "")
 	assert.Equal(t, fromIndex, <-froms, "")
 	assert.Equal(t, fromIndex, <-froms, "")
-}
-
-func TestManagerAddrsFor(t *testing.T) {
-	m, _ := selfRefNewManager()
-	msg := newInvite(1)
-	msg.SetSeqn(1)
-	assert.Equal(t, []string{m.Self + "addr"}, m.AddrsFor(msg))
 }
 
 func TestManagerGetInstanceForPropose(t *testing.T) {

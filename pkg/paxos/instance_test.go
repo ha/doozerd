@@ -7,29 +7,33 @@ import (
 
 // Testing
 
-type FakePutter []Putter
-
-func (fp FakePutter) Put(m Msg) {
-	for _, p := range fp {
-		p.Put(m)
-	}
-}
-
-type putFromWrapper struct {
-	from int
+type PutPutterTo struct {
 	Putter
 }
 
-func (w putFromWrapper) Put(m Msg) {
-	m.SetFrom(w.from)
-	w.Putter.Put(m)
+func (p PutPutterTo) PutTo(m Msg, addr string) {
+	p.Put(m)
+}
+
+type FakePutterTo []PutterTo
+
+func (fp FakePutterTo) PutTo(m Msg, addr string) {
+	for _, p := range fp {
+		p.PutTo(m, addr)
+	}
 }
 
 func selfRefNewInstance(self string, nodes map[string]string) *instance {
-	p := make([]Putter, 1)
-	cx := newCluster(self, nodes, stringKeys(nodes))
-	ins := newInstance(func() *cluster { return cx }, FakePutter(p))
-	p[0] = ins
+	p := make(FakePutterTo, 1)
+	cals := make([]string, len(nodes))
+	i := 0
+	for id := range nodes {
+		cals[i] = id
+		i++
+	}
+	cx := newCluster(self, nodes, cals, p)
+	ins := newInstance(func() *cluster { return cx })
+	p[0] = PutPutterTo{ins}
 	return ins
 }
 
@@ -95,18 +99,32 @@ func TestStartAtCoord(t *testing.T) {
 	ins.Close()
 }
 
+type putFromWrapperTo struct {
+	from int
+	PutterTo
+}
+
+func (w putFromWrapperTo) PutTo(m Msg, addr string) {
+	m.SetFrom(w.from)
+	w.PutterTo.PutTo(m, addr)
+}
+
 func TestMultipleInstances(t *testing.T) {
-	ps := make([]Putter, 3)
+	ps := make(FakePutterTo, 3)
 	nodes := map[string]string{"a": "x", "b": "y", "c": "z"}
-	cxA := func() *cluster { return newCluster("a", nodes, stringKeys(nodes)) }
-	cxB := func() *cluster { return newCluster("a", nodes, stringKeys(nodes)) }
-	cxC := func() *cluster { return newCluster("a", nodes, stringKeys(nodes)) }
-	insA := newInstance(cxA, putFromWrapper{3, FakePutter(ps)})
-	insB := newInstance(cxB, putFromWrapper{1, FakePutter(ps)})
-	insC := newInstance(cxC, putFromWrapper{2, FakePutter(ps)})
-	ps[0] = insA
-	ps[1] = insB
-	ps[2] = insC
+	cals := []string{"a", "b", "c"}
+	pA := putFromWrapperTo{3, ps}
+	pB := putFromWrapperTo{1, ps}
+	pC := putFromWrapperTo{2, ps}
+	cxA := newCluster("a", nodes, cals, pA)
+	cxB := newCluster("b", nodes, cals, pB)
+	cxC := newCluster("c", nodes, cals, pC)
+	insA := newInstance(func() *cluster { return cxA })
+	insB := newInstance(func() *cluster { return cxB })
+	insC := newInstance(func() *cluster { return cxC })
+	ps[0] = PutPutterTo{insA}
+	ps[1] = PutPutterTo{insB}
+	ps[2] = PutPutterTo{insC}
 
 	insA.Propose("bar")
 	assert.Equal(t, "bar", insA.Value(), "")
@@ -118,10 +136,10 @@ func TestMultipleInstances(t *testing.T) {
 func TestInstanceCluster(t *testing.T) {
 	ch := make(chan *cluster)
 	nodes := map[string]string{"a": "x"}
-	p := make([]Putter, 1)
-	cx := newCluster("a", nodes, stringKeys(nodes))
-	it := newInstance(func() *cluster { return cx }, FakePutter(p))
-	p[0] = it
+	p := make(FakePutterTo, 1)
+	cx := newCluster("a", nodes, []string{"a"}, p)
+	it := newInstance(func() *cluster { return cx })
+	p[0] = PutPutterTo{it}
 
 	go func() {
 		ch <- it.cluster()
@@ -132,17 +150,17 @@ func TestInstanceCluster(t *testing.T) {
 }
 
 func TestInstanceSendsLearn(t *testing.T) {
-	ch := make(ChanPutCloser)
+	ch := make(ChanPutCloserTo)
 	nodes := map[string]string{"a": "x"}
-	p := make([]Putter, 2)
-	cx := newCluster("a", nodes, stringKeys(nodes))
-	it := newInstance(func() *cluster { return cx }, FakePutter(p))
-	p[0] = it
+	p := make(FakePutterTo, 2)
+	cx := newCluster("a", nodes, []string{"a"}, p)
+	it := newInstance(func() *cluster { return cx })
+	p[0] = PutPutterTo{it}
 	p[1] = ch
 
 	it.Put(newVoteFrom(0, 1, "foo"))
 
-	assert.Equal(t, newLearn("foo"), <-ch)
+	assert.Equal(t, Packet{newLearn("foo"), "x"}, <-ch)
 
 	it.Close()
 }
