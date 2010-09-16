@@ -16,4 +16,4 @@ jset() {
   encstrs set "$@"
 }
 
-jset "$@" | nc localhost 8040
+jset "$@" | nc localhost 8046
