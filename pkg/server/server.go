@@ -193,7 +193,7 @@ func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
 	return
 }
 
-func (sv *Server) Del(path, cas string) (uint64, os.Error) {
+func (sv *Server) delOnce(path, cas string) (uint64, os.Error) {
 	mut, err := store.EncodeDel(path, cas)
 	if err != nil {
 		return 0, err
@@ -211,6 +211,14 @@ func (sv *Server) Del(path, cas string) (uint64, os.Error) {
 	}
 
 	return seqn, nil
+}
+
+func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {
+	err = os.EAGAIN
+	for err == os.EAGAIN {
+		seqn, err = sv.delOnce(path, cas)
+	}
+	return
 }
 
 // Repeatedly propose nop values until a successful read from `done`.
@@ -270,10 +278,7 @@ func (c *conn) serve() {
 				break
 			}
 			rlogger.Logf("del %q (cas %q)", parts[1], parts[2])
-			err := os.EAGAIN
-			for err == os.EAGAIN {
-				_, err = c.s.Del(parts[1], parts[2])
-			}
+			_, err := c.s.Del(parts[1], parts[2])
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
 				pc.SendError(rid, err.String())
