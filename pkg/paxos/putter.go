@@ -1,5 +1,15 @@
 package paxos
 
+type Packet struct {
+	Msg
+	Addr string
+}
+
+func (pk Packet) Id() string {
+	m := pk.Msg.Dup().ClearFlags(Ack)
+	return pk.Addr + " " + string(m.WireBytes())
+}
+
 type Putter interface {
 	Put(m Msg)
 }

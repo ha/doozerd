@@ -76,19 +76,9 @@ func (sv *Server) ListenAndServeUdp(outs chan paxos.Msg) os.Error {
 	return err
 }
 
-type packet struct {
-	paxos.Msg
-	addr string
-}
-
-func (pk packet) id() string {
-	m := pk.Msg.Dup().ClearFlags(paxos.Ack)
-	return pk.addr + " " + string(m.WireBytes())
-}
-
 func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
-	recvd := make(chan packet)
-	sent := make(chan packet)
+	recvd := make(chan paxos.Packet)
+	sent := make(chan paxos.Packet)
 
 	logger := util.NewLogger("udp server %s", u.LocalAddr())
 	go func() {
@@ -100,7 +90,7 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 				continue
 			}
 			logger.Logf("read %v from %s", msg, addr)
-			recvd <- packet{msg, addr}
+			recvd <- paxos.Packet{msg, addr}
 			sv.Mg.PutFrom(addr, msg)
 		}
 	}()
@@ -122,22 +112,22 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 					logger.Log(err)
 					continue
 				}
-				sent <- packet{msg, addr}
+				sent <- paxos.Packet{msg, addr}
 			}
 		}
 	}()
 
 	needsAck := make(map[string]bool)
-	resend := make(chan packet)
+	resend := make(chan paxos.Packet)
 	for {
 		select {
 		case pk := <-recvd:
 			if pk.Msg.HasFlags(paxos.Ack) {
-				logger.Logf("got ack %s %v", pk.addr, pk.Msg)
-				needsAck[pk.id()] = false
+				logger.Logf("got ack %s %v", pk.Addr, pk.Msg)
+				needsAck[pk.Id()] = false
 			} else {
-				logger.Logf("sending ack %s %v", pk.addr, pk.Msg)
-				udpAddr, err := net.ResolveUDPAddr(pk.addr)
+				logger.Logf("sending ack %s %v", pk.Addr, pk.Msg)
+				udpAddr, err := net.ResolveUDPAddr(pk.Addr)
 				if err != nil {
 					break
 				}
@@ -145,20 +135,20 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Msg) os.Error {
 				u.WriteTo(ack.WireBytes(), udpAddr)
 			}
 		case pk := <-sent:
-			needsAck[pk.id()] = true
-			logger.Logf("needs ack %s %v", pk.addr, pk.Msg)
+			needsAck[pk.Id()] = true
+			logger.Logf("needs ack %s %v", pk.Addr, pk.Msg)
 			go func() {
 				time.Sleep(100000000) // ns == 0.1s
 				resend <- pk
 			}()
 		case pk := <-resend:
-			if needsAck[pk.id()] {
-				logger.Logf("resending %s %v", pk.addr, pk.Msg)
+			if needsAck[pk.Id()] {
+				logger.Logf("resending %s %v", pk.Addr, pk.Msg)
 				go func() {
 					outs <- pk.Msg
 				}()
 			} else {
-				needsAck[pk.id()] = false, false
+				needsAck[pk.Id()] = false, false
 			}
 		}
 	}
