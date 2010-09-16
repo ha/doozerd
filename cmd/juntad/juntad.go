@@ -21,7 +21,7 @@ const (
 
 // Flags
 var (
-	listenAddr *string = flag.String("l", "[::1]:8040", "The address to bind to.")
+	listenAddr *string = flag.String("l", "", "The address to bind to. Must correspond to a single public interface.")
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 )
 
@@ -45,6 +45,13 @@ func main() {
 	flag.Parse()
 
 	util.LogWriter = os.Stderr
+	logger := util.NewLogger("main")
+
+	if *listenAddr == "" {
+		logger.Log("require a listen address")
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	outs := make(paxos.ChanPutCloserTo)
 
