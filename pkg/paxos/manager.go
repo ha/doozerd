@@ -26,6 +26,7 @@ type Manager struct {
 	logger  *log.Logger
 	Self    string
 	alpha   int
+	outs    PutterTo
 }
 
 func NewManager(self string, start uint64, alpha int, st *store.Store, outs PutterTo) *Manager {
@@ -37,9 +38,10 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		logger:  util.NewLogger("manager"),
 		Self:    self,
 		alpha:   alpha,
+		outs:    outs,
 	}
 
-	go m.process(start+uint64(alpha), outs)
+	go m.process(start+uint64(alpha))
 
 	return m
 }
@@ -48,7 +50,15 @@ func (m *Manager) Alpha() int {
 	return m.alpha
 }
 
-func (m *Manager) process(next uint64, outs PutterTo) {
+func (m *Manager) setCluster(seqn uint64, it *instance) {
+	members, cals := m.rg.setsForSeqn(seqn)
+	m.logger.Logf("cluster %d has %d members and %d cals", seqn, len(members), len(cals))
+	m.logger.Logf("  members: %v", members)
+	m.logger.Logf("  cals: %v", cals)
+	it.setCluster(newCluster(m.Self, members, cals, putToWrapper{seqn, m.outs}))
+}
+
+func (m *Manager) process(next uint64) {
 	instances := make(map[uint64]*instance)
 	for req := range m.reqs {
 		if req.seqn == 0 {
@@ -57,14 +67,8 @@ func (m *Manager) process(next uint64, outs PutterTo) {
 		inst, ok := instances[req.seqn]
 		if !ok {
 			inst = newInstance()
-			go func() {
-				ms, active := m.rg.setsForSeqn(req.seqn)
-				m.logger.Logf("cluster %d has %d members and %d active", req.seqn, len(ms), len(active))
-				m.logger.Logf("  members: %v", ms)
-				m.logger.Logf("  active: %v", active)
-				inst.setCluster(newCluster(m.Self, ms, active, putToWrapper{req.seqn, outs}))
-			}()
 			instances[req.seqn] = inst
+			go m.setCluster(req.seqn, inst)
 			go func() {
 				m.learned <- result{req.seqn, inst.Value()}
 			}()
