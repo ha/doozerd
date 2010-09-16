@@ -221,6 +221,25 @@ func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {
 	return
 }
 
+func (sv *Server) WaitForPathSet(path string) (body string, err os.Error) {
+	evs := make(chan store.Event)
+	defer close(evs)
+	sv.St.Watch(path, evs)
+
+	parts, cas := sv.St.Lookup(path)
+	if cas != store.Dir && cas != store.Missing {
+		return parts[0], nil
+	}
+
+	for ev := range evs {
+		if ev.IsSet() {
+			return ev.Body, nil
+		}
+	}
+
+	panic("not reached")
+}
+
 // Repeatedly propose nop values until a successful read from `done`.
 func (sv *Server) AdvanceUntil(done chan int) {
 	for _, ok := <-done; !ok; _, ok = <-done {
@@ -285,6 +304,21 @@ func (c *conn) serve() {
 			} else {
 				rlogger.Logf("good")
 				pc.SendResponse(rid, "true")
+			}
+		case "wait-for-path-set": // TODO this is for demo purposes only
+			if len(parts) != 2 {
+				rlogger.Logf("invalid del command: %v", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+			rlogger.Logf("wait-for-path-set %q", parts[1])
+			body, err := c.s.WaitForPathSet(parts[1])
+			if err != nil {
+				rlogger.Logf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Logf("good %q", body)
+				pc.SendResponse(rid, body)
 			}
 		case "join":
 			// join abc123 1.2.3.4:999
