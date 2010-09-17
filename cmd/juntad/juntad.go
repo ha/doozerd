@@ -113,7 +113,7 @@ func main() {
 		panic(err)
 	}
 
-	sv := &server.Server{*listenAddr, st, mg}
+	sv := &server.Server{*listenAddr, st, mg, self}
 
 	go func() {
 		panic(proc.Monitor(self, st))

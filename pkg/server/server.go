@@ -35,6 +35,7 @@ type Server struct {
 	Addr string
 	St *store.Store
 	Mg Manager
+	Self string
 }
 
 func (sv *Server) ListenAndServe() os.Error {
@@ -165,6 +166,14 @@ func (s *Server) Serve(l net.Listener) os.Error {
 	panic("not reached")
 }
 
+func (sv *Server) leader() string {
+	parts, cas := sv.St.Lookup("/j/junta/leader")
+	if cas == store.Dir && cas == store.Missing {
+		return ""
+	}
+	return parts[0]
+}
+
 func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
 	mut, err := store.EncodeSet(path, body, cas)
 	if err != nil {
@@ -281,14 +290,21 @@ func (c *conn) serve() {
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
-			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-			seqn, err := c.s.Set(parts[1], parts[2], parts[3])
-			if err != nil {
-				rlogger.Logf("bad: %s", err)
-				pc.SendError(rid, err.String())
+
+			leader := c.s.leader()
+			if c.s.Self == leader {
+				rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
+				seqn, err := c.s.Set(parts[1], parts[2], parts[3])
+				if err != nil {
+					rlogger.Logf("bad: %s", err)
+					pc.SendError(rid, err.String())
+				} else {
+					rlogger.Logf("good")
+					pc.SendResponse(rid, "OK", strconv.Uitoa64(seqn))
+				}
 			} else {
-				rlogger.Logf("good")
-				pc.SendResponse(rid, strconv.Uitoa64(seqn))
+				rlogger.Logf("redirect to %s", leader)
+				pc.SendResponse(rid, "redirect", leader)
 			}
 		case "del":
 			if len(parts) != 3 {

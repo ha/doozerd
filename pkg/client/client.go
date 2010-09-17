@@ -14,6 +14,14 @@ type Conn interface {
 	ReadResponse(uint) ([]string, os.Error)
 }
 
+type ErrRedirect struct {
+	addr string
+}
+
+func (e *ErrRedirect) String() string {
+	return "redirect to " + e.addr
+}
+
 func Dial(addr string) (Conn, os.Error) {
 	c, err := net.Dial("tcp", "", addr)
 	if err != nil {
@@ -62,12 +70,28 @@ func Set(c Conn, path, body, cas string) (seqn uint64, err os.Error) {
 		return
 	}
 
-	if len(parts) != 1 {
+	if len(parts) < 1 {
 		err = ErrInvalidResponse
 		return
 	}
 
-	return strconv.Btoui64(parts[0], 10)
+	switch parts[0] {
+	case "OK":
+		if len(parts) != 2 {
+			err = ErrInvalidResponse
+			return
+		}
+		return strconv.Btoui64(parts[1], 10)
+	case "redirect":
+		if len(parts) != 2 {
+			err = ErrInvalidResponse
+			return
+		}
+		err = &ErrRedirect{parts[1]}
+		return
+	}
+	err = ErrInvalidResponse
+	return
 }
 
 func Del(c Conn, path, cas string) (seqn uint64, err os.Error) {
