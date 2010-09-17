@@ -1,5 +1,5 @@
 #!/bin/sh
 set -e
 make clean && make
-clear
+tput reset
 juntad -l 127.0.0.1:8046
