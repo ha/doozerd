@@ -22,6 +22,7 @@ const (
 // Flags
 var (
 	listenAddr *string = flag.String("l", "", "The address to bind to. Must correspond to a single public interface.")
+	publishAddr *string = flag.String("p", "", "Address to publish in junta for client connections.")
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 )
 
@@ -53,17 +54,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *publishAddr == "" {
+		*publishAddr = *listenAddr
+	}
+
 	outs := make(paxos.ChanPutCloserTo)
 
 	self := util.RandHexString(idBits)
 	st := store.New()
 	seqn := uint64(0)
 	if *attachAddr == "" { // we are the only node in a new cluster
+		seqn = addPublicAddr(st, seqn + 1, self, *publishAddr)
 		seqn = addMember(st, seqn + 1, self, *listenAddr)
 		seqn = claimSlot(st, seqn + 1, "1", self)
 		seqn = claimLeader(st, seqn + 1, self)
 	} else {
 		c, err := client.Dial(*attachAddr)
+		if err != nil {
+			panic(err)
+		}
+
+		path := "/j/junta/info/"+ self +"/public-addr"
+		_, err = client.Set(c, path, *publishAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
@@ -118,6 +130,17 @@ func main() {
 	for {
 		st.Apply(mg.Recv())
 	}
+}
+
+func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
+	// TODO pull out path as a const
+	path := "/j/junta/info/"+ self +"/public-addr"
+	mx, err := store.EncodeSet(path, addr, store.Missing)
+	if err != nil {
+		panic(err)
+	}
+	st.Apply(seqn, mx)
+	return seqn
 }
 
 func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
