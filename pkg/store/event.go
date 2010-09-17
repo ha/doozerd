@@ -19,6 +19,22 @@ type Event struct {
 	Err   os.Error
 }
 
+func (e Event) Desc() string {
+	switch {
+	case e.IsSet():
+		return "set"
+	case e.IsDel():
+		return "del"
+	case e.IsDummy() && e.Mut == Nop:
+		return "nop"
+	case e.IsDummy() && e.Mut == "":
+		return "dummy"
+	case e.IsDummy() && e.Mut != "" && e.Mut != Nop:
+		return "snapshot"
+	}
+	panic("not reached")
+}
+
 // Returns true iff the operation represented by `e` set a path.
 //
 // Mutually exclusive with `IsDel` and `IsDummy`.
