@@ -33,7 +33,7 @@ func TestProtoEncode(t *testing.T) {
 	w := bufio.NewWriter(b)
 	ww := textproto.NewWriter(w)
 
-	encode(ww, "GET", "FOO")
+	encode(ww, []string{"GET", "FOO"})
 	assert.Equal(t, "*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n", string(b.Bytes()), "")
 }
 
@@ -43,7 +43,7 @@ func TestProtoEncodeHeaderError(t *testing.T) {
 	w := bufio.NewWriter(ew)
 	ww := textproto.NewWriter(w)
 
-	err := encode(ww, "GET", "FOO")
+	err := encode(ww, []string{"GET", "FOO"})
 	assert.T(t, err != nil)
 }
 
@@ -53,7 +53,7 @@ func TestProtoEncodeBodyError(t *testing.T) {
 	w := bufio.NewWriter(ew)
 	ww := textproto.NewWriter(w)
 
-	err := encode(ww, "GET", "FOO")
+	err := encode(ww, []string{"GET", "FOO"})
 	assert.T(t, err != nil)
 }
 
@@ -82,7 +82,7 @@ func TestProtoDecodeNonEmpty(t *testing.T) {
 	w := bufio.NewWriter(b)
 	ww := textproto.NewWriter(w)
 
-	encode(ww, "SET", "foo", "bar")
+	encode(ww, []string{"SET", "foo", "bar"})
 	parts, err := decode(rr)
 
 	assert.Equal(t, nil, err, "")

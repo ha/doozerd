@@ -181,7 +181,7 @@ Loop:
 	return
 }
 
-func encode(w *textproto.Writer, parts ... string) (err os.Error) {
+func encode(w *textproto.Writer, parts []string) (err os.Error) {
 	if err = w.PrintfLine("*%d", len(parts)); err != nil {
 		return
 	}
