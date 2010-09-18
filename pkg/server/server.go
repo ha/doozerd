@@ -313,6 +313,14 @@ func (c *conn) serve() {
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
+
+			leader := c.s.leader()
+			if c.s.Self != leader {
+				rlogger.Logf("redirect to %s", leader)
+				pc.SendRedirect(rid, leader)
+				break
+			}
+
 			rlogger.Logf("del %q (cas %q)", parts[1], parts[2])
 			_, err := c.s.Del(parts[1], parts[2])
 			if err != nil {
@@ -342,6 +350,13 @@ func (c *conn) serve() {
 			if len(parts) != 3 {
 				rlogger.Logf("invalid join command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+
+			leader := c.s.leader()
+			if c.s.Self != leader {
+				rlogger.Logf("redirect to %s", leader)
+				pc.SendRedirect(rid, leader)
 				break
 			}
 
