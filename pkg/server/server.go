@@ -292,19 +292,20 @@ func (c *conn) serve() {
 			}
 
 			leader := c.s.leader()
-			if c.s.Self == leader {
-				rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-				seqn, err := c.s.Set(parts[1], parts[2], parts[3])
-				if err != nil {
-					rlogger.Logf("bad: %s", err)
-					pc.SendError(rid, err.String())
-				} else {
-					rlogger.Logf("good")
-					pc.SendResponse(rid, strconv.Uitoa64(seqn))
-				}
-			} else {
+			if c.s.Self != leader {
 				rlogger.Logf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
+				break
+			}
+
+			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
+			seqn, err := c.s.Set(parts[1], parts[2], parts[3])
+			if err != nil {
+				rlogger.Logf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Logf("good")
+				pc.SendResponse(rid, strconv.Uitoa64(seqn))
 			}
 		case "del":
 			if len(parts) != 3 {
