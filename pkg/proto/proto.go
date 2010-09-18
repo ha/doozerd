@@ -25,6 +25,7 @@ const (
 
 type Conn struct {
 	*textproto.Conn
+	RedirectAddr string
 }
 
 type ProtoError struct {
@@ -54,7 +55,7 @@ func (e Redirect) Addr() string {
 }
 
 func NewConn(conn io.ReadWriteCloser) (*Conn) {
-	return &Conn{textproto.NewConn(conn)}
+	return &Conn{Conn:textproto.NewConn(conn)}
 }
 
 // Server functions
@@ -130,7 +131,8 @@ func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 		return parts, nil
 	case ResponseError:
 		if terr[0:9] == "REDIRECT:" {
-			err = Redirect(strings.TrimSpace(string(terr)[10:]))
+			c.RedirectAddr = strings.TrimSpace(string(terr)[10:])
+			err = Redirect(c.RedirectAddr)
 		}
 		return nil, err
 	}
