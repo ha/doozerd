@@ -43,6 +43,16 @@ func (e ResponseError) String() string {
 	return string(e)
 }
 
+type Redirect string
+
+func (e Redirect) String() string {
+	return "redirect to " + e.Addr()
+}
+
+func (e Redirect) Addr() string {
+	return string(e)
+}
+
 func NewConn(conn io.ReadWriteCloser) (*Conn) {
 	return &Conn{textproto.NewConn(conn)}
 }
@@ -63,6 +73,16 @@ func (c *Conn) SendError(id uint, msg string) os.Error {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
 	err := c.PrintfLine("-ERR: %s", msg)
+	if err != nil {
+		return &ProtoError{id, SendErr, err}
+	}
+	return nil
+}
+
+func (c *Conn) SendRedirect(id uint, addr string) os.Error {
+	c.StartResponse(id)
+	defer c.EndResponse(id)
+	err := c.PrintfLine("-REDIRECT: %s", addr)
 	if err != nil {
 		return &ProtoError{id, SendErr, err}
 	}
@@ -103,12 +123,15 @@ func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 
 	parts, err := decode(&c.Reader)
 
-	switch err.(type) {
+	switch terr := err.(type) {
 	default:
 		return nil, &ProtoError{id, ReadRes, err}
 	case nil:
 		return parts, nil
 	case ResponseError:
+		if terr[0:9] == "REDIRECT:" {
+			err = Redirect(strings.TrimSpace(string(terr)[10:]))
+		}
 		return nil, err
 	}
 

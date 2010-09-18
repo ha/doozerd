@@ -300,11 +300,11 @@ func (c *conn) serve() {
 					pc.SendError(rid, err.String())
 				} else {
 					rlogger.Logf("good")
-					pc.SendResponse(rid, "OK", strconv.Uitoa64(seqn))
+					pc.SendResponse(rid, strconv.Uitoa64(seqn))
 				}
 			} else {
 				rlogger.Logf("redirect to %s", leader)
-				pc.SendResponse(rid, "redirect", leader)
+				pc.SendRedirect(rid, leader)
 			}
 		case "del":
 			if len(parts) != 3 {
