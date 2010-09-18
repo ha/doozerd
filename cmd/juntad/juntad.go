@@ -33,7 +33,7 @@ func activate(st *store.Store, self string, c *client.Conn) {
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			_, err := client.Set(c, ev.Path, self, ev.Cas)
+			_, err := c.Set(ev.Path, self, ev.Cas)
 			if err == nil {
 				return
 			}
@@ -79,13 +79,13 @@ func main() {
 		}
 
 		path := "/j/junta/info/"+ self +"/public-addr"
-		_, err = client.Set(c, path, *publishAddr, store.Clobber)
+		_, err = c.Set(path, *publishAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
 
 		var snap string
-		seqn, snap, err = client.Join(c, self, *listenAddr)
+		seqn, snap, err = c.Join(self, *listenAddr)
 		if err != nil {
 			panic(err)
 		}

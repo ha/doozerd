@@ -44,7 +44,7 @@ func newService(name, cmd string, mon *monitor) *service {
 }
 
 func (sv *service) tryLock() {
-	client.Set(sv.c, lockKey+"/"+sv.name, sv.self, store.Missing)
+	sv.c.Set(lockKey+"/"+sv.name, sv.self, store.Missing)
 }
 
 func (sv *service) acquire() {
@@ -63,7 +63,7 @@ func (sv *service) acquire() {
 }
 
 func (sv *service) release() {
-	client.Del(sv.c, lockKey+"/"+sv.name, sv.lockCas)
+	sv.c.Del(lockKey+"/"+sv.name, sv.lockCas)
 }
 
 func (sv *service) once() bool {
@@ -75,11 +75,11 @@ func (sv *service) once() bool {
 	pid, err := os.ForkExec(args[0], args, nil, "", nil)
 	if err != nil {
 		sv.logger.Log(err)
-		go client.Set(sv.c, runKey+"/"+sv.name, err.String(), store.Clobber)
+		go sv.c.Set(runKey+"/"+sv.name, err.String(), store.Clobber)
 		return false
 	}
 
-	go client.Set(sv.c, runKey+"/"+sv.name, ":11300", store.Clobber)
+	go sv.c.Set(runKey+"/"+sv.name, ":11300", store.Clobber)
 
 	w, err := os.Wait(pid, 0)
 	if err != nil {
@@ -90,7 +90,7 @@ func (sv *service) once() bool {
 	sv.logger.Log(w)
 
 	if (w.Exited() && w.ExitStatus() > 0) || w.Signaled() {
-		go client.Set(sv.c, runKey+"/"+sv.name, w.String(), store.Clobber)
+		go sv.c.Set(runKey+"/"+sv.name, w.String(), store.Clobber)
 		return false
 	}
 	return true
