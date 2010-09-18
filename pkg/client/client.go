@@ -22,21 +22,30 @@ func Dial(addr string) (*Conn, os.Error) {
 	return &Conn{p}, nil
 }
 
-func (c *Conn) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
+func (c *Conn) call(n int, a ...string) (parts []string, err os.Error) {
 	var rid uint
-	rid, err = c.p.SendRequest("join", id, addr)
+	rid, err = c.p.SendRequest(a)
 	if err != nil {
 		return
 	}
 
-	var parts []string
 	parts, err = c.p.ReadResponse(rid)
 	if err != nil {
 		return
 	}
 
-	if len(parts) != 2 {
+	if len(parts) != n {
 		err = ErrInvalidResponse
+		return
+	}
+
+	return
+}
+
+func (c *Conn) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
+	var parts []string
+	parts, err = c.call(2, "join", id, addr)
+	if err != nil {
 		return
 	}
 
@@ -50,20 +59,9 @@ func (c *Conn) Join(id, addr string) (seqn uint64, snapshot string, err os.Error
 }
 
 func (c *Conn) Set(path, body, cas string) (seqn uint64, err os.Error) {
-	var rid uint
-	rid, err = c.p.SendRequest("set", path, body, cas)
-	if err != nil {
-		return
-	}
-
 	var parts []string
-	parts, err = c.p.ReadResponse(rid)
+	parts, err = c.call(1, "set", path, body, cas)
 	if err != nil {
-		return
-	}
-
-	if len(parts) != 1 {
-		err = ErrInvalidResponse
 		return
 	}
 
@@ -71,20 +69,9 @@ func (c *Conn) Set(path, body, cas string) (seqn uint64, err os.Error) {
 }
 
 func (c *Conn) Del(path, cas string) (seqn uint64, err os.Error) {
-	var rid uint
-	rid, err = c.p.SendRequest("del", path, cas)
-	if err != nil {
-		return
-	}
-
 	var parts []string
-	parts, err = c.p.ReadResponse(rid)
+	parts, err = c.call(1, "del", path, cas)
 	if err != nil {
-		return
-	}
-
-	if len(parts) != 1 {
-		err = ErrInvalidResponse
 		return
 	}
 
