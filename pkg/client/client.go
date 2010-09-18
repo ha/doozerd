@@ -9,28 +9,28 @@ import (
 
 var ErrInvalidResponse = os.NewError("invalid response")
 
-type Conn interface {
-	SendRequest(...string) (uint, os.Error)
-	ReadResponse(uint) ([]string, os.Error)
+type Conn struct {
+    p *proto.Conn
 }
 
-func Dial(addr string) (Conn, os.Error) {
+func Dial(addr string) (*Conn, os.Error) {
 	c, err := net.Dial("tcp", "", addr)
 	if err != nil {
 		return nil, err
 	}
-	return proto.NewConn(c), nil
+    p := proto.NewConn(c)
+	return &Conn{p}, nil
 }
 
-func Join(c Conn, id, addr string) (seqn uint64, snapshot string, err os.Error) {
+func Join(c *Conn, id, addr string) (seqn uint64, snapshot string, err os.Error) {
 	var rid uint
-	rid, err = c.SendRequest("join", id, addr)
+	rid, err = c.p.SendRequest("join", id, addr)
 	if err != nil {
 		return
 	}
 
 	var parts []string
-	parts, err = c.ReadResponse(rid)
+	parts, err = c.p.ReadResponse(rid)
 	if err != nil {
 		return
 	}
@@ -49,15 +49,15 @@ func Join(c Conn, id, addr string) (seqn uint64, snapshot string, err os.Error) 
 	return
 }
 
-func Set(c Conn, path, body, cas string) (seqn uint64, err os.Error) {
+func Set(c *Conn, path, body, cas string) (seqn uint64, err os.Error) {
 	var rid uint
-	rid, err = c.SendRequest("set", path, body, cas)
+	rid, err = c.p.SendRequest("set", path, body, cas)
 	if err != nil {
 		return
 	}
 
 	var parts []string
-	parts, err = c.ReadResponse(rid)
+	parts, err = c.p.ReadResponse(rid)
 	if err != nil {
 		return
 	}
@@ -70,15 +70,15 @@ func Set(c Conn, path, body, cas string) (seqn uint64, err os.Error) {
 	return strconv.Btoui64(parts[0], 10)
 }
 
-func Del(c Conn, path, cas string) (seqn uint64, err os.Error) {
+func Del(c *Conn, path, cas string) (seqn uint64, err os.Error) {
 	var rid uint
-	rid, err = c.SendRequest("del", path, cas)
+	rid, err = c.p.SendRequest("del", path, cas)
 	if err != nil {
 		return
 	}
 
 	var parts []string
-	parts, err = c.ReadResponse(rid)
+	parts, err = c.p.ReadResponse(rid)
 	if err != nil {
 		return
 	}

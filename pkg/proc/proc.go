@@ -22,7 +22,7 @@ type service struct {
 	done chan int
 	st   *store.Store
 	self string
-	c    client.Conn
+	c    *client.Conn
 	logger *log.Logger
 
 	lockCas string
@@ -113,7 +113,7 @@ func (sv *service) stop() {
 type monitor struct {
 	self string
 	st   *store.Store
-	c    client.Conn
+	c    *client.Conn
 }
 
 func Monitor(self string, st *store.Store) os.Error {
