@@ -174,6 +174,14 @@ func (sv *Server) leader() string {
 	return parts[0]
 }
 
+func (sv *Server) addrFor(id string) string {
+	parts, cas := sv.St.Lookup("/j/junta/members/"+id)
+	if cas == store.Dir && cas == store.Missing {
+		return ""
+	}
+	return parts[0]
+}
+
 func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
 	mut, err := store.EncodeSet(path, body, cas)
 	if err != nil {
@@ -293,8 +301,15 @@ func (c *conn) serve() {
 
 			leader := c.s.leader()
 			if c.s.Self != leader {
-				rlogger.Logf("redirect to %s", leader)
-				pc.SendRedirect(rid, leader)
+				addr := c.s.addrFor(leader)
+				if addr == "" {
+					rlogger.Logf("unknown address for leader: %s", leader)
+					pc.SendError(rid, "unknown address for leader")
+					break
+				}
+
+				rlogger.Logf("redirect to %s", addr)
+				pc.SendRedirect(rid, addr)
 				break
 			}
 
