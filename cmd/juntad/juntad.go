@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"os"
 
@@ -26,14 +27,14 @@ var (
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 )
 
-func activate(st *store.Store, self string, c *client.Client) {
+func activate(st *store.Store, self, prefix string, c *client.Client) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
 	st.Watch("/j/junta/slot/*", ch)
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			_, err := c.Set(ev.Path, self, ev.Cas)
+			_, err := c.Set(prefix+ev.Path, self, ev.Cas)
 			if err == nil {
 				return
 			}
@@ -42,11 +43,27 @@ func activate(st *store.Store, self string, c *client.Client) {
 	}
 }
 
-func main() {
-	flag.Parse()
+func Usage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] <cluster-name>\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "\nOptions:\n")
+	flag.PrintDefaults()
+}
 
+func main() {
 	util.LogWriter = os.Stderr
 	logger := util.NewLogger("main")
+
+	flag.Parse()
+	flag.Usage = Usage
+
+	if len(flag.Args()) < 1 {
+		logger.Log("require a cluster name")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	clusterName := flag.Arg(0)
+	prefix := "/j/" + clusterName
 
 	if *listenAddr == "" {
 		logger.Log("require a listen address")
@@ -78,7 +95,7 @@ func main() {
 			panic(err)
 		}
 
-		path := "/j/junta/info/"+ self +"/public-addr"
+		path := prefix + "/j/junta/info/"+ self +"/public-addr"
 		_, err = c.Set(path, *publishAddr, store.Clobber)
 		if err != nil {
 			panic(err)
@@ -96,7 +113,7 @@ func main() {
 
 		go func() {
 			<-ch
-			activate(st, self, c)
+			activate(st, self, prefix, c)
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -117,10 +134,10 @@ func main() {
 		panic(err)
 	}
 
-	sv := &server.Server{*listenAddr, st, mg, self}
+	sv := &server.Server{*listenAddr, st, mg, self, prefix}
 
 	go func() {
-		panic(proc.Monitor(self, st))
+		panic(proc.Monitor(self, prefix, st))
 	}()
 
 	go func() {

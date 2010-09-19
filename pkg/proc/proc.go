@@ -21,7 +21,7 @@ type service struct {
 	cmd  string
 	done chan int
 	st   *store.Store
-	self string
+	self, prefix string
 	c    *client.Client
 	logger *log.Logger
 
@@ -37,6 +37,7 @@ func newService(name, cmd string, mon *monitor) *service {
 		self: mon.self,
 		c:    mon.c,
 		logger: util.NewLogger(name),
+		prefix: mon.prefix,
 	}
 	sv.logger.Log("new")
 	go sv.run()
@@ -44,7 +45,7 @@ func newService(name, cmd string, mon *monitor) *service {
 }
 
 func (sv *service) tryLock() {
-	sv.c.Set(lockKey+"/"+sv.name, sv.self, store.Missing)
+	sv.c.Set(sv.prefix+lockKey+"/"+sv.name, sv.self, store.Missing)
 }
 
 func (sv *service) acquire() {
@@ -63,7 +64,7 @@ func (sv *service) acquire() {
 }
 
 func (sv *service) release() {
-	sv.c.Del(lockKey+"/"+sv.name, sv.lockCas)
+	sv.c.Del(sv.prefix+lockKey+"/"+sv.name, sv.lockCas)
 }
 
 func (sv *service) once() bool {
@@ -75,11 +76,11 @@ func (sv *service) once() bool {
 	pid, err := os.ForkExec(args[0], args, nil, "", nil)
 	if err != nil {
 		sv.logger.Log(err)
-		go sv.c.Set(runKey+"/"+sv.name, err.String(), store.Clobber)
+		go sv.c.Set(sv.prefix+runKey+"/"+sv.name, err.String(), store.Clobber)
 		return false
 	}
 
-	go sv.c.Set(runKey+"/"+sv.name, ":11300", store.Clobber)
+	go sv.c.Set(sv.prefix+runKey+"/"+sv.name, ":11300", store.Clobber)
 
 	w, err := os.Wait(pid, 0)
 	if err != nil {
@@ -90,7 +91,7 @@ func (sv *service) once() bool {
 	sv.logger.Log(w)
 
 	if (w.Exited() && w.ExitStatus() > 0) || w.Signaled() {
-		go sv.c.Set(runKey+"/"+sv.name, w.String(), store.Clobber)
+		go sv.c.Set(sv.prefix+runKey+"/"+sv.name, w.String(), store.Clobber)
 		return false
 	}
 	return true
@@ -111,12 +112,12 @@ func (sv *service) stop() {
 }
 
 type monitor struct {
-	self string
+	self, prefix string
 	st   *store.Store
 	c    *client.Client
 }
 
-func Monitor(self string, st *store.Store) os.Error {
+func Monitor(self, prefix string, st *store.Store) os.Error {
 	logger := util.NewLogger("monitor")
 	v, cas := st.Lookup("/j/junta/leader")
 	if cas == store.Dir || cas == store.Missing {
@@ -135,7 +136,7 @@ func Monitor(self string, st *store.Store) os.Error {
 		return err
 	}
 
-	mon := &monitor{self, st, c}
+	mon := &monitor{self, prefix, st, c}
 
 	logger.Log("reading services")
 	evs := make(chan store.Event)

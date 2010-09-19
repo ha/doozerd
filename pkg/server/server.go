@@ -20,6 +20,8 @@ type ReadFromWriteToer interface {
 
 const packetSize = 3000
 
+var ErrBadPrefix = os.NewError("bad prefix in path")
+
 type conn struct {
 	net.Conn
 	s *Server
@@ -35,7 +37,7 @@ type Server struct {
 	Addr string
 	St *store.Store
 	Mg Manager
-	Self string
+	Self, Prefix string
 }
 
 func (sv *Server) ListenAndServe() os.Error {
@@ -182,8 +184,24 @@ func (sv *Server) addrFor(id string) string {
 	return parts[0]
 }
 
+// Checks that path begins with the proper prefix and returns the short path
+// without the prefix.
+func (sv *Server) checkPath(path string) (string, os.Error) {
+	logger := util.NewLogger("checkPath")
+	if path[0:len(sv.Prefix)] != sv.Prefix {
+		logger.Logf("prefix %q not in %q", sv.Prefix, path)
+		return "", ErrBadPrefix
+	}
+	return path[len(sv.Prefix):], nil
+}
+
 func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
-	mut, err := store.EncodeSet(path, body, cas)
+	shortPath, err := sv.checkPath(path)
+	if err != nil {
+		return 0, err
+	}
+
+	mut, err := store.EncodeSet(shortPath, body, cas)
 	if err != nil {
 		return 0, err
 	}
@@ -211,7 +229,12 @@ func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
 }
 
 func (sv *Server) delOnce(path, cas string) (uint64, os.Error) {
-	mut, err := store.EncodeDel(path, cas)
+	shortPath, err := sv.checkPath(path)
+	if err != nil {
+		return 0, err
+	}
+
+	mut, err := store.EncodeDel(shortPath, cas)
 	if err != nil {
 		return 0, err
 	}
@@ -378,7 +401,7 @@ func (c *conn) serve() {
 			who, addr := parts[1], parts[2]
 			rlogger.Logf("membership requested for %s at %s", who, addr)
 
-			key := "/j/junta/members/" + who
+			key := c.s.Prefix + "/j/junta/members/" + who
 
 			seqn, err := c.s.Set(key, addr, store.Missing)
 			if err != nil {
