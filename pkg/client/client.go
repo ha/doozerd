@@ -12,19 +12,19 @@ import (
 
 var ErrInvalidResponse = os.NewError("invalid response")
 
-type Conn struct {
+type Client struct {
     p *proto.Conn
 	lg *log.Logger
 	lk sync.Mutex
 }
 
-func Dial(addr string) (*Conn, os.Error) {
+func Dial(addr string) (*Client, os.Error) {
 	c, err := net.Dial("tcp", "", addr)
 	if err != nil {
 		return nil, err
 	}
     p := proto.NewConn(c)
-	return &Conn{p:p, lg:util.NewLogger(addr)}, nil
+	return &Client{p:p, lg:util.NewLogger(addr)}, nil
 }
 
 // This is a little subtle. We want to follow redirects while still pipelining
@@ -46,7 +46,7 @@ func Dial(addr string) (*Conn, os.Error) {
 // continue functioning as it was. Any writes on the old connection will retry,
 // and then they are guaranteed to pick up the new connection. Any reads on the
 // old connection will just succeed directly.
-func (c *Conn) proto() (*proto.Conn, os.Error) {
+func (c *Client) proto() (*proto.Conn, os.Error) {
 	c.lk.Lock()
 	defer c.lk.Unlock()
 
@@ -62,7 +62,7 @@ func (c *Conn) proto() (*proto.Conn, os.Error) {
 	return c.p, nil
 }
 
-func (c *Conn) callWithoutRedirect(a ...string) ([]string, os.Error) {
+func (c *Client) callWithoutRedirect(a ...string) ([]string, os.Error) {
 	p, err := c.proto()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *Conn) callWithoutRedirect(a ...string) ([]string, os.Error) {
 	return p.ReadResponse(rid)
 }
 
-func (c *Conn) call(n int, a ...string) (parts []string, err os.Error) {
+func (c *Client) call(n int, a ...string) (parts []string, err os.Error) {
 	for {
 		parts, err = c.callWithoutRedirect(a)
 		if r, ok := err.(proto.Redirect); ok {
@@ -98,7 +98,7 @@ func (c *Conn) call(n int, a ...string) (parts []string, err os.Error) {
 	return
 }
 
-func (c *Conn) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
+func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
 	var parts []string
 	parts, err = c.call(2, "join", id, addr)
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *Conn) Join(id, addr string) (seqn uint64, snapshot string, err os.Error
 	return
 }
 
-func (c *Conn) Set(path, body, cas string) (seqn uint64, err os.Error) {
+func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
 	var parts []string
 	parts, err = c.call(1, "set", path, body, cas)
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *Conn) Set(path, body, cas string) (seqn uint64, err os.Error) {
 	return strconv.Btoui64(parts[0], 10)
 }
 
-func (c *Conn) Del(path, cas string) (seqn uint64, err os.Error) {
+func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
 	var parts []string
 	parts, err = c.call(1, "del", path, cas)
 	if err != nil {

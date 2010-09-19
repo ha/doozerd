@@ -26,7 +26,7 @@ var (
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 )
 
-func activate(st *store.Store, self string, c *client.Conn) {
+func activate(st *store.Store, self string, c *client.Client) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
 	st.Watch("/j/junta/slot/*", ch)
