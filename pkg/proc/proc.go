@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	serviceKey = "/j/proc/service"
-	lockKey = "/j/proc/lock"
-	runKey = "/j/proc/run"
+	serviceKey = "/proc/service"
+	lockKey = "/proc/lock"
+	runKey = "/proc/run"
 )
 
 type service struct {
@@ -119,13 +119,13 @@ type monitor struct {
 
 func Monitor(self, prefix string, st *store.Store) os.Error {
 	logger := util.NewLogger("monitor")
-	v, cas := st.Lookup("/j/junta/leader")
+	v, cas := st.Lookup("/junta/leader")
 	if cas == store.Dir || cas == store.Missing {
 		return os.NewError("boo") // TODO do this right
 	}
 	leader := v[0]
 
-	v, cas = st.Lookup("/j/junta/members/"+leader)
+	v, cas = st.Lookup("/junta/members/"+leader)
 	if cas == store.Dir || cas == store.Missing {
 		return os.NewError("boo") // TODO do this right
 	}

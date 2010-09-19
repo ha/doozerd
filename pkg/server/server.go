@@ -169,7 +169,7 @@ func (s *Server) Serve(l net.Listener) os.Error {
 }
 
 func (sv *Server) leader() string {
-	parts, cas := sv.St.Lookup("/j/junta/leader")
+	parts, cas := sv.St.Lookup("/junta/leader")
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -177,7 +177,7 @@ func (sv *Server) leader() string {
 }
 
 func (sv *Server) addrFor(id string) string {
-	parts, cas := sv.St.Lookup("/j/junta/members/"+id)
+	parts, cas := sv.St.Lookup("/junta/members/"+id)
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -401,7 +401,7 @@ func (c *conn) serve() {
 			who, addr := parts[1], parts[2]
 			rlogger.Logf("membership requested for %s at %s", who, addr)
 
-			key := c.s.Prefix + "/j/junta/members/" + who
+			key := c.s.Prefix + "/junta/members/" + who
 
 			seqn, err := c.s.Set(key, addr, store.Missing)
 			if err != nil {

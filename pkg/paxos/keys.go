@@ -1,8 +1,7 @@
 package paxos
 
 const (
-	prefixKey  = "/j"
-	clusterKey = prefixKey + "/junta"
+	clusterKey = "/junta"
 	membersKey = clusterKey + "/members"
 	membersDir = membersKey + "/"
 	slotKey    = clusterKey + "/slot"

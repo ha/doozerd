@@ -30,7 +30,7 @@ var (
 func activate(st *store.Store, self, prefix string, c *client.Client) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
-	st.Watch("/j/junta/slot/*", ch)
+	st.Watch("/junta/slot/*", ch)
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
@@ -95,7 +95,7 @@ func main() {
 			panic(err)
 		}
 
-		path := prefix + "/j/junta/info/"+ self +"/public-addr"
+		path := prefix + "/junta/info/"+ self +"/public-addr"
 		_, err = c.Set(path, *publishAddr, store.Clobber)
 		if err != nil {
 			panic(err)
@@ -155,7 +155,7 @@ func main() {
 
 func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	path := "/j/junta/info/"+ self +"/public-addr"
+	path := "/junta/info/"+ self +"/public-addr"
 	mx, err := store.EncodeSet(path, addr, store.Missing)
 	if err != nil {
 		panic(err)
@@ -166,7 +166,7 @@ func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 
 func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/j/junta/members/"+self, addr, store.Missing)
+	mx, err := store.EncodeSet("/junta/members/"+self, addr, store.Missing)
 	if err != nil {
 		panic(err)
 	}
@@ -176,7 +176,7 @@ func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 
 func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/j/junta/slot/"+slot, self, store.Missing)
+	mx, err := store.EncodeSet("/junta/slot/"+slot, self, store.Missing)
 	if err != nil {
 		panic(err)
 	}
@@ -186,7 +186,7 @@ func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
 
 func claimLeader(st *store.Store, seqn uint64, self string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/j/junta/leader", self, store.Missing)
+	mx, err := store.EncodeSet("/junta/leader", self, store.Missing)
 	if err != nil {
 		panic(err)
 	}
