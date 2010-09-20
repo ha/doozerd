@@ -38,7 +38,7 @@ func Dial(addr string) (*Client, os.Error) {
 // In the proto.Conn, when we get a redirect response, we raise a flag noting
 // the new address. This flag only goes up, never down. This flag effectively
 // means the connection is deprecated. Any pending requests can go ahead, but
-// new requests shouldn't use the new address.
+// new requests should use the new address.
 //
 // In the Client, when we notice that a redirect has occurred (i.e. the flag is
 // set), we establish a new connection to the new address. Calls in the future
