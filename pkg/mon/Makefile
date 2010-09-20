@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/proc
+TARG=junta/mon
 GOFILES=\
-	proc.go\
+	mon.go\
 
 include $(GOROOT)/src/Make.pkg

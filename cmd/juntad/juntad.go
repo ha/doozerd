@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"junta/paxos"
-	"junta/proc"
+	"junta/mon"
 	"junta/store"
 	"junta/util"
 	"junta/client"
@@ -137,7 +137,7 @@ func main() {
 	sv := &server.Server{*listenAddr, st, mg, self, prefix}
 
 	go func() {
-		panic(proc.Monitor(self, prefix, st))
+		panic(mon.Monitor(self, prefix, st))
 	}()
 
 	go func() {

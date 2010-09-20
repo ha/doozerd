@@ -1,4 +1,4 @@
-package proc
+package mon
 
 import (
 	"junta/client"
@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	serviceKey = "/proc/service"
-	lockKey = "/proc/lock"
-	runKey = "/proc/run"
+	serviceKey = "/mon/service"
+	lockKey = "/mon/lock"
+	runKey = "/mon/run"
 )
 
 type service struct {
