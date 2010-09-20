@@ -266,6 +266,23 @@ func (s *Store) Lookup(path string) (value []string, cas string) {
 	return l.v, l.cas
 }
 
+// Retrieves the body stored at `path` and returns it. If `path` is a directory
+// or does not exist, returns an empty string.
+//
+// Note, with this function it is impossible to distinguish between an empty
+// string stored at `path`, a missing entry, and a directory. If you need to
+// tell the difference, use `Lookup`.
+//
+// Also note, this function does not return the CAS token for `path`. If you
+// need the CAS token, use `Lookup`.
+func (s *Store) LookupString(path string) (body string) {
+	v, cas := s.Lookup(path)
+	if cas == Missing || cas == Dir {
+		return ""
+	}
+	return v[0]
+}
+
 // Encodes the entire storage state, including the current sequence number, as
 // a mutation. This mutation can be applied to an empty store to reproduce the
 // state of `s`.

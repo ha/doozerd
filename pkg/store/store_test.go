@@ -878,3 +878,20 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
+
+func TestLookupString(t *testing.T) {
+	s := New()
+	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
+	assert.Equal(t, "a", s.LookupString("/x"))
+}
+
+func TestLookupStringMissing(t *testing.T) {
+	s := New()
+	assert.Equal(t, "", s.LookupString("/x"))
+}
+
+func TestLookupStringDir(t *testing.T) {
+	s := New()
+	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
+	assert.Equal(t, "", s.LookupString("/x"))
+}
