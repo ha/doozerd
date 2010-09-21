@@ -254,9 +254,11 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 
 // Gets the value stored at `path`, if any.
 //
-// If no value is stored at `path`, `cas` is `Missing` and `value` is nil.
+// If no value is stored at `path`, `cas` will be `Missing` and `value` will be
+// nil.
 //
-// if `path` is a directory, `cas` is `Dir` and `value` is a list of entries.
+// if `path` is a directory, `cas` will be `Dir` and `value` will be a list of
+// entries.
 //
 // Otherwise, `cas` is the cas token and `value[0]` is the body.
 func (s *Store) Lookup(path string) (value []string, cas string) {
