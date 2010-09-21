@@ -319,7 +319,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	assert.Equal(t, 0, len(s.todo))
 }
 
-func TestLookupDir(t *testing.T) {
+func TestLookupWithDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(2, MustEncodeSet("/y", "b", Clobber))
@@ -894,4 +894,21 @@ func TestLookupStringDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
 	assert.Equal(t, "", s.LookupString("/x"))
+}
+
+func TestLookupDir(t *testing.T) {
+	s := New()
+	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
+	assert.Equal(t, []string{"y"}, s.LookupDir("/x"))
+}
+
+func TestLookupDirMissing(t *testing.T) {
+	s := New()
+	assert.Equal(t, []string(nil), s.LookupDir("/x"))
+}
+
+func TestLookupDirString(t *testing.T) {
+	s := New()
+	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
+	assert.Equal(t, []string(nil), s.LookupDir("/x"))
 }

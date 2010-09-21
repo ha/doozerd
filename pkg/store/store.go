@@ -285,6 +285,20 @@ func (s *Store) LookupString(path string) (body string) {
 	return v[0]
 }
 
+// Returns a list of entries in the directory at `path`. If `path` is not a
+// directory, returns an empty slice.
+//
+// Note, with this function it is impossible to distinguish between a string
+// stored at `path` and a missing entry. If you need to tell the difference,
+// use `Lookup`.
+func (s *Store) LookupDir(path string) (entries []string) {
+	v, cas := s.Lookup(path)
+	if cas != Dir {
+		return nil
+	}
+	return v
+}
+
 // Encodes the entire storage state, including the current sequence number, as
 // a mutation. This mutation can be applied to an empty store to reproduce the
 // state of `s`.
