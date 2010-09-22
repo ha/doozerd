@@ -61,7 +61,6 @@ function time_interval(s) {
 
 function countdown() {
   var body = $('body');
-  var retrymsg = $('#retrymsg');
   var eta = (deadline - new Date().getTime())/1000;
   if (eta < 0) {
     body.removeClass('waiting');
