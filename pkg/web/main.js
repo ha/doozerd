@@ -69,14 +69,14 @@ function countdown() {
   } else {
     $('#retrymsg').text("retrying in " + time_interval(eta));
     body.addClass('waiting');
-    setTimeout(function () { countdown() }, 100);
+    setTimeout(countdown, 100);
   }
 }
 
 function retry() {
   deadline = ((new Date()).getTime()) + retry_interval * 1000;
   retry_interval += (retry_interval + 5) * (Math.random() + .5);
-  setTimeout(function () { countdown() }, 100);
+  setTimeout(countdown, 100);
 }
 
 function open() {
