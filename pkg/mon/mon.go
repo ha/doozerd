@@ -76,19 +76,16 @@ func Monitor(self, prefix string, st *store.Store) os.Error {
 	evs := make(chan store.Event)
 	st.Watch(unitKey + "/*/start", evs)
 	st.Watch(unitKey + "/*/created-at", evs)
-	names, cas := st.Lookup(unitKey)
-	if cas == store.Dir {
-		for _, id := range names {
+	go func() {
+		for _, id := range st.LookupDir(unitKey) {
 			path := unitKey + "/" + id + "/start"
 			v, cas := st.Lookup(path)
 			if cas != store.Dir && cas != store.Missing {
 				logger.Log("injecting", id)
-				go func(e store.Event) {
-					evs <- e
-				}(store.Event{0, path, v[0], cas, "", nil})
+				evs <- store.Event{0, path, v[0], cas, "", nil}
 			}
 		}
-	}
+	}()
 
 	services := make(map[string]*service)
 	for ev := range evs {
