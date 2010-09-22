@@ -2,4 +2,4 @@
 set -e
 make clean && make
 tput reset
-juntad -l 127.0.0.1:8046 foo
+juntad -l 127.0.0.1:8046 -w 127.0.0.1:8080 foo

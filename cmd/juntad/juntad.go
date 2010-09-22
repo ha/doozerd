@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"http"
 	"net"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 	"junta/util"
 	"junta/client"
 	"junta/server"
+	"junta/web"
 )
 
 const (
@@ -25,6 +27,7 @@ var (
 	listenAddr *string = flag.String("l", "", "The address to bind to. Must correspond to a single public interface.")
 	publishAddr *string = flag.String("p", "", "Address to publish in junta for client connections.")
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
+	webAddr *string = flag.String("w", "", "Serve web requests on this address.")
 )
 
 func activate(st *store.Store, self, prefix string, c *client.Client) {
@@ -73,6 +76,15 @@ func main() {
 
 	if *publishAddr == "" {
 		*publishAddr = *listenAddr
+	}
+
+	var webListener net.Listener
+	if *webAddr != "" {
+		wl, err := net.Listen("tcp", *webAddr)
+		if err != nil {
+			panic(err)
+		}
+		webListener = wl
 	}
 
 	outs := make(paxos.ChanPutCloserTo)
@@ -147,6 +159,13 @@ func main() {
 	go func() {
 		panic(sv.ListenAndServeUdp(outs))
 	}()
+
+	if webListener != nil {
+		web.Store = st
+		web.MainInfo.ClusterName = clusterName
+		// http handlers are installed in the init function of junta/web.
+		go http.Serve(webListener, nil)
+	}
 
 	for {
 		st.Apply(mg.Recv())

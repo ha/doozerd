@@ -13,6 +13,7 @@ bench: bench.pkg
 	cd pkg/paxos && make $*
 	cd pkg/proto && make $*
 	cd pkg/server && make $*
+	cd pkg/web && make $*
 	cd pkg/client && make $*
 	cd pkg/mon && make $*
 	cd pkg && make $*

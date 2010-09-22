@@ -1,0 +1,5 @@
+package web
+
+// This file was generated from main.html.
+
+var main_html string = "<html>\n  <head>\n  </head>\n\n  <body>\n    <div id=status></div>\n    <pre id=msgs></pre>\n\n\n\n    <script>\n      function dr() {\n        var status = $('#status');\n        var msgs = $('#msgs');\n        if (\"WebSocket\" in window) {\n          status.text(\"connecting\");\n          var ws = new WebSocket(\"ws://\"+location.host+\"/all\");\n          ws.onmessage = function (ev) {\n            msgs.append(ev.data + \"\\n\");\n          };\n          ws.onopen = function(ev) {\n            status.text('open');\n          };\n          ws.onclose = function(ev) {\n            status.text('closed');\n          };\n          ws.onerror = function(ev) {\n            status.text('error ' + ev);\n          };\n        } else {\n          status.text(\"no websockets\");\n        }\n      }\n    </script>\n    <script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js\" async defer onload=$(document).ready(dr)></script>\n  </body>\n</html>\n"

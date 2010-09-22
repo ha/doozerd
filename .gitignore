@@ -4,3 +4,6 @@ _obj
 _test
 *.out
 cmd/juntad/juntad
+*.css.go
+*.js.go
+*.html.go

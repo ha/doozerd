@@ -1,0 +1,27 @@
+<html>
+  <head>
+    <link rel=stylesheet href=main.css>
+  </head>
+
+  <body class=loading>
+    <div id=info>
+      <span id=status>loading</span>
+      <span id=waiting class=msg>
+        <span id=retrymsg></span>
+        <a id=trynow>[Try now]</a>
+      </span>
+      <span id=wereback class=msg>...and, we're back!</span>
+    </div>
+
+    <dl id=tree>
+      <dt>/j/{ ClusterName }/</dt>
+      <dd id=root>
+        <dl></dl>
+        <table><tbody></table>
+      </dd>
+    </dl>
+
+    <script src=main.js></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" async defer onload=$(document).ready(dr)></script>
+  </body>
+</html>

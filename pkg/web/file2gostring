@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+munge() {
+    printf %s "$1" | tr . _ | tr -d -c '[:alnum:]_'
+}
+
+quote() {
+    sed 's/\\/\\\\/g' "$1" | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n'
+}
+
+targ=$1
+shift
+
+file=$1
+shift
+
+pkg=$(basename $targ)
+
+var=$(munge "$file")
+
+body=
+
+printf 'package %s\n' "$pkg"
+printf '\n'
+printf '// This file was generated from %s.\n' "$file"
+printf '\n'
+printf 'var %s string = "%s"\n' $var "$(quote "$file")"
