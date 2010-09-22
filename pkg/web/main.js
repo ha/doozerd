@@ -55,7 +55,8 @@ function apply(ev) {
 
 function time_interval(s) {
   if (s < 120) return Math.ceil(s) + 's';
-  return Math.ceil(s/60) + 'm';
+  if (s < 7200) return Math.round(s/60) + 'm';
+  return Math.round(s/3600) + 'h';
 }
 
 function countdown() {
