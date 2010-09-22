@@ -8,35 +8,50 @@ import (
 	"os"
 	"path"
 	"strings"
+	"syscall"
 )
 
 const (
-	serviceKey = "/mon/service"
+	unitKey = "/mon/unit"
 	lockKey = "/mon/lock"
-	runKey = "/mon/run"
+	procKey = "/mon/proc"
+)
+
+const (
+	start = iota
+	stop
+	destroy
+)
+
+const (
+	inactive = iota
+	wantLock
+	running
+	stopping
+	error
 )
 
 type service struct {
-	name string
+	id, name string
 	cmd  string
-	done chan int
+	ctl chan int
 	st   *store.Store
 	self, prefix string
 	c    *client.Client
 	logger *log.Logger
-
-	lockCas string
+	mon *monitor
 }
 
-func newService(name, cmd string, mon *monitor) *service {
+func newService(id, name string, mon *monitor) *service {
 	sv := &service{
+		id:   id,
 		name: name,
-		cmd:  cmd,
-		done: make(chan int),
+		ctl:  make(chan int),
 		st:   mon.st,
 		self: mon.self,
 		c:    mon.c,
-		logger: util.NewLogger(name),
+		mon:  mon,
+		logger: util.NewLogger(id),
 		prefix: mon.prefix,
 	}
 	sv.logger.Log("new")
@@ -45,76 +60,165 @@ func newService(name, cmd string, mon *monitor) *service {
 }
 
 func (sv *service) tryLock() {
-	sv.c.Set(sv.prefix+lockKey+"/"+sv.name, sv.self, store.Missing)
+	sv.c.Set(sv.prefix+lockKey+"/"+sv.id, sv.self, store.Missing)
 }
 
-func (sv *service) acquire() {
-	evs := make(chan store.Event)
-	sv.st.Watch(lockKey+"/"+sv.name, evs)
-	go sv.tryLock()
-	for ev := range evs {
-		if ev.Body == sv.self {
-			sv.lockCas = ev.Cas
-			return
-		}
-		if ev.Cas == store.Missing {
-			go sv.tryLock()
-		}
-	}
+func (sv *service) release(cas string) (string, int) {
+	sv.mon.release(sv.id, cas)
+	return store.Missing, inactive
 }
 
-func (sv *service) release() {
-	sv.c.Del(sv.prefix+lockKey+"/"+sv.name, sv.lockCas)
-}
-
-func (sv *service) once() bool {
-	sv.acquire()
-	defer sv.release()
+func (sv *service) start(waitmsgCh chan *os.Waitmsg) (pid, state int) {
+	sv.cmd = sv.lookupUnitParam("cmd")
+	sv.logger.Log("starting")
 
 	sv.logger.Log("*** *** *** RUN *** *** ***")
 	args := strings.Split(sv.cmd, " ", -1)
 	pid, err := os.ForkExec(args[0], args, nil, "", nil)
 	if err != nil {
 		sv.logger.Log(err)
-		go sv.c.Set(sv.prefix+runKey+"/"+sv.name, err.String(), store.Clobber)
-		return false
+		go sv.c.Set(sv.prefix+procKey+"/"+sv.id, err.String(), store.Clobber)
+		return 0, error
 	}
 
-	go sv.c.Set(sv.prefix+runKey+"/"+sv.name, ":11300", store.Clobber)
+	go func() {
+		w, err := os.Wait(pid, 0)
+		if err != nil {
+			sv.logger.Log(err)
+			return
+		}
+		waitmsgCh <- w
+	}()
 
-	w, err := os.Wait(pid, 0)
-	if err != nil {
-		sv.logger.Log(err)
-		return false
+	sv.setProcVal("port", "11300")
+	return pid, running
+}
+
+func (sv *service) kill(pid int) {
+	errno := syscall.Kill(pid, syscall.SIGTERM)
+	if errno != 0 {
+		sv.logger.Log(os.Errno(errno))
 	}
+}
 
-	sv.logger.Log(w)
+func (sv *service) lookupUnitParam(param string) string {
+	return sv.mon.lookupUnitParam(sv.id, param)
+}
 
-	if (w.Exited() && w.ExitStatus() > 0) || w.Signaled() {
-		go sv.c.Set(sv.prefix+runKey+"/"+sv.name, w.String(), store.Clobber)
-		return false
-	}
-	return true
+func (sv *service) setProcVal(param, val string) {
+	sv.mon.setProcVal(sv.id, param, val)
+}
+
+func (sv *service) watchLock(ch chan store.Event) {
+	sv.st.Watch(lockKey+"/"+sv.id, ch)
+}
+
+func isFatal(w *os.Waitmsg) bool {
+	return w.Exited() && w.ExitStatus() != 0
+}
+
+func isError(w *os.Waitmsg) bool {
+	return isFatal(w) || w.Signaled()
 }
 
 func (sv *service) run() {
-	for done := false; !done; _, done = <-sv.done {
-		ok := sv.once()
-		if !ok {
-			sv.logger.Log("fatal error -- giving up")
-			return
+	lockEvs := make(chan store.Event)
+	waitmsgCh := make(chan *os.Waitmsg)
+	state, cas := inactive, ""
+	pid := 0
+
+	sv.watchLock(lockEvs)
+
+	for {
+		select {
+		case s := <-sv.ctl:
+			switch s {
+			case start:
+				if state == inactive {
+					sv.logger.Log("try lock")
+					state = wantLock
+					go sv.tryLock()
+				}
+			case stop:
+				switch state {
+				case wantLock:
+					state = inactive
+				case running:
+					sv.logger.Log("stopping")
+					sv.kill(pid)
+					state = stopping
+				}
+			case destroy:
+				// TODO stop the service and cleanly exit this goroutine
+			}
+
+		case ev := <-lockEvs:
+			switch state {
+			case wantLock:
+				switch {
+				case ev.Body == sv.self:
+					sv.logger.Log("got lock")
+					cas = ev.Cas
+					pid, state = sv.start(waitmsgCh)
+				case ev.Cas == store.Missing:
+					sv.logger.Log("try lock")
+					go sv.tryLock()
+				}
+			case running:
+				// TODO we lost the lock? kill it
+			default:
+				// TODO make sure we don't unintentionally keep the lock
+			}
+
+		case w := <-waitmsgCh:
+			if w.Pid != pid {
+				break
+			}
+			pid = 0
+
+			sv.logger.Log(w)
+			if isFatal(w) {
+				sv.logger.Log("fatal error -- giving up")
+				go sv.c.Set(sv.prefix+procKey+"/"+sv.id, w.String(), store.Clobber)
+				cas, _ = sv.release(cas)
+				state = error
+			}
+
+			switch state {
+			case running:
+				if isError(w) {
+					sv.logger.Log("non-fatal error -- restarting")
+					go sv.c.Set(sv.prefix+procKey+"/"+sv.id, w.String(), store.Clobber)
+				} else {
+					sv.logger.Log("exited cleanly -- restarting")
+				}
+				pid, state = sv.start(waitmsgCh)
+			case stopping:
+				if isError(w) {
+					sv.logger.Log("non-fatal error -- stopped")
+					go sv.c.Set(sv.prefix+procKey+"/"+sv.id, w.String(), store.Clobber)
+				} else {
+					sv.logger.Log("exited cleanly -- stopped")
+				}
+				cas, state = sv.release(cas)
+			case error:
+			}
 		}
 	}
-}
-
-func (sv *service) stop() {
-	close(sv.done)
 }
 
 type monitor struct {
 	self, prefix string
 	st   *store.Store
 	c    *client.Client
+}
+
+func splitId(id string) (name, ext string) {
+	parts := strings.Split(id, ".", 2)
+	if len(parts) != 2 {
+		return "", ""
+	}
+	return parts[0], parts[1]
 }
 
 func Monitor(self, prefix string, st *store.Store) os.Error {
@@ -140,14 +244,15 @@ func Monitor(self, prefix string, st *store.Store) os.Error {
 
 	logger.Log("reading services")
 	evs := make(chan store.Event)
-	st.Watch(serviceKey + "/*", evs)
-	names, cas := st.Lookup(serviceKey)
+	st.Watch(unitKey + "/*/start", evs)
+	st.Watch(unitKey + "/*/created-at", evs)
+	names, cas := st.Lookup(unitKey)
 	if cas == store.Dir {
-		for _, name := range names {
-			path := serviceKey + "/" + name
+		for _, id := range names {
+			path := unitKey + "/" + id + "/start"
 			v, cas := st.Lookup(path)
 			if cas != store.Dir && cas != store.Missing {
-				logger.Log("injecting", name)
+				logger.Log("injecting", id)
 				go func(e store.Event) {
 					evs <- e
 				}(store.Event{0, path, v[0], cas, "", nil})
@@ -157,17 +262,49 @@ func Monitor(self, prefix string, st *store.Store) os.Error {
 
 	services := make(map[string]*service)
 	for ev := range evs {
-		_, name := path.Split(ev.Path)
-		s, ok := services[name]
-		switch {
-		case ev.IsSet() && !ok:
-			logger.Log("creating", name)
-			s = newService(name, ev.Body, mon)
-		case ev.IsDel() && ok:
-			logger.Log("stopping", name)
-			s.stop()
+		p, param := path.Split(ev.Path)
+		_, id := path.Split(p[0:len(p)-1])
+		s, ok := services[id]
+		switch param {
+		case "start":
+			switch {
+			case ev.IsSet():
+				logger.Log("got start event")
+				if !ok {
+					logger.Log("creating service")
+					name, ext := splitId(id)
+					switch ext {
+					case "service":
+						s, ok = newService(id, name, mon), true
+					default:
+						logger.Log("unknown service type in", id)
+					}
+				}
+				s.ctl <- start
+				break
+			case ev.IsDel() && ok:
+				logger.Log("got stop event")
+				s.ctl <- stop
+			}
+		case "created-at":
+			if ev.IsDel() && ok {
+				s.ctl <- destroy
+				s, ok = nil, false
+			}
 		}
-		services[name] = s, ev.IsSet()
+		services[id] = s, ok
 	}
 	panic("not reached")
+}
+
+func (mon *monitor) lookupUnitParam(id, param string) string {
+	return mon.st.LookupString(unitKey+"/"+id+"/"+param)
+}
+
+func (mon *monitor) setProcVal(id, param, val string) {
+	mon.c.Set(mon.prefix+procKey+"/"+id+"/"+param, val, store.Clobber)
+}
+
+func (mon *monitor) release(id, cas string) {
+	mon.c.Del(mon.prefix+lockKey+"/"+id, cas)
 }
