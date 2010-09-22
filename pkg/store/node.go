@@ -115,7 +115,10 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 		components := split(ev.Path)
 		for i := 0; i < len(components) - 1; i++ {
 			_, dirCas := n.get(components[0:i+1])
-			if dirCas != Missing && dirCas != Dir {
+			if dirCas == Missing {
+				break
+			}
+			if dirCas != Dir {
 				ev.Err = os.ENOTDIR
 				break
 			}
