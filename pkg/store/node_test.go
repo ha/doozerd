@@ -5,6 +5,7 @@ import (
 	"gob"
 	"io"
 	"junta/assert"
+	"os"
 	"testing"
 )
 
@@ -93,4 +94,22 @@ func TestNodeSnapshotBad(t *testing.T) {
 	n, e := root.apply(1, m)
 	assert.Equal(t, root, n)
 	assert.Equal(t, Event{2, "", "", "", m, io.ErrUnexpectedEOF}, e)
+}
+
+func TestNodeNotADirectory(t *testing.T) {
+	r, _ := root.apply(1, MustEncodeSet("/x", "a", Clobber))
+	m := MustEncodeSet("/x/y", "b", Clobber)
+	n, e := r.apply(2, m)
+	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR}, e)
+}
+
+func TestNodeNotADirectoryDeeper(t *testing.T) {
+	r, _ := root.apply(1, MustEncodeSet("/x", "a", Clobber))
+	m := MustEncodeSet("/x/y/z/w", "b", Clobber)
+	n, e := r.apply(2, m)
+	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR}, e)
 }

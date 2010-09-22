@@ -2,6 +2,7 @@ package store
 
 import (
 	"gob"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -38,8 +39,10 @@ func (n node) get(parts []string) ([]string, string) {
 			return []string{n.v}, n.cas
 		}
 	default:
-		if m, ok := n.ds[parts[0]]; ok {
-			return m.get(parts[1:])
+		if n.ds != nil {
+			if m, ok := n.ds[parts[0]]; ok {
+				return m.get(parts[1:])
+			}
 		}
 		return []string{""}, Missing
 	}
@@ -107,6 +110,17 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 
 	cas, keep := "", false
 	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
+
+	if ev.Err == nil && keep {
+		components := split(ev.Path)
+		for i := 0; i < len(components) - 1; i++ {
+			_, dirCas := n.get(components[0:i+1])
+			if dirCas != Missing && dirCas != Dir {
+				ev.Err = os.ENOTDIR
+				break
+			}
+		}
+	}
 
 	if ev.Err == nil && cas != Clobber {
 		_, curCas := n.getp(ev.Path)
