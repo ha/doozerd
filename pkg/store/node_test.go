@@ -113,3 +113,12 @@ func TestNodeNotADirectoryDeeper(t *testing.T) {
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR}, e)
 }
+
+func TestNodeIsADirectory(t *testing.T) {
+	r, _ := root.apply(1, MustEncodeSet("/x/y", "a", Clobber))
+	m := MustEncodeSet("/x", "b", Clobber)
+	n, e := r.apply(2, m)
+	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.EISDIR.String(), Clobber))
+	assert.Equal(t, exp, n)
+	assert.Equal(t, Event{2, ErrorPath, os.EISDIR.String(), "2", m, os.EISDIR}, e)
+}

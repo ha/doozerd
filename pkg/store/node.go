@@ -122,10 +122,12 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 		}
 	}
 
-	if ev.Err == nil && cas != Clobber {
+	if ev.Err == nil {
 		_, curCas := n.getp(ev.Path)
-		if cas != curCas {
+		if cas != Clobber && cas != curCas {
 			ev.Err = ErrCasMismatch
+		} else if curCas == Dir {
+			ev.Err = os.EISDIR
 		}
 	}
 
