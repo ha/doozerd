@@ -1,4 +1,5 @@
 var deadline = 0, retry_interval = 0;
+var ti;
 
 function insert(parent, child) {
   var existing = parent.children();
@@ -68,14 +69,14 @@ function countdown() {
   } else {
     $('#retrymsg').text("retrying in " + time_interval(eta));
     body.addClass('waiting');
-    setTimeout(countdown, 100);
+    ti = setTimeout(countdown, Math.max(100, eta*9));
   }
 }
 
 function retry() {
   deadline = ((new Date()).getTime()) + retry_interval * 1000;
   retry_interval += (retry_interval + 5) * (Math.random() + .5);
-  setTimeout(countdown, 100);
+  countdown();
 }
 
 function open() {
@@ -111,7 +112,9 @@ function open() {
 
 function dr() {
   $('#trynow').click(function() {
+    clearTimeout(ti);
     deadline = 0;
+    countdown();
   });
 
   if ("WebSocket" in window) {
