@@ -9,6 +9,7 @@ import (
 	"junta/proto"
 	"junta/store"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -188,8 +189,8 @@ func (sv *Server) addrFor(id string) string {
 // without the prefix.
 func (sv *Server) checkPath(path string) (string, os.Error) {
 	logger := util.NewLogger("checkPath")
-	if path[0:len(sv.Prefix)] != sv.Prefix {
-		logger.Logf("prefix %q not in %q", sv.Prefix, path)
+	if !strings.HasPrefix(path, sv.Prefix+"/") {
+		logger.Logf("prefix %q not in %q", sv.Prefix+"/", path)
 		return "", ErrBadPrefix
 	}
 	return path[len(sv.Prefix):], nil
