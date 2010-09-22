@@ -100,12 +100,12 @@ function open() {
   };
   ws.onclose = function(ev) {
     status.text('closed')
-    body.addClass('closed').removeClass('loading open error');
+    body.addClass('closed').removeClass('loading open error wereback');
     retry();
   };
   ws.onerror = function(ev) {
     status.text('error ' + ev)
-    body.addClass('error').removeClass('loading open closed');
+    body.addClass('error').removeClass('loading open closed wereback');
     retry();
   };
 }
@@ -119,6 +119,6 @@ function dr() {
     open();
   } else {
     $('#status').text("no websockets");
-    $('body').addClass('error nows').removeClass('loading open closed');
+    $('body').addClass('error nows').removeClass('loading open closed wereback');
   }
 }
