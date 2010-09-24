@@ -137,7 +137,7 @@ func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 		return nil, err
 	}
 
-	panic("unreachable!")
+	panic("unreachable")
 }
 
 // Helpers

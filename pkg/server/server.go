@@ -153,7 +153,7 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Packet) os.Error
 		}
 	}
 
-	panic("not reached")
+	panic("unreachable")
 }
 
 func (s *Server) Serve(l net.Listener) os.Error {
@@ -166,7 +166,7 @@ func (s *Server) Serve(l net.Listener) os.Error {
 		go c.serve()
 	}
 
-	panic("not reached")
+	panic("unreachable")
 }
 
 func (sv *Server) leader() string {
@@ -278,7 +278,7 @@ func (sv *Server) WaitForPathSet(path string) (body string, err os.Error) {
 		}
 	}
 
-	panic("not reached")
+	panic("unreachable")
 }
 
 // Repeatedly propose nop values until a successful read from `done`.

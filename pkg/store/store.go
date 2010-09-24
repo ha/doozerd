@@ -155,7 +155,7 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	case 2:
 		return kv[0], kv[1], cm[0], true, nil
 	}
-	panic("can't happen")
+	panic("unreachable")
 }
 
 func (s *Store) notify(e Event) {

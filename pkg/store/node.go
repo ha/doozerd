@@ -46,7 +46,7 @@ func (n node) get(parts []string) ([]string, string) {
 		}
 		return []string{""}, Missing
 	}
-	panic("can't happen")
+	panic("unreachable")
 }
 
 func (n node) getp(path string) ([]string, string) {

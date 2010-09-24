@@ -294,7 +294,7 @@ func Monitor(self, prefix string, st *store.Store) os.Error {
 		}
 		services[id] = s, ok
 	}
-	panic("not reached")
+	panic("unreachable")
 }
 
 func (mon *monitor) lookupUnitParam(id, param string) string {

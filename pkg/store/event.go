@@ -32,7 +32,7 @@ func (e Event) Desc() string {
 	case e.IsDummy() && e.Mut != "" && e.Mut != Nop:
 		return "snapshot"
 	}
-	panic("not reached")
+	panic("unreachable")
 }
 
 // Returns true iff the operation represented by `e` set a path.
