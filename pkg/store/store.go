@@ -99,6 +99,11 @@ func checkPath(k string) os.Error {
 	return nil
 }
 
+// Returns a mutation that can be applied to a `Store`. The mutation will set
+// the contents of the file at `path` to `body` iff the CAS token of that file
+// matches `cas` at the time of application.
+//
+// If `path` is not valid, returns `ErrBadPath`.
 func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
@@ -106,6 +111,11 @@ func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 	return cas + ":" + path + "=" + body, nil
 }
 
+// Returns a mutation that can be applied to a `Store`. The mutation will cause
+// the file at `path` to be deleted iff the CAS token of that file matches
+// `cas` at the time of application.
+//
+// If `path` is not valid, returns `ErrBadPath`.
 func EncodeDel(path string, cas string) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
@@ -332,9 +342,10 @@ func (s *Store) Snapshot() (seqn uint64, mutation string) {
 // matches `pattern`, a Unix-style glob pattern.
 //
 // Glob notation:
-//  - `?` matches a single char in a single path component
-//  - `*` matches zero or more chars in a single path component
-//  - `**` matches zero or more chars in zero or more components
+//  - "?" matches a single char in a single path component
+//  - "*" matches zero or more chars in a single path component
+//  - "**" matches zero or more chars in zero or more components
+//  - any other sequence matches itself
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
