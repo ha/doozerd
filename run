@@ -2,4 +2,5 @@
 set -e
 make clean && make
 tput reset
+export HOSTNAME=`hostname`
 juntad -l 127.0.0.1:8046 -w 0.0.0.0:8080 foo

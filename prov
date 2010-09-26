@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+cmd/juntad/junta-set /j/foo/mon/def/a.service/service/exec-start /bin/false ''
+cmd/juntad/junta-set /j/foo/mon/ctl/a.service start ''

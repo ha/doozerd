@@ -18,9 +18,7 @@ import (
 
 const (
 	alpha = 50
-	idBits = 160
 )
-
 
 // Flags
 var (
@@ -87,9 +85,15 @@ func main() {
 		webListener = wl
 	}
 
+	listener, err := net.Listen("tcp", *listenAddr)
+	if err != nil {
+		panic(err)
+	}
+
 	outs := make(paxos.ChanPutCloserTo)
 
-	self := util.RandHexString(idBits)
+	var cl *client.Client
+	self := util.RandId()
 	st := store.New()
 	seqn := uint64(0)
 	if *attachAddr == "" { // we are the only node in a new cluster
@@ -101,20 +105,25 @@ func main() {
 		seqn = claimSlot(st, seqn + 1, "3", "")
 		seqn = claimSlot(st, seqn + 1, "4", "")
 		seqn = claimSlot(st, seqn + 1, "5", "")
+
+		cl, err = client.Dial(*listenAddr)
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		c, err := client.Dial(*attachAddr)
+		cl, err = client.Dial(*attachAddr)
 		if err != nil {
 			panic(err)
 		}
 
 		path := prefix + "/junta/info/"+ self +"/public-addr"
-		_, err = c.Set(path, *publishAddr, store.Clobber)
+		_, err = cl.Set(path, *publishAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
 
 		var snap string
-		seqn, snap, err = c.Join(self, *listenAddr)
+		seqn, snap, err = cl.Join(self, *listenAddr)
 		if err != nil {
 			panic(err)
 		}
@@ -125,7 +134,7 @@ func main() {
 
 		go func() {
 			<-ch
-			activate(st, self, prefix, c)
+			activate(st, self, prefix, cl)
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -141,15 +150,10 @@ func main() {
 		}
 	}
 
-	listener, err := net.Listen("tcp", *listenAddr)
-	if err != nil {
-		panic(err)
-	}
-
 	sv := &server.Server{*listenAddr, st, mg, self, prefix}
 
 	go func() {
-		panic(mon.Monitor(self, prefix, st))
+		panic(mon.Monitor(self, prefix, st, cl))
 	}()
 
 	go func() {
