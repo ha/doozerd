@@ -19,8 +19,8 @@ func assert(t *testing.T, b bool, f func(), cd int) {
 
 func equal(t *testing.T, exp, got interface{}, cd int, args ... interface{}) {
 	f := func() {
-		t.Errorf("!  Expected: <%#v>", exp)
-		t.Errorf("!  Got:      <%#v>", got)
+		t.Errorf("!  Expected: %v <%#v>", exp, exp)
+		t.Errorf("!  Got:      %v <%#v>", got, got)
 		if len(args) > 0 {
 			t.Error("!", " -", fmt.Sprint(args))
 		}
@@ -29,14 +29,22 @@ func equal(t *testing.T, exp, got interface{}, cd int, args ... interface{}) {
 	assert(t, b, f, cd + 1)
 }
 
-func T(t *testing.T, b bool, args ... interface{}) {
+func tt(t *testing.T, b bool, cd int, args ...interface{}) {
 	f := func() {
 		t.Errorf("!  Failure")
 		if len(args) > 0 {
 			t.Error("!", " -", fmt.Sprint(args))
 		}
 	}
-	assert(t, b, f, 1)
+	assert(t, b, f, cd+1)
+}
+
+func T(t *testing.T, b bool, args ... interface{}) {
+	tt(t, b, 1, args)
+}
+
+func Tf(t *testing.T, b bool, format string, args ... interface{}) {
+	tt(t, b, 1, fmt.Sprintf(format, args))
 }
 
 func Equal(t *testing.T, exp, got interface{}, args ... interface{}) {
