@@ -7,6 +7,10 @@ import (
 	"os"
 )
 
+// Sufficient for 10**6 simultaneous IDs with probability of collision less
+// than 10**-7.
+const IdBits = 64
+
 type NullWriter struct{}
 
 func (nw NullWriter) Write(p []byte) (int, os.Error) {
@@ -77,4 +81,11 @@ func RandHexString(bits int) string {
 	buf := make([]byte, bits/8)
 	RandBytes(buf)
 	return fmt.Sprintf("%x", buf)
+}
+
+// Generates a random string with IdBits bits of entropy. The string will
+// contain only the characters [0-9a-f] and dot, formatted for easier reading.
+func RandId() string {
+	return RandHexString(IdBits/2) + "." +
+	       RandHexString(IdBits/2)
 }
