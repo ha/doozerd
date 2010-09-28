@@ -89,7 +89,22 @@ func (t *Timer) process() {
 			at, _ := strconv.Atoi64(e.Body)
 
 			x := Tick{e.Path, at}
-			heap.Push(ticks, x)
+			switch {
+			default:
+				break
+			case e.IsSet():
+				heap.Push(ticks, x)
+			case e.IsDel():
+				logger.Logf("deleting: %#v", e)
+				// This could be optimize since ticks is sorted; I can't
+				// find a way without implementing our own quick-find.
+				for i := 0; i < ticks.Len(); i++ {
+					if ticks.At(i).(Tick).Path == x.Path {
+						heap.Remove(ticks, i)
+					}
+				}
+			}
+
 		case <-t.ticker.C:
 			ns := time.Nanoseconds()
 			for next := peek(); next.At <= ns; next = peek() {

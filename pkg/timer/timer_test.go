@@ -18,7 +18,7 @@ func encodeTimer(path string, offset int64) string {
 	return muta
 }
 
-func TestTwoManyOneshotTimers(t *testing.T) {
+func TestManyOneshotTimers(t *testing.T) {
 	st := store.New()
 	timer := New("test", oneMillisecond*10, st)
 	defer timer.Close()
@@ -39,5 +39,28 @@ func TestTwoManyOneshotTimers(t *testing.T) {
 	assert.Equal(t, got.Path, "/timer/longest")
 	assert.T(t, got.At <= time.Nanoseconds())
 
+	assert.Equal(t, 0, timer.Len())
+}
+
+func TestDeleteTimer(t *testing.T) {
+	st := store.New()
+	timer := New("test", oneMillisecond*10, st)
+	defer timer.Close()
+
+	never := "/timer/never/ticks"
+
+	watch := make(chan store.Event)
+	st.Watch(timerMatch, watch)
+
+	// Wait one minute to ensure it doesn't tick before
+	// the following delete and assert.
+	st.Apply(1, encodeTimer(never, 60*oneSecond))
+	<-watch
+
+	st.Apply(2, store.MustEncodeDel(never, store.Clobber))
+	<-watch
+
+	// Potential race-condition:  The Timer may not have yet
+	// deleted the timer.  Thoughts on how to test?
 	assert.Equal(t, 0, timer.Len())
 }
