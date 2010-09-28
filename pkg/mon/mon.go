@@ -217,7 +217,7 @@ func (mon *monitor) poll(files []*os.File, r readyer) {
 		}
 	}
 
-	_, errno := syscall.Select(n+1, &rd, nil, nil, nil)
+	errno := selectFds(n+1, &rd, nil, nil, nil)
 	if errno != 0 {
 		mon.logger.Log("select", os.Errno(errno))
 		return

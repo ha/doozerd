@@ -5,6 +5,7 @@ GOFILES=\
 	exec.go\
 	fd.go\
 	mon.go\
+	poll_$(GOOS).go\
 	service.go\
 	socket.go\
 
