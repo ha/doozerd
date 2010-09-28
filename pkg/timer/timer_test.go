@@ -38,4 +38,6 @@ func TestTwoManyOneshotTimers(t *testing.T) {
 	got = <-timer.C
 	assert.Equal(t, got.Path, "/timer/longest")
 	assert.T(t, got.At <= time.Nanoseconds())
+
+	assert.Equal(t, 0, timer.Len())
 }

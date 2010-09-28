@@ -26,6 +26,8 @@ func (t Tick) Less(y interface{}) bool {
 	return t.At < y.(Tick).At
 }
 
+type length chan int
+
 type Timer struct {
 	Name string
 
@@ -33,6 +35,7 @@ type Timer struct {
 	C chan Tick
 
 	events chan store.Event
+	lengths chan length
 	ticker *time.Ticker
 }
 
@@ -88,11 +91,19 @@ func (t *Timer) process() {
 				heap.Pop(ticks)
 				t.C <- next
 			}
+		case ch := <-t.lengths:
+			ch <- ticks.Len()
 		}
 	}
 
 done:
 	t.ticker.Stop()
+}
+
+func (t *Timer) Len() int {
+	ch := make(chan int)
+	t.lengths <- ch
+	return <-ch
 }
 
 func (t *Timer) Close() {
