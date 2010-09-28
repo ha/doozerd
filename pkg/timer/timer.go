@@ -12,7 +12,8 @@ import (
 
 const (
 	oneMillisecond = 1e3 // ns
-	oneSecond = 1e9 // ns
+	oneMicrosecond = 1e6 // ns
+	oneSecond      = 1e9 // ns
 )
 
 type Tick struct {
@@ -26,7 +27,7 @@ func (t Tick) Less(y interface{}) bool {
 }
 
 type Timer struct {
-	Name     string
+	Name string
 
 	// Ticks are sent here
 	C chan Tick
@@ -37,10 +38,10 @@ type Timer struct {
 
 func New(name string, interval int64, st *store.Store) *Timer {
 	t := &Timer{
-		Name:     name,
-		C:        make(chan Tick),
-		events:   make(chan store.Event),
-		ticker:   time.NewTicker(interval),
+		Name:   name,
+		C:      make(chan Tick),
+		events: make(chan store.Event),
+		ticker: time.NewTicker(interval),
 	}
 
 	// Begin watching as timers come and go
@@ -97,4 +98,3 @@ done:
 func (t *Timer) Close() {
 	close(t.events)
 }
-

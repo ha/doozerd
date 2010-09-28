@@ -8,58 +8,34 @@ import (
 	"strconv"
 )
 
-func TestOneshotTimer(t *testing.T) {
-	// Start the timer process
-	st := store.New()
-	timer := New("test", oneMillisecond*10, st)
-	defer timer.Close()
-
-	path := "/timer/foo/bar"
-	future := time.Nanoseconds()+(oneMillisecond*50)
+func encodeTimer(path string, offset int64) string {
+	future := time.Nanoseconds() + offset
 	muta := store.MustEncodeSet(
 		path,
 		strconv.Itoa64(future),
 		store.Clobber,
 	)
-
-	st.Apply(1, muta)
-
-	<-timer.C
-	assert.T(t, future <= time.Nanoseconds())
+	return muta
 }
 
-func TestTwoOneshotTimers(t *testing.T) {
-	// Start the timer process
+func TestTwoManyOneshotTimers(t *testing.T) {
 	st := store.New()
 	timer := New("test", oneMillisecond*10, st)
 	defer timer.Close()
 
-	pathA := "/timer/foo/baz"
-	futureA := time.Nanoseconds()+(oneSecond)
-	mutaA := store.MustEncodeSet(
-		pathA,
-		strconv.Itoa64(futureA),
-		store.Clobber,
-	)
-
-	pathB := "/timer/foo/bar"
-	futureB := time.Nanoseconds()+(2*oneSecond)
-	mutaB := store.MustEncodeSet(
-		pathB,
-		strconv.Itoa64(futureB),
-		store.Clobber,
-	)
-
-	st.Apply(1, mutaA)
-	st.Apply(2, mutaB)
+	st.Apply(1, encodeTimer("/timer/longest", 40*oneMicrosecond))
+	st.Apply(2, encodeTimer("/timer/short", 10*oneMicrosecond))
+	st.Apply(3, encodeTimer("/timer/long", 25*oneMicrosecond))
 
 	got := <-timer.C
-	assert.T(t, futureA <= time.Nanoseconds())
-	assert.Equal(t, pathA, got.Path)
-	assert.Equal(t, futureA, got.At)
+	assert.Equal(t, got.Path, "/timer/short")
+	assert.T(t, got.At <= time.Nanoseconds())
 
 	got = <-timer.C
-	assert.T(t, futureB <= time.Nanoseconds())
-	assert.Equal(t, pathB, got.Path)
-	assert.Equal(t, futureB, got.At)
+	assert.Equal(t, got.Path, "/timer/long")
+	assert.T(t, got.At <= time.Nanoseconds())
+
+	got = <-timer.C
+	assert.Equal(t, got.Path, "/timer/longest")
+	assert.T(t, got.At <= time.Nanoseconds())
 }
