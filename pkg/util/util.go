@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 // Sufficient for 10**6 simultaneous IDs with probability of collision less
@@ -68,6 +69,15 @@ func NewLogger(format string, a ... interface{}) *log.Logger {
 
 	if prefix == "" {
 		panic("always give a prefix!")
+	}
+
+	if strings.HasPrefix(prefix, "udp") ||
+		strings.HasPrefix(prefix, "manager") ||
+		strings.HasPrefix(prefix, "store") ||
+		strings.HasPrefix(prefix, "ws://") ||
+		strings.HasPrefix(prefix, "127.0.0.1:") ||
+		strings.HasPrefix(prefix, "acceptor") {
+		return log.New(NullWriter{}, nil, "", log.Lok | log.Lshortfile)
 	}
 
 	return log.New(

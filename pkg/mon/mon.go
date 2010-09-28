@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -22,17 +23,30 @@ const (
 	statusDir = statusKey + "/"
 )
 
-type exit struct {
-	u unit
-	w *os.Waitmsg
-}
-
 type unit interface {
 	dispatchLockEvent(ev store.Event)
 	start()
 	stop()
 	tick()
+}
+
+type exec interface {
+	unit
 	exited(w *os.Waitmsg)
+}
+
+type ready struct {
+	r readyer
+	f *os.File
+}
+
+type readyer interface {
+	ready(f *os.File)
+}
+
+type exit struct {
+	e exec
+	w *os.Waitmsg
 }
 
 type SetDeler interface {
@@ -47,7 +61,9 @@ type monitor struct {
 	cl           SetDeler
 	clock        chan unit
 	units        map[string]unit
+	refs         map[string]int
 	exitCh       chan exit
+	readyCh      chan ready
 	logger       *log.Logger
 }
 
@@ -69,7 +85,9 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 		cl:     cl,
 		clock:  make(chan unit),
 		units:  make(map[string]unit),
+		refs:   make(map[string]int),
 		exitCh: make(chan exit),
+		readyCh:make(chan ready),
 		logger: util.NewLogger("monitor"),
 	}
 
@@ -93,23 +111,17 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 		case u := <-mon.clock:
 			u.tick()
 		case ev := <-evs:
-			switch {
-			case strings.HasPrefix(ev.Path, ctlDir):
-				id := splitPath(ev.Path)
-
+			prefix, id := path.Split(ev.Path)
+			switch prefix {
+			case ctlDir:
 				if ev.IsDel() {
-					ut := mon.units[id]
-					if ut != nil {
-						ut.stop()
-					}
-					mon.units[id] = nil, false
+					mon.decrefUnit(id)
 					break
 				}
 
-				ut := mon.units[id]
+				ut := mon.increfUnit(id)
 				if ut == nil {
-					ut = mon.newUnit(id)
-					mon.units[id] = ut
+					break
 				}
 
 				switch ev.Body {
@@ -123,9 +135,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 					// nothing
 				}
 
-			case strings.HasPrefix(ev.Path, lockDir):
-				id := splitPath(ev.Path)
-
+			case lockDir:
 				ut := mon.units[id]
 				if ut == nil {
 					break
@@ -134,7 +144,9 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 				ut.dispatchLockEvent(ev)
 			}
 		case e := <-mon.exitCh:
-			e.u.exited(e.w)
+			e.e.exited(e.w)
+		case r := <-mon.readyCh:
+			r.r.ready(r.f)
 		}
 	}
 	panic("unreachable")
@@ -146,7 +158,7 @@ func (mon *monitor) newUnit(id string) unit {
 	case "service":
 		return newService(id, name, mon)
 	case "socket":
-		panic("TODO")
+		return newSocket(id, name, mon)
 	}
 	return nil
 }
@@ -182,12 +194,72 @@ func (mon *monitor) timer(u unit, ns int64) {
 	mon.clock <- u
 }
 
-func (mon *monitor) wait(pid int, u unit) {
+func (mon *monitor) wait(pid int, e exec) {
 	w, err := os.Wait(pid, 0)
 	if err != nil {
 		mon.logger.Log(err)
 		return
 	}
 
-	mon.exitCh <- exit{u, w}
+	mon.exitCh <- exit{e, w}
+}
+
+// This can be optimized to use a single epoll server for the entire process,
+// similar to what they do in package net. For now, we'll just live with the
+// extra os thread.
+func (mon *monitor) poll(files []*os.File, r readyer) {
+	var n int
+	var rd syscall.FdSet
+	for _, f := range files {
+		fdAdd(&rd, f.Fd())
+		if f.Fd() > n {
+			n = f.Fd()
+		}
+	}
+
+	_, errno := syscall.Select(n+1, &rd, nil, nil, nil)
+	if errno != 0 {
+		mon.logger.Log("select", os.Errno(errno))
+		return
+	}
+
+	for _, f := range files {
+		if fdIsSet(&rd, f.Fd()) {
+			mon.readyCh <- ready{r, f}
+		}
+	}
+}
+
+func (mon *monitor) increfUnit(id string) unit {
+	ut := mon.units[id]
+	if ut == nil {
+		ut = mon.newUnit(id)
+		if ut == nil {
+			return nil
+		}
+		mon.units[id] = ut
+	}
+	mon.refs[id]++
+	return ut
+}
+
+func (mon *monitor) decrefUnit(id string) {
+	ut := mon.units[id]
+	if ut == nil {
+		return
+	}
+	mon.refs[id]--
+	if mon.refs[id] < 1 {
+		ut.stop()
+		mon.units[id] = nil, false
+		mon.refs[id] = 0, false
+	}
+}
+
+func (mon *monitor) increfService(id string) *service {
+	sv, ok := mon.increfUnit(id).(*service)
+	if !ok {
+		mon.decrefUnit(id)
+	}
+	return sv
 }

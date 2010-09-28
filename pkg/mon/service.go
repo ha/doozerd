@@ -1,6 +1,7 @@
 package mon
 
 import (
+	"fmt"
 	"junta/store"
 	"junta/util"
 	"log"
@@ -35,6 +36,7 @@ type service struct {
 	lockCas      string
 	lockTaken    bool
 	restart      int
+	lfiles       []*os.File
 }
 
 func newService(id, name string, mon *monitor) *service {
@@ -52,8 +54,8 @@ func newService(id, name string, mon *monitor) *service {
 	return sv
 }
 
-func (sv *service) StartWithFds(fds []int) {
-	panic("implement me")
+func (sv *service) SetFiles(lfiles []*os.File) {
+	sv.lfiles = lfiles
 }
 
 func (sv *service) tryLock() {
@@ -92,8 +94,22 @@ func (sv *service) exec() {
 		goto error
 	}
 
+	files := []*os.File{os.Stdin, os.Stdout, os.Stderr}
+	env := os.Environ()
+	if sv.lfiles != nil {
+		nf := make([]*os.File, len(files)+len(sv.lfiles))
+		copy(nf, files)
+		copy(nf[len(files):], sv.lfiles)
+		files = nf
+
+		ne := make([]string, len(env)+1)
+		copy(ne, env)
+		ne[len(env)] = fmt.Sprintf("LISTEN_FDS=%d", len(sv.lfiles))
+		env = ne
+	}
+
 	sv.logger.Log("*** *** *** RUN *** *** ***")
-	sv.pid, err = os.ForkExec(args[0], args, nil, "", nil)
+	sv.pid, err = os.ForkExec(args[0], args, env, "", files)
 	if err != nil {
 		goto error
 	}
