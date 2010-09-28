@@ -16,6 +16,11 @@ const (
 	oneSecond      = 1e9 // ns
 )
 
+const (
+	timerMatch = "/timer/**"
+)
+
+
 type Tick struct {
 	Path string
 	At   int64
@@ -44,11 +49,12 @@ func New(name string, interval int64, st *store.Store) *Timer {
 		Name:   name,
 		C:      make(chan Tick),
 		events: make(chan store.Event),
+		lengths: make(chan length),
 		ticker: time.NewTicker(interval),
 	}
 
 	// Begin watching as timers come and go
-	st.Watch("/timer/**", t.events)
+	st.Watch(timerMatch, t.events)
 
 	go t.process()
 
