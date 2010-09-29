@@ -213,7 +213,7 @@ func (s *Store) process() {
 	logger := util.NewLogger("store")
 
 	ver := uint64(0)
-	values := root
+	values := emptyDir
 
 	for {
 		// Take any incoming requests and queue them up.

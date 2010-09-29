@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var root = node{v:"", ds:make(map[string]node), cas:Dir}
+var emptyDir = node{v:"", ds:make(map[string]node), cas:Dir}
 
 const ErrorPath = "/store/error"
 

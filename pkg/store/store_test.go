@@ -594,7 +594,7 @@ func TestSnapshotBad(t *testing.T) {
 	seqnPart := buf.String()
 
 	buf = bytes.NewBuffer([]byte{})
-	gob.NewEncoder(buf).Encode(root)
+	gob.NewEncoder(buf).Encode(emptyDir)
 	valPart := buf.String()
 	valPart = valPart[0:len(valPart)/2]
 
