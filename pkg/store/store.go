@@ -30,7 +30,7 @@ var waitRegexp = regexp.MustCompile(``)
 type Store struct {
 	applyCh chan apply
 	lookupCh chan *lookup
-	snapCh chan chan snap
+	snapCh chan chan state
 	watchCh chan watch
 	watches []watch
 	todo map[uint64]apply
@@ -48,7 +48,7 @@ type lookup struct {
 	cas string
 }
 
-type snap struct {
+type state struct {
 	ver uint64
 	root node
 }
@@ -67,7 +67,7 @@ func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		lookupCh: make(chan *lookup),
-		snapCh: make(chan chan snap),
+		snapCh: make(chan chan state),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
 		watches: []watch{},
@@ -226,7 +226,7 @@ func (s *Store) process() {
 			r.v, r.cas = values.getp(r.k)
 			r.ch <- 1
 		case ch := <-s.snapCh:
-			ch <- snap{ver, values}
+			ch <- state{ver, values}
 		case w := <-s.watchCh:
 			if w.stop > ver {
 				append(&s.watches, w)
@@ -321,7 +321,7 @@ func (s *Store) LookupDir(path string) (entries []string) {
 // Note that applying a snapshot does not send notifications.
 func (s *Store) Snapshot() (seqn uint64, mutation string) {
 	w := new(bytes.Buffer)
-	ch := make(chan snap)
+	ch := make(chan state)
 	s.snapCh <- ch
 	ss := <-ch
 	err := gob.NewEncoder(w).Encode(ss.ver)
