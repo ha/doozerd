@@ -318,9 +318,11 @@ func (s *Store) LookupDir(path string) (entries []string) {
 // Note that applying a snapshot does not send notifications.
 func (s *Store) Snapshot() (seqn uint64, mutation string) {
 	w := new(bytes.Buffer)
-	ch := make(chan state)
-	s.snapCh <- ch
-	ss := <-ch
+
+	// WARNING: Be sure to read the pointer value of s.state only once. If you
+	// need multiple accesses, copy the pointer first.
+	ss := s.state
+
 	err := gob.NewEncoder(w).Encode(ss.ver)
 	if err != nil {
 		panic(err)
