@@ -62,6 +62,22 @@ table {
     border-spacing: 0;
 }
 
+tr {
+    -webkit-transition-property: background;
+    -webkit-transition-duration: 350ms;
+    -webkit-transition-timing-function: ease-in-out;
+    -moz-transition-property: background;
+    -moz-transition-duration: 350ms;
+    -moz-transition-timing-function: ease-in-out;
+    transition-property: background;
+    transition-duration: 350ms;
+    transition-timing-function: ease-in-out;
+}
+
+tr.new {
+    background: #f7f787;
+}
+
 th {
     font-weight: normal;
     margin: 0;

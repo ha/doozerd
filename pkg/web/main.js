@@ -42,7 +42,7 @@ function apply(ev) {
   var basename = parts[parts.length - 1];
   var entry = dir.find('tr[name="'+basename+'"]');
   if (entry.length < 1) {
-    var tr = $('<tr>').attr('name', basename);
+    var tr = $('<tr class=new>').attr('name', basename);
     insert(dir.children('table').children('tbody'), tr);
     tr.append($('<th>').text(basename)).
       append('<td class=cas>').
@@ -52,6 +52,10 @@ function apply(ev) {
   }
   entry.children('td.cas').text('('+ev.Cas+')');
   entry.children('td.body').text(ev.Body);
+  entry.addClass('new');
+
+  // Kick off the transition in a bit.
+  setTimeout(function() { entry.removeClass('new') }, 550);
 }
 
 function time_interval(s) {
