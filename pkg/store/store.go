@@ -243,14 +243,13 @@ func (s *Store) process() {
 			var ev Event
 			values, ev = values.apply(t.seqn, t.mutation)
 			logger.Logf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
+			s.state = &state{ev.Seqn, values}
 			s.notify(ev)
 			for ver < ev.Seqn {
 				ver++
 				s.todo[ver] = apply{}, false
 			}
 		}
-
-		s.state = &state{ver, values}
 	}
 }
 
@@ -276,10 +275,9 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
 func (s *Store) Lookup(path string) (value []string, cas string) {
-	l := lookup{k:path, ch:make(chan int)}
-	s.lookupCh <- &l
-	<-l.ch
-	return l.v, l.cas
+	// WARNING: Be sure to read the pointer value of s.state only once. If you
+	// need multiple accesses, copy the pointer first.
+	return s.state.root.getp(path)
 }
 
 // Retrieves the body stored at `path` and returns it. If `path` is a directory

@@ -4,6 +4,7 @@ import (
 	"junta/assert"
 	"bytes"
 	"gob"
+	"strconv"
 	"testing"
 )
 
@@ -214,14 +215,17 @@ func TestLookupSyncSeveral(t *testing.T) {
 		chCas <- cas
 	}()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
-	s.Sync(1)
 	s.Apply(2, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(3, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(4, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(5, MustEncodeSet("/x", "b", Clobber))
-	s.Sync(5)
-	assert.Equal(t, []string{"a"}, <-chV)
-	assert.Equal(t, "1", <-chCas)
+	v := <-chV
+	assert.Equal(t, 1, len(v))
+	assert.T(t, "a" == v[0] || "b" == v[0])
+	n, err := strconv.Atoi(<-chCas)
+	assert.Equal(t, nil, err)
+	assert.T(t, n >= 1)
+
 	assert.Equal(t, []string{"b"}, <-chV)
 	assert.Equal(t, "5", <-chCas)
 	assert.Equal(t, []string{"b"}, <-chV)
@@ -266,9 +270,14 @@ func TestLookupSyncExtra(t *testing.T) {
 	s.Apply(5, MustEncodeSet("/x", "b", Clobber))
 
 	assert.Equal(t, []string{"c"}, <-chV)
-	assert.Equal(t, "8", <-chCas)
+	n, err := strconv.Atoi(<-chCas)
+	assert.Equal(t, nil, err)
+	assert.T(t, n >= 5)
+
 	assert.Equal(t, []string{"c"}, <-chV)
-	assert.Equal(t, "8", <-chCas)
+	n, err = strconv.Atoi(<-chCas)
+	assert.Equal(t, nil, err)
+	assert.T(t, n >= 5)
 }
 
 func TestApplyBadThenGood(t *testing.T) {
@@ -323,6 +332,7 @@ func TestLookupWithDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(2, MustEncodeSet("/y", "b", Clobber))
+	s.Sync(2)
 	dents, cas := s.Lookup("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"x", "y"}, dents)
@@ -882,6 +892,7 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 func TestLookupString(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
+	s.Sync(1)
 	assert.Equal(t, "a", s.LookupString("/x"))
 }
 
@@ -893,12 +904,14 @@ func TestLookupStringMissing(t *testing.T) {
 func TestLookupStringDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
+	s.Sync(1)
 	assert.Equal(t, "", s.LookupString("/x"))
 }
 
 func TestLookupDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
+	s.Sync(1)
 	assert.Equal(t, []string{"y"}, s.LookupDir("/x"))
 }
 
@@ -910,5 +923,6 @@ func TestLookupDirMissing(t *testing.T) {
 func TestLookupDirString(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
+	s.Sync(1)
 	assert.Equal(t, []string(nil), s.LookupDir("/x"))
 }
