@@ -29,7 +29,6 @@ var waitRegexp = regexp.MustCompile(``)
 
 type Store struct {
 	applyCh chan apply
-	lookupCh chan *lookup
 	snapCh chan chan state
 	watchCh chan watch
 	watches []watch
@@ -67,7 +66,6 @@ type watch struct {
 func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
-		lookupCh: make(chan *lookup),
 		snapCh: make(chan chan state),
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
@@ -224,9 +222,6 @@ func (s *Store) process() {
 			if a.seqn > ver {
 				s.todo[a.seqn] = a
 			}
-		case r := <-s.lookupCh:
-			r.v, r.cas = values.getp(r.k)
-			r.ch <- 1
 		case ch := <-s.snapCh:
 			ch <- state{ver, values}
 		case w := <-s.watchCh:
