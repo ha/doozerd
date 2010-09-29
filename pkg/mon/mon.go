@@ -56,7 +56,6 @@ type SetDeler interface {
 
 type monitor struct {
 	self, prefix string
-	host         string
 	st           *store.Store
 	cl           SetDeler
 	clock        chan unit
@@ -80,7 +79,6 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 	mon := &monitor{
 		self:   self,
 		prefix: prefix,
-		host:   os.Getenv("HOSTNAME"),
 		st:     st,
 		cl:     cl,
 		clock:  make(chan unit),

@@ -98,6 +98,7 @@ func main() {
 	seqn := uint64(0)
 	if *attachAddr == "" { // we are the only node in a new cluster
 		seqn = addPublicAddr(st, seqn + 1, self, *publishAddr)
+		seqn = addHostname(st, seqn + 1, self, os.Getenv("HOSTNAME"))
 		seqn = addMember(st, seqn + 1, self, *listenAddr)
 		seqn = claimSlot(st, seqn + 1, "1", self)
 		seqn = claimLeader(st, seqn + 1, self)
@@ -118,6 +119,12 @@ func main() {
 
 		path := prefix + "/junta/info/"+ self +"/public-addr"
 		_, err = cl.Set(path, *publishAddr, store.Clobber)
+		if err != nil {
+			panic(err)
+		}
+
+		path = prefix + "/junta/info/"+ self +"/hostname"
+		_, err = cl.Set(path, os.Getenv("HOSTNAME"), store.Clobber)
 		if err != nil {
 			panic(err)
 		}
@@ -179,6 +186,17 @@ func main() {
 func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
 	path := "/junta/info/"+ self +"/public-addr"
+	mx, err := store.EncodeSet(path, addr, store.Missing)
+	if err != nil {
+		panic(err)
+	}
+	st.Apply(seqn, mx)
+	return seqn
+}
+
+func addHostname(st *store.Store, seqn uint64, self, addr string) uint64 {
+	// TODO pull out path as a const
+	path := "/junta/info/"+ self +"/hostname"
 	mx, err := store.EncodeSet(path, addr, store.Missing)
 	if err != nil {
 		panic(err)

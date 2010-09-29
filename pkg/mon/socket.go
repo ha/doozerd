@@ -181,7 +181,6 @@ func (so *socket) dispatchLockEvent(ev store.Event) {
 	if ev.Body == so.self {
 		so.lockCas, so.lockTaken = ev.Cas, true
 		go so.setStatus("node", so.self)
-		go so.setStatus("host", so.mon.host)
 	} else {
 		so.lockCas, so.lockTaken = "", ev.Body != ""
 	}

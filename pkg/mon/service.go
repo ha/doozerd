@@ -225,7 +225,6 @@ func (sv *service) dispatchLockEvent(ev store.Event) {
 	if ev.Body == sv.self {
 		sv.lockCas, sv.lockTaken = ev.Cas, true
 		go sv.setStatus("node", sv.self)
-		go sv.setStatus("host", sv.mon.host)
 	} else {
 		sv.lockCas, sv.lockTaken = "", ev.Body != ""
 	}
