@@ -40,13 +40,6 @@ type apply struct {
 	mutation string
 }
 
-type lookup struct {
-	k string
-	ch chan int
-	v []string
-	cas string
-}
-
 type state struct {
 	ver uint64
 	root node
