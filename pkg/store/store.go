@@ -34,6 +34,7 @@ type Store struct {
 	watchCh chan watch
 	watches []watch
 	todo map[uint64]apply
+	state *state
 }
 
 type apply struct {
@@ -71,7 +72,9 @@ func New() *Store {
 		watchCh: make(chan watch),
 		todo: make(map[uint64]apply),
 		watches: []watch{},
+		state: &state{0, emptyDir},
 	}
+
 	go s.process()
 	return s
 }
@@ -212,10 +215,9 @@ func buffer(in, out chan Event) {
 func (s *Store) process() {
 	logger := util.NewLogger("store")
 
-	ver := uint64(0)
-	values := emptyDir
-
 	for {
+		ver, values := s.state.ver, s.state.root
+
 		// Take any incoming requests and queue them up.
 		select {
 		case a := <-s.applyCh:
@@ -247,6 +249,8 @@ func (s *Store) process() {
 				s.todo[ver] = apply{}, false
 			}
 		}
+
+		s.state = &state{ver, values}
 	}
 }
 
