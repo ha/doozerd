@@ -3,4 +3,10 @@ set -e
 make clean && make
 tput reset
 export HOSTNAME=`hostname`
-juntad -l 127.0.0.1:8046 -w 0.0.0.0:8080 foo
+
+if [ -n "$1" ]
+then cn="$1"
+else cn="dev"
+fi
+
+juntad -l 127.0.0.1:8046 -w 0.0.0.0:8080 "$cn"
