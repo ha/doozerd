@@ -106,6 +106,7 @@ func main() {
 		seqn = claimSlot(st, seqn + 1, "3", "")
 		seqn = claimSlot(st, seqn + 1, "4", "")
 		seqn = claimSlot(st, seqn + 1, "5", "")
+		seqn = addPing(st, seqn + 1, "pong")
 
 		cl, err = client.Dial(*listenAddr)
 		if err != nil {
@@ -228,6 +229,16 @@ func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
 func claimLeader(st *store.Store, seqn uint64, self string) uint64 {
 	// TODO pull out path as a const
 	mx, err := store.EncodeSet("/junta/leader", self, store.Missing)
+	if err != nil {
+		panic(err)
+	}
+	st.Apply(seqn, mx)
+	return seqn
+}
+
+func addPing(st *store.Store, seqn uint64, v string) uint64 {
+	// TODO pull out path as a const
+	mx, err := store.EncodeSet("/ping", v, store.Missing)
 	if err != nil {
 		panic(err)
 	}
