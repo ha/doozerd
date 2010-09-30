@@ -159,7 +159,7 @@ func (mon *monitor) newUnit(id string) unit {
 }
 
 func (mon *monitor) lookupParam(id, param string) string {
-	return mon.st.GetString(defDir + id + "/" + param)
+	return store.GetString(mon.st, defDir + id + "/" + param)
 }
 
 func (mon *monitor) setStatus(id, param, val string) {
