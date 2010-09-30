@@ -20,6 +20,10 @@ type node struct {
 	ds map[string]node
 }
 
+func (n node) String() string {
+	return "<node>"
+}
+
 func (n node) readdir() []string {
 	names := make([]string, len(n.ds))
 	i := 0

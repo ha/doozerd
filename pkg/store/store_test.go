@@ -897,3 +897,29 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
+
+func TestSyncPathFuture(t *testing.T) {
+	st := New()
+
+	go func() {
+		st.Apply(1, MustEncodeSet("/x", "a", ""))
+		st.Apply(2, MustEncodeSet("/y", "b", ""))
+		st.Apply(3, MustEncodeSet("/y", "c", ""))
+		st.Apply(4, MustEncodeSet("/z", "d", ""))
+	}()
+
+	g := st.SyncPath("/y")
+	got := GetString(g, "/y")
+	assert.Equal(t, "b", got)
+}
+
+func TestSyncPathImmediate(t *testing.T) {
+	st := New()
+
+	st.Apply(1, MustEncodeSet("/x", "a", ""))
+	st.Apply(2, MustEncodeSet("/y", "b", ""))
+
+	g := st.SyncPath("/y")
+	got := GetString(g, "/y")
+	assert.Equal(t, "b", got)
+}

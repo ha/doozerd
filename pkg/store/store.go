@@ -341,3 +341,26 @@ func (st *Store) Sync(seqn uint64) {
 	st.Wait(seqn, ch)
 	<-ch
 }
+
+// Returns an immutable copy of `st` in which `path` exists as a regular file
+// (not a dir). Waits for `path` to be set, if necessary.
+func (st *Store) SyncPath(path string) Getter {
+	evs := make(chan Event)
+	defer close(evs)
+
+	st.Watch(path, evs)
+
+	g := st.state.root // TODO make this use a public method
+	_, cas := g.Get(path)
+	if cas != Dir && cas != Missing {
+		return g
+	}
+
+	for ev := range evs {
+		if ev.IsSet() {
+			return ev
+		}
+	}
+
+	panic("unreachable")
+}

@@ -268,22 +268,7 @@ func (sv *Server) Sget(path string) (body string, err os.Error) {
 		return "", err
 	}
 
-	evs := make(chan store.Event)
-	defer close(evs)
-	sv.St.Watch(shortPath, evs)
-
-	parts, cas := sv.St.Get(shortPath)
-	if cas != store.Dir && cas != store.Missing {
-		return parts[0], nil
-	}
-
-	for ev := range evs {
-		if ev.IsSet() {
-			return ev.Body, nil
-		}
-	}
-
-	panic("unreachable")
+	return store.GetString(sv.St.SyncPath(shortPath), shortPath), nil
 }
 
 // Repeatedly propose nop values until a successful read from `done`.
