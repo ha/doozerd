@@ -27,6 +27,7 @@ func init() {
 
 func send(ws *websocket.Conn, evs chan store.Event, logger *log.Logger) {
 	for ev := range evs {
+		ev.Getter = nil // don't marshal the entire snapshot
 		logger.Log("sending", ev)
 		b, err := json.Marshal(ev)
 		if err != nil {
