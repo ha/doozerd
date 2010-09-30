@@ -43,7 +43,7 @@ a {
 }
 
 dl {
-    margin: 0;
+    margin: 0 0 0 .5em;
     padding: 0;
 }
 
@@ -81,7 +81,7 @@ tr.new {
 th {
     font-weight: normal;
     margin: 0;
-    padding: 0 1em 0 0;
+    padding: 0 .5em;
     text-align: left;
 }
 
@@ -91,7 +91,7 @@ td.eq:after {
 
 td {
     margin: 0;
-    padding: 0 1em 0 0;
+    padding: 0 .5em;
 }
 
 td.cas {
