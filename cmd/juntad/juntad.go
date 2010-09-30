@@ -25,6 +25,7 @@ var (
 	listenAddr *string = flag.String("l", "", "The address to bind to. Must correspond to a single public interface.")
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 	webAddr *string = flag.String("w", "", "Serve web requests on this address.")
+	clusterName *string = flag.String("c", "local", "The non-empty cluster name.")
 )
 
 func activate(st *store.Store, self, prefix string, c *client.Client) {
@@ -56,14 +57,7 @@ func main() {
 	flag.Parse()
 	flag.Usage = Usage
 
-	if len(flag.Args()) < 1 {
-		logger.Log("require a cluster name")
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	clusterName := flag.Arg(0)
-	prefix := "/j/" + clusterName
+	prefix := "/j/" + *clusterName
 
 	if *listenAddr == "" {
 		logger.Log("require a listen address")
@@ -169,7 +163,7 @@ func main() {
 
 	if webListener != nil {
 		web.Store = st
-		web.MainInfo.ClusterName = clusterName
+		web.MainInfo.ClusterName = *clusterName
 		// http handlers are installed in the init function of junta/web.
 		go http.Serve(webListener, nil)
 	}
