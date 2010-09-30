@@ -269,12 +269,16 @@ func TestGetSyncExtra(t *testing.T) {
 	// do 5 last
 	s.Apply(5, MustEncodeSet("/x", "b", Clobber))
 
-	assert.Equal(t, []string{"c"}, <-chV)
+	v := <-chV
+	assert.Equal(t, 1, len(v))
+	assert.T(t, "b" == v[0] || "c" == v[0])
 	n, err := strconv.Atoi(<-chCas)
 	assert.Equal(t, nil, err)
 	assert.T(t, n >= 5)
 
-	assert.Equal(t, []string{"c"}, <-chV)
+	v = <-chV
+	assert.Equal(t, 1, len(v))
+	assert.T(t, "b" == v[0] || "c" == v[0])
 	n, err = strconv.Atoi(<-chCas)
 	assert.Equal(t, nil, err)
 	assert.T(t, n >= 5)
