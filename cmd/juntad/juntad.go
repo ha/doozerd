@@ -4,16 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"http"
-	"net"
-	"os"
-
-	"junta/paxos"
+	"junta/client"
 	"junta/mon"
+	"junta/paxos"
+	"junta/server"
 	"junta/store"
 	"junta/util"
-	"junta/client"
-	"junta/server"
 	"junta/web"
+	"net"
+	"os"
+	"strings"
 )
 
 const (
