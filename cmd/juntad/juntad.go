@@ -22,9 +22,10 @@ const (
 
 // Flags
 var (
-	listenAddr *string = flag.String("l", "", "The address to bind to. Must correspond to a single public interface.")
+	listenAddr *string = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
+	publishAddr *string = flag.String("L", "", "The address puslished for remote clients (default is listen address)")
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
-	webAddr *string = flag.String("w", "", "Serve web requests on this address.")
+	webAddr *string = flag.String("w", ":8080", "Serve web requests on this address.")
 	clusterName *string = flag.String("c", "local", "The non-empty cluster name.")
 )
 
@@ -65,6 +66,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *publishAddr == "" {
+		publishAddr = listenAddr
+	}
+
 	var webListener net.Listener
 	if *webAddr != "" {
 		wl, err := net.Listen("tcp", *webAddr)
@@ -79,6 +84,13 @@ func main() {
 		panic(err)
 	}
 
+	publishParts := strings.Split(*publishAddr, ":", 2)
+	if len(publishParts) < 2 && publishParts[0] == "" {
+		logger.Log("invalid publish address")
+		flag.Usage()
+		os.Exit(1)
+	}
+
 	outs := make(paxos.ChanPutCloserTo)
 
 	var cl *client.Client
@@ -87,7 +99,7 @@ func main() {
 	seqn := uint64(0)
 	if *attachAddr == "" { // we are the only node in a new cluster
 		seqn = addPublicAddr(st, seqn + 1, self, *listenAddr)
-		seqn = addHostname(st, seqn + 1, self, os.Getenv("HOSTNAME"))
+		seqn = addHostname(st, seqn + 1, self, publishParts[0])
 		seqn = addMember(st, seqn + 1, self, *listenAddr)
 		seqn = claimSlot(st, seqn + 1, "1", self)
 		seqn = claimLeader(st, seqn + 1, self)
