@@ -333,6 +333,9 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 
 // Ensures that the application of mutation at `seqn` happens before the call
 // to `Sync` returns.
+//
+// See http://golang.org/doc/go_mem.html for the meaning of "happens before" in
+// Go.
 func (st *Store) Sync(seqn uint64) {
 	ch := make(chan Event)
 	st.Wait(seqn, ch)
