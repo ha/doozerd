@@ -60,6 +60,11 @@ var Splits = [][]string{
 	[]string{"/x/y/z", "x", "y", "z"},
 }
 
+func clearGetter(ev Event) Event {
+	ev.Getter = nil
+	return ev
+}
+
 func TestSplit(t *testing.T) {
 	for _, vals := range Splits {
 		path, exp := vals[0], vals[1:]
@@ -404,10 +409,10 @@ func TestWatchSet(t *testing.T) {
 	s.Apply(3, mut3)
 	s.Sync(3)
 
-	expa := <-ch
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, expa)
-	expb := <-ch
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, expb)
+	expa := clearGetter(<-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, expa)
+	expb := clearGetter(<-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, expb)
 }
 
 func TestWatchSetOutOfOrder(t *testing.T) {
@@ -425,10 +430,10 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 	s.Apply(3, mut3)
 	s.Sync(3)
 
-	expa := <-ch
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, expa)
-	expb := <-ch
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, expb)
+	expa := clearGetter(<-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, expa)
+	expb := clearGetter(<-ch)
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, expb)
 }
 
 func TestWatchDel(t *testing.T) {
@@ -451,10 +456,10 @@ func TestWatchDel(t *testing.T) {
 	s.Apply(6, mut6)
 	s.Sync(6)
 
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
-	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil}, <-ch)
-	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchAdd(t *testing.T) {
@@ -471,9 +476,9 @@ func TestWatchAdd(t *testing.T) {
 	s.Apply(3, mut3)
 	s.Sync(3)
 
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
-	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchAddOutOfOrder(t *testing.T) {
@@ -491,9 +496,9 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 	s.Apply(2, mut2)
 	s.Sync(2)
 
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
-	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchRem(t *testing.T) {
@@ -516,13 +521,13 @@ func TestWatchRem(t *testing.T) {
 	s.Apply(6, mut6)
 	s.Sync(6)
 
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
-	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil, nil}, clearGetter(<-ch))
 
-	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil}, <-ch)
-	assert.Equal(t, Event{5, "/y", "", Missing, mut5, nil}, <-ch)
-	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil}, <-ch)
+	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{5, "/y", "", Missing, mut5, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchSetDirParents(t *testing.T) {
@@ -535,7 +540,7 @@ func TestWatchSetDirParents(t *testing.T) {
 	s.Apply(1, mut1)
 	s.Sync(1)
 
-	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchDelDirParents(t *testing.T) {
@@ -551,8 +556,8 @@ func TestWatchDelDirParents(t *testing.T) {
 	s.Apply(2, mut2)
 	s.Sync(2)
 
-	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil}, <-ch)
-	assert.Equal(t, Event{2, "/x/y/z", "", Missing, mut2, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x/y/z", "", Missing, mut2, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchApply(t *testing.T) {
@@ -575,12 +580,12 @@ func TestWatchApply(t *testing.T) {
 	s.Apply(6, mut6)
 	s.Sync(6)
 
-	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil}, <-ch)
-	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil}, <-ch)
-	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil}, <-ch)
-	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil}, <-ch)
-	assert.Equal(t, Event{5, "/y", "", Missing, mut5, nil}, <-ch)
-	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil}, <-ch)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{3, "/y", "c", "3", mut3, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{4, "/x", "", Missing, mut4, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{5, "/y", "", Missing, mut5, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil, nil}, clearGetter(<-ch))
 }
 
 func TestSnapshotApply(t *testing.T) {

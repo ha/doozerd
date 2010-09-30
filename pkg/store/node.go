@@ -49,7 +49,7 @@ func (n node) get(parts []string) ([]string, string) {
 	panic("unreachable")
 }
 
-func (n node) getp(path string) ([]string, string) {
+func (n node) Get(path string) ([]string, string) {
 	if err := checkPath(path); err != nil {
 		return []string{""}, Missing
 	}
@@ -98,6 +98,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 				ev.Seqn = seqn + 1
 				rep = n
 			}
+			ev.Getter = rep
 			return
 		}
 	}
@@ -105,6 +106,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 	if mut == Nop {
 		ev.Cas = ""
 		rep = n
+		ev.Getter = rep
 		return
 	}
 
@@ -126,7 +128,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 	}
 
 	if ev.Err == nil {
-		_, curCas := n.getp(ev.Path)
+		_, curCas := n.Get(ev.Path)
 		if cas != Clobber && cas != curCas {
 			ev.Err = ErrCasMismatch
 		} else if curCas == Dir {
@@ -143,5 +145,6 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 	}
 
 	rep = n.setp(ev.Path, ev.Body, ev.Cas, keep)
+	ev.Getter = rep
 	return
 }

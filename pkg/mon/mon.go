@@ -96,7 +96,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 			v, cas := st.Get(p)
 			if cas != store.Dir && cas != store.Missing {
 				mon.logger.Log("injecting", id)
-				evs <- store.Event{0, p, v[0], cas, "", nil}
+				evs <- store.Event{0, p, v[0], cas, "", nil, nil}
 			}
 		}
 	}()

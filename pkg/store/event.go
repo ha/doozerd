@@ -17,6 +17,9 @@ type Event struct {
 	Mut   string
 
 	Err   os.Error
+
+	// retrieves values as defined at `Seqn`
+	Getter
 }
 
 func (e Event) Desc() string {

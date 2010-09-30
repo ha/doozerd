@@ -261,7 +261,7 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 func (s *Store) Get(path string) (value []string, cas string) {
 	// WARNING: Be sure to read the pointer value of s.state only once. If you
 	// need multiple accesses, copy the pointer first.
-	return s.state.root.getp(path)
+	return s.state.root.Get(path)
 }
 
 // Encodes the entire storage state, including the current sequence number, as

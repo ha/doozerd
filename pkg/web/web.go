@@ -74,7 +74,7 @@ func mainCss(c *http.Conn, r *http.Request) {
 func walk(path string, st *store.Store, ch chan store.Event) {
 	v, cas := st.Get(path)
 	if cas != store.Dir {
-		ch <- store.Event{0, path, v[0], cas, "", nil}
+		ch <- store.Event{0, path, v[0], cas, "", nil, nil}
 		return
 	}
 	if path == "/" {

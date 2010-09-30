@@ -16,7 +16,7 @@ func TestNodeApplySet(t *testing.T) {
 	n, e := emptyDir.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{k:node{v, cas, nil}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, p, v, cas, m, nil}, e)
+	assert.Equal(t, Event{seqn, p, v, cas, m, nil, n}, e)
 }
 
 func TestNodeApplyDel(t *testing.T) {
@@ -26,7 +26,7 @@ func TestNodeApplyDel(t *testing.T) {
 	m := MustEncodeDel(p, cas)
 	n, e := r.apply(seqn, m)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{seqn, p, "", Missing, m, nil}, e)
+	assert.Equal(t, Event{seqn, p, "", Missing, m, nil, n}, e)
 }
 
 func TestNodeApplyNop(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNodeApplyNop(t *testing.T) {
 	m := Nop
 	n, e := emptyDir.apply(seqn, m)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{seqn, "", "", "", m, nil}, e)
+	assert.Equal(t, Event{seqn, "", "", "", m, nil, n}, e)
 }
 
 func TestNodeApplyBadMutation(t *testing.T) {
@@ -43,7 +43,7 @@ func TestNodeApplyBadMutation(t *testing.T) {
 	n, e := emptyDir.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{ErrBadMutation.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, ErrBadMutation.String(), cas, m, ErrBadMutation}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, ErrBadMutation.String(), cas, m, ErrBadMutation, n}, e)
 }
 
 func TestNodeApplyBadInstruction(t *testing.T) {
@@ -52,7 +52,7 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 	n, e := emptyDir.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{ErrBadPath.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, ErrBadPath.String(), cas, m, ErrBadPath}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, ErrBadPath.String(), cas, m, ErrBadPath, n}, e)
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {
@@ -62,7 +62,7 @@ func TestNodeApplyCasMismatch(t *testing.T) {
 	n, e := emptyDir.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{ErrCasMismatch.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, ErrCasMismatch.String(), cas, m, ErrCasMismatch}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, ErrCasMismatch.String(), cas, m, ErrCasMismatch, n}, e)
 }
 
 func TestNodeSnapshotApply(t *testing.T) {
@@ -77,7 +77,7 @@ func TestNodeSnapshotApply(t *testing.T) {
 	n, e := emptyDir.apply(1, m)
 	exp := node{"", Dir, map[string]node{"x":node{"b", "2", nil}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, "", "", "", m, nil}, e)
+	assert.Equal(t, Event{2, "", "", "", m, nil, n}, e)
 }
 
 func TestNodeSnapshotBad(t *testing.T) {
@@ -93,7 +93,7 @@ func TestNodeSnapshotBad(t *testing.T) {
 	m := seqnPart+valPart
 	n, e := emptyDir.apply(1, m)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{2, "", "", "", m, io.ErrUnexpectedEOF}, e)
+	assert.Equal(t, Event{2, "", "", "", m, io.ErrUnexpectedEOF, n}, e)
 }
 
 func TestNodeNotADirectory(t *testing.T) {
@@ -102,7 +102,7 @@ func TestNodeNotADirectory(t *testing.T) {
 	n, e := r.apply(2, m)
 	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR}, e)
+	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR, n}, e)
 }
 
 func TestNodeNotADirectoryDeeper(t *testing.T) {
@@ -111,7 +111,7 @@ func TestNodeNotADirectoryDeeper(t *testing.T) {
 	n, e := r.apply(2, m)
 	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR}, e)
+	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR, n}, e)
 }
 
 func TestNodeIsADirectory(t *testing.T) {
@@ -120,5 +120,5 @@ func TestNodeIsADirectory(t *testing.T) {
 	n, e := r.apply(2, m)
 	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.EISDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, ErrorPath, os.EISDIR.String(), "2", m, os.EISDIR}, e)
+	assert.Equal(t, Event{2, ErrorPath, os.EISDIR.String(), "2", m, os.EISDIR, n}, e)
 }
