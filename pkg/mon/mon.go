@@ -91,7 +91,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 	st.Watch(ctlKey+"/*", evs)
 	st.Watch(lockKey+"/*", evs)
 	go func() {
-		for _, id := range st.GetDir(ctlKey) {
+		for _, id := range store.GetDir(st, ctlKey) {
 			p := ctlDir + id
 			v, cas := st.Get(p)
 			if cas != store.Dir && cas != store.Missing {

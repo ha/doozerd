@@ -892,22 +892,3 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
-
-func TestGetDir(t *testing.T) {
-	s := New()
-	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
-	s.Sync(1)
-	assert.Equal(t, []string{"y"}, s.GetDir("/x"))
-}
-
-func TestGetDirMissing(t *testing.T) {
-	s := New()
-	assert.Equal(t, []string(nil), s.GetDir("/x"))
-}
-
-func TestGetDirString(t *testing.T) {
-	s := New()
-	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
-	s.Sync(1)
-	assert.Equal(t, []string(nil), s.GetDir("/x"))
-}

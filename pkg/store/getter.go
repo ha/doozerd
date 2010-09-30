@@ -20,3 +20,17 @@ func GetString(g Getter, path string) (body string) {
 	}
 	return v[0]
 }
+
+// Returns a list of entries in `g` in the directory at `path`. If `path` is
+// not a directory, returns an empty slice.
+//
+// Note, with this function it is impossible to distinguish between a string
+// stored at `path` and a missing entry. If you need to tell the difference,
+// use `g.Get`.
+func GetDir(g Getter, path string) (entries []string) {
+	v, cas := g.Get(path)
+	if cas != Dir {
+		return nil
+	}
+	return v
+}
