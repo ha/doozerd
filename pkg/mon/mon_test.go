@@ -63,8 +63,6 @@ func TestRunOne(t *testing.T) {
 	exp = store.MustEncodeSet(p+statusDir+"a.service/node", "a", store.Clobber)
 	assert.Equal(t, exp, <-cl)
 
-	exp = store.MustEncodeSet(p+statusDir+"a.service/host", os.Getenv("HOSTNAME"), store.Clobber)
-	assert.Equal(t, exp, <-cl)
 	exp = store.MustEncodeSet(p+statusDir+"a.service/status", "up", store.Clobber)
 	assert.Equal(t, exp, <-cl)
 	exp = store.MustEncodeDel(p+statusDir+"a.service/reason", store.Clobber)
