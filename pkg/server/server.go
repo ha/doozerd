@@ -263,11 +263,16 @@ func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {
 }
 
 func (sv *Server) Sget(path string) (body string, err os.Error) {
+	shortPath, err := sv.checkPath(path)
+	if err != nil {
+		return "", err
+	}
+
 	evs := make(chan store.Event)
 	defer close(evs)
-	sv.St.Watch(path, evs)
+	sv.St.Watch(shortPath, evs)
 
-	parts, cas := sv.St.Lookup(path)
+	parts, cas := sv.St.Lookup(shortPath)
 	if cas != store.Dir && cas != store.Missing {
 		return parts[0], nil
 	}
