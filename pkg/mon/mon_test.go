@@ -78,3 +78,15 @@ func TestRunOne(t *testing.T) {
 	exp = store.MustEncodeSet(p+statusDir+"a.service/status", "down", store.Clobber)
 	assert.Equal(t, exp, <-cl)
 }
+
+func TestSplitIdSimple(t *testing.T) {
+	name, ext := splitId("a.service")
+	assert.Equal(t, "a", name)
+	assert.Equal(t, ".service", ext)
+}
+
+func TestSplitIdWithDots(t *testing.T) {
+	name, ext := splitId("foo.heroku.com.service")
+	assert.Equal(t, "foo.heroku.com", name)
+	assert.Equal(t, ".service", ext)
+}

@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -67,11 +66,9 @@ type monitor struct {
 }
 
 func splitId(id string) (name, ext string) {
-	parts := strings.Split(id, ".", 2)
-	if len(parts) != 2 {
-		return "", ""
-	}
-	return parts[0], parts[1]
+	ext = path.Ext(id)
+	name = id[0:len(id)-len(ext)]
+	return
 }
 
 func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
@@ -153,9 +150,9 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 func (mon *monitor) newUnit(id string) unit {
 	name, ext := splitId(id)
 	switch ext {
-	case "service":
+	case ".service":
 		return newService(id, name, mon)
-	case "socket":
+	case ".socket":
 		return newSocket(id, name, mon)
 	}
 	return nil
