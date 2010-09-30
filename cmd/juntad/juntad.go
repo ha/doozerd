@@ -23,7 +23,6 @@ const (
 // Flags
 var (
 	listenAddr *string = flag.String("l", "", "The address to bind to. Must correspond to a single public interface.")
-	publishAddr *string = flag.String("p", "", "Address to publish in junta for client connections.")
 	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
 	webAddr *string = flag.String("w", "", "Serve web requests on this address.")
 )
@@ -72,10 +71,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if *publishAddr == "" {
-		*publishAddr = *listenAddr
-	}
-
 	var webListener net.Listener
 	if *webAddr != "" {
 		wl, err := net.Listen("tcp", *webAddr)
@@ -97,7 +92,7 @@ func main() {
 	st := store.New()
 	seqn := uint64(0)
 	if *attachAddr == "" { // we are the only node in a new cluster
-		seqn = addPublicAddr(st, seqn + 1, self, *publishAddr)
+		seqn = addPublicAddr(st, seqn + 1, self, *listenAddr)
 		seqn = addHostname(st, seqn + 1, self, os.Getenv("HOSTNAME"))
 		seqn = addMember(st, seqn + 1, self, *listenAddr)
 		seqn = claimSlot(st, seqn + 1, "1", self)
@@ -119,7 +114,7 @@ func main() {
 		}
 
 		path := prefix + "/junta/info/"+ self +"/public-addr"
-		_, err = cl.Set(path, *publishAddr, store.Clobber)
+		_, err = cl.Set(path, *listenAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
