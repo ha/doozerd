@@ -262,7 +262,7 @@ func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {
 	return
 }
 
-func (sv *Server) WaitForPathSet(path string) (body string, err os.Error) {
+func (sv *Server) Sget(path string) (body string, err os.Error) {
 	evs := make(chan store.Event)
 	defer close(evs)
 	sv.St.Watch(path, evs)
@@ -369,14 +369,14 @@ func (c *conn) serve() {
 				rlogger.Logf("good")
 				pc.SendResponse(rid, "true")
 			}
-		case "wait-for-path-set": // TODO this is for demo purposes only
+		case "sget":
 			if len(parts) != 2 {
-				rlogger.Logf("invalid wait-for-path-set command: %v", parts)
+				rlogger.Logf("invalid sget command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
-			rlogger.Logf("wait-for-path-set %q", parts[1])
-			body, err := c.s.WaitForPathSet(parts[1])
+			rlogger.Logf("sget %q", parts[1])
+			body, err := c.s.Sget(parts[1])
 			if err != nil {
 				rlogger.Logf("bad: %s", err)
 				pc.SendError(rid, err.String())
