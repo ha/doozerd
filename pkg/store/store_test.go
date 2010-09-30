@@ -138,28 +138,28 @@ func TestDecodeBadMutations(t *testing.T) {
 	}
 }
 
-func TestLookupMissing(t *testing.T) {
+func TestGetMissing(t *testing.T) {
 	s := New()
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v)
 }
 
-func TestLookup(t *testing.T) {
+func TestGet(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Sync(1)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, []string{"a"}, v)
 }
 
-func TestLookupDeleted(t *testing.T) {
+func TestGetDeleted(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(2, MustEncodeDel("/x", Clobber))
 	s.Sync(2)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v)
 }
@@ -169,18 +169,18 @@ func TestApplyInOrder(t *testing.T) {
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s.Sync(2)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
 
-func TestLookupSync(t *testing.T) {
+func TestGetSync(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
 	s := New()
 	go func() {
 		s.Sync(5)
-		v, cas := s.Lookup("/x")
+		v, cas := s.Get("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -194,23 +194,23 @@ func TestLookupSync(t *testing.T) {
 	assert.Equal(t, "5", <-chCas)
 }
 
-func TestLookupSyncSeveral(t *testing.T) {
+func TestGetSyncSeveral(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
 	s := New()
 	go func() {
 		s.Sync(0)
-		v, cas := s.Lookup("/x")
+		v, cas := s.Get("/x")
 		chV <- v
 		chCas <- cas
 
 		s.Sync(5)
-		v, cas = s.Lookup("/x")
+		v, cas = s.Get("/x")
 		chV <- v
 		chCas <- cas
 
 		s.Sync(0)
-		v, cas = s.Lookup("/x")
+		v, cas = s.Get("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -232,24 +232,24 @@ func TestLookupSyncSeveral(t *testing.T) {
 	assert.Equal(t, "5", <-chCas)
 }
 
-func TestLookupSyncExtra(t *testing.T) {
+func TestGetSyncExtra(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
 	s := New()
 
 	go func() {
 		s.Sync(0)
-		v, cas := s.Lookup("/x")
+		v, cas := s.Get("/x")
 		chV <- v
 		chCas <- cas
 
 		s.Sync(5)
-		v, cas = s.Lookup("/x")
+		v, cas = s.Get("/x")
 		chV <- v
 		chCas <- cas
 
 		s.Sync(0)
-		v, cas = s.Lookup("/x")
+		v, cas = s.Get("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -285,7 +285,7 @@ func TestApplyBadThenGood(t *testing.T) {
 	s.Apply(1, "foo") // bad mutation
 	s.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s.Sync(2)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
@@ -296,7 +296,7 @@ func TestApplyOutOfOrder(t *testing.T) {
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 
 	s.Sync(2)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
@@ -306,7 +306,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(1, MustEncodeSet("/x", "b", Clobber))
 	s.Sync(1)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, []string{"a"}, v)
 
@@ -320,7 +320,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	s.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	s.Apply(1, MustEncodeSet("/x", "c", Clobber))
 	s.Sync(1)
-	v, cas := s.Lookup("/x")
+	v, cas := s.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 
@@ -328,12 +328,12 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	assert.Equal(t, 0, len(s.todo))
 }
 
-func TestLookupWithDir(t *testing.T) {
+func TestGetWithDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Apply(2, MustEncodeSet("/y", "b", Clobber))
 	s.Sync(2)
-	dents, cas := s.Lookup("/")
+	dents, cas := s.Get("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"x", "y"}, dents)
 }
@@ -344,19 +344,19 @@ func TestDirParents(t *testing.T) {
 	s.Apply(1, MustEncodeSet("/x/y/z", "a", Clobber))
 	s.Sync(1)
 
-	dents, cas := s.Lookup("/")
+	dents, cas := s.Get("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"x"}, dents)
 
-	dents, cas = s.Lookup("/x")
+	dents, cas = s.Get("/x")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"y"}, dents)
 
-	dents, cas = s.Lookup("/x/y")
+	dents, cas = s.Get("/x/y")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"z"}, dents)
 
-	v, cas := s.Lookup("/x/y/z")
+	v, cas := s.Get("/x/y/z")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, []string{"a"}, v)
 }
@@ -369,19 +369,19 @@ func TestDelDirParents(t *testing.T) {
 	s.Apply(2, MustEncodeDel("/x/y/z", Clobber))
 	s.Sync(2)
 
-	v, cas := s.Lookup("/")
+	v, cas := s.Get("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{""}, v, "lookup /")
 
-	v, cas = s.Lookup("/x")
+	v, cas = s.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v, "lookup /x")
 
-	v, cas = s.Lookup("/x/y")
+	v, cas = s.Get("/x/y")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v, "lookup /x/y")
 
-	v, cas = s.Lookup("/x/y/z")
+	v, cas = s.Get("/x/y/z")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v, "lookup /x/y/z")
 }
@@ -593,7 +593,7 @@ func TestSnapshotApply(t *testing.T) {
 	s2.Apply(1, snap)
 	s2.Sync(1)
 
-	v, cas := s2.Lookup("/x")
+	v, cas := s2.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
@@ -628,25 +628,25 @@ func TestSnapshotSeqn(t *testing.T) {
 	s2 := New()
 	s2.Apply(1, snap)
 	s2.Sync(1)
-	v, cas := s2.Lookup("/x")
+	v, cas := s2.Get("/x")
 	assert.Equal(t, "2", cas, "snap")
 	assert.Equal(t, []string{"b"}, v, "snap")
 
 	s2.Apply(1, MustEncodeSet("/x", "x", Clobber))
 	s2.Sync(1)
-	v, cas = s2.Lookup("/x")
+	v, cas = s2.Get("/x")
 	assert.Equal(t, "2", cas, "x")
 	assert.Equal(t, []string{"b"}, v, "x")
 
 	s2.Apply(2, MustEncodeSet("/x", "y", Clobber))
 	s2.Sync(2)
-	v, cas = s2.Lookup("/x")
+	v, cas = s2.Get("/x")
 	assert.Equal(t, "2", cas, "y")
 	assert.Equal(t, []string{"b"}, v, "y")
 
 	s2.Apply(3, MustEncodeSet("/x", "z", Clobber))
 	s2.Sync(3)
-	v, cas = s2.Lookup("/x")
+	v, cas = s2.Get("/x")
 	assert.Equal(t, "3", cas, "z")
 	assert.Equal(t, []string{"z"}, v, "z")
 }
@@ -684,7 +684,7 @@ func TestSnapshotOutOfOrder(t *testing.T) {
 	s2.Apply(1, snap)
 	s2.Sync(3)
 
-	body, cas := s2.Lookup("/x")
+	body, cas := s2.Get("/x")
 	assert.Equal(t, []string{"c"}, body)
 	assert.Equal(t, "3", cas)
 
@@ -713,7 +713,7 @@ func TestSnapshotSync(t *testing.T) {
 	s2.Apply(1, snap)
 	s2.Sync(1)
 
-	v, cas := s2.Lookup("/x")
+	v, cas := s2.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
@@ -889,40 +889,40 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
 
-func TestLookupString(t *testing.T) {
+func TestGetString(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Sync(1)
-	assert.Equal(t, "a", s.LookupString("/x"))
+	assert.Equal(t, "a", s.GetString("/x"))
 }
 
-func TestLookupStringMissing(t *testing.T) {
+func TestGetStringMissing(t *testing.T) {
 	s := New()
-	assert.Equal(t, "", s.LookupString("/x"))
+	assert.Equal(t, "", s.GetString("/x"))
 }
 
-func TestLookupStringDir(t *testing.T) {
-	s := New()
-	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
-	s.Sync(1)
-	assert.Equal(t, "", s.LookupString("/x"))
-}
-
-func TestLookupDir(t *testing.T) {
+func TestGetStringDir(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
 	s.Sync(1)
-	assert.Equal(t, []string{"y"}, s.LookupDir("/x"))
+	assert.Equal(t, "", s.GetString("/x"))
 }
 
-func TestLookupDirMissing(t *testing.T) {
+func TestGetDir(t *testing.T) {
 	s := New()
-	assert.Equal(t, []string(nil), s.LookupDir("/x"))
+	s.Apply(1, MustEncodeSet("/x/y", "a", Clobber))
+	s.Sync(1)
+	assert.Equal(t, []string{"y"}, s.GetDir("/x"))
 }
 
-func TestLookupDirString(t *testing.T) {
+func TestGetDirMissing(t *testing.T) {
+	s := New()
+	assert.Equal(t, []string(nil), s.GetDir("/x"))
+}
+
+func TestGetDirString(t *testing.T) {
 	s := New()
 	s.Apply(1, MustEncodeSet("/x", "a", Clobber))
 	s.Sync(1)
-	assert.Equal(t, []string(nil), s.LookupDir("/x"))
+	assert.Equal(t, []string(nil), s.GetDir("/x"))
 }

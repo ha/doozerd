@@ -258,7 +258,7 @@ func (s *Store) Apply(seqn uint64, mutation string) {
 // entries.
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
-func (s *Store) Lookup(path string) (value []string, cas string) {
+func (s *Store) Get(path string) (value []string, cas string) {
 	// WARNING: Be sure to read the pointer value of s.state only once. If you
 	// need multiple accesses, copy the pointer first.
 	return s.state.root.getp(path)
@@ -269,12 +269,12 @@ func (s *Store) Lookup(path string) (value []string, cas string) {
 //
 // Note, with this function it is impossible to distinguish between an empty
 // string stored at `path`, a missing entry, and a directory. If you need to
-// tell the difference, use `Lookup`.
+// tell the difference, use `Get`.
 //
 // Also note, this function does not return the CAS token for `path`. If you
-// need the CAS token, use `Lookup`.
-func (s *Store) LookupString(path string) (body string) {
-	v, cas := s.Lookup(path)
+// need the CAS token, use `Get`.
+func (s *Store) GetString(path string) (body string) {
+	v, cas := s.Get(path)
 	if cas == Missing || cas == Dir {
 		return ""
 	}
@@ -286,9 +286,9 @@ func (s *Store) LookupString(path string) (body string) {
 //
 // Note, with this function it is impossible to distinguish between a string
 // stored at `path` and a missing entry. If you need to tell the difference,
-// use `Lookup`.
-func (s *Store) LookupDir(path string) (entries []string) {
-	v, cas := s.Lookup(path)
+// use `Get`.
+func (s *Store) GetDir(path string) (entries []string) {
+	v, cas := s.Get(path)
 	if cas != Dir {
 		return nil
 	}
