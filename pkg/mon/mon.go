@@ -91,9 +91,9 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 	st.Watch(ctlKey+"/*", evs)
 	st.Watch(lockKey+"/*", evs)
 	go func() {
-		for _, id := range st.LookupDir(ctlKey) {
+		for _, id := range st.GetDir(ctlKey) {
 			p := ctlDir + id
-			v, cas := st.Lookup(p)
+			v, cas := st.Get(p)
 			if cas != store.Dir && cas != store.Missing {
 				mon.logger.Log("injecting", id)
 				evs <- store.Event{0, p, v[0], cas, "", nil}
@@ -159,7 +159,7 @@ func (mon *monitor) newUnit(id string) unit {
 }
 
 func (mon *monitor) lookupParam(id, param string) string {
-	return mon.st.LookupString(defDir + id + "/" + param)
+	return mon.st.GetString(defDir + id + "/" + param)
 }
 
 func (mon *monitor) setStatus(id, param, val string) {

@@ -170,7 +170,7 @@ func (s *Server) Serve(l net.Listener) os.Error {
 }
 
 func (sv *Server) leader() string {
-	parts, cas := sv.St.Lookup("/junta/leader")
+	parts, cas := sv.St.Get("/junta/leader")
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -178,7 +178,7 @@ func (sv *Server) leader() string {
 }
 
 func (sv *Server) addrFor(id string) string {
-	parts, cas := sv.St.Lookup("/junta/members/"+id)
+	parts, cas := sv.St.Get("/junta/members/"+id)
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -272,7 +272,7 @@ func (sv *Server) Sget(path string) (body string, err os.Error) {
 	defer close(evs)
 	sv.St.Watch(shortPath, evs)
 
-	parts, cas := sv.St.Lookup(shortPath)
+	parts, cas := sv.St.Get(shortPath)
 	if cas != store.Dir && cas != store.Missing {
 		return parts[0], nil
 	}

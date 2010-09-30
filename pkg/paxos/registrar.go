@@ -41,7 +41,7 @@ func (q *lookupQueue) peek() *lookup {
 
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
-// TODO remove the `start` param when store.Lookup provides a version
+// TODO remove the `start` param when store.Get provides a version
 func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
 	rg := &Registrar{
 		alpha:    alpha,
@@ -131,12 +131,12 @@ func nonEmpty(s []string) []string {
 
 func readdirMap(st *store.Store, path string) map[string]string {
 	m := map[string]string{}
-	keys, cas := st.Lookup(path)
+	keys, cas := st.Get(path)
 	if cas != store.Dir {
 		return map[string]string{}
 	}
 	for _, key := range keys {
-		v, cas := st.Lookup(path + "/" + key)
+		v, cas := st.Get(path + "/" + key)
 		if cas != store.Dir && cas != store.Missing {
 			m[key] = v[0]
 		}
