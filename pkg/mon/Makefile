@@ -4,6 +4,7 @@ TARG=junta/mon
 GOFILES=\
 	exec.go\
 	fd.go\
+	fd_$(GOOS).go\
 	mon.go\
 	poll_$(GOOS).go\
 	service.go\

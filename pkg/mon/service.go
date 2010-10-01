@@ -1,13 +1,11 @@
 package mon
 
 import (
-	"fmt"
 	"junta/store"
 	"junta/util"
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"syscall"
 )
 
@@ -87,29 +85,15 @@ func (sv *service) exec() {
 
 	sv.logger.Log("exec")
 	cmd := sv.lookupParam("service/exec-start")
-	args := strings.Split(cmd, " ", -1)
 
 	sv.restart, err = sv.lookupRestart()
 	if err != nil {
 		goto error
 	}
 
-	files := []*os.File{os.Stdin, os.Stdout, os.Stderr}
-	env := os.Environ()
-	if sv.lfiles != nil {
-		nf := make([]*os.File, len(files)+len(sv.lfiles))
-		copy(nf, files)
-		copy(nf[len(files):], sv.lfiles)
-		files = nf
-
-		ne := make([]string, len(env)+1)
-		copy(ne, env)
-		ne[len(env)] = fmt.Sprintf("LISTEN_FDS=%d", len(sv.lfiles))
-		env = ne
-	}
-
 	sv.logger.Log("*** *** *** RUN *** *** ***")
-	sv.pid, err = os.ForkExec(args[0], args, env, "", files)
+	ctx := &execCtx{}
+	sv.pid, err = ctx.ForkExec(cmd, sv.lfiles)
 	if err != nil {
 		goto error
 	}
