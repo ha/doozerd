@@ -22,11 +22,11 @@ const (
 
 // Flags
 var (
-	listenAddr *string = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
-	publishAddr *string = flag.String("L", "", "The address puslished for remote clients (default is listen address)")
-	attachAddr *string = flag.String("a", "", "The address of another node to attach to.")
-	webAddr *string = flag.String("w", ":8080", "Serve web requests on this address.")
-	clusterName *string = flag.String("c", "local", "The non-empty cluster name.")
+	listenAddr = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
+	publishAddr = flag.String("L", "", "The address puslished for remote clients (default is listen address)")
+	attachAddr = flag.String("a", "", "The address of another node to attach to.")
+	webAddr = flag.String("w", ":8080", "Serve web requests on this address.")
+	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 )
 
 func activate(st *store.Store, self, prefix string, c *client.Client) {
