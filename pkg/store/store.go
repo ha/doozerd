@@ -161,11 +161,23 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 }
 
 func (s *Store) notify(e Event) {
+	nwatches := make([]watch, len(s.watches))
+
+	i := 0
 	for _, w := range s.watches {
+		if closed(w.in) {
+			continue
+		}
+
+		nwatches[i] = w
+		i++
+
 		if w.re.MatchString(e.Path) {
 			w.in <- e
 		}
 	}
+
+	s.watches = nwatches[0:i]
 }
 
 func append(ws *[]watch, w watch) {
@@ -196,6 +208,11 @@ func buffer(in, out chan Event) {
 			}
 			list.PushBack(x)
 		case ch <- e:
+			if closed(ch) {
+				close(in)
+				<-in
+				return
+			}
 			list.Remove(f)
 		}
 	}
