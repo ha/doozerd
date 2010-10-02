@@ -165,6 +165,7 @@ func (s *Store) notify(e Event) {
 
 	i := 0
 	for _, w := range s.watches {
+		_, _ = <-w.in
 		if closed(w.in) {
 			continue
 		}
@@ -193,6 +194,7 @@ func append(ws *[]watch, w watch) {
 
 // Unbounded in-order buffering
 func buffer(in, out chan Event) {
+	defer close(in)
 	list := list.New()
 	for {
 		f, e := list.Front(), Event{}
@@ -203,17 +205,18 @@ func buffer(in, out chan Event) {
 		}
 		select {
 		case x := <-in:
-			if closed(in) {
-				return
-			}
 			list.PushBack(x)
 		case ch <- e:
-			if closed(ch) {
-				close(in)
-				<-in
-				return
-			}
 			list.Remove(f)
+		}
+
+		// check if out was closed
+		e, ok := <-out
+		if closed(out) {
+			return
+		}
+		if ok {
+			out <- e // others may be sending events
 		}
 	}
 }
@@ -342,7 +345,6 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 		for e := range all {
 			if e.Seqn == seqn {
 				close(all)
-				<-all
 				ch <- e
 			}
 		}
@@ -364,10 +366,7 @@ func (st *Store) Sync(seqn uint64) {
 // (not a dir). Waits for `path` to be set, if necessary.
 func (st *Store) SyncPath(path string) Getter {
 	evs := make(chan Event)
-	defer func() {
-		close(evs)
-		<-evs
-	}()
+	defer close(evs)
 
 	st.Watch(path, evs)
 

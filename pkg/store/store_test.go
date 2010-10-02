@@ -600,7 +600,6 @@ func TestWatchClose(t *testing.T) {
 	assert.Equal(t, 1, len(s.watches))
 
 	close(ch)
-	<-ch
 
 	s.Apply(2, MustEncodeSet("/x", "", Clobber))
 	s.Apply(0, "") // just for synchronization
