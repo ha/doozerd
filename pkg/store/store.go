@@ -342,6 +342,7 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 		for e := range all {
 			if e.Seqn == seqn {
 				close(all)
+				<-all
 				ch <- e
 			}
 		}

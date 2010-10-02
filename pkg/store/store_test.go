@@ -608,6 +608,23 @@ func TestWatchClose(t *testing.T) {
 	assert.Equal(t, 0, len(s.watches))
 }
 
+func TestWaitClose(t *testing.T) {
+	s := New()
+	ch := make(chan Event)
+
+	s.Wait(1, ch)
+
+	s.Apply(0, "") // just for synchronization
+
+	assert.Equal(t, 1, len(s.watches))
+
+	s.Apply(1, MustEncodeSet("/x", "", Clobber))
+	s.Apply(2, MustEncodeSet("/x", "", Clobber))
+	s.Apply(0, "") // just for synchronization
+
+	assert.Equal(t, 0, len(s.watches))
+}
+
 func TestSnapshotApply(t *testing.T) {
 	s1 := New()
 	mut1 := MustEncodeSet("/x", "a", Clobber)
