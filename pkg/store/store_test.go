@@ -625,6 +625,34 @@ func TestWaitClose(t *testing.T) {
 	assert.Equal(t, 0, len(s.watches))
 }
 
+func TestSyncPathClose(t *testing.T) {
+	s := New()
+	ch := make(chan int)
+
+	go func() {
+		s.SyncPath("/x")
+		ch <- 1
+	}()
+
+	for {
+		s.Apply(0, "") // just for synchronization
+		x := s.watches
+		if len(x) > 0 {
+			break
+		}
+	}
+
+	s.Apply(1, MustEncodeSet("/x", "", Clobber))
+
+	<-ch
+
+	s.Apply(2, MustEncodeSet("/x", "", Clobber))
+	s.Apply(3, MustEncodeSet("/x", "", Clobber))
+	s.Apply(0, "") // just for synchronization
+
+	assert.Equal(t, 0, len(s.watches))
+}
+
 func TestSnapshotApply(t *testing.T) {
 	s1 := New()
 	mut1 := MustEncodeSet("/x", "a", Clobber)

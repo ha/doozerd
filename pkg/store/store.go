@@ -364,7 +364,10 @@ func (st *Store) Sync(seqn uint64) {
 // (not a dir). Waits for `path` to be set, if necessary.
 func (st *Store) SyncPath(path string) Getter {
 	evs := make(chan Event)
-	defer close(evs)
+	defer func() {
+		close(evs)
+		<-evs
+	}()
 
 	st.Watch(path, evs)
 
