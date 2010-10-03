@@ -1,4 +1,4 @@
-package mon
+package exec
 
 import (
 	"container/vector"
@@ -29,45 +29,44 @@ func init() {
 	panic("unreached")
 }
 
-func exitedCleanly(w *os.Waitmsg) bool {
-	return w.Exited() && w.ExitStatus() == 0
-}
-
-type childError struct {
+type ChildError struct {
 	os.Error
 }
 
-func (e childError) String() string {
+func (e ChildError) String() string {
 	return "child error: " + e.Error.String()
 }
 
 // Type exec defines an execution context that can be used for one or more
 // commands.
-type execCtx struct {
+type Context struct {
 	WorkingDirectory string
 	User, Group      string
 	Nice             int
+}
 
+type run struct {
+	Context
 	cmd string
 }
 
 // ForkExec runs `cmd` in a child process, with all configuration options as
-// specified in `ec` and the listen fds `lf` in its initial set of fds.
-//
-// This is not easy to implement, because Go does not give us a plain fork
-// function. Here's the trick: we fork/exec the same program currently running
-// in this process, then send configuration parameters to it over a pipe.
-//
-// After the first exec, the child process will be running this program,
-// almost as if we had simply forked, but with a fresh address space. Once the
-// child reads the configuration data from its pipe, it has enough information
-// to set up the process environment and exec a second time, starting the
-// program we really want.
-func (ec *execCtx) ForkExec(cmd string, lf []*os.File) (pid int, err os.Error) {
-	ec.cmd = cmd
-	defer func() {
-		ec.cmd = ""
-	}()
+// specified in `cx` and the listen fds `lf` in its initial set of fds.
+func (cx *Context) ForkExec(cmd string, lf []*os.File) (pid int, err os.Error) {
+	// This is not easy to do, because Go does not give us a plain fork
+	// function. Here's the trick: we fork/exec the same program currently
+	// running in this process, then send configuration parameters to it over a
+	// pipe.
+	//
+	// After the first exec, the child process will be running this program,
+	// almost as if we had simply forked, but with a fresh address space. Once
+	// the child reads the configuration data from its pipe, it has enough
+	// information to set up the process environment and exec a second time,
+	// starting the program we really want.
+
+	var r run
+	r.Context = *cx
+	r.cmd = cmd
 
 	var ir, iw, sr, sw *os.File
 	sb := make([]byte, 4)
@@ -117,7 +116,7 @@ func (ec *execCtx) ForkExec(cmd string, lf []*os.File) (pid int, err os.Error) {
 
 	// Send it the configuration data.
 	en := gob.NewEncoder(iw)
-	err = en.Encode(&ec)
+	err = en.Encode(&r)
 	if err != nil {
 		goto parenterror
 	}
@@ -137,7 +136,7 @@ func (ec *execCtx) ForkExec(cmd string, lf []*os.File) (pid int, err os.Error) {
 				(int32(sb[1]) << 16) |
 				(int32(sb[2]) << 8) |
 				(int32(sb[3]) << 0)
-			err = &childError{os.Errno(errno)}
+			err = &ChildError{os.Errno(errno)}
 		}
 		if err == nil {
 			err = os.EPIPE
@@ -174,9 +173,10 @@ func execInChild() {
 
 	// See $GOROOT/src/pkg/syscall/exec_unix.go for description of ForkLock.
 	// We really don't want this process to fork before we exec, so to be
-	// extra-paranoid, we grab the ForkLock and never let go. This should be
+	// extra paranoid, we grab the ForkLock and never let go. (This should be
 	// unnecessary since all init functions run in a single goroutine -- we are
-	// guaranteed nothing else is executing in this process.
+	// guaranteed nothing else is executing in this process. Just being
+	// paranoid.)
 	syscall.ForkLock.RLock()
 
 	// First, move statusWriteFd and inputReadFd out of the way, so we can
@@ -219,9 +219,9 @@ func execInChild() {
 	}
 
 	// Now read in the configuration data.
-	var ctx execCtx
+	var r run
 	gd := gob.NewDecoder(ir)
-	err := gd.Decode(&ctx)
+	err := gd.Decode(&r)
 	if err != nil {
 		panicChild(sw, syscall.EINVAL)
 	}
@@ -229,7 +229,7 @@ func execInChild() {
 	// Finally, exec the real program. If Exec returns an error, such as
 	// file-not-found, we send that back to the parent before exiting.
 	envv := os.Environ()
-	e1 = syscall.Exec(ctx.cmd, []string{ctx.cmd}, envv)
+	e1 = syscall.Exec(r.cmd, []string{r.cmd}, envv)
 	panicChild(sw, e1)
 }
 

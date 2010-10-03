@@ -1,6 +1,7 @@
 package mon
 
 import (
+	"junta/exec"
 	"junta/store"
 	"junta/util"
 	"log"
@@ -35,6 +36,7 @@ type service struct {
 	lockTaken    bool
 	restart      int
 	lfiles       []*os.File
+	cx           exec.Context
 }
 
 func newService(id, name string, mon *monitor) *service {
@@ -92,8 +94,7 @@ func (sv *service) exec() {
 	}
 
 	sv.logger.Log("*** *** *** RUN *** *** ***")
-	ctx := &execCtx{}
-	sv.pid, err = ctx.ForkExec(cmd, sv.lfiles)
+	sv.pid, err = sv.cx.ForkExec(cmd, sv.lfiles)
 	if err != nil {
 		goto error
 	}
@@ -132,6 +133,10 @@ func (sv *service) setStatus(param, val string) {
 
 func (sv *service) delStatus(param string) {
 	sv.mon.delStatus(sv.id, param)
+}
+
+func exitedCleanly(w *os.Waitmsg) bool {
+	return w.Exited() && w.ExitStatus() == 0
 }
 
 func (sv *service) isFatal(w *os.Waitmsg) bool {

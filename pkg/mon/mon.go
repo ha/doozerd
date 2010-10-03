@@ -29,8 +29,7 @@ type unit interface {
 	tick()
 }
 
-type exec interface {
-	unit
+type exiteder interface {
 	exited(w *os.Waitmsg)
 }
 
@@ -44,7 +43,7 @@ type readyer interface {
 }
 
 type exit struct {
-	e exec
+	e exiteder
 	w *os.Waitmsg
 }
 
@@ -189,7 +188,7 @@ func (mon *monitor) timer(u unit, ns int64) {
 	mon.clock <- u
 }
 
-func (mon *monitor) wait(pid int, e exec) {
+func (mon *monitor) wait(pid int, e exiteder) {
 	w, err := os.Wait(pid, 0)
 	if err != nil {
 		mon.logger.Log(err)
