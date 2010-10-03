@@ -26,6 +26,9 @@ type unit interface {
 	dispatchLockEvent(ev store.Event)
 	start()
 	stop()
+}
+
+type ticker interface {
 	tick()
 }
 
@@ -56,7 +59,7 @@ type monitor struct {
 	self, prefix string
 	st           *store.Store
 	cl           SetDeler
-	clock        chan unit
+	clock        chan ticker
 	units        map[string]unit
 	refs         map[string]int
 	exitCh       chan exit
@@ -77,7 +80,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 		prefix: prefix,
 		st:     st,
 		cl:     cl,
-		clock:  make(chan unit),
+		clock:  make(chan ticker),
 		units:  make(map[string]unit),
 		refs:   make(map[string]int),
 		exitCh: make(chan exit),
@@ -102,8 +105,8 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 
 	for {
 		select {
-		case u := <-mon.clock:
-			u.tick()
+		case t := <-mon.clock:
+			t.tick()
 		case ev := <-evs:
 			prefix, id := path.Split(ev.Path)
 			switch prefix {
@@ -183,9 +186,9 @@ func splitPath(p string) (id string) {
 	return
 }
 
-func (mon *monitor) timer(u unit, ns int64) {
+func (mon *monitor) timer(t ticker, ns int64) {
 	time.Sleep(ns)
-	mon.clock <- u
+	mon.clock <- t
 }
 
 func (mon *monitor) wait(pid int, e exiteder) {

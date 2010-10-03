@@ -35,8 +35,9 @@ type service struct {
 	lockCas      string
 	lockTaken    bool
 	restart      int
-	lfiles       []*os.File
+	alfiles      []*os.File
 	cx           exec.Context
+	so           *socket
 }
 
 func newService(id, name string, mon *monitor) *service {
@@ -54,8 +55,13 @@ func newService(id, name string, mon *monitor) *service {
 	return sv
 }
 
-func (sv *service) SetFiles(lfiles []*os.File) {
-	sv.lfiles = lfiles
+func (sv *service) setSocket(so *socket) {
+	sv.so = so
+}
+
+func (sv *service) setActiveLFDs(alfiles []*os.File) {
+	sv.alfiles = alfiles
+	sv.check()
 }
 
 func (sv *service) tryLock() {
@@ -86,6 +92,7 @@ func (sv *service) exec() {
 	var err os.Error
 
 	sv.logger.Log("exec")
+	sv.setStatus("status", "starting") // do it synchronously
 	cmd := sv.lookupParam("service/exec-start")
 
 	sv.restart, err = sv.lookupRestart()
@@ -94,10 +101,16 @@ func (sv *service) exec() {
 	}
 
 	sv.logger.Log("*** *** *** RUN *** *** ***")
-	sv.pid, err = sv.cx.ForkExec(cmd, sv.lfiles)
+	sv.pid, err = sv.cx.ForkExec(cmd, sv.alfiles)
 	if err != nil {
 		goto error
 	}
+
+	// The new process may (indeed, probably has) accepted connections from the
+	// listen fds, so we must assume there's no activity on them as of now. If
+	// the so detects more activity (say, after the process has exited and the
+	// a poll of the fds indicated activity), it will let us know.
+	sv.alfiles = nil
 
 	go sv.setStatus("status", "up")
 	go sv.delStatus("reason")
@@ -161,11 +174,12 @@ func (sv *service) exited(w *os.Waitmsg) {
 	if sv.isFatal(w) {
 		sv.wantUp = false
 		sv.logger.Log("fatal error")
-		go sv.setStatus("status", "down")
-		go sv.setStatus("reason", w.String())
-	} else {
-		go sv.setStatus("status", "restarting")
-		go sv.setStatus("reason", w.String())
+	}
+	go sv.setStatus("status", "down")
+	go sv.setStatus("reason", w.String())
+
+	if sv.so != nil {
+		sv.so.exited()
 	}
 
 	sv.check()
@@ -174,7 +188,7 @@ func (sv *service) exited(w *os.Waitmsg) {
 func (sv *service) check() {
 	sv.logger.Log("checking up/down state")
 
-	if sv.wantUp {
+	if sv.wantUp && sv.alfiles != nil {
 		if sv.lockCas == "" {
 			sv.kill()
 			if !sv.lockTaken {

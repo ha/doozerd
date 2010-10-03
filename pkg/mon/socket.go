@@ -15,7 +15,6 @@ type socket struct {
 	self, prefix string
 	cl           SetDeler
 	logger       *log.Logger
-	lis          []net.Listener
 	lfiles       []*os.File
 	mon          *monitor
 	wantUp       bool
@@ -87,14 +86,21 @@ func (so *socket) open() {
 		goto error // can't happen
 	}
 
-	so.lis = []net.Listener{li}
 	so.lfiles = []*os.File{f.File()}
-	so.sv.SetFiles(so.lfiles)
+
+	// Propagate our "want up" state to the sv. Note: this won't actualy run
+	// the service yet, since sv.lfiles is still nil.
+	so.sv.start() // just mark sv.wantUp = true
 
 	go so.setStatus("status", "up")
 	go so.delStatus("reason")
 	go so.setStatus("listen-addr", li.Addr().String())
 	go so.mon.poll(so.lfiles, so)
+
+	// Tell the service about the socket so the service can notify the socket
+	// when the process dies.
+	so.sv.setSocket(so)
+
 	return
 
 error:
@@ -102,6 +108,12 @@ error:
 	so.logger.Log(err)
 	go so.setStatus("status", "down")
 	go so.setStatus("reason", err.String())
+}
+
+// We want to know if the service quits or dies, so we can start it up
+// again on socket activity.
+func (so *socket) exited() {
+	go so.mon.poll(so.lfiles, so)
 }
 
 func (so *socket) close() {
@@ -113,12 +125,12 @@ func (so *socket) close() {
 		f.Close()
 	}
 	so.lfiles = nil
-
-	so.sv.stop()
+	so.sv.setActiveLFDs(nil)
+	so.sv.stop() // just mark sv.wantUp = false
 }
 
 func (so *socket) ready(f *os.File) {
-	so.sv.start()
+	so.sv.setActiveLFDs(so.lfiles)
 }
 
 func (so *socket) lookupParam(param string) string {

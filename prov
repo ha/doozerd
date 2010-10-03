@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
 
-cmd/juntad/junta-set /j/local/mon/def/a.service/service/exec-start x/home/kr/bin/beanstalkd ''
+cmd/juntad/junta-set /j/local/mon/def/a.service/service/exec-start /home/kr/bin/beanstalkd ''
+cmd/juntad/junta-set /j/local/mon/def/a.service/service/restart restart-always ''
 cmd/juntad/junta-set /j/local/mon/def/a.socket/socket/listen-stream 127.0.0.1:0 ''
 cmd/juntad/junta-set /j/local/mon/ctl/a.socket start ''
