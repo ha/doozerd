@@ -179,21 +179,25 @@ func execInChild() {
 	// paranoid.)
 	syscall.ForkLock.RLock()
 
-	// First, move statusWriteFd and inputReadFd out of the way, so we can
-	// shift down all the listen fds.
+	// In case we have any listen fds, move statusWriteFd and inputReadFd out
+	// of the way, so we can shift down all the listen fds.
 	swfd, e1 := syscall.Dup(statusWriteFd)
 	if e1 != 0 {
 		panicChild(os.NewFile(statusWriteFd, "|status"), e1)
 	}
 	sw = os.NewFile(swfd, "|status")
+	syscall.Close(statusWriteFd)
+
 	irfd, e1 := syscall.Dup(inputReadFd)
 	if e1 != 0 {
 		panicChild(sw, e1)
 	}
 	ir = os.NewFile(irfd, "input|")
+	syscall.Close(inputReadFd)
 
-	// Be sure to set them close-on-exec so the child doesn't inherit them.
-	// Also, closing sw on exec is how we notify the parent we were successful.
+	// Set our input/status fds close-on-exec so the child doesn't inherit
+	// them. Also, closing sw on exec is how we notify the parent we were
+	// successful.
 	syscall.CloseOnExec(swfd)
 	syscall.CloseOnExec(irfd)
 
