@@ -144,14 +144,12 @@ func main() {
 		}
 
 		done := make(chan int)
-		ch := make(chan store.Event)
-		st.Wait(seqn + alpha, ch)
 		st.Apply(1, snap)
 
 		go advanceUntil(cl, done)
 
 		go func() {
-			<-ch
+			st.Sync(seqn + alpha)
 			close(done)
 			activate(st, self, prefix, cl)
 		}()
