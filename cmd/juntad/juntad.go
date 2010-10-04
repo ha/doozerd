@@ -33,6 +33,15 @@ func activate(st *store.Store, self, prefix string, c *client.Client) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
 	st.Watch("/junta/slot/*", ch)
+
+	go func() {
+		for _, slot := range store.GetDir(st, "/junta/slot") {
+			p := "/junta/slot/" + slot
+			v, cas := st.Get(p)
+			ch <- store.Event{0, p, v[0], cas, "", nil, nil}
+		}
+	}()
+
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
