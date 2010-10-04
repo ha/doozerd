@@ -987,3 +987,23 @@ func TestSyncPathImmediate(t *testing.T) {
 	got := GetString(g, "/y")
 	assert.Equal(t, "b", got)
 }
+
+func TestGetDirAndWatch(t *testing.T) {
+	s := New()
+	s.Apply(1, MustEncodeSet("/x/a", "1", Clobber))
+	s.Sync(1)
+
+	ch := make(chan Event)
+	s.GetDirAndWatch("/x", ch)
+
+	mut2 := MustEncodeSet("/x/b", "2", Clobber)
+	mut4 := MustEncodeSet("/x/c", "3", Clobber)
+	s.Apply(2, mut2)
+	s.Apply(3, MustEncodeSet("/y/a", "1", Clobber))
+	s.Apply(4, mut4)
+	s.Sync(4)
+
+	assert.Equal(t, Event{0, "/x/a", "1", "1", "", nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{2, "/x/b", "2", "2", mut2, nil, nil}, clearGetter(<-ch))
+	assert.Equal(t, Event{4, "/x/c", "3", "4", mut4, nil, nil}, clearGetter(<-ch))
+}

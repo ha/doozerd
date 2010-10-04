@@ -216,7 +216,7 @@ func buffer(in, out chan Event) {
 			return
 		}
 		if ok {
-			out <- e // others may be sending events
+			list.PushFront(e) // others may be sending events
 		}
 	}
 }
@@ -383,4 +383,23 @@ func (st *Store) SyncPath(path string) Getter {
 	}
 
 	panic("unreachable")
+}
+
+// Lists out the contents of `path` as dummy events on `ch`. Also subscribes
+// `ch` to receive future events for changes to `path+"/*"`.
+//
+// The subscription is made before listing the directory entries. This
+// guarantees no entry will be missed, but one or more of the dummy events may
+// duplicate a true event.
+func (st *Store) GetDirAndWatch(path string, ch chan Event) {
+	st.Watch(path+"/*", ch)
+	go func() {
+		for _, ent := range GetDir(st, path) {
+			p := path + "/" + ent
+			v, cas := st.Get(p)
+			if cas != Missing && cas != Dir {
+				ch <- Event{0, p, v[0], cas, "", nil, nil}
+			}
+		}
+	}()
 }
