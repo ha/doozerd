@@ -90,18 +90,8 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 
 	mon.logger.Log("reading units")
 	evs := make(chan store.Event)
-	st.Watch(ctlKey+"/*", evs)
+	st.GetDirAndWatch(ctlKey, evs)
 	st.Watch(lockKey+"/*", evs)
-	go func() {
-		for _, id := range store.GetDir(st, ctlKey) {
-			p := ctlDir + id
-			v, cas := st.Get(p)
-			if cas != store.Dir && cas != store.Missing {
-				mon.logger.Log("injecting", id)
-				evs <- store.Event{0, p, v[0], cas, "", nil, nil}
-			}
-		}
-	}()
 
 	for {
 		select {
