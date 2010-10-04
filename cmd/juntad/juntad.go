@@ -45,6 +45,12 @@ func activate(st *store.Store, self, prefix string, c *client.Client) {
 	}
 }
 
+func advanceUntil(cl *client.Client, done chan int) {
+	for _, ok := <-done; !ok; _, ok = <-done {
+		cl.Nop()
+	}
+}
+
 func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] <cluster-name>\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\nOptions:\n")
@@ -137,12 +143,16 @@ func main() {
 			panic(err)
 		}
 
+		done := make(chan int)
 		ch := make(chan store.Event)
 		st.Wait(seqn + alpha, ch)
 		st.Apply(1, snap)
 
+		go advanceUntil(cl, done)
+
 		go func() {
 			<-ch
+			close(done)
 			activate(st, self, prefix, cl)
 		}()
 
