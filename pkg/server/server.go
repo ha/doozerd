@@ -229,6 +229,11 @@ func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
 	return
 }
 
+func (sv *Server) Nop() os.Error {
+	_, _, err := sv.Mg.Propose(store.Nop)
+	return err
+}
+
 func (sv *Server) delOnce(path, cas string) (uint64, os.Error) {
 	shortPath, err := sv.checkPath(path)
 	if err != nil {
@@ -373,6 +378,29 @@ func (c *conn) serve() {
 			} else {
 				rlogger.Logf("good %q", body)
 				pc.SendResponse(rid, body)
+			}
+		case "nop":
+			if len(parts) != 1 {
+				rlogger.Logf("invalid nop command: %v", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+
+			leader := c.s.leader()
+			if c.s.Self != leader {
+				rlogger.Logf("redirect to %s", leader)
+				pc.SendRedirect(rid, leader)
+				break
+			}
+
+			rlogger.Log("nop")
+			err := c.s.Nop()
+			if err != nil {
+				rlogger.Logf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Logf("good")
+				pc.SendResponse(rid, "true")
 			}
 		case "join":
 			// join abc123 1.2.3.4:999

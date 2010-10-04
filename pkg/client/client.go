@@ -133,3 +133,8 @@ func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
 
 	return strconv.Btoui64(parts[0], 10)
 }
+
+func (c *Client) Nop() os.Error {
+	_, err := c.call(1, "nop")
+	return err
+}
