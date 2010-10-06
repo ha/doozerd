@@ -71,12 +71,7 @@ func NewLogger(format string, a ... interface{}) *log.Logger {
 		panic("always give a prefix!")
 	}
 
-	if strings.HasPrefix(prefix, "udp") ||
-		strings.HasPrefix(prefix, "manager") ||
-		strings.HasPrefix(prefix, "store") ||
-		strings.HasPrefix(prefix, "ws://") ||
-		strings.HasPrefix(prefix, "127.0.0.1:") ||
-		strings.HasPrefix(prefix, "acceptor") {
+	if strings.HasPrefix(prefix, "udp") {
 		return log.New(NullWriter{}, nil, "", log.Lok | log.Lshortfile)
 	}
 
