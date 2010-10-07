@@ -102,6 +102,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 			switch prefix {
 			case ctlDir:
 				if ev.IsDel() {
+					mon.logger.Log("\n\n\ndel", id)
 					mon.decrefUnit(id)
 					break
 				}
@@ -231,12 +232,16 @@ func (mon *monitor) increfUnit(id string) unit {
 }
 
 func (mon *monitor) decrefUnit(id string) {
+	mon.logger.Log("decref Unit", id)
 	ut := mon.units[id]
 	if ut == nil {
+		mon.logger.Log(" -- did not exist")
 		return
 	}
+	mon.logger.Log(" -- dec")
 	mon.refs[id]--
 	if mon.refs[id] < 1 {
+		mon.logger.Log(" -- destroying")
 		ut.stop()
 		mon.units[id] = nil, false
 		mon.refs[id] = 0, false

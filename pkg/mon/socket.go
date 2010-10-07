@@ -108,6 +108,7 @@ error:
 	so.logger.Log(err)
 	go so.setStatus("status", "down")
 	go so.setStatus("reason", err.String())
+	go so.delStatus("listen-addr")
 }
 
 // We want to know if the service quits or dies, so we can start it up
@@ -127,6 +128,10 @@ func (so *socket) close() {
 	so.lfiles = nil
 	so.sv.setActiveLFDs(nil)
 	so.sv.stop() // just mark sv.wantUp = false
+
+	go so.setStatus("status", "down")
+	go so.setStatus("reason", "requested")
+	go so.delStatus("listen-addr")
 }
 
 func (so *socket) ready(f *os.File) {
