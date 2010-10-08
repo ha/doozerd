@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
@@ -7,23 +7,26 @@ munge() {
 }
 
 quote() {
-    sed 's/\\/\\\\/g' "$1" | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n'
+    sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n'
 }
 
-targ=$1
+nameof() {
+    readlink /proc/self/fd/0
+}
+
+pkg_path=$1
 shift
 
-file=$1
-shift
+pkg=`basename $pkg_path`
 
-pkg=$(basename $targ)
-
-var=$(munge "$file")
-
-body=
+file=`nameof`
 
 printf 'package %s\n' "$pkg"
 printf '\n'
 printf '// This file was generated from %s.\n' "$file"
 printf '\n'
-printf 'var %s string = "%s"\n' $var "$(quote "$file")"
+printf 'var '
+munge "`basename $file`"
+printf ' string = "'
+quote
+printf '"\n'
