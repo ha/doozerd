@@ -35,6 +35,7 @@ func Serve(listener net.Listener) {
 }
 
 func send(ws *websocket.Conn, path string, evs chan store.Event, logger *log.Logger) {
+	defer close(evs)
 	l := len(path) - 1
 	for ev := range evs {
 		ev.Getter = nil // don't marshal the entire snapshot
@@ -45,7 +46,11 @@ func send(ws *websocket.Conn, path string, evs chan store.Event, logger *log.Log
 			logger.Log(err)
 			return
 		}
-		ws.Write(b)
+		_, err = ws.Write(b)
+		if err != nil {
+			logger.Log(err)
+			return
+		}
 	}
 }
 
@@ -66,6 +71,7 @@ func evServer(c *http.Conn, r *http.Request) {
 	websocket.Handler(func(ws *websocket.Conn) {
 		send(ws, path, wevs, logger)
 		send(ws, path, evs, logger)
+		ws.Close()
 	}).ServeHTTP(c, r)
 }
 
