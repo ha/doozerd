@@ -1,7 +1,7 @@
 <html>
   <head>
-    <title>{ ClusterName } junta viewer</title>
-    <link rel=stylesheet href=main.css>
+    <title>{ Path } junta viewer</title>
+    <link rel=stylesheet href=/main.css>
   </head>
 
   <body class=loading>
@@ -15,14 +15,17 @@
     </div>
 
     <dl id=tree>
-      <dt>/j/{ ClusterName }/</dt>
+      <dt>{ Path }</dt>
       <dd id=root>
         <dl></dl>
         <table><tbody></table>
       </dd>
     </dl>
 
-    <script src=main.js></script>
+    <script>
+      var path = "{ Path }";
+    </script>
+    <script src=/main.js></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" async defer onload=$(document).ready(dr)></script>
   </body>
 </html>

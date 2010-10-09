@@ -7,27 +7,38 @@ import (
 	"junta/util"
 	"json"
 	"log"
+	"net"
+	"strings"
 	"template"
 	"websocket"
 )
 
 var Store *store.Store
+var ClusterName, evPrefix string
+var mainTpl  = template.MustParse(main_html, nil)
 
-var (
-	mainTpl  = template.MustParse(main_html, nil)
-	MainInfo = struct{ ClusterName string }{}
-)
-
-func init() {
-	http.HandleFunc("/", mainHtml)
-	http.HandleFunc("/main.js", mainJs)
-	http.HandleFunc("/main.css", mainCss)
-	http.Handle("/all", websocket.Handler(allServer))
+type info struct {
+	Path string
 }
 
-func send(ws *websocket.Conn, evs chan store.Event, logger *log.Logger) {
+func Serve(listener net.Listener) {
+	prefix := "/j/" + ClusterName
+	evPrefix = "/events" + prefix
+
+	http.Handle("/", http.RedirectHandler("/view/j/"+ClusterName+"/", 307))
+	http.HandleFunc("/view/", viewHtml)
+	http.HandleFunc("/main.js", mainJs)
+	http.HandleFunc("/main.css", mainCss)
+	http.HandleFunc(evPrefix+"/", evServer)
+
+	http.Serve(listener, nil)
+}
+
+func send(ws *websocket.Conn, path string, evs chan store.Event, logger *log.Logger) {
+	l := len(path) - 1
 	for ev := range evs {
 		ev.Getter = nil // don't marshal the entire snapshot
+		ev.Path = ev.Path[l:]
 		logger.Log("sending", ev)
 		b, err := json.Marshal(ev)
 		if err != nil {
@@ -38,28 +49,35 @@ func send(ws *websocket.Conn, evs chan store.Event, logger *log.Logger) {
 	}
 }
 
-func allServer(ws *websocket.Conn) {
+func evServer(c *http.Conn, r *http.Request) {
 	evs, wevs := make(chan store.Event), make(chan store.Event)
+	logger := util.NewLogger(c.RemoteAddr)
+	path := r.URL.Path[len(evPrefix):]
+	logger.Log("new", path)
 
-	logger := util.NewLogger(ws.RemoteAddr().String())
-	logger.Log("new")
-
-	Store.Watch("**", evs)
+	Store.Watch(path+"**", evs)
 
 	// TODO convert store.Snapshot to json and use that
-	go walk("/", Store, wevs)
+	go func() {
+		walk(path, Store, wevs)
+		close(wevs)
+	}()
 
-	send(ws, wevs, logger)
-	send(ws, evs, logger)
+	websocket.Handler(func(ws *websocket.Conn) {
+		send(ws, path, wevs, logger)
+		send(ws, path, evs, logger)
+	}).ServeHTTP(c, r)
 }
 
-func mainHtml(c *http.Conn, r *http.Request) {
-	if r.URL.Path != "/" {
+func viewHtml(c *http.Conn, r *http.Request) {
+	if !strings.HasSuffix(r.URL.Path, "/") {
 		c.WriteHeader(404)
 		return
 	}
+	var x info
+	x.Path = r.URL.Path[len("/view"):]
 	c.SetHeader("content-type", "text/html")
-	mainTpl.Execute(MainInfo, c)
+	mainTpl.Execute(x, c)
 }
 
 func mainJs(c *http.Conn, r *http.Request) {
@@ -73,6 +91,10 @@ func mainCss(c *http.Conn, r *http.Request) {
 }
 
 func walk(path string, st *store.Store, ch chan store.Event) {
+	for path != "/" && strings.HasSuffix(path, "/") {
+		// TODO generalize and factor this into pkg store.
+		path = path[0:len(path)-1]
+	}
 	v, cas := st.Get(path)
 	if cas != store.Dir {
 		ch <- store.Event{0, path, v[0], cas, "", nil, nil}
@@ -83,8 +105,5 @@ func walk(path string, st *store.Store, ch chan store.Event) {
 	}
 	for _, ent := range v {
 		walk(path+"/"+ent, st, ch)
-	}
-	if path == "" {
-		close(ch)
 	}
 }

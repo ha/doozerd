@@ -87,7 +87,7 @@ function open() {
   var body = $('body');
   var status = $('#status');
   status.text("connecting");
-  var ws = new WebSocket("ws://"+location.host+"/all");
+  var ws = new WebSocket("ws://"+location.host+"/events"+path);
   ws.onmessage = function (ev) {
     var jev = JSON.parse(ev.data);
     apply(jev);

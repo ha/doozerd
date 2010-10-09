@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"http"
 	"junta/client"
 	"junta/mon"
 	"junta/paxos"
@@ -170,9 +169,8 @@ func main() {
 
 	if webListener != nil {
 		web.Store = st
-		web.MainInfo.ClusterName = *clusterName
-		// http handlers are installed in the init function of junta/web.
-		go http.Serve(webListener, nil)
+		web.ClusterName = *clusterName
+		go web.Serve(webListener)
 	}
 
 	for {
