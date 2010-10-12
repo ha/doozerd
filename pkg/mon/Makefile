@@ -3,7 +3,6 @@ include $(GOROOT)/src/Make.inc
 TARG=junta/mon
 GOFILES=\
 	fd.go\
-	fd_$(GOOS).go\
 	mon.go\
 	poll_$(GOOS).go\
 	service.go\
