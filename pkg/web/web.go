@@ -21,14 +21,24 @@ type info struct {
 	Path string
 }
 
+type stringHandler struct {
+	contentType string
+	body string
+}
+
+func (sh stringHandler) ServeHTTP(c *http.Conn, r *http.Request) {
+	c.SetHeader("content-type", sh.contentType)
+	io.WriteString(c, sh.body)
+}
+
 func Serve(listener net.Listener) {
 	prefix := "/j/" + ClusterName
 	evPrefix = "/events" + prefix
 
 	http.Handle("/", http.RedirectHandler("/view/j/"+ClusterName+"/", 307))
 	http.HandleFunc("/view/", viewHtml)
-	http.HandleFunc("/main.js", mainJs)
-	http.HandleFunc("/main.css", mainCss)
+	http.Handle("/main.js", stringHandler{"application/javascript", main_js})
+	http.Handle("/main.css", stringHandler{"text/css", main_css})
 	http.HandleFunc(evPrefix+"/", evServer)
 
 	http.Serve(listener, nil)
@@ -84,16 +94,6 @@ func viewHtml(c *http.Conn, r *http.Request) {
 	x.Path = r.URL.Path[len("/view"):]
 	c.SetHeader("content-type", "text/html")
 	mainTpl.Execute(x, c)
-}
-
-func mainJs(c *http.Conn, r *http.Request) {
-	c.SetHeader("content-type", "application/javascript")
-	io.WriteString(c, main_js)
-}
-
-func mainCss(c *http.Conn, r *http.Request) {
-	c.SetHeader("content-type", "text/css")
-	io.WriteString(c, main_css)
 }
 
 func walk(path string, st *store.Store, ch chan store.Event) {
