@@ -10,16 +10,10 @@ quote() {
     sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/$/\\n/' | tr -d '\n'
 }
 
-nameof() {
-    readlink /proc/self/fd/0
-}
-
-pkg_path=$1
-shift
+pkg_path=$1 ; shift
+file=$1     ; shift
 
 pkg=`basename $pkg_path`
-
-file=`nameof`
 
 printf 'package %s\n' "$pkg"
 printf '\n'
