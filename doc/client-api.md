@@ -30,3 +30,6 @@ added by giving a `junta:` URI to the AddCluster method.
 
 Cas tokens should be treated as opaque strings, though they are in fact
 sequence numbers.
+
+Clients are responsible for implementing consistent cacheing according to the
+rules in doc/client-cacheing.md
