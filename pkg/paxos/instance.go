@@ -70,7 +70,9 @@ func newInstance(seqn uint64, cf clusterer) *instance {
 }
 
 func (it *instance) PutFrom(addr string, m Msg) {
-	it.ins <- Packet{m, addr}
+	go func() {
+		it.ins <- Packet{m, addr}
+	}()
 }
 
 func (ins *instance) Value() string {
