@@ -23,7 +23,7 @@ type Manager struct {
 	rg      *Registrar
 	learned chan result
 	seqns   chan uint64
-	reqs    chan *instReq
+	reqs    chan instReq
 	logger  *log.Logger
 	Self    string
 	alpha   int
@@ -36,7 +36,7 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		rg:      NewRegistrar(st, start, alpha),
 		learned: make(chan result),
 		seqns:   make(chan uint64),
-		reqs:    make(chan *instReq),
+		reqs:    make(chan instReq),
 		logger:  util.NewLogger("manager"),
 		Self:    self,
 		alpha:   alpha,
@@ -81,10 +81,9 @@ func (m *Manager) process() {
 }
 
 func (m *Manager) getInstance(seqn uint64) *instance {
-	r := &instReq{seqn, make(chan *instance)}
-	m.reqs <- r
-	it := <-r.ch
-	return it
+	ch := make(chan *instance)
+	m.reqs <- instReq{seqn, ch}
+	return <-ch
 }
 
 func (m *Manager) PutFrom(addr string, msg Msg) {
