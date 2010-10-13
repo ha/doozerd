@@ -126,23 +126,6 @@ func TestMultipleInstances(t *testing.T) {
 	insC.Close()
 }
 
-func TestInstanceCluster(t *testing.T) {
-	ch := make(chan *cluster)
-	nodes := map[string]string{"a": "x"}
-	p := make(FakePutterFrom, 1)
-	cx := newCluster("a", nodes, []string{"a"}, putFromWrapperTo{p, "x"})
-	it := newInstance()
-	it.setCluster(cx)
-	p[0] = it
-
-	go func() {
-		ch <- it.cluster()
-	}()
-	it.Propose("foo")
-	assert.Equal(t, cx, <-ch, "")
-	it.Close()
-}
-
 func TestInstanceSendsLearn(t *testing.T) {
 	ch := make(ChanPutCloserTo)
 	nodes := map[string]string{"a": "x"}

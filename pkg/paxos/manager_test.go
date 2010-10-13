@@ -213,51 +213,6 @@ func TestReadFromStore(t *testing.T) {
 	assert.Equal(t, exp, v, "")
 }
 
-type putFunc func(Msg)
-
-func (pf putFunc) Put(msg Msg) {
-	go pf(msg)
-}
-
-func (pf putFunc) Close() {}
-
-func TestManagerPutFrom(t *testing.T) {
-	exp := "bar"
-	seqnExp := uint64(7)
-	fromAddr := "y"
-	fromIndex := 1 // [a, b, c].indexof(b) => 1
-
-	st := store.New()
-	self := "a"
-	st.Apply(uint64(1), mustEncodeSet(membersDir+self, "x"))
-	st.Apply(uint64(2), mustEncodeSet(slotDir+"0", self))
-	st.Apply(uint64(3), mustEncodeSet(membersDir+"b", "y"))
-	st.Apply(uint64(4), mustEncodeSet(slotDir+"1", "b"))
-	st.Apply(uint64(5), mustEncodeSet(membersDir+"c", "z"))
-	st.Apply(uint64(6), mustEncodeSet(slotDir+"2", "c"))
-	m := NewManager(self, 6, 1, st, putFromWrapperTo{make(FakePutterFrom, 0), ""})
-
-	froms := make(chan int)
-
-	fp := putFunc(func(msg Msg) {
-		froms <- msg.From()
-	})
-
-	seqn, it := m.getInstance(seqnExp)
-	assert.Equal(t, seqnExp, seqn)
-	it.cPutter = fp
-	it.aPutter = fp
-	it.lPutter = fp
-
-	v1 := newVote(1, exp)
-	v1.SetSeqn(seqnExp)
-	m.PutFrom(fromAddr, v1)
-
-	assert.Equal(t, fromIndex, <-froms, "")
-	assert.Equal(t, fromIndex, <-froms, "")
-	assert.Equal(t, fromIndex, <-froms, "")
-}
-
 func TestManagerGetInstanceForPropose(t *testing.T) {
 	m, _ := selfRefNewManager()
 	seqn, _ := m.getInstance(0)

@@ -4,6 +4,7 @@ type instance struct {
 	vin     chan string
 	v       string
 	done    chan int
+	ins     chan Packet
 	cPutter putCloser // Coordinator
 	aPutter putCloser // Acceptor
 	lPutter putCloser // Learner
@@ -18,6 +19,7 @@ func newInstance() *instance {
 	ins := &instance{
 		vin:     make(chan string),
 		done:    make(chan int),
+		ins:     make(chan Packet),
 		cPutter: cIns,
 		aPutter: aIns,
 		lPutter: lIns,
@@ -37,10 +39,29 @@ func newInstance() *instance {
 			ch <- sink(sIns)
 		}()
 
-		ins.v = <-ch
-		close(ch)
-		close(ins.done)
-		ins.cx.Put(newLearn(ins.v))
+		for {
+			select {
+			case p := <-ins.ins:
+				if closed(ins.ins) {
+					ins.cPutter.Close()
+					ins.aPutter.Close()
+					ins.lPutter.Close()
+					ins.sPutter.Close()
+					return
+				}
+				p.SetFrom(ins.cx.indexByAddr(p.Addr))
+				cIns.Put(p.Msg)
+				aIns.Put(p.Msg)
+				lIns.Put(p.Msg)
+				sIns.Put(p.Msg)
+			case v := <-ch:
+				ins.v = v
+				close(ch)
+				close(ins.done)
+				ins.cx.Put(newLearn(ins.v))
+				return
+			}
+		}
 	}()
 
 	return ins
@@ -57,11 +78,7 @@ func (it *instance) cluster() *cluster {
 }
 
 func (it *instance) PutFrom(addr string, m Msg) {
-	m.SetFrom(it.cluster().indexByAddr(addr))
-	it.cPutter.Put(m)
-	it.aPutter.Put(m)
-	it.lPutter.Put(m)
-	it.sPutter.Put(m)
+	it.ins <- Packet{m, addr}
 }
 
 func (ins *instance) Value() string {
@@ -70,10 +87,7 @@ func (ins *instance) Value() string {
 }
 
 func (ins *instance) Close() {
-	ins.cPutter.Close()
-	ins.aPutter.Close()
-	ins.lPutter.Close()
-	ins.sPutter.Close()
+	close(ins.ins)
 }
 
 func (ins *instance) Propose(v string) {
