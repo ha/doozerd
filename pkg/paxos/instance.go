@@ -9,11 +9,13 @@ type instance struct {
 	aPutter putCloser // Acceptor
 	lPutter putCloser // Learner
 	sPutter putCloser // Sink
-	cx      *cluster
-	cxReady chan int
 }
 
-func newInstance() *instance {
+type clusterer interface {
+	cluster(seqn uint64) *cluster
+}
+
+func newInstance(seqn uint64, cf clusterer) *instance {
 	cIns, aIns, lIns := make(ChanPutCloser), make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
@@ -24,16 +26,16 @@ func newInstance() *instance {
 		aPutter: aIns,
 		lPutter: lIns,
 		sPutter: sIns,
-		cxReady: make(chan int),
 	}
 
 	go func() {
-		<-ins.cxReady
+		cx := cf.cluster(seqn)
+
 		ch := make(chan string)
-		go coordinator(cIns, ins.cx, ins.cx)
-		go acceptor(aIns, ins.cx)
+		go coordinator(cIns, cx, cx)
+		go acceptor(aIns, cx)
 		go func() {
-			ch <- learner(uint64(ins.cx.Quorum()), lIns)
+			ch <- learner(uint64(cx.Quorum()), lIns)
 		}()
 		go func() {
 			ch <- sink(sIns)
@@ -49,7 +51,7 @@ func newInstance() *instance {
 					ins.sPutter.Close()
 					return
 				}
-				p.SetFrom(ins.cx.indexByAddr(p.Addr))
+				p.SetFrom(cx.indexByAddr(p.Addr))
 				cIns.Put(p.Msg)
 				aIns.Put(p.Msg)
 				lIns.Put(p.Msg)
@@ -58,18 +60,13 @@ func newInstance() *instance {
 				ins.v = v
 				close(ch)
 				close(ins.done)
-				ins.cx.Put(newLearn(ins.v))
+				cx.Put(newLearn(ins.v))
 				return
 			}
 		}
 	}()
 
 	return ins
-}
-
-func (it *instance) setCluster(cx *cluster) {
-	it.cx = cx
-	close(it.cxReady)
 }
 
 func (it *instance) PutFrom(addr string, m Msg) {

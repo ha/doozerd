@@ -50,12 +50,9 @@ func (m *Manager) Alpha() int {
 	return m.alpha
 }
 
-func (m *Manager) setCluster(seqn uint64, it *instance) {
+func (m *Manager) cluster(seqn uint64) *cluster {
 	members, cals := m.rg.setsForSeqn(seqn)
-	m.logger.Logf("cluster %d has %d members and %d cals", seqn, len(members), len(cals))
-	m.logger.Logf("  members: %v", members)
-	m.logger.Logf("  cals: %v", cals)
-	it.setCluster(newCluster(m.Self, members, cals, putToWrapper{seqn, m.outs}))
+	return newCluster(m.Self, members, cals, putToWrapper{seqn, m.outs})
 }
 
 func (m *Manager) process(next uint64) {
@@ -66,9 +63,8 @@ func (m *Manager) process(next uint64) {
 		}
 		inst, ok := instances[req.seqn]
 		if !ok {
-			inst = newInstance()
+			inst = newInstance(req.seqn, m)
 			instances[req.seqn] = inst
-			go m.setCluster(req.seqn, inst)
 			go func(seqn uint64, it *instance) {
 				m.learned <- result{seqn, it.Value()}
 			}(req.seqn, inst)
