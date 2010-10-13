@@ -60,7 +60,11 @@ func (m *Manager) cluster(seqn uint64) *cluster {
 
 func (mg *Manager) gen(next uint64) {
 	for {
-		mg.seqns <- next
+		cx := mg.cluster(next)
+		leader := int(next % uint64(cx.Len()))
+		if leader == cx.SelfIndex() {
+			mg.seqns <- next
+		}
 		next++
 	}
 }
@@ -99,7 +103,7 @@ func (m *Manager) Propose(v string) (uint64, string, os.Error) {
 	seqn := <-m.seqns
 	inst := m.getInstance(seqn)
 	m.st.Wait(seqn, ch)
-	m.logger.Logf("paxos propose -> %q", v)
+	m.logger.Logf("paxos propose -> %d %q", seqn, v)
 	inst.Propose(v)
 	ev := <-ch
 	return seqn, ev.Mut, ev.Err
