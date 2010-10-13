@@ -20,7 +20,7 @@ func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	_, ix := m.getInstance(0)
+	_, ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
 	got := ix.Value()
 
@@ -31,7 +31,7 @@ func TestProposeAndRecv(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	_, ix := m.getInstance(0)
+	_, ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
 	got := ix.Value()
 	assert.Equal(t, exp, got, "")
@@ -45,7 +45,7 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	_, ix := m.getInstance(0)
+	_, ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
 	got := ix.Value()
 	assert.Equal(t, exp, got, "")
@@ -60,7 +60,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 	seqnexp := []uint64{2, 3}
 	m, st := selfRefNewManager()
 
-	_, ix := m.getInstance(0)
+	_, ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp[0])
 	got0 := ix.Value()
 	assert.Equal(t, exp[0], got0, "")
@@ -71,7 +71,7 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 	st.Apply(seqn0, v0)
 
-	_, ix = m.getInstance(0)
+	_, ix = m.getInstance(<-m.seqns)
 	ix.Propose(exp[1])
 	got1 := ix.Value()
 	assert.Equal(t, exp[1], got1, "")
@@ -116,7 +116,7 @@ func TestUnusedSeqn(t *testing.T) {
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp1, v, "")
 
-	_, ix := m.getInstance(0)
+	_, ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp2)
 	got := ix.Value()
 	assert.Equal(t, exp2, got, "")
@@ -130,7 +130,7 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 
 	m.PutFrom(m.Self+"addr", resize(newVote(1, ""), -1))
 
-	_, ix := m.getInstance(0)
+	_, ix := m.getInstance(<-m.seqns)
 	ix.Propose("y")
 	got := ix.Value()
 	assert.Equal(t, "y", got, "")
@@ -215,6 +215,6 @@ func TestReadFromStore(t *testing.T) {
 
 func TestManagerGetInstanceForPropose(t *testing.T) {
 	m, _ := selfRefNewManager()
-	seqn, _ := m.getInstance(0)
+	seqn, _ := m.getInstance(<-m.seqns)
 	assert.Equal(t, uint64(2), seqn)
 }

@@ -22,6 +22,7 @@ type Manager struct {
 	st      *store.Store
 	rg      *Registrar
 	learned chan result
+	seqns   chan uint64
 	reqs    chan *instReq
 	logger  *log.Logger
 	Self    string
@@ -34,6 +35,7 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		st:      st,
 		rg:      NewRegistrar(st, start, alpha),
 		learned: make(chan result),
+		seqns:   make(chan uint64),
 		reqs:    make(chan *instReq),
 		logger:  util.NewLogger("manager"),
 		Self:    self,
@@ -41,7 +43,8 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, outs Putt
 		outs:    outs,
 	}
 
-	go m.process(start+uint64(alpha))
+	go m.gen(start+uint64(alpha))
+	go m.process()
 
 	return m
 }
@@ -55,12 +58,16 @@ func (m *Manager) cluster(seqn uint64) *cluster {
 	return newCluster(m.Self, members, cals, putToWrapper{seqn, m.outs})
 }
 
-func (m *Manager) process(next uint64) {
+func (mg *Manager) gen(next uint64) {
+	for {
+		mg.seqns <- next
+		next++
+	}
+}
+
+func (m *Manager) process() {
 	instances := make(map[uint64]*instance)
 	for req := range m.reqs {
-		if req.seqn == 0 {
-			req.seqn = next
-		}
 		inst, ok := instances[req.seqn]
 		if !ok {
 			inst = newInstance(req.seqn, m)
@@ -70,9 +77,6 @@ func (m *Manager) process(next uint64) {
 			}(req.seqn, inst)
 		}
 		req.ch <- inst
-		if req.seqn >= next {
-			next = req.seqn + 1
-		}
 	}
 }
 
@@ -93,7 +97,8 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 
 func (m *Manager) Propose(v string) (uint64, string, os.Error) {
 	ch := make(chan store.Event)
-	seqn, inst := m.getInstance(0)
+	seqn := <-m.seqns
+	_, inst := m.getInstance(seqn)
 	m.st.Wait(seqn, ch)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
