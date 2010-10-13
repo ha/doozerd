@@ -13,11 +13,7 @@ func acceptor(ins chan Msg, outs Putter) {
 		switch in.Cmd() {
 		case invite:
 			logger.Log("got invite", in)
-			i := inviteParts(in)
-
-			switch {
-			case i <= rnd:
-			case i > rnd:
+			if i := inviteParts(in); i > rnd {
 				rnd = i
 
 				reply := newRsvp(i, vrnd, vval)
@@ -29,17 +25,15 @@ func acceptor(ins chan Msg, outs Putter) {
 			i, v := nominateParts(in)
 
 			// SUPER IMPT MAD PAXOS
-			if i < rnd || i == vrnd {
-				continue
+			if i >= rnd && i != vrnd {
+				rnd = i
+				vrnd = i
+				vval = v
+
+				broadcast := newVote(i, vval)
+				logger.Log("sending vote", broadcast)
+				outs.Put(broadcast)
 			}
-
-			rnd = i
-			vrnd = i
-			vval = v
-
-			broadcast := newVote(i, vval)
-			logger.Log("sending vote", broadcast)
-			outs.Put(broadcast)
 		}
 	}
 }
