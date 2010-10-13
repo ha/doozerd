@@ -72,11 +72,6 @@ func (it *instance) setCluster(cx *cluster) {
 	close(it.cxReady)
 }
 
-func (it *instance) cluster() *cluster {
-	<-it.cxReady
-	return it.cx
-}
-
 func (it *instance) PutFrom(addr string, m Msg) {
 	it.ins <- Packet{m, addr}
 }
