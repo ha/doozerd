@@ -6,15 +6,12 @@ import (
 	"testing"
 )
 
-func selfRefNewManager(extraNodes ...string) (*Manager, *store.Store) {
+func selfRefNewManager() (*Manager, *store.Store) {
 	p := make(FakePutterTo, 1)
 	st := store.New()
 	self := "a"
 	st.Apply(uint64(1), mustEncodeSet(membersKey+"/"+self, self+"addr"))
-	for i, node := range extraNodes {
-		st.Apply(uint64(i+2), mustEncodeSet(membersKey+"/"+node, node+"addr"))
-	}
-	m := NewManager(self, uint64(len(extraNodes)+1), 1, st, p)
+	m := NewManager(self, uint64(1), 1, st, p)
 	p[0] = PutPutterTo{m}
 	return m, st
 }
