@@ -56,16 +56,12 @@ func (it *instance) cluster() *cluster {
 	return it.cx
 }
 
-func (ins *instance) Put(m Msg) {
-	ins.cPutter.Put(m)
-	ins.aPutter.Put(m)
-	ins.lPutter.Put(m)
-	ins.sPutter.Put(m)
-}
-
 func (it *instance) PutFrom(addr string, m Msg) {
 	m.SetFrom(it.cluster().indexByAddr(addr))
-	it.Put(m)
+	it.cPutter.Put(m)
+	it.aPutter.Put(m)
+	it.lPutter.Put(m)
+	it.sPutter.Put(m)
 }
 
 func (ins *instance) Value() string {

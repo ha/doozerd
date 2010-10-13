@@ -85,7 +85,9 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager()
 
-	m.Put(newVoteFrom(1, 1, exp))
+	msg := newVote(1, exp)
+	msg.SetSeqn(1)
+	m.PutFrom(m.Self+"addr", msg)
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp, v, "")
@@ -95,7 +97,9 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
 	m, _ := selfRefNewManager()
 
-	m.Put(newVoteFrom(1, 1, exp))
+	msg := newVote(1, exp)
+	msg.SetSeqn(1)
+	m.PutFrom(m.Self+"addr", msg)
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp, v, "")
@@ -105,7 +109,9 @@ func TestUnusedSeqn(t *testing.T) {
 	exp1, exp2 := "foo", "bar"
 	m, _ := selfRefNewManager()
 
-	m.Put(newVoteFrom(1, 1, exp1))
+	msg := newVote(1, exp1)
+	msg.SetSeqn(1)
+	m.PutFrom(m.Self+"addr", msg)
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(1), seqn, "")
 	assert.Equal(t, exp1, v, "")
@@ -122,7 +128,7 @@ func TestUnusedSeqn(t *testing.T) {
 func TestIgnoreMalformedMsg(t *testing.T) {
 	m, _ := selfRefNewManager()
 
-	m.Put(resize(newVoteFrom(1, 1, ""), -1))
+	m.PutFrom(m.Self+"addr", resize(newVote(1, ""), -1))
 
 	_, ix := m.getInstance(0)
 	ix.Propose("y")
@@ -174,31 +180,33 @@ func TestReadFromStore(t *testing.T) {
 	st := store.New()
 	p := make(ChanPutCloserTo)
 	self := "a"
-	st.Apply(1, mustEncodeSet(membersDir+self, ""))
+	addr := "x"
+	st.Apply(1, mustEncodeSet(membersDir+self, addr))
 	st.Apply(2, mustEncodeSet(slotDir+"0", self))
 	m := NewManager(self, 2, 1, st, p)
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll
 	// immediately learn the value `x`.
-	in := newVoteFrom(0, 1, "x")
+	in := newVote(1, "x")
 	in.SetSeqn(5)
-	m.Put(in)
+	go m.PutFrom(addr, in)
 
 	// Satisfy the sync read of data members above. After this, there will be
 	// 2 nodes in the cluster, making the quorum 2.
-	st.Apply(3, mustEncodeSet(membersDir+"b", ""))
+	bAddr := "y"
+	st.Apply(3, mustEncodeSet(membersDir+"b", bAddr))
 	st.Apply(4, mustEncodeSet(slotDir+"1", "b"))
 
 	// Now try to make it learn a new value with 2 votes to meet the new
 	// quorum.
 	exp := "y"
-	in = newVoteFrom(0, 2, exp)
+	in = newVote(2, exp)
 	in.SetSeqn(5)
-	m.Put(in)
-	in = newVoteFrom(1, 2, exp)
+	m.PutFrom(addr, in)
+	in = newVote(2, exp)
 	in.SetSeqn(5)
-	m.Put(in)
+	m.PutFrom(bAddr, in)
 
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(5), seqn, "")

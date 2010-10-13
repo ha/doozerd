@@ -45,45 +45,45 @@ func selfRefNewInstance(self string, nodes map[string]string) *instance {
 
 func TestStartAtVote(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a": "x"})
-	ins.Put(newVoteFrom(1, 1, "foo"))
+	ins.PutFrom("x", newVote(1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestStartAtLearn(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a": "x"})
-	ins.Put(newLearn("foo"))
+	ins.PutFrom("x", newLearn("foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestLearnInEmptyCluster(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{})
-	ins.Put(newLearn("foo"))
+	ins.PutFrom("x", newLearn("foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestStartAtVoteWithDuplicates(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a": "x"})
-	ins.Put(newVoteFrom(1, 1, "foo"))
-	ins.Put(newVoteFrom(1, 1, "foo"))
-	ins.Put(newVoteFrom(1, 1, "foo"))
+	ins.PutFrom("x", newVote(1, "foo"))
+	ins.PutFrom("x", newVote(1, "foo"))
+	ins.PutFrom("x", newVote(1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestVoteWithQuorumOf2(t *testing.T) {
 	ins := selfRefNewInstance("b", map[string]string{"a": "x", "b": "y", "c": "z"})
-	ins.Put(newVoteFrom(1, 1, "foo"))
-	ins.Put(newVoteFrom(2, 1, "foo"))
+	ins.PutFrom("y", newVote(1, "foo"))
+	ins.PutFrom("z", newVote(1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
 
 func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a": "x"})
-	ins.Put(newVoteFrom(1, 1, "foo"))
+	ins.PutFrom("x", newVote(1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
@@ -91,9 +91,9 @@ func TestValueCanBeCalledMoreThanOnce(t *testing.T) {
 
 func TestStartAtAccept(t *testing.T) {
 	ins := selfRefNewInstance("a", map[string]string{"a": "x"})
-	ins.Put(newNominateFrom(1, 1, "foo"))
-	ins.Put(newNominateFrom(1, 1, "foo"))
-	ins.Put(newNominateFrom(1, 1, "foo"))
+	ins.PutFrom("x", newNominate(1, "foo"))
+	ins.PutFrom("x", newNominate(1, "foo"))
+	ins.PutFrom("x", newNominate(1, "foo"))
 	assert.Equal(t, "foo", ins.Value(), "")
 	ins.Close()
 }
@@ -150,7 +150,7 @@ func TestInstanceSendsLearn(t *testing.T) {
 	it := newInstance()
 	it.setCluster(cx)
 
-	it.Put(newVoteFrom(0, 1, "foo"))
+	it.PutFrom("x", newVote(1, "foo"))
 
 	assert.Equal(t, Packet{newLearn("foo"), "x"}, <-ch)
 

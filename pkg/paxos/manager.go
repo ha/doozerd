@@ -87,18 +87,12 @@ func (m *Manager) getInstance(seqn uint64) (uint64, *instance) {
 	return r.seqn, it
 }
 
-func (m *Manager) Put(msg Msg) {
+func (m *Manager) PutFrom(addr string, msg Msg) {
 	if !msg.Ok() {
 		return
 	}
 	_, it := m.getInstance(msg.Seqn())
-	it.Put(msg)
-}
-
-func (m *Manager) PutFrom(addr string, msg Msg) {
-	_, it := m.getInstance(msg.Seqn())
-	msg.SetFrom(it.cluster().indexByAddr(addr))
-	m.Put(msg)
+	it.PutFrom(addr, msg)
 }
 
 func (m *Manager) Propose(v string) (uint64, string, os.Error) {
