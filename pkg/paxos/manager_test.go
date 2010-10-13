@@ -230,9 +230,7 @@ func TestManagerPutFrom(t *testing.T) {
 	st.Apply(uint64(4), mustEncodeSet(slotDir+"1", "b"))
 	st.Apply(uint64(5), mustEncodeSet(membersDir+"c", "z"))
 	st.Apply(uint64(6), mustEncodeSet(slotDir+"2", "c"))
-	p := make(FakePutterTo, 1)
-	m := NewManager(self, 6, 1, st, p)
-	p[0] = PutPutterTo{m}
+	m := NewManager(self, 6, 1, st, make(FakePutterTo, 0))
 
 	froms := make(chan int)
 
