@@ -63,6 +63,11 @@ func (ins *instance) Put(m Msg) {
 	ins.sPutter.Put(m)
 }
 
+func (it *instance) PutFrom(addr string, m Msg) {
+	m.SetFrom(it.cluster().indexByAddr(addr))
+	it.Put(m)
+}
+
 func (ins *instance) Value() string {
 	<-ins.done
 	return ins.v
