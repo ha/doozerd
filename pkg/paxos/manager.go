@@ -80,25 +80,25 @@ func (m *Manager) process() {
 	}
 }
 
-func (m *Manager) getInstance(seqn uint64) (uint64, *instance) {
+func (m *Manager) getInstance(seqn uint64) *instance {
 	r := &instReq{seqn, make(chan *instance)}
 	m.reqs <- r
 	it := <-r.ch
-	return r.seqn, it
+	return it
 }
 
 func (m *Manager) PutFrom(addr string, msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	_, it := m.getInstance(msg.Seqn())
+	it := m.getInstance(msg.Seqn())
 	it.PutFrom(addr, msg)
 }
 
 func (m *Manager) Propose(v string) (uint64, string, os.Error) {
 	ch := make(chan store.Event)
 	seqn := <-m.seqns
-	_, inst := m.getInstance(seqn)
+	inst := m.getInstance(seqn)
 	m.st.Wait(seqn, ch)
 	m.logger.Logf("paxos propose -> %q", v)
 	inst.Propose(v)
