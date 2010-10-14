@@ -128,3 +128,9 @@ function dr() {
     $('body').addClass('error nows').removeClass('loading open closed wereback');
   }
 }
+
+function jerr() {
+  const m = 'could not load jquery (is your network link down?)';
+  document.getElementById('status').innerText = m;
+  document.getElementsByTagName('body')[0].className = 'error';
+}
