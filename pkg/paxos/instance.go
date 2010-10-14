@@ -6,9 +6,6 @@ type instance struct {
 	done    chan int
 	ins     chan Packet
 	cPutter putCloser // Coordinator
-	aPutter putCloser // Acceptor
-	lPutter putCloser // Learner
-	sPutter putCloser // Sink
 }
 
 type clusterer interface {
@@ -23,9 +20,6 @@ func newInstance(seqn uint64, cf clusterer) *instance {
 		done:    make(chan int),
 		ins:     make(chan Packet),
 		cPutter: cIns,
-		aPutter: aIns,
-		lPutter: lIns,
-		sPutter: sIns,
 	}
 
 	go func() {
@@ -46,9 +40,9 @@ func newInstance(seqn uint64, cf clusterer) *instance {
 			case p := <-ins.ins:
 				if closed(ins.ins) {
 					ins.cPutter.Close()
-					ins.aPutter.Close()
-					ins.lPutter.Close()
-					ins.sPutter.Close()
+					aIns.Close()
+					lIns.Close()
+					sIns.Close()
 					return
 				}
 				p.SetFrom(cx.indexByAddr(p.Addr))
