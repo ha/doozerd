@@ -333,13 +333,13 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re, stop:math.MaxUint64}
 }
 
-// Subscribes `ch` to receive a single event representing the change made at
-// position `seqn`.
+// Returns a read-only chan that will receive a single event representing the
+// change made at position `seqn`.
 //
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
-func (s *Store) Wait(seqn uint64, ch chan Event) {
-	all := make(chan Event)
+func (s *Store) Wait(seqn uint64) <-chan Event {
+	ch, all := make(chan Event, 1), make(chan Event)
 	s.watchCh <- watch{in:all, re:waitRegexp, stop:seqn}
 	go func() {
 		for e := range all {
@@ -349,6 +349,7 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 			}
 		}
 	}()
+	return ch
 }
 
 // Ensures that the application of mutation at `seqn` happens before the call
@@ -357,9 +358,7 @@ func (s *Store) Wait(seqn uint64, ch chan Event) {
 // See http://golang.org/doc/go_mem.html for the meaning of "happens before" in
 // Go.
 func (st *Store) Sync(seqn uint64) {
-	ch := make(chan Event)
-	st.Wait(seqn, ch)
-	<-ch
+	<-st.Wait(seqn)
 }
 
 // Returns an immutable copy of `st` in which `path` exists as a regular file

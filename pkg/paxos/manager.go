@@ -96,10 +96,9 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 }
 
 func (m *Manager) Propose(v string) (uint64, string, os.Error) {
-	ch := make(chan store.Event)
 	seqn := <-m.seqns
 	inst := m.getInstance(seqn)
-	m.st.Wait(seqn, ch)
+	ch := m.st.Wait(seqn)
 	m.logger.Logf("paxos propose -> %d %q", seqn, v)
 	inst.Propose(v)
 	ev := <-ch

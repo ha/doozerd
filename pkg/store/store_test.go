@@ -609,9 +609,8 @@ func TestWatchClose(t *testing.T) {
 
 func TestWaitClose(t *testing.T) {
 	s := New()
-	ch := make(chan Event)
 
-	s.Wait(1, ch)
+	s.Wait(1)
 
 	s.Apply(0, "") // just for synchronization
 
@@ -796,11 +795,10 @@ func TestStoreWaitWorks(t *testing.T) {
 	mut := MustEncodeSet("/x", "a", Clobber)
 
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st.Watch("/**", evCh)
 
-	st.Wait(1, statusCh)
+	statusCh := st.Wait(1)
 	st.Apply(1, mut)
 	st.Sync(1)
 
@@ -816,7 +814,6 @@ func TestStoreWaitWorks(t *testing.T) {
 func TestStoreWaitOutOfOrder(t *testing.T) {
 	st := New()
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st.Watch("/**", evCh)
 
@@ -824,7 +821,7 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 	st.Apply(2, MustEncodeSet("/x", "b", Clobber))
 	st.Sync(2)
 
-	st.Wait(1, statusCh)
+	statusCh := st.Wait(1)
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
@@ -841,11 +838,10 @@ func TestStoreWaitBadMutation(t *testing.T) {
 
 	evCh := make(chan Event)
 	t.Logf("evCh=%v", evCh)
-	statusCh := make(chan Event)
 
 	st.Watch("/**", evCh)
 
-	st.Wait(1, statusCh)
+	statusCh := st.Wait(1)
 	st.Apply(1, mut)
 
 	got := <-statusCh
@@ -861,11 +857,10 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	mut := BadInstructions[0]
 
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st.Watch("/**", evCh)
 
-	st.Wait(1, statusCh)
+	statusCh := st.Wait(1)
 	st.Apply(1, mut)
 
 	got := <-statusCh
@@ -880,12 +875,11 @@ func TestStoreWaitCasMatchAdd(t *testing.T) {
 	mut := MustEncodeSet("/a", "foo", Missing)
 
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st := New()
 
 	st.Watch("/**", evCh)
-	st.Wait(1, statusCh)
+	statusCh := st.Wait(1)
 	st.Apply(1, mut)
 
 	got := <-statusCh
@@ -901,12 +895,11 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 	mut2 := MustEncodeSet("/a", "foo", "1")
 
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st := New()
 
 	st.Watch("/**", evCh)
-	st.Wait(2, statusCh)
+	statusCh := st.Wait(2)
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
 
@@ -923,12 +916,11 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 	mut := MustEncodeSet("/a", "foo", "123")
 
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st := New()
 
 	st.Watch("/**", evCh)
-	st.Wait(1, statusCh)
+	statusCh := st.Wait(1)
 	st.Apply(1, mut)
 
 	got := <-statusCh
@@ -944,12 +936,11 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	mut2 := MustEncodeSet("/a", "foo", "123")
 
 	evCh := make(chan Event)
-	statusCh := make(chan Event)
 
 	st := New()
 
 	st.Watch("/**", evCh)
-	st.Wait(2, statusCh)
+	statusCh := st.Wait(2)
 	st.Apply(1, mut1)
 	st.Apply(2, mut2)
 
