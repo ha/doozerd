@@ -2,8 +2,6 @@ package paxos
 
 type instance struct {
 	vin     chan string
-	v       string
-	done    chan int
 	ins     chan Packet
 }
 
@@ -11,12 +9,11 @@ type clusterer interface {
 	cluster(seqn uint64) *cluster
 }
 
-func newInstance(seqn uint64, cf clusterer) *instance {
+func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 	cIns, aIns, lIns := make(ChanPutCloser), make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
 		vin:     make(chan string),
-		done:    make(chan int),
 		ins:     make(chan Packet),
 	}
 
@@ -49,10 +46,9 @@ func newInstance(seqn uint64, cf clusterer) *instance {
 				lIns.Put(p.Msg)
 				sIns.Put(p.Msg)
 			case v := <-ch:
-				ins.v = v
 				close(ch)
-				close(ins.done)
-				cx.Put(newLearn(ins.v))
+				cx.Put(newLearn(v))
+				res <- result{seqn, v}
 				return
 			}
 		}
@@ -65,11 +61,6 @@ func (it *instance) PutFrom(addr string, m Msg) {
 	go func() {
 		it.ins <- Packet{m, addr}
 	}()
-}
-
-func (ins *instance) Value() string {
-	<-ins.done
-	return ins.v
 }
 
 func (ins *instance) Close() {

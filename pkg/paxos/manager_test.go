@@ -22,7 +22,7 @@ func TestProposeAndLearn(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
-	got := ix.Value()
+	got := (<-m.learned).v
 
 	assert.Equal(t, exp, got, "")
 }
@@ -33,8 +33,6 @@ func TestProposeAndRecv(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
-	got := ix.Value()
-	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(3), seqn, "")
@@ -47,8 +45,6 @@ func TestProposeAndRecvAltStart(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
-	got := ix.Value()
-	assert.Equal(t, exp, got, "")
 
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(3), seqn, "")
@@ -62,8 +58,6 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp[0])
-	got0 := ix.Value()
-	assert.Equal(t, exp[0], got0, "")
 
 	seqn0, v0 := m.Recv()
 	assert.Equal(t, seqnexp[0], seqn0, "seqn 1")
@@ -73,8 +67,6 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 
 	ix = m.getInstance(<-m.seqns)
 	ix.Propose(exp[1])
-	got1 := ix.Value()
-	assert.Equal(t, exp[1], got1, "")
 
 	seqn1, v1 := m.Recv()
 	assert.Equal(t, seqnexp[1], seqn1, "seqn 1")
@@ -118,8 +110,6 @@ func TestUnusedSeqn(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp2)
-	got := ix.Value()
-	assert.Equal(t, exp2, got, "")
 	seqn, v = m.Recv()
 	assert.Equal(t, uint64(3), seqn, "")
 	assert.Equal(t, exp2, v, "")
@@ -132,8 +122,6 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose("y")
-	got := ix.Value()
-	assert.Equal(t, "y", got, "")
 
 	seqn, v := m.Recv()
 	assert.Equal(t, uint64(3), seqn, "")

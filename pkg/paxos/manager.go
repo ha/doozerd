@@ -74,11 +74,8 @@ func (m *Manager) process() {
 	for req := range m.reqs {
 		inst, ok := instances[req.seqn]
 		if !ok {
-			inst = newInstance(req.seqn, m)
+			inst = newInstance(req.seqn, m, m.learned)
 			instances[req.seqn] = inst
-			go func(seqn uint64, it *instance) {
-				m.learned <- result{seqn, it.Value()}
-			}(req.seqn, inst)
 		}
 		req.ch <- inst
 	}
