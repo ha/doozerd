@@ -58,9 +58,6 @@ func coordinator(ins chan Msg, cx *cluster, outs Putter) {
 				chosen := newNominate(crnd, v)
 				outs.Put(chosen)
 			}
-		case propose:
-			target = proposeParts(in)
-			fallthrough
 		case tick:
 			crnd += uint64(cx.Len())
 			outs.Put(newInvite(crnd))
