@@ -14,7 +14,7 @@ type result struct {
 }
 
 type instReq struct {
-	seqn uint64 // 0 means to fill in a fresh seqn
+	seqn uint64
 	ch   chan *instance
 }
 
