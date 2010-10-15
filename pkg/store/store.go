@@ -43,7 +43,6 @@ type state struct {
 }
 
 type watch struct {
-	pat string
 	in, out chan Event
 	re *regexp.Regexp
 }
@@ -321,7 +320,7 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
 	in := make(chan Event)
 	go buffer(in, ch)
-	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re}
+	s.watchCh <- watch{out:ch, in:in, re:re}
 }
 
 // Returns a read-only chan that will receive a single event representing the
