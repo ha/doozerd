@@ -79,5 +79,6 @@ func (ins *instance) Close() {
 }
 
 func (ins *instance) Propose(v string) {
-	ins.cPutter.Put(newPropose(v))
+	// The from address doesn't matter.
+	ins.PutFrom("", newPropose(v))
 }
