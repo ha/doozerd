@@ -5,7 +5,6 @@ type instance struct {
 	v       string
 	done    chan int
 	ins     chan Packet
-	cPutter putCloser // Coordinator
 }
 
 type clusterer interface {
@@ -19,7 +18,6 @@ func newInstance(seqn uint64, cf clusterer) *instance {
 		vin:     make(chan string),
 		done:    make(chan int),
 		ins:     make(chan Packet),
-		cPutter: cIns,
 	}
 
 	go func() {
@@ -39,7 +37,7 @@ func newInstance(seqn uint64, cf clusterer) *instance {
 			select {
 			case p := <-ins.ins:
 				if closed(ins.ins) {
-					ins.cPutter.Close()
+					cIns.Close()
 					aIns.Close()
 					lIns.Close()
 					sIns.Close()
