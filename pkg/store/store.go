@@ -5,7 +5,6 @@ import (
 	"container/list"
 	"gob"
 	"junta/util"
-	"math"
 	"os"
 	"regexp"
 	"strings"
@@ -24,8 +23,6 @@ var (
 	ErrTooLate = os.NewError("too late")
 	ErrCasMismatch = os.NewError("cas mismatch")
 )
-
-var waitRegexp = regexp.MustCompile(``)
 
 type Store struct {
 	applyCh chan apply
@@ -49,7 +46,6 @@ type watch struct {
 	pat string
 	in, out chan Event
 	re *regexp.Regexp
-	stop uint64
 }
 
 // Creates a new, empty data store. Mutations will be applied in order,
@@ -234,12 +230,7 @@ func (s *Store) process() {
 				s.todo[a.seqn] = a
 			}
 		case w := <-s.watchCh:
-			if w.stop > ver {
-				append(&s.watches, w)
-			} else {
-				w.in <- Event{Seqn:w.stop, Err:ErrTooLate}
-				close(w.in)
-			}
+			append(&s.watches, w)
 		}
 
 		// If we have any mutations that can be applied, do them.
@@ -330,7 +321,7 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
 	in := make(chan Event)
 	go buffer(in, ch)
-	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re, stop:math.MaxUint64}
+	s.watchCh <- watch{pat:pattern, out:ch, in:in, re:re}
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -340,7 +331,15 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 // sent with its `Err` set to `ErrTooLate`.
 func (s *Store) Wait(seqn uint64) <-chan Event {
 	ch, all := make(chan Event, 1), make(chan Event)
-	s.watchCh <- watch{in:all, re:waitRegexp, stop:seqn}
+
+	s.Watch("**", all)
+
+	// Reading shared state. This must happen after the call to s.Watch.
+	if s.state.ver >= seqn {
+		close(all)
+		ch <- Event{Seqn:seqn, Err:ErrTooLate}
+	}
+
 	go func() {
 		for e := range all {
 			if e.Seqn == seqn {

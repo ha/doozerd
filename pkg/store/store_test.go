@@ -618,6 +618,7 @@ func TestWaitClose(t *testing.T) {
 
 	s.Apply(1, MustEncodeSet("/x", "", Clobber))
 	s.Apply(2, MustEncodeSet("/x", "", Clobber))
+	s.Apply(3, MustEncodeSet("/x", "", Clobber))
 	s.Apply(0, "") // just for synchronization
 
 	assert.Equal(t, 0, len(s.watches))
