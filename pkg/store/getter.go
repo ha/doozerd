@@ -1,5 +1,10 @@
 package store
 
+import (
+	"os"
+	"regexp"
+)
+
 type Getter interface {
     Get(path string) (values []string, cas string)
 }
@@ -33,4 +38,51 @@ func GetDir(g Getter, path string) (entries []string) {
 		return nil
 	}
 	return v
+}
+
+func walk(g Getter, path string, re *regexp.Regexp, ch chan Event) {
+	v, cas := g.Get(path)
+	if cas != Dir && re.MatchString(path) {
+		ch <- Event{0, path, v[0], cas, "", nil, nil}
+		return
+	}
+
+	if cas == Missing {
+		return
+	}
+
+	if path == "/" {
+		path = ""
+	}
+
+	for _, ent := range v {
+		walk(g, path+"/"+ent, re, ch)
+	}
+}
+
+func Walk(g Getter, pattern string) (chan Event, os.Error) {
+	ch := make(chan Event)
+
+	// TODO find the longest non-glob prefix of pattern and start there
+	re, err := compileGlob(pattern)
+	_ = re
+	if err != nil {
+		close(ch)
+		return nil, err
+	}
+
+	go func() {
+		walk(g, "/", re, ch)
+		close(ch)
+	}()
+
+	return ch, nil
+}
+
+func MustWalk(g Getter, pattern string) chan Event {
+	ch, err := Walk(g, pattern)
+	if err != nil {
+		panic(err)
+	}
+	return ch
 }

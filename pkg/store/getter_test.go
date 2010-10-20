@@ -42,3 +42,25 @@ func TestGetDirString(t *testing.T) {
 	s.Sync(1)
 	assert.Equal(t, []string(nil), GetDir(s, "/x"))
 }
+
+func TestWalk(t *testing.T) {
+	s := New()
+	s.Apply(1, MustEncodeSet("/d/x", "1", Clobber))
+	s.Apply(2, MustEncodeSet("/d/y", "2", Clobber))
+	s.Apply(3, MustEncodeSet("/d/z/a", "3", Clobber))
+	s.Apply(4, MustEncodeSet("/m/y", "", Clobber))
+	s.Apply(5, MustEncodeSet("/n", "", Clobber))
+	s.Sync(5)
+	ch := MustWalk(s, "/d/**")
+	e := <-ch
+	assert.Equal(t, "/d/x", e.Path)
+	assert.Equal(t, "1", e.Body)
+	e = <-ch
+	assert.Equal(t, "/d/y", e.Path)
+	assert.Equal(t, "2", e.Body)
+	e = <-ch
+	assert.Equal(t, "/d/z/a", e.Path)
+	assert.Equal(t, "3", e.Body)
+	<-ch
+	assert.T(t, closed(ch))
+}
