@@ -14,10 +14,12 @@ bench: bench.pkg
 	cd pkg/store && make $*
 	cd pkg/paxos && make $*
 	cd pkg/proto && make $*
+	cd pkg/lock && make $*
 	cd pkg/server && make $*
 	cd pkg/web && make $*
 	cd pkg/client && make $*
 	cd pkg/mon && make $*
+	cd pkg/jtest && make $*
 	cd pkg/timer && make $*
 	cd pkg && make $*
 
