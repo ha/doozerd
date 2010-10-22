@@ -1,14 +1,13 @@
 package server
 
 import (
-	"os"
-	"net"
-	
 	"junta"
-	"junta/util"
 	"junta/paxos"
 	"junta/proto"
 	"junta/store"
+	"junta/util"
+	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
