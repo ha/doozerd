@@ -4,6 +4,7 @@ import (
 	"os"
 	"net"
 	
+	"junta"
 	"junta/util"
 	"junta/paxos"
 	"junta/proto"
@@ -29,8 +30,8 @@ type conn struct {
 }
 
 type Manager interface {
+	junta.Proposer
 	PutFrom(string, paxos.Msg)
-	Propose(string) (uint64, string, os.Error)
 	Alpha() int
 }
 
