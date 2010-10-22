@@ -16,11 +16,6 @@ const (
 	OneSecond      = 1e9 // ns
 )
 
-const (
-	timerMatch = "/timer/**"
-)
-
-
 type Tick struct {
 	Path string
 	At   int64
@@ -34,7 +29,7 @@ func (t Tick) Less(y interface{}) bool {
 type length chan int
 
 type Timer struct {
-	Name string
+	Pattern string
 
 	// Ticks are sent here
 	C chan Tick
@@ -44,9 +39,9 @@ type Timer struct {
 	ticker *time.Ticker
 }
 
-func New(name string, interval int64, st *store.Store) *Timer {
+func New(pattern string, interval int64, st *store.Store) *Timer {
 	t := &Timer{
-		Name:   name,
+		Pattern:   pattern,
 		C:      make(chan Tick),
 		events: make(chan store.Event),
 		lengths: make(chan length),
@@ -54,7 +49,7 @@ func New(name string, interval int64, st *store.Store) *Timer {
 	}
 
 	// Begin watching as timers come and go
-	st.Watch(timerMatch, t.events)
+	st.Watch(pattern, t.events)
 
 	go t.process()
 
@@ -62,7 +57,7 @@ func New(name string, interval int64, st *store.Store) *Timer {
 }
 
 func (t *Timer) process() {
-	logger := util.NewLogger("timer (%s)", t.Name)
+	logger := util.NewLogger("timer (%s)", t.Pattern)
 
 	ticks := new(vector.Vector)
 	heap.Init(ticks)

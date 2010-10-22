@@ -8,6 +8,10 @@ import (
 	"strconv"
 )
 
+const (
+	testPattern = "/timer/**"
+)
+
 func encodeTimer(path string, offset int64) string {
 	future := time.Nanoseconds() + offset
 	muta := store.MustEncodeSet(
@@ -20,7 +24,7 @@ func encodeTimer(path string, offset int64) string {
 
 func TestManyOneshotTimers(t *testing.T) {
 	st := store.New()
-	timer := New("test", OneMillisecond*10, st)
+	timer := New(testPattern, OneMillisecond*10, st)
 	defer timer.Close()
 
 	st.Apply(1, encodeTimer("/timer/longest", 40*OneMicrosecond))
@@ -44,13 +48,13 @@ func TestManyOneshotTimers(t *testing.T) {
 
 func TestDeleteTimer(t *testing.T) {
 	st := store.New()
-	timer := New("test", OneMillisecond*10, st)
+	timer := New(testPattern, OneMillisecond*10, st)
 	defer timer.Close()
 
 	never := "/timer/never/ticks"
 
 	watch := make(chan store.Event)
-	st.Watch(timerMatch, watch)
+	st.Watch(testPattern, watch)
 
 	// Wait one minute to ensure it doesn't tick before
 	// the following delete and assert.
