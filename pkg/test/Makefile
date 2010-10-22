@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/jtest
+TARG=junta/test
 GOFILES=\
-	jtest.go\
+	test.go\
 
 include $(GOROOT)/src/Make.pkg

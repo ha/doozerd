@@ -19,7 +19,7 @@ bench: bench.pkg
 	cd pkg/web && make $*
 	cd pkg/client && make $*
 	cd pkg/mon && make $*
-	cd pkg/jtest && make $*
+	cd pkg/test && make $*
 	cd pkg/timer && make $*
 	cd pkg && make $*
 

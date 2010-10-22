@@ -3,13 +3,13 @@ package lock
 import (
 	"junta/assert"
 	"junta/store"
-	"junta/jtest"
+	"junta/test"
 	"testing"
 )
 
 func TestLockSimple(t *testing.T) {
 	st := store.New()
-	fp := &jtest.FakeProposer{Store:st}
+	fp := &test.FakeProposer{Store:st}
 	lk := New(fp.Store, fp)
 	defer lk.Close()
 

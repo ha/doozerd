@@ -1,4 +1,4 @@
-package jtest
+package test
 
 import (
 	"junta/store"
