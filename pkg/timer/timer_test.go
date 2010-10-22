@@ -20,12 +20,12 @@ func encodeTimer(path string, offset int64) string {
 
 func TestManyOneshotTimers(t *testing.T) {
 	st := store.New()
-	timer := New("test", oneMillisecond*10, st)
+	timer := New("test", OneMillisecond*10, st)
 	defer timer.Close()
 
-	st.Apply(1, encodeTimer("/timer/longest", 40*oneMicrosecond))
-	st.Apply(2, encodeTimer("/timer/short", 10*oneMicrosecond))
-	st.Apply(3, encodeTimer("/timer/long", 25*oneMicrosecond))
+	st.Apply(1, encodeTimer("/timer/longest", 40*OneMicrosecond))
+	st.Apply(2, encodeTimer("/timer/short", 10*OneMicrosecond))
+	st.Apply(3, encodeTimer("/timer/long", 25*OneMicrosecond))
 
 	got := <-timer.C
 	assert.Equal(t, got.Path, "/timer/short")
@@ -44,7 +44,7 @@ func TestManyOneshotTimers(t *testing.T) {
 
 func TestDeleteTimer(t *testing.T) {
 	st := store.New()
-	timer := New("test", oneMillisecond*10, st)
+	timer := New("test", OneMillisecond*10, st)
 	defer timer.Close()
 
 	never := "/timer/never/ticks"
@@ -54,7 +54,7 @@ func TestDeleteTimer(t *testing.T) {
 
 	// Wait one minute to ensure it doesn't tick before
 	// the following delete and assert.
-	st.Apply(1, encodeTimer(never, 60*oneSecond))
+	st.Apply(1, encodeTimer(never, 60*OneSecond))
 	<-watch
 
 	st.Apply(2, store.MustEncodeDel(never, store.Clobber))

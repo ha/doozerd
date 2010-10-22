@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	oneMillisecond = 1e3 // ns
-	oneMicrosecond = 1e6 // ns
-	oneSecond      = 1e9 // ns
+	OneMillisecond = 1e3 // ns
+	OneMicrosecond = 1e6 // ns
+	OneSecond      = 1e9 // ns
 )
 
 const (
