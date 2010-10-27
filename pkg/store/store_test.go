@@ -36,6 +36,7 @@ var BadPaths = []string{
 	"/x=",
 	"/x y",
 	"/x/",
+	"/x//y",
 }
 
 var BadInstructions = []string{
@@ -76,7 +77,7 @@ func TestSplit(t *testing.T) {
 func TestCheckBadPaths(t *testing.T) {
 	for _, k := range BadPaths {
 		err := checkPath(k)
-		assert.Equal(t, ErrBadPath, err)
+		assert.Equal(t, ErrBadPath, err, k)
 	}
 }
 

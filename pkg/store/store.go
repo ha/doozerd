@@ -16,6 +16,15 @@ const (
 	Dir = "dir"
 )
 
+// TODO revisit this when package regexp is more complete (e.g. do Unicode)
+const (
+	charPat = `[a-zA-Z]`
+	partPat = "/"+charPat+"+"
+	pathPat = "^/$|^("+partPat+")+$"
+)
+
+var pathRe = regexp.MustCompile(pathPat)
+
 var (
 	ErrBadPath = os.NewError("bad path")
 	ErrBadMutation = os.NewError("bad mutation")
@@ -75,12 +84,7 @@ func join(parts []string) string {
 }
 
 func checkPath(k string) os.Error {
-	switch {
-	case len(k) < 1,
-	     k[0] != '/',
-	     len(k) > 1 && k[len(k) - 1] == '/',
-	     strings.Count(k, "=") > 0,
-	     strings.Count(k, " ") > 0:
+	if !pathRe.MatchString(k) {
 		return ErrBadPath
 	}
 	return nil
