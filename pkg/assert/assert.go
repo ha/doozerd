@@ -51,6 +51,10 @@ func Equal(t *testing.T, exp, got interface{}, args ... interface{}) {
 	equal(t, exp, got, 1, args)
 }
 
+func Equalf(t *testing.T, exp, got interface{}, format string, args ...interface{}) {
+	equal(t, exp, got, 1, fmt.Sprintf(format, args))
+}
+
 func NotEqual(t *testing.T, exp, got interface{}, args ... interface{}) {
 	f := func() {
 		t.Errorf("!  Unexpected: <%#v>", exp)
