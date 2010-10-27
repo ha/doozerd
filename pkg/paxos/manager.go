@@ -20,7 +20,7 @@ type result struct {
 
 type instReq struct {
 	seqn uint64
-	ch   chan *instance
+	ch   chan instance
 }
 
 type Manager struct {
@@ -90,19 +90,20 @@ func (mg *Manager) fill(seqn uint64) {
 }
 
 func (m *Manager) process() {
-	instances := make(map[uint64]*instance)
+	instances := make(map[uint64]instance)
 	for req := range m.reqs {
 		inst, ok := instances[req.seqn]
 		if !ok {
-			inst = newInstance(req.seqn, m, m.learned)
+			inst = make(instance)
 			instances[req.seqn] = inst
+			go inst.process(req.seqn, m, m.learned)
 		}
 		req.ch <- inst
 	}
 }
 
-func (m *Manager) getInstance(seqn uint64) *instance {
-	ch := make(chan *instance)
+func (m *Manager) getInstance(seqn uint64) instance {
+	ch := make(chan instance)
 	m.reqs <- instReq{seqn, ch}
 	return <-ch
 }

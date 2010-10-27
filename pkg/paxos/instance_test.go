@@ -34,7 +34,7 @@ func (ck *clusterK) cluster(seqn uint64) *cluster {
 	return (*cluster)(ck)
 }
 
-func selfRefNewInstance(self string, nodes map[string]string) (*instance, chan result) {
+func selfRefNewInstance(self string, nodes map[string]string) (instance, chan result) {
 	res := make(chan result, 1)
 	p := make(FakePutterFrom, 1)
 	cals := make([]string, len(nodes))
@@ -44,7 +44,8 @@ func selfRefNewInstance(self string, nodes map[string]string) (*instance, chan r
 		i++
 	}
 	cx := newCluster(self, nodes, cals, putFromWrapperTo{p, nodes[self]})
-	ins := newInstance(0, (*clusterK)(cx), res)
+	ins := make(instance)
+	go ins.process(0, (*clusterK)(cx), res)
 	p[0] = ins
 	return ins, res
 }
@@ -111,9 +112,12 @@ func TestMultipleInstances(t *testing.T) {
 	cxA := newCluster("a", nodes, cals, putFromWrapperTo{ps, "x"})
 	cxB := newCluster("b", nodes, cals, putFromWrapperTo{ps, "y"})
 	cxC := newCluster("c", nodes, cals, putFromWrapperTo{ps, "z"})
-	insA := newInstance(0, (*clusterK)(cxA), resA)
-	insB := newInstance(0, (*clusterK)(cxB), make(chan result, 1))
-	insC := newInstance(0, (*clusterK)(cxC), make(chan result, 1))
+	insA := make(instance)
+	insB := make(instance)
+	insC := make(instance)
+	go insA.process(0, (*clusterK)(cxA), resA)
+	go insB.process(0, (*clusterK)(cxB), make(chan result, 1))
+	go insC.process(0, (*clusterK)(cxC), make(chan result, 1))
 	ps[0] = insA
 	ps[1] = insB
 	ps[2] = insC
@@ -129,7 +133,8 @@ func TestInstanceSendsLearn(t *testing.T) {
 	ch := make(ChanPutCloserTo)
 	nodes := map[string]string{"a": "x"}
 	cx := newCluster("a", nodes, []string{"a"}, ch)
-	it := newInstance(0, (*clusterK)(cx), make(chan result, 1))
+	it := make(instance)
+	go it.process(0, (*clusterK)(cx), make(chan result, 1))
 
 	it.PutFrom("x", newVote(1, "foo"))
 
