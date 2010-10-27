@@ -1,11 +1,13 @@
 package paxos
 
-func sink(ch chan Msg) string {
-	for m := range ch {
-		switch m.Cmd() {
-		case learn:
-			return learnParts(m)
-		}
+type sink struct {
+	v    string
+	done bool
+}
+
+func (s *sink) Put(m Msg) {
+	switch m.Cmd() {
+	case learn:
+		s.done, s.v = true, learnParts(m)
 	}
-	return ""
 }

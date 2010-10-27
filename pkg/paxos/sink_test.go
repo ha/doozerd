@@ -6,41 +6,20 @@ import (
 )
 
 func TestSinkLearnsAValue(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	var s sink
 
-	go func() {
-		taught <- sink(msgs)
-	}()
-
-	msgs <- newLearn("foo")
-
-	assert.Equal(t, "foo", <-taught, "")
+	s.Put(newLearn("foo"))
+	assert.Equal(t, true, s.done)
+	assert.Equal(t, "foo", s.v)
 }
 
 func TestSinkIgnoresOtherMessages(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	var s sink
 
-	go func() {
-		taught <- sink(msgs)
-	}()
+	s.Put(newVote(1, "foo"))
+	assert.Equal(t, false, s.done)
 
-	msgs <- newVote(1, "foo")
-	msgs <- newLearn("foo")
-
-	assert.Equal(t, "foo", <-taught, "")
-}
-
-func TestSinkExitsQuietly(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
-
-	go func() {
-		taught <- sink(msgs)
-	}()
-
-	close(msgs)
-
-	assert.Equal(t, "", <-taught, "")
+	s.Put(newLearn("foo"))
+	assert.Equal(t, true, s.done)
+	assert.Equal(t, "foo", s.v)
 }
