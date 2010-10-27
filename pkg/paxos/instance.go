@@ -17,7 +17,6 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 	go func() {
 		cx := cf.cluster(seqn)
 
-		ch := make(chan string)
 		ac := acceptor{outs:cx}
 		ln := *newLearner(uint64(cx.Quorum()))
 		var sk sink
@@ -38,22 +37,15 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 				sk.Put(p.Msg)
 
 				if sk.done {
-					close(ch)
 					cx.Put(newLearn(sk.v))
 					res <- result{seqn, sk.v}
 					return
 				}
 				if ln.done {
-					close(ch)
 					cx.Put(newLearn(ln.v))
 					res <- result{seqn, ln.v}
 					return
 				}
-			case v := <-ch:
-				close(ch)
-				cx.Put(newLearn(v))
-				res <- result{seqn, v}
-				return
 			}
 		}
 	}()
