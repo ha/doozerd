@@ -50,9 +50,10 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 	seqn, cas := uint64(1), "1"
 	m := BadInstructions[0]
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{ErrBadPath.String(), cas, nil}}}}}
+	err := &BadPathError{""}
+	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{err.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, ErrBadPath.String(), cas, m, ErrBadPath, n}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, err.String(), cas, m, err, n}, e)
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {

@@ -77,7 +77,8 @@ func TestSplit(t *testing.T) {
 func TestCheckBadPaths(t *testing.T) {
 	for _, k := range BadPaths {
 		err := checkPath(k)
-		assert.Equal(t, ErrBadPath, err, k)
+		_, ok := err.(*BadPathError)
+		assert.Tf(t, ok, "for path %q, got %T: %v", k, err, err)
 	}
 }
 
@@ -133,7 +134,8 @@ func TestDecodeDel(t *testing.T) {
 func TestDecodeBadInstructions(t *testing.T) {
 	for _, m := range BadInstructions {
 		_, _, _, _, err := decode(m)
-		assert.Equal(t, ErrBadPath, err)
+		_, ok := err.(*BadPathError)
+		assert.Tf(t, ok, "for mut %q, got %T: %v", m, err, err)
 	}
 }
 
@@ -867,7 +869,8 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, ErrBadPath, got.Err)
+	_, ok := got.Err.(*BadPathError)
+	assert.Tf(t, ok, "for mut %q, got %T: %v", mut, got.Err, got.Err)
 	assert.Equal(t, mut, got.Mut)
 
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)

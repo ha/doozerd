@@ -26,12 +26,19 @@ const (
 var pathRe = regexp.MustCompile(pathPat)
 
 var (
-	ErrBadPath = os.NewError("bad path")
 	ErrBadMutation = os.NewError("bad mutation")
 	ErrBadSnapshot = os.NewError("bad snapshot")
 	ErrTooLate = os.NewError("too late")
 	ErrCasMismatch = os.NewError("cas mismatch")
 )
+
+type BadPathError struct {
+	Path string
+}
+
+func (e *BadPathError) String() string {
+	return "bad path: " + e.Path
+}
 
 type Store struct {
 	applyCh chan apply
@@ -85,7 +92,7 @@ func join(parts []string) string {
 
 func checkPath(k string) os.Error {
 	if !pathRe.MatchString(k) {
-		return ErrBadPath
+		return &BadPathError{k}
 	}
 	return nil
 }
@@ -94,7 +101,7 @@ func checkPath(k string) os.Error {
 // the contents of the file at `path` to `body` iff the CAS token of that file
 // matches `cas` at the time of application.
 //
-// If `path` is not valid, returns `ErrBadPath`.
+// If `path` is not valid, returns a `BadPathError`.
 func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
@@ -106,7 +113,7 @@ func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 // the file at `path` to be deleted iff the CAS token of that file matches
 // `cas` at the time of application.
 //
-// If `path` is not valid, returns `ErrBadPath`.
+// If `path` is not valid, returns a `BadPathError`.
 func EncodeDel(path string, cas string) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
