@@ -40,10 +40,6 @@ func (it instance) PutFrom(addr string, m Msg) {
 	}()
 }
 
-func (ins instance) Close() {
-	close(ins)
-}
-
 func (ins instance) Propose(v string) {
 	// The from address doesn't matter.
 	ins.PutFrom("", newPropose(v))

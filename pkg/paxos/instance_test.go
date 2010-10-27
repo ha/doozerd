@@ -54,21 +54,21 @@ func TestStartAtVote(t *testing.T) {
 	ins, res := selfRefNewInstance("a", map[string]string{"a": "x"})
 	ins.PutFrom("x", newVote(1, "foo"))
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestStartAtLearn(t *testing.T) {
 	ins, res := selfRefNewInstance("a", map[string]string{"a": "x"})
 	ins.PutFrom("x", newLearn("foo"))
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestLearnInEmptyCluster(t *testing.T) {
 	ins, res := selfRefNewInstance("a", map[string]string{})
 	ins.PutFrom("x", newLearn("foo"))
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestStartAtVoteWithDuplicates(t *testing.T) {
@@ -77,7 +77,7 @@ func TestStartAtVoteWithDuplicates(t *testing.T) {
 	ins.PutFrom("x", newVote(1, "foo"))
 	ins.PutFrom("x", newVote(1, "foo"))
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestVoteWithQuorumOf2(t *testing.T) {
@@ -85,7 +85,7 @@ func TestVoteWithQuorumOf2(t *testing.T) {
 	ins.PutFrom("y", newVote(1, "foo"))
 	ins.PutFrom("z", newVote(1, "foo"))
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestStartAtAccept(t *testing.T) {
@@ -94,14 +94,14 @@ func TestStartAtAccept(t *testing.T) {
 	ins.PutFrom("x", newNominate(1, "foo"))
 	ins.PutFrom("x", newNominate(1, "foo"))
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestStartAtCoord(t *testing.T) {
 	ins, res := selfRefNewInstance("a", map[string]string{"a": "x"})
 	ins.Propose("foo")
 	assert.Equal(t, "foo", (<-res).v, "")
-	ins.Close()
+	close(ins)
 }
 
 func TestMultipleInstances(t *testing.T) {
@@ -124,9 +124,9 @@ func TestMultipleInstances(t *testing.T) {
 
 	insA.Propose("bar")
 	assert.Equal(t, "bar", (<-resA).v, "")
-	insA.Close()
-	insB.Close()
-	insC.Close()
+	close(insA)
+	close(insB)
+	close(insC)
 }
 
 func TestInstanceSendsLearn(t *testing.T) {
@@ -140,7 +140,7 @@ func TestInstanceSendsLearn(t *testing.T) {
 
 	assert.Equal(t, Packet{newLearn("foo"), "x"}, <-ch)
 
-	it.Close()
+	close(it)
 }
 
 //func TestDeadlock(t *testing.T) {
