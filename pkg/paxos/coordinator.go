@@ -6,29 +6,32 @@ func coordinator(ins chan Msg, cx *cluster, outs Putter) {
 		crnd += uint64(cx.Len())
 	}
 
+	var begun bool
 	var target string
 	var cval string
 	var rsvps int
 	var vr uint64
 	var vv string
 
-	// Wait for the very first proposal
-	for in := range ins {
-		if in.Cmd() != propose {
-			continue
-		}
-		target = proposeParts(in)
-		outs.Put(newInvite(crnd))
-		vr = 0
-		vv = ""
-		rsvps = 0
-		cval = ""
-		break
-	}
-
 	for in := range ins {
 		switch in.Cmd() {
+		case propose:
+			if begun {
+				break
+			}
+
+			begun = true
+			target = proposeParts(in)
+			outs.Put(newInvite(crnd))
+			vr = 0
+			vv = ""
+			rsvps = 0
+			cval = ""
 		case rsvp:
+			if !begun {
+				break
+			}
+
 			i, vrnd, vval := rsvpParts(in)
 
 			if cval != "" {

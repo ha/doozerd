@@ -213,3 +213,26 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	c.Close()
 	close(outs)
 }
+
+func TestCoordStartRsvp(t *testing.T) {
+	outs := SyncPutter(make(chan Msg, 1))
+
+	c := make(ChanPutCloser)
+	go coordinator(c, newCluster("b", tenNodes, tenIds, nil), outs)
+
+	c.Put(newRsvpFrom(1, 1, 0, ""))
+	c.Put(newRsvpFrom(2, 1, 0, ""))
+	c.Put(newRsvpFrom(3, 1, 0, ""))
+	c.Put(newRsvpFrom(4, 1, 0, ""))
+	c.Put(newRsvpFrom(5, 1, 0, ""))
+	c.Put(newRsvpFrom(6, 1, 0, ""))
+
+	c.Put(newPropose("foo"))
+
+	// If the RSVPs were ignored, this will be an invite. Otherwise, it'll be a
+	// nominate.
+	assert.Equal(t, newInvite(1), <-outs, "")
+
+	c.Close()
+	close(outs)
+}
