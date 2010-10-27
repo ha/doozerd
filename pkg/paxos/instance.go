@@ -9,25 +9,21 @@ type clusterer interface {
 }
 
 func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
-	cIns := make(ChanPutCloser)
 	ins := &instance{
 		ins:     make(chan Packet),
 	}
 
 	go func() {
-		defer cIns.Close()
-
 		cx := cf.cluster(seqn)
 
+		co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:cx}
 		ac := acceptor{outs:cx}
 		ln := *newLearner(uint64(cx.Quorum()))
 		var sk sink
 
-		go coordinator(cIns, cx, cx)
-
 		for p := range ins.ins {
 			p.SetFrom(cx.indexByAddr(p.Addr))
-			cIns.Put(p.Msg)
+			co.Put(p.Msg)
 			ac.Put(p.Msg)
 			ln.Put(p.Msg)
 			sk.Put(p.Msg)
