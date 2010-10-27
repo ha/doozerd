@@ -1,8 +1,10 @@
 package paxos
 
 import (
+	"fmt"
 	"junta/assert"
 	"junta/store"
+	"strconv"
 	"testing"
 )
 
@@ -14,6 +16,24 @@ func selfRefNewManager(self string, alpha int) (*Manager, *store.Store) {
 	m := NewManager(self, 2, alpha, st, putFromWrapperTo{p, "x"})
 	p[0] = m
 	return m, st
+}
+
+func mutualRefManagers(n, alpha int) ([]*Manager, *store.Store) {
+	st := store.New()
+	p := make(FakePutterFrom, n)
+	ms := make([]*Manager, n)
+	for i := 0; i < n; i++ {
+		addr := fmt.Sprintf("addr%d", i)
+		id := fmt.Sprintf("id%d", i)
+		st.Apply(uint64(2*i + 1), mustEncodeSet(membersDir+id, addr))
+		st.Apply(uint64(2*i + 2), mustEncodeSet(slotDir+strconv.Itoa(i), id))
+		ms[i] = NewManager(id, uint64(2*n), alpha, st, putFromWrapperTo{p, addr})
+		p[i] = ms[i]
+	}
+	for s := uint64(2*n + 1); s < uint64(2*n + alpha); s++ {
+		st.Apply(s, store.Nop)
+	}
+	return ms, st
 }
 
 func TestProposeAndLearn(t *testing.T) {
@@ -71,6 +91,29 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 	seqn1, v1 := m.Recv()
 	assert.Equal(t, seqnexp[1], seqn1, "seqn 1")
 	assert.Equal(t, exp[1], v1, "")
+}
+
+func TestProposeAndRecvFill(t *testing.T) {
+	ms, st := mutualRefManagers(2, 10)
+
+	mut1 := store.MustEncodeSet("/foo", "a", store.Clobber)
+	mut2 := store.MustEncodeSet("/bar", "b", store.Clobber)
+
+	ch14 := st.Wait(14)
+	ch15 := st.Wait(15)
+	ch16 := st.Wait(16)
+
+	go func() {
+		for {
+			st.Apply(ms[0].Recv())
+		}
+	}()
+	go ms[0].Propose(mut1)
+	go ms[0].Propose(mut2)
+
+	assert.Equal(t, mut1, (<-ch14).Mut)
+	assert.Equal(t, store.Nop, (<-ch15).Mut)
+	assert.Equal(t, mut2, (<-ch16).Mut)
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
