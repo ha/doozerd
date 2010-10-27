@@ -1,4 +1,5 @@
-all: install.cmd
+all: install
+install: install.cmd
 clean: clean.cmd
 test: test.pkg
 bench: bench.pkg
