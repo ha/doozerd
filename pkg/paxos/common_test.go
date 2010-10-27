@@ -28,3 +28,17 @@ func init() {
 func (sp SyncPutter) Put(m Msg) {
 	sp <- m
 }
+
+type msgSlot struct {
+	*Msg
+}
+
+func (ms msgSlot) Put(m Msg) {
+	*ms.Msg = m
+}
+
+type funcPutter func(m Msg)
+
+func (fp funcPutter) Put(m Msg) {
+	fp(m)
+}

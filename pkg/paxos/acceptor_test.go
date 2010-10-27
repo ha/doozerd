@@ -3,7 +3,6 @@ package paxos
 import (
 	"junta/assert"
 	"testing"
-	"fmt"
 )
 
 func TestIgnoreOldMessages(t *testing.T) {
@@ -15,36 +14,23 @@ func TestIgnoreOldMessages(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		ins := make(chan Msg)
-		outs := SyncPutter(make(chan Msg))
+		var got Msg
+		ac := acceptor{outs:msgSlot{&got}}
 
-		go acceptor(ins, outs)
-		ins <- test[0]
-		<-outs // throw away first reply
-		ins <- test[1]
+		ac.Put(test[0])
 
 		// We want to check that it didn't try to send a response.
-		// If it didn't, it will continue to read the next input message and
-		// this will work fine. If it did, this will deadlock.
-		ins <- test[1]
-		// If we get here, it passes.
-
-		close(ins)
+		got = Msg{}
+		ac.Put(test[1])
+		assert.Equal(t, Msg{}, got)
 	}
 }
 
 func TestAcceptsInvite(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
-
-	go acceptor(ins, outs)
-	ins <- newInviteFrom(1, 1)
-	close(ins)
-
-	exp := newRsvp(1, 0, "")
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, <-outs, "")
+	var got Msg
+	ac := acceptor{outs:msgSlot{&got}}
+	ac.Put(newInviteFrom(1, 1))
+	assert.Equal(t, newRsvp(1, 0, ""), got)
 }
 
 func TestItVotes(t *testing.T) {
@@ -54,86 +40,51 @@ func TestItVotes(t *testing.T) {
 	}
 
 	for _, test := range totest {
-		ins := make(chan Msg)
-		outs := SyncPutter(make(chan Msg))
-
-		go acceptor(ins, outs)
-		ins <- test[0]
-		close(ins)
-
-		// outs was closed; therefore all messages have been processed
-		assert.Equal(t, test[1], <-outs, fmt.Sprintf("%v", test))
+		var got Msg
+		ac := acceptor{outs:msgSlot{&got}}
+		ac.Put(test[0])
+		assert.Equal(t, test[1], got, test)
 	}
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
-
+	var got Msg
+	ac := acceptor{outs:msgSlot{&got}}
 	val := "bar"
 
-	go acceptor(ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
-	ins <- newNominateFrom(1, 2, val)
-	close(ins)
-
-	exp := newVote(2, val)
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, <-outs, "")
+	ac.Put(newNominateFrom(1, 2, val))
+	assert.Equal(t, newVote(2, val), got)
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
-
+	var got Msg
+	ac := acceptor{outs:msgSlot{&got}}
 	val := "bar"
 
-	go acceptor(ins, outs)
 	// According to paxos, we can omit Phase 1 in the first round
-	ins <- newNominateFrom(1, 2, val)
-	close(ins)
-
-	exp := newVote(2, val)
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, <-outs, "")
+	ac.Put(newNominateFrom(1, 2, val))
+	assert.Equal(t, newVote(2, val), got)
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	var got Msg
+	ac := acceptor{outs:msgSlot{&got}}
 
-	go acceptor(ins, outs)
-	ins <- newNominateFrom(1, 1, "v")
-	<-outs // throw away VOTE message
-	ins <- newInviteFrom(1, 2)
-	close(ins)
-
-	exp := newRsvp(2, 1, "v")
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, <-outs, "")
+	ac.Put(newNominateFrom(1, 1, "v"))
+	ac.Put(newInviteFrom(1, 2))
+	assert.Equal(t, newRsvp(2, 1, "v"), got)
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
-	ins := make(chan Msg)
-	outs := SyncPutter(make(chan Msg))
+	var got Msg
+	ac := acceptor{outs:msgSlot{&got}}
 
-	go acceptor(ins, outs)
-	ins <- newNominateFrom(1, 1, "v")
-	got := <-outs
-	ins <- newNominateFrom(1, 1, "v")
+	ac.Put(newNominateFrom(1, 1, "v"))
+	assert.Equal(t, newVote(1, "v"), got)
 
-	// We want to check that it didn't try to send a response.
-	// If it didn't, it will continue to read the next input message and
-	// this will work fine. If it did, this will deadlock.
-	ins <- newInvite(0) // any old Msg will do here
-
-	close(ins)
-
-	exp := newVote(1, "v")
-
-	// outs was closed; therefore all messages have been processed
-	assert.Equal(t, exp, got, "")
+	ac.outs = funcPutter(func(m Msg) {
+		t.Error("should not vote twice in one round")
+	})
+	ac.Put(newNominateFrom(1, 1, "v"))
 }

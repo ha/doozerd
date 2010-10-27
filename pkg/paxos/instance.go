@@ -9,7 +9,7 @@ type clusterer interface {
 }
 
 func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
-	cIns, aIns, lIns := make(ChanPutCloser), make(ChanPutCloser), make(ChanPutCloser)
+	cIns, lIns := make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
 		ins:     make(chan Packet),
@@ -19,8 +19,9 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 		cx := cf.cluster(seqn)
 
 		ch := make(chan string)
+		ac := acceptor{outs:cx}
+
 		go coordinator(cIns, cx, cx)
-		go acceptor(aIns, cx)
 		go func() {
 			ch <- learner(uint64(cx.Quorum()), lIns)
 		}()
@@ -33,14 +34,13 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 			case p := <-ins.ins:
 				if closed(ins.ins) {
 					cIns.Close()
-					aIns.Close()
 					lIns.Close()
 					sIns.Close()
 					return
 				}
 				p.SetFrom(cx.indexByAddr(p.Addr))
 				cIns.Put(p.Msg)
-				aIns.Put(p.Msg)
+				ac.Put(p.Msg)
 				lIns.Put(p.Msg)
 				sIns.Put(p.Msg)
 			case v := <-ch:

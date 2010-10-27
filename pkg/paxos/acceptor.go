@@ -1,39 +1,31 @@
 package paxos
 
-import (
-	"junta/util"
-)
+type acceptor struct {
+	outs      Putter
+	rnd, vrnd uint64
+	vval      string
+}
 
-func acceptor(ins chan Msg, outs Putter) {
-	logger := util.NewLogger("acceptor")
-	var rnd, vrnd uint64
-	var vval string
+func (ac *acceptor) Put(m Msg) {
+	switch m.Cmd() {
+	case invite:
+		if i := inviteParts(m); i > ac.rnd {
+			ac.rnd = i
 
-	for in := range ins {
-		switch in.Cmd() {
-		case invite:
-			logger.Log("got invite", in)
-			if i := inviteParts(in); i > rnd {
-				rnd = i
+			reply := newRsvp(i, ac.vrnd, ac.vval)
+			ac.outs.Put(reply)
+		}
+	case nominate:
+		i, v := nominateParts(m)
 
-				reply := newRsvp(i, vrnd, vval)
-				logger.Log("sending rsvp", reply)
-				outs.Put(reply)
-			}
-		case nominate:
-			logger.Log("got nom", in)
-			i, v := nominateParts(in)
+		// SUPER IMPT MAD PAXOS
+		if i >= ac.rnd && i != ac.vrnd {
+			ac.rnd = i
+			ac.vrnd = i
+			ac.vval = v
 
-			// SUPER IMPT MAD PAXOS
-			if i >= rnd && i != vrnd {
-				rnd = i
-				vrnd = i
-				vval = v
-
-				broadcast := newVote(i, vval)
-				logger.Log("sending vote", broadcast)
-				outs.Put(broadcast)
-			}
+			broadcast := newVote(i, ac.vval)
+			ac.outs.Put(broadcast)
 		}
 	}
 }
