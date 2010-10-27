@@ -6,153 +6,126 @@ import (
 )
 
 func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(1)
 
-	go func() {
-		taught <- learner(1, msgs)
-	}()
-
-	msgs <- newVoteFrom(1, 1, "foo")
-
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(2)
 
-	go func() {
-		taught <- learner(2, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 1, "foo")
-	msgs <- newVoteFrom(2, 1, "foo")
-
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(2, 1, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(1)
 
-	go func() {
-		taught <- learner(1, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 0, "bar"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 0, "bar")
-	msgs <- newVoteFrom(1, 1, "foo")
-
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(2)
 
-	go func() {
-		taught <- learner(2, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 1, "foo")
-	msgs <- newVoteFrom(1, 1, "foo")
-	msgs <- newVoteFrom(2, 1, "foo")
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	assert.Equal(t, "foo", <-taught, "")
-	// A quick test to make sure all msgsages were received.  If we get here
-	// and it passes without deadlocking, we're all good.
+	ln.Put(newVoteFrom(2, 1, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestIgnoresSenderInOldRound(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(2)
 
-	go func() {
-		taught <- learner(2, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 2, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 2, "foo")
-	msgs <- newVoteFrom(2, 1, "foo")
-	msgs <- newVoteFrom(2, 2, "foo")
+	ln.Put(newVoteFrom(2, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(2, 2, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestResetsVotedFlags(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(2)
 
-	go func() {
-		taught <- learner(2, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 1, "foo")
-	msgs <- newVoteFrom(1, 2, "foo")
-	msgs <- newVoteFrom(2, 2, "foo")
+	ln.Put(newVoteFrom(1, 2, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(2, 2, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestResetsVoteCounts(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(3)
 
-	go func() {
-		taught <- learner(3, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 1, "foo")
-	msgs <- newVoteFrom(2, 1, "foo")
-	msgs <- newVoteFrom(1, 2, "foo")
-	msgs <- newVoteFrom(2, 2, "foo")
-	msgs <- newVoteFrom(3, 2, "foo")
+	ln.Put(newVoteFrom(2, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(1, 2, "foo"))
+	assert.Equal(t, false, ln.done)
+
+	ln.Put(newVoteFrom(2, 2, "foo"))
+	assert.Equal(t, false, ln.done)
+
+	ln.Put(newVoteFrom(3, 2, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(2)
 
-	go func() {
-		taught <- learner(2, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 1, "foo"))
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 1, "foo")
-	msgs <- newVoteFrom(3, 1, "bar")
-	msgs <- newVoteFrom(2, 1, "foo")
+	ln.Put(newVoteFrom(3, 1, "bar"))
+	assert.Equal(t, false, ln.done)
 
-	assert.Equal(t, "foo", <-taught, "")
-}
-
-func TestExitsQuietly(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
-
-	go func() {
-		taught <- learner(2, msgs)
-	}()
-
-	close(msgs)
-
-	assert.Equal(t, "", <-taught, "")
+	ln.Put(newVoteFrom(2, 1, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
 
 func TestBringsOrderOutOfChaos(t *testing.T) {
-	msgs := make(chan Msg)
-	taught := make(chan string)
+	ln := *newLearner(2)
 
-	go func() {
-		taught <- learner(2, msgs)
-	}()
+	ln.Put(newVoteFrom(1, 1, "bar"))  //valid
+	assert.Equal(t, false, ln.done)
+	ln.Put(newVoteFrom(3, 2, "funk")) //reset
+	assert.Equal(t, false, ln.done)
+	ln.Put(newVoteFrom(2, 1, "bar"))  //ignored
+	assert.Equal(t, false, ln.done)
 
-	msgs <- newVoteFrom(1, 1, "bar")  //valid
-	msgs <- newVoteFrom(3, 2, "funk") //reset
-	msgs <- newVoteFrom(2, 1, "bar")  //ignored
-
-	msgs <- newVoteFrom(3, 1, "foo") //ignored
-	msgs <- newVoteFrom(2, 2, "foo") //valid
-	msgs <- newVoteFrom(1, 2, "foo") //valid (at quorum)
-
-	assert.Equal(t, "foo", <-taught, "")
+	ln.Put(newVoteFrom(3, 1, "foo")) //ignored
+	assert.Equal(t, false, ln.done)
+	ln.Put(newVoteFrom(2, 2, "foo")) //valid
+	assert.Equal(t, false, ln.done)
+	ln.Put(newVoteFrom(1, 2, "foo")) //valid (at quorum)
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
 }
