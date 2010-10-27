@@ -15,6 +15,8 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 	}
 
 	go func() {
+		defer cIns.Close()
+
 		cx := cf.cluster(seqn)
 
 		ac := acceptor{outs:cx}
@@ -27,7 +29,6 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 			select {
 			case p := <-ins.ins:
 				if closed(ins.ins) {
-					cIns.Close()
 					return
 				}
 				p.SetFrom(cx.indexByAddr(p.Addr))
