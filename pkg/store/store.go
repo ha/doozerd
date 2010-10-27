@@ -18,7 +18,7 @@ const (
 
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)
 const (
-	charPat = `[a-zA-Z]`
+	charPat = `([a-zA-Z0-9.]|-)`
 	partPat = "/"+charPat+"+"
 	pathPat = "^/$|^("+partPat+")+$"
 )

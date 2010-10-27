@@ -28,6 +28,9 @@ var GoodPaths = []string{
 	"/",
 	"/x",
 	"/x/y",
+	"/x/y-z",
+	"/x/y.z",
+	"/x/0",
 }
 
 var BadPaths = []string{
@@ -85,7 +88,7 @@ func TestCheckBadPaths(t *testing.T) {
 func TestCheckGoodPaths(t *testing.T) {
 	for _, k := range GoodPaths {
 		err := checkPath(k)
-		assert.Equal(t, nil, err, k)
+		assert.Equalf(t, nil, err, "for path %q", k)
 	}
 }
 
