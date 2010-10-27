@@ -19,8 +19,8 @@ func assert(t *testing.T, b bool, f func(), cd int) {
 
 func equal(t *testing.T, exp, got interface{}, cd int, args ... interface{}) {
 	f := func() {
-		t.Errorf("!  Expected: %v <%#v>", exp, exp)
-		t.Errorf("!  Got:      %v <%#v>", got, got)
+		t.Errorf("!  Expected: %T %#v", exp, exp)
+		t.Errorf("!  Got:      %T %#v", got, got)
 		if len(args) > 0 {
 			t.Error("!", " -", fmt.Sprint(args))
 		}
