@@ -85,6 +85,7 @@ func (mg *Manager) fill(seqn uint64) {
 			go mg.fillOne(seqn)
 			seqn++
 		}
+		seqn++ // no need to fill in our own seqn
 	}
 }
 
