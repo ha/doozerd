@@ -1,7 +1,6 @@
 package paxos
 
 type instance struct {
-	vin     chan string
 	ins     chan Packet
 }
 
@@ -13,7 +12,6 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 	cIns, aIns, lIns := make(ChanPutCloser), make(ChanPutCloser), make(ChanPutCloser)
 	sIns := make(ChanPutCloser)
 	ins := &instance{
-		vin:     make(chan string),
 		ins:     make(chan Packet),
 	}
 
