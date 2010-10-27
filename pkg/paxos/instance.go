@@ -25,28 +25,22 @@ func newInstance(seqn uint64, cf clusterer, res chan result) *instance {
 
 		go coordinator(cIns, cx, cx)
 
-		for {
-			select {
-			case p := <-ins.ins:
-				if closed(ins.ins) {
-					return
-				}
-				p.SetFrom(cx.indexByAddr(p.Addr))
-				cIns.Put(p.Msg)
-				ac.Put(p.Msg)
-				ln.Put(p.Msg)
-				sk.Put(p.Msg)
+		for p := range ins.ins {
+			p.SetFrom(cx.indexByAddr(p.Addr))
+			cIns.Put(p.Msg)
+			ac.Put(p.Msg)
+			ln.Put(p.Msg)
+			sk.Put(p.Msg)
 
-				if sk.done {
-					cx.Put(newLearn(sk.v))
-					res <- result{seqn, sk.v}
-					return
-				}
-				if ln.done {
-					cx.Put(newLearn(ln.v))
-					res <- result{seqn, ln.v}
-					return
-				}
+			if sk.done {
+				cx.Put(newLearn(sk.v))
+				res <- result{seqn, sk.v}
+				return
+			}
+			if ln.done {
+				cx.Put(newLearn(ln.v))
+				res <- result{seqn, ln.v}
+				return
 			}
 		}
 	}()
