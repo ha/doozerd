@@ -62,7 +62,7 @@ func (c *Client) proto() (*proto.Conn, os.Error) {
 	return c.p, nil
 }
 
-func (c *Client) callWithoutRedirect(a ...string) ([]string, os.Error) {
+func (c *Client) callWithoutRedirect(a interface{}) ([]string, os.Error) {
 	p, err := c.proto()
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *Client) callWithoutRedirect(a ...string) ([]string, os.Error) {
 	return p.ReadResponse(rid)
 }
 
-func (c *Client) call(n int, a ...string) (parts []string, err os.Error) {
+func (c *Client) call(n int, a ...interface{}) (parts []string, err os.Error) {
 	for {
 		parts, err = c.callWithoutRedirect(a)
 		if r, ok := err.(proto.Redirect); ok {

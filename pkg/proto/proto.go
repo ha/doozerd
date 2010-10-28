@@ -23,6 +23,8 @@ const (
 	InvalidCommand = "invalid command"
 )
 
+type Line string
+
 type Conn struct {
 	*textproto.Conn
 	RedirectAddr string
@@ -60,10 +62,10 @@ func NewConn(conn io.ReadWriteCloser) (*Conn) {
 
 // Server functions
 
-func (c *Conn) SendResponse(id uint, parts ... string) os.Error {
+func (c *Conn) SendResponse(id uint, data interface{}) os.Error {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
-	err := encode(&c.Writer, parts)
+	err := encode(&c.Writer, data)
 	if err != nil {
 		return &ProtoError{id, SendRes, err}
 	}
@@ -107,10 +109,10 @@ func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 
 // Client functions
 
-func (c *Conn) SendRequest(parts ... string) (uint, os.Error) {
+func (c *Conn) SendRequest(data interface{}) (uint, os.Error) {
 	id := c.Next()
 	c.StartRequest(id)
-	err := encode(&c.Writer, parts)
+	err := encode(&c.Writer, data)
 	c.EndRequest(id)
 	if err != nil {
 		return 0, &ProtoError{id, SendReq, err}
@@ -183,16 +185,48 @@ Loop:
 	return
 }
 
-func encode(w *textproto.Writer, parts []string) (err os.Error) {
-	if err = w.PrintfLine("*%d", len(parts)); err != nil {
-		return
-	}
-	for _, part := range parts {
-		if err = w.PrintfLine("$%d", len(part)); err != nil {
+func encode(w *textproto.Writer, data interface{}) (err os.Error) {
+	switch t := data.(type) {
+	default:
+		return os.NewError(fmt.Sprintf("unexpected type %T", t))
+	case Line:
+		if err = w.PrintfLine("+%s", t); err != nil {
 			return
 		}
-		if err = w.PrintfLine("%s", part); err != nil {
+	case os.Error:
+		if err = w.PrintfLine("-%s", t.String()); err != nil {
 			return
+		}
+	case nil:
+		if err = w.PrintfLine("$-1"); err != nil {
+			return
+		}
+	case int:
+		if err = w.PrintfLine(":%d", t); err != nil {
+			return
+		}
+	case string:
+		if err = w.PrintfLine("$%d", len(t)); err != nil {
+			return
+		}
+		if err = w.PrintfLine("%s", t); err != nil {
+			return
+		}
+	case []byte:
+		if err = w.PrintfLine("$%d", len(t)); err != nil {
+			return
+		}
+		if err = w.PrintfLine("%s", t); err != nil {
+			return
+		}
+	case []interface{}:
+		if err = w.PrintfLine("*%d", len(t)); err != nil {
+			return
+		}
+		for _, part := range t {
+			if err = encode(w, part); err != nil {
+				return
+			}
 		}
 	}
 	return nil

@@ -339,7 +339,7 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("good")
-				pc.SendResponse(rid, strconv.Uitoa64(seqn))
+				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn)})
 			}
 		case "del":
 			if len(parts) != 3 {
@@ -362,7 +362,7 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("good")
-				pc.SendResponse(rid, "true")
+				pc.SendResponse(rid, []interface{}{"true"})
 			}
 		case "sget":
 			if len(parts) != 2 {
@@ -377,7 +377,7 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("good %q", body)
-				pc.SendResponse(rid, body)
+				pc.SendResponse(rid, []interface{}{body})
 			}
 		case "nop":
 			if len(parts) != 1 {
@@ -400,7 +400,7 @@ func (c *conn) serve() {
 				pc.SendError(rid, err.String())
 			} else {
 				rlogger.Logf("good")
-				pc.SendResponse(rid, "true")
+				pc.SendResponse(rid, []interface{}{"true"})
 			}
 		case "join":
 			// join abc123 1.2.3.4:999
@@ -433,7 +433,7 @@ func (c *conn) serve() {
 				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
 				close(done)
 				seqn, snap := c.s.St.Snapshot()
-				pc.SendResponse(rid, strconv.Uitoa64(seqn), snap)
+				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn), snap})
 			}
 		}
 	}
