@@ -35,6 +35,16 @@ type encTest struct {
 
 var encTests = []encTest{
 	encTest{int(0), ":0\r\n"},
+	encTest{int8(0), ":0\r\n"},
+	encTest{int16(0), ":0\r\n"},
+	encTest{int32(0), ":0\r\n"},
+	encTest{int64(0), ":0\r\n"},
+	encTest{uint(0), ":0\r\n"},
+	encTest{uint8(0), ":0\r\n"}, // aka byte
+	encTest{uint16(0), ":0\r\n"},
+	encTest{uint32(0), ":0\r\n"},
+	encTest{uint64(0), ":0\r\n"},
+
 	encTest{[]byte{'a'}, "$1\r\na\r\n"},
 	encTest{Line("hi"), "+hi\r\n"},
 	encTest{os.NewError("hi"), "-hi\r\n"},

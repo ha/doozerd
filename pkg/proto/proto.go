@@ -202,9 +202,25 @@ func encode(w *textproto.Writer, data interface{}) (err os.Error) {
 			return
 		}
 	case int:
-		if err = w.PrintfLine(":%d", t); err != nil {
-			return
-		}
+		return encodeInt64(w, int64(t))
+	case int8:
+		return encodeInt64(w, int64(t))
+	case int16:
+		return encodeInt64(w, int64(t))
+	case int32:
+		return encodeInt64(w, int64(t))
+	case int64:
+		return encodeInt64(w, t)
+	case uint:
+		return encodeUint64(w, uint64(t))
+	case uint8:
+		return encodeUint64(w, uint64(t))
+	case uint16:
+		return encodeUint64(w, uint64(t))
+	case uint32:
+		return encodeUint64(w, uint64(t))
+	case uint64:
+		return encodeUint64(w, t)
 	case string:
 		if err = w.PrintfLine("$%d", len(t)); err != nil {
 			return
@@ -230,4 +246,12 @@ func encode(w *textproto.Writer, data interface{}) (err os.Error) {
 		}
 	}
 	return nil
+}
+
+func encodeInt64(w *textproto.Writer, data int64) os.Error {
+	return w.PrintfLine(":%d", data)
+}
+
+func encodeUint64(w *textproto.Writer, data uint64) os.Error {
+	return w.PrintfLine(":%d", data)
 }
