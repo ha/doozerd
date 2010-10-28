@@ -51,8 +51,14 @@ func TestProtoEncode(t *testing.T) {
 		ww := textproto.NewWriter(w)
 
 		err := encode(ww, e.data)
-		assert.Equal(t, nil, err)
-		assert.Equal(t, e.encoding, string(b.Bytes()))
+		if err != nil {
+			t.Error("unexpected err:", err)
+			continue
+		}
+		if e.encoding != string(b.Bytes()) {
+			t.Error("expected %q", e.encoding)
+			t.Error("     got %q", string(b.Bytes()))
+		}
 	}
 }
 
