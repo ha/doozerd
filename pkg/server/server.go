@@ -267,6 +267,17 @@ func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {
 	return
 }
 
+func (sv *Server) Get(path string) (v []string, cas string, err os.Error) {
+	var shortPath string
+	shortPath, err = sv.checkPath(path)
+	if err != nil {
+		return
+	}
+
+	v, cas = sv.St.Get(shortPath)
+	return
+}
+
 func (sv *Server) Sget(path string) (body string, err os.Error) {
 	shortPath, err := sv.checkPath(path)
 	if err != nil {
@@ -363,6 +374,21 @@ func (c *conn) serve() {
 			} else {
 				rlogger.Logf("good")
 				pc.SendResponse(rid, []interface{}{"true"})
+			}
+		case "get":
+			if len(parts) != 2 {
+				rlogger.Logf("invalid get command: %v", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+			rlogger.Logf("get %q", parts[1])
+			v, cas, err := c.s.Get(parts[1])
+			if err != nil {
+				rlogger.Logf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Log("good get cas", cas)
+				pc.SendResponse(rid, []interface{}{v, cas})
 			}
 		case "sget":
 			if len(parts) != 2 {
