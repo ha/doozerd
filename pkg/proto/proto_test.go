@@ -50,7 +50,7 @@ var encTests = []encTest{
 	encTest{os.NewError("hi"), "-hi\r\n"},
 	encTest{nil, "$-1\r\n"},
 	encTest{[]interface{}{[]byte{'a'}, []byte{'b'}}, "*2\r\n$1\r\na\r\n$1\r\nb\r\n"},
-	encTest{[]interface{}{"GET", "FOO"}, "*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n"},
+	encTest{[]string{"GET", "FOO"}, "*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n"},
 	encTest{[]interface{}{1, []interface{}{1}}, "*2\r\n:1\r\n*1\r\n:1\r\n"},
 }
 

@@ -235,15 +235,16 @@ func encode(w *textproto.Writer, data interface{}) (err os.Error) {
 		if err = w.PrintfLine("%s", t); err != nil {
 			return
 		}
+	case []string:
+		// TODO use the builtin append function when it gets released:
+		//return encodeSlice(w, append([]interface{}, t...))
+		d := make([]interface{}, len(t))
+		for i, x := range t {
+			d[i] = x
+		}
+		return encodeSlice(w, d)
 	case []interface{}:
-		if err = w.PrintfLine("*%d", len(t)); err != nil {
-			return
-		}
-		for _, part := range t {
-			if err = encode(w, part); err != nil {
-				return
-			}
-		}
+		return encodeSlice(w, t)
 	}
 	return nil
 }
@@ -254,4 +255,16 @@ func encodeInt64(w *textproto.Writer, data int64) os.Error {
 
 func encodeUint64(w *textproto.Writer, data uint64) os.Error {
 	return w.PrintfLine(":%d", data)
+}
+
+func encodeSlice(w *textproto.Writer, data []interface{}) (err os.Error) {
+	if err = w.PrintfLine("*%d", len(data)); err != nil {
+		return
+	}
+	for _, part := range data {
+		if err = encode(w, part); err != nil {
+			return
+		}
+	}
+	return nil
 }
