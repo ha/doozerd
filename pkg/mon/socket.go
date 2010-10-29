@@ -24,7 +24,7 @@ type socket struct {
 }
 
 type filer interface {
-	File() *os.File
+	File() (*os.File, os.Error)
 }
 
 func newSocket(id, name string, mon *monitor) *socket {
@@ -83,10 +83,17 @@ func (so *socket) open() {
 
 	f, ok := li.(filer)
 	if !ok {
+		err = os.NewError("cannot convert li to filer")
 		goto error // can't happen
 	}
 
-	so.lfiles = []*os.File{f.File()}
+	var file *os.File
+	file, err = f.File()
+	if err != nil {
+		goto error
+	}
+
+	so.lfiles = []*os.File{file}
 
 	// Propagate our "want up" state to the sv. Note: this won't actualy run
 	// the service yet, since sv.lfiles is still nil.
