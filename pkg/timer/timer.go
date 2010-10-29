@@ -88,6 +88,14 @@ func (t *Timer) process() {
 			default:
 				break
 			case e.IsSet():
+				// First remove it if it's already there.
+				for i := 0; i < ticks.Len(); i++ {
+					if ticks.At(i).(Tick).Path == x.Path {
+						heap.Remove(ticks, i)
+						i = 0 // have to start over; heap could be reordered
+					}
+				}
+
 				heap.Push(ticks, x)
 			case e.IsDel():
 				logger.Logf("deleting: %#v", e)
@@ -96,6 +104,7 @@ func (t *Timer) process() {
 				for i := 0; i < ticks.Len(); i++ {
 					if ticks.At(i).(Tick).Path == x.Path {
 						heap.Remove(ticks, i)
+						i = 0 // have to start over; heap could be reordered
 					}
 				}
 			}

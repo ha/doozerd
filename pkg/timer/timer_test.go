@@ -70,3 +70,19 @@ func TestDeleteTimer(t *testing.T) {
 
 	assert.Equal(t, 0, timer.Len())
 }
+
+func TestUpdate(t *testing.T) {
+	st := store.New()
+	timer := New(testPattern, OneMillisecond, st)
+	defer timer.Close()
+
+	st.Apply(1, encodeTimer("/timer/y", 30*OneMillisecond))
+	st.Apply(2, encodeTimer("/timer/x", 10*OneMillisecond))
+	st.Apply(3, encodeTimer("/timer/x", 20*OneMillisecond))
+
+	// The deadline scheduled from seqn 2 should never fire. It should be
+	// replaced by seqn 3.
+
+	assert.Equal(t, "/timer/x", (<-timer.C).Path) // From seqn 3
+	assert.Equal(t, "/timer/y", (<-timer.C).Path) // From seqn 1
+}
