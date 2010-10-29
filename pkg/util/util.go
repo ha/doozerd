@@ -65,21 +65,17 @@ func Unpackui64(b []byte) (n uint64) {
 }
 
 func NewLogger(format string, a ... interface{}) *log.Logger {
-	prefix := fmt.Sprintf(format, a)
+	prefix := fmt.Sprintf(format, a...)
 
 	if prefix == "" {
 		panic("always give a prefix!")
 	}
 
 	if strings.HasPrefix(prefix, "udp") {
-		return log.New(NullWriter{}, nil, "", log.Lok | log.Lshortfile)
+		return log.New(NullWriter{}, "", log.Lshortfile)
 	}
 
-	return log.New(
-		LogWriter, nil,
-		"juntad: " + prefix + " ",
-		log.Lok | log.Lshortfile,
-	)
+	return log.New(LogWriter, "juntad: "+prefix+" ", log.Lshortfile)
 }
 
 func RandHexString(bits int) string {

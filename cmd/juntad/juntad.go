@@ -37,7 +37,7 @@ func activate(st *store.Store, self, prefix string, c *client.Client) {
 			if err == nil {
 				return
 			}
-			logger.Log(err)
+			logger.Println(err)
 		}
 	}
 }
@@ -64,7 +64,7 @@ func main() {
 	prefix := "/j/" + *clusterName
 
 	if *listenAddr == "" {
-		logger.Log("require a listen address")
+		logger.Println("require a listen address")
 		flag.Usage()
 		os.Exit(1)
 	}

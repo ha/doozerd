@@ -44,18 +44,18 @@ type Server struct {
 func (sv *Server) ListenAndServe() os.Error {
 	logger := util.NewLogger("server %s", sv.Addr)
 
-	logger.Log("binding")
+	logger.Println("binding")
 	l, err := net.Listen("tcp", sv.Addr)
 	if err != nil {
-		logger.Log(err)
+		logger.Println(err)
 		return err
 	}
 	defer l.Close()
-	logger.Log("listening")
+	logger.Println("listening")
 
 	err = sv.Serve(l)
 	if err != nil {
-		logger.Logf("%s: %s", l, err)
+		logger.Printf("%s: %s", l, err)
 }
 	return err
 }
@@ -63,18 +63,18 @@ func (sv *Server) ListenAndServe() os.Error {
 func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
 	logger := util.NewLogger("udp server %s", sv.Addr)
 
-	logger.Log("binding")
+	logger.Println("binding")
 	u, err := net.ListenPacket("udp", sv.Addr)
 	if err != nil {
-		logger.Log(err)
+		logger.Println(err)
 		return err
 	}
 	defer u.Close()
-	logger.Log("listening")
+	logger.Println("listening")
 
 	err = sv.ServeUdp(u, outs)
 	if err != nil {
-		logger.Logf("%s: %s", u, err)
+		logger.Printf("%s: %s", u, err)
 	}
 	return err
 }
@@ -85,32 +85,32 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Packet) os.Error
 
 	logger := util.NewLogger("udp server %s", u.LocalAddr())
 	go func() {
-		logger.Log("reading messages...")
+		logger.Println("reading messages...")
 		for {
 			msg, addr, err := paxos.ReadMsg(u, packetSize)
 			if err != nil {
-				logger.Log(err)
+				logger.Println(err)
 				continue
 			}
-			logger.Logf("read %v from %s", msg, addr)
+			logger.Printf("read %v from %s", msg, addr)
 			recvd <- paxos.Packet{msg, addr}
 			sv.Mg.PutFrom(addr, msg)
 		}
 	}()
 
 	go func() {
-		logger.Log("sending messages...")
+		logger.Println("sending messages...")
 		for pk := range outs {
-			logger.Logf("sending %v", pk)
+			logger.Printf("sending %v", pk)
 			udpAddr, err := net.ResolveUDPAddr(pk.Addr)
 			if err != nil {
-				logger.Log(err)
+				logger.Println(err)
 				continue
 			}
 
 			_, err = u.WriteTo(pk.Msg.WireBytes(), udpAddr)
 			if err != nil {
-				logger.Log(err)
+				logger.Println(err)
 				continue
 			}
 			sent <- paxos.Packet{pk.Msg, pk.Addr}
@@ -123,10 +123,10 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Packet) os.Error
 		select {
 		case pk := <-recvd:
 			if pk.Msg.HasFlags(paxos.Ack) {
-				logger.Logf("got ack %s %v", pk.Addr, pk.Msg)
+				logger.Printf("got ack %s %v", pk.Addr, pk.Msg)
 				needsAck[pk.Id()] = false
 			} else {
-				logger.Logf("sending ack %s %v", pk.Addr, pk.Msg)
+				logger.Printf("sending ack %s %v", pk.Addr, pk.Msg)
 				udpAddr, err := net.ResolveUDPAddr(pk.Addr)
 				if err != nil {
 					break
@@ -136,14 +136,14 @@ func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Packet) os.Error
 			}
 		case pk := <-sent:
 			needsAck[pk.Id()] = true
-			logger.Logf("needs ack %s %v", pk.Addr, pk.Msg)
+			logger.Printf("needs ack %s %v", pk.Addr, pk.Msg)
 			go func() {
 				time.Sleep(100000000) // ns == 0.1s
 				resend <- pk
 			}()
 		case pk := <-resend:
 			if needsAck[pk.Id()] {
-				logger.Logf("resending %s %v", pk.Addr, pk.Msg)
+				logger.Printf("resending %s %v", pk.Addr, pk.Msg)
 				go func() {
 					outs <- pk
 				}()
@@ -190,7 +190,7 @@ func (sv *Server) addrFor(id string) string {
 func (sv *Server) checkPath(path string) (string, os.Error) {
 	logger := util.NewLogger("checkPath")
 	if !strings.HasPrefix(path, sv.Prefix+"/") {
-		logger.Logf("prefix %q not in %q", sv.Prefix+"/", path)
+		logger.Printf("prefix %q not in %q", sv.Prefix+"/", path)
 		return "", ErrBadPrefix
 	}
 	return path[len(sv.Prefix):], nil
@@ -297,34 +297,34 @@ func (sv *Server) AdvanceUntil(done chan int) {
 func (c *conn) serve() {
 	pc := proto.NewConn(c)
 	logger := util.NewLogger("%v", c.RemoteAddr())
-	logger.Log("accepted connection")
+	logger.Println("accepted connection")
 	for {
 		rid, parts, err := pc.ReadRequest()
 		if err != nil {
 			if err == os.EOF {
-				logger.Log("connection closed by peer")
+				logger.Println("connection closed by peer")
 			} else {
-				logger.Log(err)
+				logger.Println(err)
 			}
 			return
 		}
 
 		rlogger := util.NewLogger("%v - req [%d]", c.RemoteAddr(), rid)
-		rlogger.Logf("received <%v>", parts)
+		rlogger.Printf("received <%v>", parts)
 
 		if len(parts) == 0 {
-			rlogger.Log("zero parts supplied")
+			rlogger.Println("zero parts supplied")
 			pc.SendError(rid, proto.InvalidCommand + ": no command")
 			continue
 		}
 
 		switch parts[0] {
 		default:
-			rlogger.Logf("unknown command <%s>", parts[0])
+			rlogger.Printf("unknown command <%s>", parts[0])
 			pc.SendError(rid, proto.InvalidCommand + " " + parts[0])
 		case "set":
 			if len(parts) != 4 {
-				rlogger.Logf("invalid set command: %#v", parts)
+				rlogger.Printf("invalid set command: %#v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
@@ -333,127 +333,127 @@ func (c *conn) serve() {
 			if c.s.Self != leader {
 				addr := c.s.addrFor(leader)
 				if addr == "" {
-					rlogger.Logf("unknown address for leader: %s", leader)
+					rlogger.Printf("unknown address for leader: %s", leader)
 					pc.SendError(rid, "unknown address for leader")
 					break
 				}
 
-				rlogger.Logf("redirect to %s", addr)
+				rlogger.Printf("redirect to %s", addr)
 				pc.SendRedirect(rid, addr)
 				break
 			}
 
-			rlogger.Logf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
+			rlogger.Printf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
 			seqn, err := c.s.Set(parts[1], parts[2], parts[3])
 			if err != nil {
-				rlogger.Logf("bad: %s", err)
+				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Logf("good")
+				rlogger.Printf("good")
 				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn)})
 			}
 		case "del":
 			if len(parts) != 3 {
-				rlogger.Logf("invalid del command: %v", parts)
+				rlogger.Printf("invalid del command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
 			if c.s.Self != leader {
-				rlogger.Logf("redirect to %s", leader)
+				rlogger.Printf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
 				break
 			}
 
-			rlogger.Logf("del %q (cas %q)", parts[1], parts[2])
+			rlogger.Printf("del %q (cas %q)", parts[1], parts[2])
 			_, err := c.s.Del(parts[1], parts[2])
 			if err != nil {
-				rlogger.Logf("bad: %s", err)
+				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Logf("good")
+				rlogger.Printf("good")
 				pc.SendResponse(rid, []interface{}{"true"})
 			}
 		case "get":
 			if len(parts) != 2 {
-				rlogger.Logf("invalid get command: %v", parts)
+				rlogger.Printf("invalid get command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
-			rlogger.Logf("get %q", parts[1])
+			rlogger.Printf("get %q", parts[1])
 			v, cas, err := c.s.Get(parts[1])
 			if err != nil {
-				rlogger.Logf("bad: %s", err)
+				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Log("good get cas", cas)
+				rlogger.Println("good get cas", cas)
 				pc.SendResponse(rid, []interface{}{v, cas})
 			}
 		case "sget":
 			if len(parts) != 2 {
-				rlogger.Logf("invalid sget command: %v", parts)
+				rlogger.Printf("invalid sget command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
-			rlogger.Logf("sget %q", parts[1])
+			rlogger.Printf("sget %q", parts[1])
 			body, err := c.s.Sget(parts[1])
 			if err != nil {
-				rlogger.Logf("bad: %s", err)
+				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Logf("good %q", body)
+				rlogger.Printf("good %q", body)
 				pc.SendResponse(rid, []interface{}{body})
 			}
 		case "nop":
 			if len(parts) != 1 {
-				rlogger.Logf("invalid nop command: %v", parts)
+				rlogger.Printf("invalid nop command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
 			if c.s.Self != leader {
-				rlogger.Logf("redirect to %s", leader)
+				rlogger.Printf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
 				break
 			}
 
-			rlogger.Log("nop")
+			rlogger.Println("nop")
 			err := c.s.Nop()
 			if err != nil {
-				rlogger.Logf("bad: %s", err)
+				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Logf("good")
+				rlogger.Printf("good")
 				pc.SendResponse(rid, []interface{}{"true"})
 			}
 		case "join":
 			// join abc123 1.2.3.4:999
 			if len(parts) != 3 {
-				rlogger.Logf("invalid join command: %v", parts)
+				rlogger.Printf("invalid join command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
 			if c.s.Self != leader {
-				rlogger.Logf("redirect to %s", leader)
+				rlogger.Printf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
 				break
 			}
 
 			who, addr := parts[1], parts[2]
-			rlogger.Logf("membership requested for %s at %s", who, addr)
+			rlogger.Printf("membership requested for %s at %s", who, addr)
 
 			key := c.s.Prefix + "/junta/members/" + who
 
 			seqn, err := c.s.Set(key, addr, store.Missing)
 			if err != nil {
-				rlogger.Logf("bad: %s", err)
+				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
 			} else {
-				rlogger.Logf("good")
+				rlogger.Printf("good")
 				done := make(chan int)
 				go c.s.AdvanceUntil(done)
 				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))

@@ -88,7 +88,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 		logger: util.NewLogger("monitor"),
 	}
 
-	mon.logger.Log("reading units")
+	mon.logger.Println("reading units")
 	evs := make(chan store.Event)
 	st.GetDirAndWatch(ctlKey, evs)
 	st.Watch(lockKey+"/*", evs)
@@ -102,7 +102,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 			switch prefix {
 			case ctlDir:
 				if ev.IsDel() {
-					mon.logger.Log("\n\n\ndel", id)
+					mon.logger.Println("\n\n\ndel", id)
 					mon.decrefUnit(id)
 					break
 				}
@@ -185,7 +185,7 @@ func (mon *monitor) timer(t ticker, ns int64) {
 func (mon *monitor) wait(pid int, e exiteder) {
 	w, err := os.Wait(pid, 0)
 	if err != nil {
-		mon.logger.Log(err)
+		mon.logger.Println(err)
 		return
 	}
 
@@ -207,7 +207,7 @@ func (mon *monitor) poll(files []*os.File, r readyer) {
 
 	errno := selectFds(n+1, &rd, nil, nil, nil)
 	if errno != 0 {
-		mon.logger.Log("select", os.Errno(errno))
+		mon.logger.Println("select", os.Errno(errno))
 		return
 	}
 
@@ -232,16 +232,16 @@ func (mon *monitor) increfUnit(id string) unit {
 }
 
 func (mon *monitor) decrefUnit(id string) {
-	mon.logger.Log("decref Unit", id)
+	mon.logger.Println("decref Unit", id)
 	ut := mon.units[id]
 	if ut == nil {
-		mon.logger.Log(" -- did not exist")
+		mon.logger.Println(" -- did not exist")
 		return
 	}
-	mon.logger.Log(" -- dec")
+	mon.logger.Println(" -- dec")
 	mon.refs[id]--
 	if mon.refs[id] < 1 {
-		mon.logger.Log(" -- destroying")
+		mon.logger.Println(" -- destroying")
 		ut.stop()
 		mon.units[id] = nil, false
 		mon.refs[id] = 0, false

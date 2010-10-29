@@ -80,13 +80,13 @@ func (c *Client) call(n int, a ...interface{}) (parts []string, err os.Error) {
 	for {
 		parts, err = c.callWithoutRedirect(a)
 		if r, ok := err.(proto.Redirect); ok {
-			c.lg.Log(r)
+			c.lg.Println(r)
 			continue
 		}
 		break
 	}
 	if err != nil {
-		c.lg.Log(err)
+		c.lg.Println(err)
 		return
 	}
 

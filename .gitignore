@@ -2,7 +2,9 @@ _go_.*
 _gotest_.*
 _obj
 _test
+_testmain.go
 *.out
+*.[568]
 cmd/juntad/juntad
 *.css.go
 *.js.go

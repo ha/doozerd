@@ -118,7 +118,7 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 
 func (m *Manager) proposeAt(seqn uint64, v string) {
 	m.getInstance(seqn).Propose(v)
-	m.logger.Logf("paxos propose -> %d %q", seqn, v)
+	m.logger.Printf("paxos propose -> %d %q", seqn, v)
 }
 
 func (m *Manager) Propose(v string) (uint64, string, os.Error) {
@@ -140,6 +140,6 @@ func (m *Manager) fillOne(seqn uint64) {
 
 func (m *Manager) Recv() (uint64, string) {
 	result := <-m.learned
-	m.logger.Logf("paxos %d learned <- %q", result.seqn, result.v)
+	m.logger.Printf("paxos %d learned <- %q", result.seqn, result.v)
 	return result.seqn, result.v
 }

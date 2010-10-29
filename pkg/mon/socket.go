@@ -44,7 +44,7 @@ func newSocket(id, name string, mon *monitor) *socket {
 		logger: util.NewLogger(id),
 		prefix: mon.prefix,
 	}
-	so.logger.Log("new")
+	so.logger.Println("new")
 	return so
 }
 
@@ -73,7 +73,7 @@ func (so *socket) open() {
 		return
 	}
 
-	so.logger.Log("open")
+	so.logger.Println("open")
 
 	laddr := so.lookupParam("socket/listen-stream")
 	li, err := net.Listen("tcp", laddr)
@@ -112,7 +112,7 @@ func (so *socket) open() {
 
 error:
 	so.wantUp = false // fatal error -- don't retry
-	so.logger.Log(err)
+	so.logger.Println(err)
 	go so.setStatus("status", "down")
 	go so.setStatus("reason", err.String())
 	go so.delStatus("listen-addr")
@@ -168,7 +168,7 @@ func (so *socket) isFatal(w *os.Waitmsg) bool {
 }
 
 func (so *socket) check() {
-	so.logger.Log("checking up/down state")
+	so.logger.Println("checking up/down state")
 
 	if so.wantUp {
 		if so.lockCas == "" {
@@ -186,13 +186,13 @@ func (so *socket) check() {
 }
 
 func (so *socket) start() {
-	so.logger.Log("starting")
+	so.logger.Println("starting")
 	so.wantUp = true
 	so.check()
 }
 
 func (so *socket) stop() {
-	so.logger.Log("stopping")
+	so.logger.Println("stopping")
 	so.wantUp = false
 	so.check()
 }
@@ -201,7 +201,7 @@ func (so *socket) tick() {
 }
 
 func (so *socket) dispatchLockEvent(ev store.Event) {
-	so.logger.Log("got lock event", ev)
+	so.logger.Println("got lock event", ev)
 	if ev.Body == so.self {
 		so.lockCas, so.lockTaken = ev.Cas, true
 		go so.setStatus("node", so.self)

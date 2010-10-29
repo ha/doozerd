@@ -26,9 +26,9 @@ type stringHandler struct {
 	body string
 }
 
-func (sh stringHandler) ServeHTTP(c *http.Conn, r *http.Request) {
-	c.SetHeader("content-type", sh.contentType)
-	io.WriteString(c, sh.body)
+func (sh stringHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.SetHeader("content-type", sh.contentType)
+	io.WriteString(w, sh.body)
 }
 
 func Serve(listener net.Listener) {
@@ -50,25 +50,25 @@ func send(ws *websocket.Conn, path string, evs chan store.Event, logger *log.Log
 	for ev := range evs {
 		ev.Getter = nil // don't marshal the entire snapshot
 		ev.Path = ev.Path[l:]
-		logger.Log("sending", ev)
+		logger.Println("sending", ev)
 		b, err := json.Marshal(ev)
 		if err != nil {
-			logger.Log(err)
+			logger.Println(err)
 			return
 		}
 		_, err = ws.Write(b)
 		if err != nil {
-			logger.Log(err)
+			logger.Println(err)
 			return
 		}
 	}
 }
 
-func evServer(c *http.Conn, r *http.Request) {
+func evServer(w http.ResponseWriter, r *http.Request) {
 	evs, wevs := make(chan store.Event), make(chan store.Event)
-	logger := util.NewLogger(c.RemoteAddr)
+	logger := util.NewLogger(w.RemoteAddr())
 	path := r.URL.Path[len(evPrefix):]
-	logger.Log("new", path)
+	logger.Println("new", path)
 
 	Store.Watch(path+"**", evs)
 
@@ -82,18 +82,18 @@ func evServer(c *http.Conn, r *http.Request) {
 		send(ws, path, wevs, logger)
 		send(ws, path, evs, logger)
 		ws.Close()
-	}).ServeHTTP(c, r)
+	}).ServeHTTP(w, r)
 }
 
-func viewHtml(c *http.Conn, r *http.Request) {
+func viewHtml(w http.ResponseWriter, r *http.Request) {
 	if !strings.HasSuffix(r.URL.Path, "/") {
-		c.WriteHeader(404)
+		w.WriteHeader(404)
 		return
 	}
 	var x info
 	x.Path = r.URL.Path[len("/view"):]
-	c.SetHeader("content-type", "text/html")
-	mainTpl.Execute(x, c)
+	w.SetHeader("content-type", "text/html")
+	mainTpl.Execute(x, w)
 }
 
 func walk(path string, st *store.Store, ch chan store.Event) {

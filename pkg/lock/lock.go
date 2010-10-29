@@ -33,7 +33,7 @@ func (lk *Lock) process() {
 
 		parts := strings.Split(ev.Path, "/", 3)
 		name := parts[2]
-		logger.Logf("lost session %s", name)
+		logger.Printf("lost session %s", name)
 
 		ch, err := store.Walk(lk.st, "/lock/**")
 		if err != nil {

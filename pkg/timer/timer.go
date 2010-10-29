@@ -73,7 +73,7 @@ func (t *Timer) process() {
 				goto done
 			}
 
-			logger.Logf("recvd: %v", e)
+			logger.Printf("recvd: %v", e)
 			// TODO: Handle/Log the next error
 			// I'm not sure if we should notify the client
 			// on Set.  That seems like it would be difficult
@@ -95,7 +95,7 @@ func (t *Timer) process() {
 
 				heap.Push(ticks, x)
 			case e.IsDel():
-				logger.Logf("deleting: %#v", e)
+				logger.Printf("deleting: %#v", e)
 				// This could be optimize since ticks is sorted; I can't
 				// find a way without implementing our own quick-find.
 				for i := 0; i < ticks.Len(); i++ {
@@ -108,7 +108,7 @@ func (t *Timer) process() {
 
 		case ns := <-t.ticker.C:
 			for next := peek(); next.At <= ns; next = peek() {
-				logger.Logf("ticked %#v", next)
+				logger.Printf("ticked %#v", next)
 				heap.Pop(ticks)
 				t.C <- next
 			}

@@ -51,7 +51,7 @@ func newService(id, name string, mon *monitor) *service {
 		logger: util.NewLogger(id),
 		prefix: mon.prefix,
 	}
-	sv.logger.Log("new")
+	sv.logger.Println("new")
 	return sv
 }
 
@@ -91,7 +91,7 @@ func (sv *service) exec() {
 
 	var err os.Error
 
-	sv.logger.Log("exec")
+	sv.logger.Println("exec")
 	sv.setStatus("status", "starting") // do it synchronously
 	cmd := sv.lookupParam("service/exec-start")
 
@@ -100,7 +100,7 @@ func (sv *service) exec() {
 		goto error
 	}
 
-	sv.logger.Log("*** *** *** RUN *** *** ***")
+	sv.logger.Println("*** *** *** RUN *** *** ***")
 	sv.pid, err = sv.cx.ForkExec(cmd, sv.alfiles)
 	if err != nil {
 		goto error
@@ -120,7 +120,7 @@ func (sv *service) exec() {
 
 error:
 	sv.wantUp = false // fatal error -- don't retry
-	sv.logger.Log(err)
+	sv.logger.Println(err)
 	go sv.setStatus("status", "down")
 	go sv.setStatus("reason", err.String())
 }
@@ -132,7 +132,7 @@ func (sv *service) kill() {
 
 	errno := syscall.Kill(sv.pid, syscall.SIGTERM)
 	if errno != 0 {
-		sv.logger.Log(os.Errno(errno))
+		sv.logger.Println(os.Errno(errno))
 	}
 }
 
@@ -168,12 +168,12 @@ func (sv *service) exited(w *os.Waitmsg) {
 	}
 	sv.pid = 0
 
-	sv.logger.Log(w)
+	sv.logger.Println(w)
 	go sv.delStatus("pid")
 
 	if sv.isFatal(w) {
 		sv.wantUp = false
-		sv.logger.Log("fatal error")
+		sv.logger.Println("fatal error")
 	}
 	go sv.setStatus("status", "down")
 	go sv.setStatus("reason", w.String())
@@ -186,7 +186,7 @@ func (sv *service) exited(w *os.Waitmsg) {
 }
 
 func (sv *service) check() {
-	sv.logger.Log("checking up/down state")
+	sv.logger.Println("checking up/down state")
 
 	if sv.wantUp && sv.alfiles != nil {
 		if sv.lockCas == "" {
@@ -208,13 +208,13 @@ func (sv *service) check() {
 }
 
 func (sv *service) start() {
-	sv.logger.Log("starting")
+	sv.logger.Println("starting")
 	sv.wantUp = true
 	sv.check()
 }
 
 func (sv *service) stop() {
-	sv.logger.Log("stopping")
+	sv.logger.Println("stopping")
 	sv.wantUp = false
 	sv.check()
 }
@@ -224,7 +224,7 @@ func (sv *service) tick() {
 }
 
 func (sv *service) dispatchLockEvent(ev store.Event) {
-	sv.logger.Log("got lock event", ev)
+	sv.logger.Println("got lock event", ev)
 	if ev.Body == sv.self {
 		sv.lockCas, sv.lockTaken = ev.Cas, true
 		go sv.setStatus("node", sv.self)
