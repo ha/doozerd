@@ -107,8 +107,7 @@ func (t *Timer) process() {
 				}
 			}
 
-		case <-t.ticker.C:
-			ns := time.Nanoseconds()
+		case ns := <-t.ticker.C:
 			for next := peek(); next.At <= ns; next = peek() {
 				logger.Logf("ticked %#v", next)
 				heap.Pop(ticks)
