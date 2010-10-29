@@ -4,6 +4,7 @@ import (
 	"junta/assert"
 	"junta/store"
 	"testing"
+	"runtime"
 	"time"
 	"strconv"
 )
@@ -64,7 +65,8 @@ func TestDeleteTimer(t *testing.T) {
 	st.Apply(2, store.MustEncodeDel(never, store.Clobber))
 	<-watch
 
-	// Potential race-condition:  The Timer may not have yet
-	// deleted the timer.  Thoughts on how to test?
+	// Make sure the timer goroutine has a chance to delete the timer.
+	runtime.Gosched()
+
 	assert.Equal(t, 0, timer.Len())
 }
