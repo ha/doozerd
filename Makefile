@@ -21,5 +21,6 @@ bench: bench.pkg
 	cd pkg/mon && make $*
 	cd pkg/test && make $*
 	cd pkg/timer && make $*
+	cd pkg/session && make $*
 	cd pkg && make $*
 
