@@ -50,7 +50,6 @@ func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
 		lookupCh: make(chan *lookup),
 		lookups:  new(lookupQueue),
 	}
-	heap.Init(rg.lookups)
 	st.Watch("**", rg.evs) // watch absolutely everything
 	go rg.process(start, readdirMap(st, membersKey), readdirMap(st, slotKey))
 	return rg

@@ -58,7 +58,6 @@ func (t *Timer) process() {
 	logger := util.NewLogger("timer (%s)", t.Pattern)
 
 	ticks := new(vector.Vector)
-	heap.Init(ticks)
 
 	peek := func() Tick {
 		if ticks.Len() == 0 {
