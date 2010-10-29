@@ -7,8 +7,8 @@ import (
 )
 
 type Session struct {
-	st *store.Store
-	pp junta.Proposer
+	st    *store.Store
+	pp    junta.Proposer
 	timer *timer.Timer
 }
 

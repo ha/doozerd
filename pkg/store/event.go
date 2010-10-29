@@ -5,18 +5,18 @@ import (
 )
 
 type Event struct {
-	Seqn  uint64
-	Path  string
-	Body  string
+	Seqn uint64
+	Path string
+	Body string
 
 	// the cas token for `Path` as of this event.
 	// undefined if the event does not represent a path operation.
-	Cas   string
+	Cas string
 
 	// the mutation that caused this event
-	Mut   string
+	Mut string
 
-	Err   os.Error
+	Err os.Error
 
 	// retrieves values as defined at `Seqn`
 	Getter
@@ -42,14 +42,14 @@ func (e Event) Desc() string {
 //
 // Mutually exclusive with `IsDel` and `IsDummy`.
 func (e Event) IsSet() bool {
-    return !e.IsDel() && !e.IsDummy()
+	return !e.IsDel() && !e.IsDummy()
 }
 
 // Returns true iff the operation represented by `e` deleted a path.
 //
 // Mutually exclusive with `IsSet` and `IsDummy`.
 func (e Event) IsDel() bool {
-    return e.Cas == Missing
+	return e.Cas == Missing
 }
 
 // Returns true iff `e` does not represent a path operation. For example,
@@ -58,5 +58,5 @@ func (e Event) IsDel() bool {
 //
 // Mutually exclusive with `IsSet` and `IsDel`.
 func (e Event) IsDummy() bool {
-    return e.Path == ""
+	return e.Path == ""
 }

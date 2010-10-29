@@ -11,18 +11,18 @@ import (
 
 func TestNodeApplySet(t *testing.T) {
 	k, v, seqn, cas := "x", "a", uint64(1), "1"
-	p := "/"+k
+	p := "/" + k
 	m := MustEncodeSet(p, v, Clobber)
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{k:node{v, cas, nil}}}
+	exp := node{"", Dir, map[string]node{k: {v, cas, nil}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, p, v, cas, m, nil, n}, e)
 }
 
 func TestNodeApplyDel(t *testing.T) {
 	k, seqn, cas := "x", uint64(1), "1"
-	r := node{"", Dir, map[string]node{k:node{"a", cas, nil}}}
-	p := "/"+k
+	r := node{"", Dir, map[string]node{k: {"a", cas, nil}}}
+	p := "/" + k
 	m := MustEncodeDel(p, cas)
 	n, e := r.apply(seqn, m)
 	assert.Equal(t, emptyDir, n)
@@ -41,7 +41,7 @@ func TestNodeApplyBadMutation(t *testing.T) {
 	seqn, cas := uint64(1), "1"
 	m := BadMutations[0]
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{ErrBadMutation.String(), cas, nil}}}}}
+	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrBadMutation.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, ErrBadMutation.String(), cas, m, ErrBadMutation, n}, e)
 }
@@ -51,17 +51,17 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 	m := BadInstructions[0]
 	n, e := emptyDir.apply(seqn, m)
 	err := &BadPathError{""}
-	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{err.String(), cas, nil}}}}}
+	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {err.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, err.String(), cas, m, err, n}, e)
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {
 	k, v, seqn, cas := "x", "a", uint64(1), "1"
-	p := "/"+k
+	p := "/" + k
 	m := MustEncodeSet(p, v, "123")
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{"store":node{"", Dir, map[string]node{"error":node{ErrCasMismatch.String(), cas, nil}}}}}
+	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrCasMismatch.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, ErrCasMismatch.String(), cas, m, ErrCasMismatch, n}, e)
 }
@@ -76,7 +76,7 @@ func TestNodeSnapshotApply(t *testing.T) {
 	_, m := s1.Snapshot()
 
 	n, e := emptyDir.apply(1, m)
-	exp := node{"", Dir, map[string]node{"x":node{"b", "2", nil}}}
+	exp := node{"", Dir, map[string]node{"x": {"b", "2", nil}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, "", "", "", m, nil, n}, e)
 }
@@ -89,9 +89,9 @@ func TestNodeSnapshotBad(t *testing.T) {
 	buf = bytes.NewBuffer([]byte{})
 	gob.NewEncoder(buf).Encode(emptyDir)
 	valPart := buf.String()
-	valPart = valPart[0:len(valPart)/2]
+	valPart = valPart[0 : len(valPart)/2]
 
-	m := seqnPart+valPart
+	m := seqnPart + valPart
 	n, e := emptyDir.apply(1, m)
 	assert.Equal(t, emptyDir, n)
 	assert.Equal(t, Event{2, "", "", "", m, io.ErrUnexpectedEOF, n}, e)

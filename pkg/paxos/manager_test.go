@@ -25,12 +25,12 @@ func mutualRefManagers(n, alpha int) ([]*Manager, *store.Store) {
 	for i := 0; i < n; i++ {
 		addr := fmt.Sprintf("addr%d", i)
 		id := fmt.Sprintf("id%d", i)
-		st.Apply(uint64(2*i + 1), mustEncodeSet(membersDir+id, addr))
-		st.Apply(uint64(2*i + 2), mustEncodeSet(slotDir+strconv.Itoa(i), id))
+		st.Apply(uint64(2*i+1), mustEncodeSet(membersDir+id, addr))
+		st.Apply(uint64(2*i+2), mustEncodeSet(slotDir+strconv.Itoa(i), id))
 		ms[i] = NewManager(id, uint64(2*n), alpha, st, putFromWrapperTo{p, addr})
 		p[i] = ms[i]
 	}
-	for s := uint64(2*n + 1); s < uint64(2*n + alpha); s++ {
+	for s := uint64(2*n + 1); s < uint64(2*n+alpha); s++ {
 		st.Apply(s, store.Nop)
 	}
 	return ms, st

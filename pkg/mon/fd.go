@@ -11,7 +11,7 @@ func fdDelt(n int) int {
 }
 
 func fdMask(n int) int32 {
-	return 1 << uint(n % nfdbits)
+	return 1 << uint(n%nfdbits)
 }
 
 func fdAdd(s *syscall.FdSet, n int) {

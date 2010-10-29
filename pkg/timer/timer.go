@@ -32,18 +32,18 @@ type Timer struct {
 	// Ticks are sent here
 	C chan Tick
 
-	events chan store.Event
+	events  chan store.Event
 	lengths chan int
-	ticker *time.Ticker
+	ticker  *time.Ticker
 }
 
 func New(pattern string, interval int64, st *store.Store) *Timer {
 	t := &Timer{
-		Pattern:   pattern,
-		C:      make(chan Tick),
-		events: make(chan store.Event),
+		Pattern: pattern,
+		C:       make(chan Tick),
+		events:  make(chan store.Event),
 		lengths: make(chan int),
-		ticker: time.NewTicker(interval),
+		ticker:  time.NewTicker(interval),
 	}
 
 	// Begin watching as timers come and go

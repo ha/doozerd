@@ -9,19 +9,19 @@ import (
 )
 
 var SetKVCMs = [][]string{
-	[]string{"/", "a", Clobber, ":/=a"},
-	[]string{"/x", "a", Clobber, ":/x=a"},
-	[]string{"/x", "a=b", Clobber, ":/x=a=b"},
-	[]string{"/x", "a b", Clobber, ":/x=a b"},
-	[]string{"/", "a", Missing, "0:/=a"},
-	[]string{"/", "a", "123", "123:/=a"},
+	{"/", "a", Clobber, ":/=a"},
+	{"/x", "a", Clobber, ":/x=a"},
+	{"/x", "a=b", Clobber, ":/x=a=b"},
+	{"/x", "a b", Clobber, ":/x=a b"},
+	{"/", "a", Missing, "0:/=a"},
+	{"/", "a", "123", "123:/=a"},
 }
 
 var DelKCMs = [][]string{
-	[]string{"/", Clobber, ":/"},
-	[]string{"/x", Clobber, ":/x"},
-	[]string{"/", Missing, "0:/"},
-	[]string{"/", "123", "123:/"},
+	{"/", Clobber, ":/"},
+	{"/x", Clobber, ":/x"},
+	{"/", Missing, "0:/"},
+	{"/", "123", "123:/"},
 }
 
 var GoodPaths = []string{
@@ -59,9 +59,9 @@ var BadMutations = []string{
 }
 
 var Splits = [][]string{
-	[]string{"/"},
-	[]string{"/x", "x"},
-	[]string{"/x/y/z", "x", "y", "z"},
+	{"/"},
+	{"/x", "x"},
+	{"/x/y/z", "x", "y", "z"},
 }
 
 func clearGetter(ev Event) Event {
@@ -115,10 +115,10 @@ func TestDecodeSet(t *testing.T) {
 		expk, expv, expc, m := kvcm[0], kvcm[1], kvcm[2], kvcm[3]
 		gotk, gotv, gotc, keep, err := decode(m)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, true, keep, "keep from " + m)
-		assert.Equal(t, expk, gotk, "key from " + m)
-		assert.Equal(t, expv, gotv, "value from " + m)
-		assert.Equal(t, expc, gotc, "cas from " + m)
+		assert.Equal(t, true, keep, "keep from "+m)
+		assert.Equal(t, expk, gotk, "key from "+m)
+		assert.Equal(t, expv, gotv, "value from "+m)
+		assert.Equal(t, expc, gotc, "cas from "+m)
 	}
 }
 
@@ -127,10 +127,10 @@ func TestDecodeDel(t *testing.T) {
 		expk, expc, m := kcm[0], kcm[1], kcm[2]
 		gotk, gotv, gotc, keep, err := decode(m)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, false, keep, "keep from " + m)
-		assert.Equal(t, expk, gotk, "key from " + m)
-		assert.Equal(t, "", gotv, "value from " + m)
-		assert.Equal(t, expc, gotc, "cas from " + m)
+		assert.Equal(t, false, keep, "keep from "+m)
+		assert.Equal(t, expk, gotk, "key from "+m)
+		assert.Equal(t, "", gotv, "value from "+m)
+		assert.Equal(t, expc, gotc, "cas from "+m)
 	}
 }
 
@@ -685,8 +685,7 @@ func TestSnapshotBad(t *testing.T) {
 	buf = bytes.NewBuffer([]byte{})
 	gob.NewEncoder(buf).Encode(emptyDir)
 	valPart := buf.String()
-	valPart = valPart[0:len(valPart)/2]
-
+	valPart = valPart[0 : len(valPart)/2]
 
 	st := New()
 	st.Apply(1, seqnPart+valPart)

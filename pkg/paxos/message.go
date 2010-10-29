@@ -234,7 +234,7 @@ func ReadMsg(c ReadFromer, bound int) (m Msg, addr string, err os.Error) {
 }
 
 func (m Msg) HasFlags(flags int) bool {
-	return m[mFlags] & byte(flags) != 0
+	return m[mFlags]&byte(flags) != 0
 }
 
 func (m Msg) SetFlags(flags int) Msg {

@@ -20,9 +20,9 @@ const (
 
 // Flags
 var (
-	listenAddr = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
-	attachAddr = flag.String("a", "", "The address of another node to attach to.")
-	webAddr = flag.String("w", ":8080", "Serve web requests on this address.")
+	listenAddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
+	attachAddr  = flag.String("a", "", "The address of another node to attach to.")
+	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 )
 
@@ -90,16 +90,16 @@ func main() {
 	st := store.New()
 	seqn := uint64(0)
 	if *attachAddr == "" { // we are the only node in a new cluster
-		seqn = addPublicAddr(st, seqn + 1, self, *listenAddr)
-		seqn = addHostname(st, seqn + 1, self, os.Getenv("HOSTNAME"))
-		seqn = addMember(st, seqn + 1, self, *listenAddr)
-		seqn = claimSlot(st, seqn + 1, "1", self)
-		seqn = claimLeader(st, seqn + 1, self)
-		seqn = claimSlot(st, seqn + 1, "2", "")
-		seqn = claimSlot(st, seqn + 1, "3", "")
-		seqn = claimSlot(st, seqn + 1, "4", "")
-		seqn = claimSlot(st, seqn + 1, "5", "")
-		seqn = addPing(st, seqn + 1, "pong")
+		seqn = addPublicAddr(st, seqn+1, self, *listenAddr)
+		seqn = addHostname(st, seqn+1, self, os.Getenv("HOSTNAME"))
+		seqn = addMember(st, seqn+1, self, *listenAddr)
+		seqn = claimSlot(st, seqn+1, "1", self)
+		seqn = claimLeader(st, seqn+1, self)
+		seqn = claimSlot(st, seqn+1, "2", "")
+		seqn = claimSlot(st, seqn+1, "3", "")
+		seqn = claimSlot(st, seqn+1, "4", "")
+		seqn = claimSlot(st, seqn+1, "5", "")
+		seqn = addPing(st, seqn+1, "pong")
 
 		cl, err = client.Dial(*listenAddr)
 		if err != nil {
@@ -111,13 +111,13 @@ func main() {
 			panic(err)
 		}
 
-		path := prefix + "/junta/info/"+ self +"/public-addr"
+		path := prefix + "/junta/info/" + self + "/public-addr"
 		_, err = cl.Set(path, *listenAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
 
-		path = prefix + "/junta/info/"+ self +"/hostname"
+		path = prefix + "/junta/info/" + self + "/hostname"
 		_, err = cl.Set(path, os.Getenv("HOSTNAME"), store.Clobber)
 		if err != nil {
 			panic(err)
@@ -148,7 +148,7 @@ func main() {
 	if *attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
-		for i := seqn + 1; i < seqn + alpha; i++ {
+		for i := seqn + 1; i < seqn+alpha; i++ {
 			go st.Apply(i, store.Nop)
 		}
 	}
@@ -180,7 +180,7 @@ func main() {
 
 func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	path := "/junta/info/"+ self +"/public-addr"
+	path := "/junta/info/" + self + "/public-addr"
 	mx, err := store.EncodeSet(path, addr, store.Missing)
 	if err != nil {
 		panic(err)
@@ -191,7 +191,7 @@ func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 
 func addHostname(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	path := "/junta/info/"+ self +"/hostname"
+	path := "/junta/info/" + self + "/hostname"
 	mx, err := store.EncodeSet(path, addr, store.Missing)
 	if err != nil {
 		panic(err)

@@ -114,11 +114,11 @@ func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
 func TestBringsOrderOutOfChaos(t *testing.T) {
 	ln := *newLearner(2)
 
-	ln.Put(newVoteFrom(1, 1, "bar"))  //valid
+	ln.Put(newVoteFrom(1, 1, "bar")) //valid
 	assert.Equal(t, false, ln.done)
 	ln.Put(newVoteFrom(3, 2, "funk")) //reset
 	assert.Equal(t, false, ln.done)
-	ln.Put(newVoteFrom(2, 1, "bar"))  //ignored
+	ln.Put(newVoteFrom(2, 1, "bar")) //ignored
 	assert.Equal(t, false, ln.done)
 
 	ln.Put(newVoteFrom(3, 1, "foo")) //ignored

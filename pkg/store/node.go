@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var emptyDir = node{v:"", ds:make(map[string]node), cas:Dir}
+var emptyDir = node{v: "", ds: make(map[string]node), cas: Dir}
 
 const ErrorPath = "/store/error"
 
@@ -15,9 +15,9 @@ const Nop = "nop:"
 
 // This structure should be kept immutable.
 type node struct {
-	v string
+	v   string
 	cas string
-	ds map[string]node
+	ds  map[string]node
 }
 
 func (n node) String() string {
@@ -63,7 +63,7 @@ func (n node) Get(path string) ([]string, string) {
 
 func copyMap(a map[string]node) map[string]node {
 	b := make(map[string]node)
-	for k,v := range a {
+	for k, v := range a {
 		b[k] = v
 	}
 	return b
@@ -119,8 +119,8 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 
 	if ev.Err == nil && keep {
 		components := split(ev.Path)
-		for i := 0; i < len(components) - 1; i++ {
-			_, dirCas := n.get(components[0:i+1])
+		for i := 0; i < len(components)-1; i++ {
+			_, dirCas := n.get(components[0 : i+1])
 			if dirCas == Missing {
 				break
 			}

@@ -28,7 +28,7 @@ type filer interface {
 }
 
 func newSocket(id, name string, mon *monitor) *socket {
-	sv := mon.increfService(name+".service")
+	sv := mon.increfService(name + ".service")
 	if sv == nil {
 		return nil
 	}

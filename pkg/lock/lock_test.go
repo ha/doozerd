@@ -9,7 +9,7 @@ import (
 
 func TestLockSimple(t *testing.T) {
 	st := store.New()
-	fp := &test.FakeProposer{Store:st}
+	fp := &test.FakeProposer{Store: st}
 	lk := New(fp.Store, fp)
 	defer lk.Close()
 

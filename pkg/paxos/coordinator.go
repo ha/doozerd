@@ -1,16 +1,16 @@
 package paxos
 
 type coordinator struct {
-	cx *cluster
+	cx   *cluster
 	outs Putter
 
-	begun bool
+	begun  bool
 	target string
-	crnd uint64
-	cval string
-	rsvps int
-	vr uint64
-	vv string
+	crnd   uint64
+	cval   string
+	rsvps  int
+	vr     uint64
+	vv     string
 }
 
 func (co *coordinator) Put(in Msg) {

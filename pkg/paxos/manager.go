@@ -24,36 +24,36 @@ type instReq struct {
 }
 
 type Manager struct {
-	st      *store.Store
-	rg      *Registrar
-	learned chan result
-	seqns   chan uint64
+	st        *store.Store
+	rg        *Registrar
+	learned   chan result
+	seqns     chan uint64
 	fillUntil chan uint64
-	reqs    chan instReq
-	logger  *log.Logger
-	Self    string
-	alpha   int
-	outs    PutterTo
+	reqs      chan instReq
+	logger    *log.Logger
+	Self      string
+	alpha     int
+	outs      PutterTo
 }
 
 // start is the seqn at which this member was defined.
 // start+alpha is the first seqn this manager is expected to participate in.
 func NewManager(self string, start uint64, alpha int, st *store.Store, outs PutterTo) *Manager {
 	m := &Manager{
-		st:      st,
-		rg:      NewRegistrar(st, start, alpha),
-		learned: make(chan result),
-		seqns:   make(chan uint64),
-		fillUntil:make(chan uint64),
-		reqs:    make(chan instReq),
-		logger:  util.NewLogger("manager"),
-		Self:    self,
-		alpha:   alpha,
-		outs:    outs,
+		st:        st,
+		rg:        NewRegistrar(st, start, alpha),
+		learned:   make(chan result),
+		seqns:     make(chan uint64),
+		fillUntil: make(chan uint64),
+		reqs:      make(chan instReq),
+		logger:    util.NewLogger("manager"),
+		Self:      self,
+		alpha:     alpha,
+		outs:      outs,
 	}
 
-	go m.gen(start+uint64(alpha))
-	go m.fill(start+uint64(alpha))
+	go m.gen(start + uint64(alpha))
+	go m.fill(start + uint64(alpha))
 	go m.process()
 
 	return m

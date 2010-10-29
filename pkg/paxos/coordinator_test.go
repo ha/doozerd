@@ -8,7 +8,7 @@ import (
 func TestCoordIgnoreOldMessages(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
@@ -27,7 +27,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 func TestCoordStart(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 	assert.Equal(t, newInvite(1), got)
@@ -38,7 +38,7 @@ func TestCoordStart(t *testing.T) {
 func TestCoordStartAlt(t *testing.T) {
 	var got Msg
 	cx := newCluster("c", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 	assert.Equal(t, newInvite(2), got)
@@ -47,7 +47,7 @@ func TestCoordStartAlt(t *testing.T) {
 func TestCoordTargetNomination(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
@@ -63,7 +63,7 @@ func TestCoordTargetNomination(t *testing.T) {
 func TestCoordRestart(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
@@ -81,7 +81,7 @@ func TestCoordRestart(t *testing.T) {
 func TestCoordNonTargetNomination(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
@@ -97,7 +97,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 func TestCoordOneNominationPerRound(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
@@ -117,7 +117,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 func TestCoordEachRoundResetsCval(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
@@ -143,7 +143,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 func TestCoordStartRsvp(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:msgSlot{&got}}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newRsvpFrom(1, 1, 0, ""))
 	co.Put(newRsvpFrom(2, 1, 0, ""))

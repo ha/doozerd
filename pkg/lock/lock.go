@@ -27,7 +27,7 @@ func (lk *Lock) process() {
 
 	for ev := range lk.ch {
 
-		if ! ev.IsDel() {
+		if !ev.IsDel() {
 			continue
 		}
 

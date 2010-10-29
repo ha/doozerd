@@ -155,8 +155,8 @@ func resize(m Msg, n int) Msg {
 }
 
 var badMessages = []Msg{
-	Msg{0},                         // too short
-	Msg{0, 255},                    // bad cmd
+	{0},                            // too short
+	{0, 255},                       // bad cmd
 	resize(newInvite(0), -1),       // too short for type
 	resize(newInvite(0), 1),        // too long for type
 	resize(newRsvp(0, 0, ""), -1),  // too short for type

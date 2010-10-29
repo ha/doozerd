@@ -64,7 +64,7 @@ func Unpackui64(b []byte) (n uint64) {
 	return
 }
 
-func NewLogger(format string, a ... interface{}) *log.Logger {
+func NewLogger(format string, a ...interface{}) *log.Logger {
 	prefix := fmt.Sprintf(format, a...)
 
 	if prefix == "" {
@@ -88,5 +88,5 @@ func RandHexString(bits int) string {
 // contain only the characters [0-9a-f] and dot, formatted for easier reading.
 func RandId() string {
 	return RandHexString(IdBits/2) + "." +
-	       RandHexString(IdBits/2)
+		RandHexString(IdBits/2)
 }

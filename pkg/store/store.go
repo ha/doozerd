@@ -13,14 +13,14 @@ import (
 const (
 	Clobber = ""
 	Missing = "0"
-	Dir = "dir"
+	Dir     = "dir"
 )
 
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)
 const (
 	charPat = `([a-zA-Z0-9.]|-)`
-	partPat = "/"+charPat+"+"
-	pathPat = "^/$|^("+partPat+")+$"
+	partPat = "/" + charPat + "+"
+	pathPat = "^/$|^(" + partPat + ")+$"
 )
 
 var pathRe = regexp.MustCompile(pathPat)
@@ -28,7 +28,7 @@ var pathRe = regexp.MustCompile(pathPat)
 var (
 	ErrBadMutation = os.NewError("bad mutation")
 	ErrBadSnapshot = os.NewError("bad snapshot")
-	ErrTooLate = os.NewError("too late")
+	ErrTooLate     = os.NewError("too late")
 	ErrCasMismatch = os.NewError("cas mismatch")
 )
 
@@ -44,23 +44,23 @@ type Store struct {
 	applyCh chan apply
 	watchCh chan watch
 	watches []watch
-	todo map[uint64]apply
-	state *state
+	todo    map[uint64]apply
+	state   *state
 }
 
 type apply struct {
-	seqn uint64
+	seqn     uint64
 	mutation string
 }
 
 type state struct {
-	ver uint64
+	ver  uint64
 	root node
 }
 
 type watch struct {
 	in, out chan Event
-	re *regexp.Regexp
+	re      *regexp.Regexp
 }
 
 // Creates a new, empty data store. Mutations will be applied in order,
@@ -70,9 +70,9 @@ func New() *Store {
 	s := &Store{
 		applyCh: make(chan apply),
 		watchCh: make(chan watch),
-		todo: make(map[uint64]apply),
+		todo:    make(map[uint64]apply),
 		watches: []watch{},
-		state: &state{0, emptyDir},
+		state:   &state{0, emptyDir},
 	}
 
 	go s.process()
@@ -189,12 +189,12 @@ func (s *Store) notify(e Event) {
 
 func append(ws *[]watch, w watch) {
 	l := len(*ws)
-	if l + 1 > cap(*ws) {
-		ns := make([]watch, (l + 1)*2)
+	if l+1 > cap(*ws) {
+		ns := make([]watch, (l+1)*2)
 		copy(ns, *ws)
 		*ws = ns
 	}
-	*ws = (*ws)[0:l + 1]
+	*ws = (*ws)[0 : l+1]
 	(*ws)[l] = w
 }
 
@@ -331,7 +331,7 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
 	in := make(chan Event)
 	go buffer(in, ch)
-	s.watchCh <- watch{out:ch, in:in, re:re}
+	s.watchCh <- watch{out: ch, in: in, re: re}
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -347,7 +347,7 @@ func (s *Store) Wait(seqn uint64) <-chan Event {
 	// Reading shared state. This must happen after the call to s.Watch.
 	if s.state.ver >= seqn {
 		close(all)
-		ch <- Event{Seqn:seqn, Err:ErrTooLate}
+		ch <- Event{Seqn: seqn, Err: ErrTooLate}
 	}
 
 	go func() {

@@ -35,9 +35,9 @@ type Manager interface {
 }
 
 type Server struct {
-	Addr string
-	St *store.Store
-	Mg Manager
+	Addr         string
+	St           *store.Store
+	Mg           Manager
 	Self, Prefix string
 }
 
@@ -56,7 +56,7 @@ func (sv *Server) ListenAndServe() os.Error {
 	err = sv.Serve(l)
 	if err != nil {
 		logger.Printf("%s: %s", l, err)
-}
+	}
 	return err
 }
 
@@ -178,7 +178,7 @@ func (sv *Server) leader() string {
 }
 
 func (sv *Server) addrFor(id string) string {
-	parts, cas := sv.St.Get("/junta/members/"+id)
+	parts, cas := sv.St.Get("/junta/members/" + id)
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -314,14 +314,14 @@ func (c *conn) serve() {
 
 		if len(parts) == 0 {
 			rlogger.Println("zero parts supplied")
-			pc.SendError(rid, proto.InvalidCommand + ": no command")
+			pc.SendError(rid, proto.InvalidCommand+": no command")
 			continue
 		}
 
 		switch parts[0] {
 		default:
 			rlogger.Printf("unknown command <%s>", parts[0])
-			pc.SendError(rid, proto.InvalidCommand + " " + parts[0])
+			pc.SendError(rid, proto.InvalidCommand+" "+parts[0])
 		case "set":
 			if len(parts) != 4 {
 				rlogger.Printf("invalid set command: %#v", parts)

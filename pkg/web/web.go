@@ -15,7 +15,7 @@ import (
 
 var Store *store.Store
 var ClusterName, evPrefix string
-var mainTpl  = template.MustParse(main_html, nil)
+var mainTpl = template.MustParse(main_html, nil)
 
 type info struct {
 	Path string
@@ -23,7 +23,7 @@ type info struct {
 
 type stringHandler struct {
 	contentType string
-	body string
+	body        string
 }
 
 func (sh stringHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +99,7 @@ func viewHtml(w http.ResponseWriter, r *http.Request) {
 func walk(path string, st *store.Store, ch chan store.Event) {
 	for path != "/" && strings.HasSuffix(path, "/") {
 		// TODO generalize and factor this into pkg store.
-		path = path[0:len(path)-1]
+		path = path[0 : len(path)-1]
 	}
 	v, cas := st.Get(path)
 	if cas != store.Dir {

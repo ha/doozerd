@@ -69,23 +69,23 @@ type monitor struct {
 
 func splitId(id string) (name, ext string) {
 	ext = path.Ext(id)
-	name = id[0:len(id)-len(ext)]
+	name = id[0 : len(id)-len(ext)]
 	return
 }
 
 func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 
 	mon := &monitor{
-		self:   self,
-		prefix: prefix,
-		st:     st,
-		cl:     cl,
-		clock:  make(chan ticker),
-		units:  make(map[string]unit),
-		refs:   make(map[string]int),
-		exitCh: make(chan exit),
-		readyCh:make(chan ready),
-		logger: util.NewLogger("monitor"),
+		self:    self,
+		prefix:  prefix,
+		st:      st,
+		cl:      cl,
+		clock:   make(chan ticker),
+		units:   make(map[string]unit),
+		refs:    make(map[string]int),
+		exitCh:  make(chan exit),
+		readyCh: make(chan ready),
+		logger:  util.NewLogger("monitor"),
 	}
 
 	mon.logger.Println("reading units")
@@ -152,7 +152,7 @@ func (mon *monitor) newUnit(id string) unit {
 }
 
 func (mon *monitor) lookupParam(id, param string) string {
-	return store.GetString(mon.st, defDir + id + "/" + param)
+	return store.GetString(mon.st, defDir+id+"/"+param)
 }
 
 func (mon *monitor) setStatus(id, param, val string) {

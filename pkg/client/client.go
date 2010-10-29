@@ -13,7 +13,7 @@ import (
 var ErrInvalidResponse = os.NewError("invalid response")
 
 type Client struct {
-    p *proto.Conn
+	p  *proto.Conn
 	lg *log.Logger
 	lk sync.Mutex
 }
@@ -23,8 +23,8 @@ func Dial(addr string) (*Client, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-    p := proto.NewConn(c)
-	return &Client{p:p, lg:util.NewLogger(addr)}, nil
+	p := proto.NewConn(c)
+	return &Client{p: p, lg: util.NewLogger(addr)}, nil
 }
 
 // This is a little subtle. We want to follow redirects while still pipelining

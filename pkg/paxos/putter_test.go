@@ -6,17 +6,17 @@ import (
 )
 
 func TestPutToWrapper(t *testing.T) {
-    seqn := uint64(1)
-    p := make(ChanPutCloserTo)
-    w := putToWrapper{seqn, p}
-    m := newInvite(1)
-    a := "a"
+	seqn := uint64(1)
+	p := make(ChanPutCloserTo)
+	w := putToWrapper{seqn, p}
+	m := newInvite(1)
+	a := "a"
 
-    w.PutTo(m, a)
+	w.PutTo(m, a)
 
-    exp := m.Dup()
-    exp.SetSeqn(seqn)
-    assert.Equal(t, Packet{exp, a}, <-p)
+	exp := m.Dup()
+	exp.SetSeqn(seqn)
+	assert.Equal(t, Packet{exp, a}, <-p)
 }
 
 func TestChanPutCloser(t *testing.T) {

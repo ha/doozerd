@@ -31,8 +31,8 @@ type Conn struct {
 }
 
 type ProtoError struct {
-	Id uint
-	Op string
+	Id    uint
+	Op    string
 	Error os.Error
 }
 
@@ -56,8 +56,8 @@ func (e Redirect) Addr() string {
 	return string(e)
 }
 
-func NewConn(conn io.ReadWriteCloser) (*Conn) {
-	return &Conn{Conn:textproto.NewConn(conn)}
+func NewConn(conn io.ReadWriteCloser) *Conn {
+	return &Conn{Conn: textproto.NewConn(conn)}
 }
 
 // Server functions
@@ -154,8 +154,10 @@ Loop:
 		// TODO: test if len(line) == 0
 		line, err = r.ReadLine()
 		switch {
-		case err == os.EOF: return
-		case err != nil: panic(err)
+		case err == os.EOF:
+			return
+		case err != nil:
+			panic(err)
 		}
 		line = strings.TrimSpace(line)
 		if len(line) < 1 {
@@ -175,10 +177,12 @@ Loop:
 			// TODO: test for err
 			n, err := io.ReadFull(r.R, buf)
 			switch {
-			case n != size: panic(fmt.Sprintf("n:%d\n", n))
-			case err != nil: panic(err)
+			case n != size:
+				panic(fmt.Sprintf("n:%d\n", n))
+			case err != nil:
+				panic(err)
 			}
-			parts[len(parts) - count] = string(buf)
+			parts[len(parts)-count] = string(buf)
 			count--
 		}
 	}

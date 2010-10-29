@@ -9,8 +9,8 @@ type clusterer interface {
 func (it instance) process(seqn uint64, cf clusterer, res chan result) {
 	cx := cf.cluster(seqn)
 
-	co := coordinator{cx:cx, crnd:uint64(cx.SelfIndex()), outs:cx}
-	ac := acceptor{outs:cx}
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: cx}
+	ac := acceptor{outs: cx}
 	ln := *newLearner(uint64(cx.Quorum()))
 	var sk sink
 
