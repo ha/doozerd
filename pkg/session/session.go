@@ -1,18 +1,18 @@
 package session
 
 import (
-	"junta"
+	"junta/paxos"
 	"junta/store"
 	"junta/timer"
 )
 
 type Session struct {
 	st    *store.Store
-	pp    junta.Proposer
+	pp    paxos.Proposer
 	timer *timer.Timer
 }
 
-func New(st *store.Store, pp junta.Proposer) *Session {
+func New(st *store.Store, pp paxos.Proposer) *Session {
 	timer := timer.New("/session/**", timer.OneSecond, st)
 	ss := &Session{st, pp, timer}
 	go ss.process()

@@ -1,7 +1,7 @@
 package lock
 
 import (
-	"junta"
+	"junta/paxos"
 	"junta/store"
 	"junta/util"
 	"strings"
@@ -9,11 +9,11 @@ import (
 
 type Lock struct {
 	st *store.Store
-	pp junta.Proposer
+	pp paxos.Proposer
 	ch chan store.Event
 }
 
-func New(st *store.Store, pp junta.Proposer) *Lock {
+func New(st *store.Store, pp paxos.Proposer) *Lock {
 	ch := make(chan store.Event)
 	st.Watch("/session/*", ch)
 

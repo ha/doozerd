@@ -1,7 +1,6 @@
 package server
 
 import (
-	"junta"
 	"junta/paxos"
 	"junta/proto"
 	"junta/store"
@@ -29,7 +28,7 @@ type conn struct {
 }
 
 type Manager interface {
-	junta.Proposer
+	paxos.Proposer
 	PutFrom(string, paxos.Msg)
 	Alpha() int
 }
