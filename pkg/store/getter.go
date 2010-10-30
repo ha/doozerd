@@ -65,7 +65,6 @@ func Walk(g Getter, pattern string) (chan Event, os.Error) {
 
 	// TODO find the longest non-glob prefix of pattern and start there
 	re, err := compileGlob(pattern)
-	_ = re
 	if err != nil {
 		close(ch)
 		return nil, err
