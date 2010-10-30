@@ -45,7 +45,8 @@ var encTests = []encTest{
 	{uint32(0), ":0\r\n"},
 	{uint64(0), ":0\r\n"},
 
-	{[]byte{'a'}, "$1\r\na\r\n"},
+	{[]byte{'f', 'o', 'o'}, "$3\r\nfoo\r\n"},
+	{"foo", "$3\r\nfoo\r\n"},
 	{Line("hi"), "+hi\r\n"},
 	{os.NewError("hi"), "-hi\r\n"},
 	{nil, "$-1\r\n"},
