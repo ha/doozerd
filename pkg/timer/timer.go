@@ -95,7 +95,7 @@ func (t *Timer) process() {
 
 				heap.Push(ticks, x)
 			case e.IsDel():
-				logger.Printf("deleting: %#v", e)
+				logger.Println("deleting", e.Path, e.Body)
 				// This could be optimize since ticks is sorted; I can't
 				// find a way without implementing our own quick-find.
 				for i := 0; i < ticks.Len(); i++ {
