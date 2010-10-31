@@ -21,11 +21,7 @@ func New(st *store.Store, pp paxos.Proposer) *Session {
 
 func (ss *Session) process() {
 	for tick := range ss.timer.C {
-		mut, err := store.EncodeDel(tick.Path, store.Clobber)
-		if err != nil {
-			continue
-		}
-		ss.pp.Propose(mut)
+		paxos.Del(ss.pp, tick.Path, store.Clobber)
 	}
 }
 

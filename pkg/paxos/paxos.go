@@ -1,6 +1,7 @@
 package paxos
 
 import (
+	"junta/store"
 	"net"
 	"os"
 )
@@ -11,4 +12,22 @@ type ReadFromer interface {
 
 type Proposer interface {
 	Propose(v string) (seqn uint64, err os.Error)
+}
+
+func Set(p Proposer, path, body, cas string) (uint64, os.Error) {
+	mut, err := store.EncodeSet(path, body, cas)
+	if err != nil {
+		return 0, err
+	}
+
+	return p.Propose(mut)
+}
+
+func Del(p Proposer, path, cas string) (uint64, os.Error) {
+	mut, err := store.EncodeDel(path, cas)
+	if err != nil {
+		return 0, err
+	}
+
+	return p.Propose(mut)
 }

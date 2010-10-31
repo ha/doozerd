@@ -42,13 +42,7 @@ func (lk *Lock) process() {
 
 		for ev := range ch {
 			if ev.Body == name {
-				mut, err := store.EncodeDel(ev.Path, store.Clobber)
-				if err != nil {
-					continue
-				}
-
-				// TODO:  Do we need to re-popropose if this doesn't work?
-				lk.pp.Propose(mut)
+				paxos.Del(lk.pp, ev.Path, store.Clobber)
 			}
 		}
 	}

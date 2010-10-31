@@ -201,12 +201,7 @@ func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
 		return 0, err
 	}
 
-	mut, err := store.EncodeSet(shortPath, body, cas)
-	if err != nil {
-		return 0, err
-	}
-
-	return sv.Mg.Propose(mut)
+	return paxos.Set(sv.Mg, shortPath, body, cas)
 }
 
 func (sv *Server) Nop() {
@@ -219,12 +214,7 @@ func (sv *Server) Del(path, cas string) (uint64, os.Error) {
 		return 0, err
 	}
 
-	mut, err := store.EncodeDel(shortPath, cas)
-	if err != nil {
-		return 0, err
-	}
-
-	return sv.Mg.Propose(mut)
+	return paxos.Del(sv.Mg, shortPath, cas)
 }
 
 func (sv *Server) Get(path string) (v []string, cas string, err os.Error) {
