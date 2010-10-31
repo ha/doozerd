@@ -4,9 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"junta/client"
+	"junta/lock"
+	"junta/member"
 	"junta/mon"
 	"junta/paxos"
 	"junta/server"
+	"junta/session"
 	"junta/store"
 	"junta/util"
 	"junta/web"
@@ -26,7 +29,7 @@ var (
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 )
 
-func activate(st *store.Store, self, prefix string, c *client.Client) {
+func activate(st *store.Store, self, prefix string, c *client.Client, cal chan int) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
 	st.GetDirAndWatch("/junta/slot", ch)
@@ -38,6 +41,7 @@ func activate(st *store.Store, self, prefix string, c *client.Client) {
 				logger.Println(err)
 				continue
 			}
+			cal <- 1
 			close(ch)
 		}
 	}
@@ -86,6 +90,8 @@ func main() {
 
 	outs := make(paxos.ChanPutCloserTo)
 
+	cal := make(chan int, 1)
+
 	var cl *client.Client
 	self := util.RandId()
 	st := store.New()
@@ -101,6 +107,8 @@ func main() {
 		seqn = claimSlot(st, seqn+1, "4", "")
 		seqn = claimSlot(st, seqn+1, "5", "")
 		seqn = addPing(st, seqn+1, "pong")
+
+		cal <- 1
 
 		cl, err = client.Dial(*listenAddr)
 		if err != nil {
@@ -138,7 +146,7 @@ func main() {
 		go func() {
 			st.Sync(seqn + alpha)
 			close(done)
-			activate(st, self, prefix, cl)
+			activate(st, self, prefix, cl, cal)
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -153,6 +161,13 @@ func main() {
 			go st.Apply(i, store.Nop)
 		}
 	}
+
+	go func() {
+		<-cal
+		lock.New(st, mg)
+		session.New(st, mg)
+		member.New(st, mg)
+	}()
 
 	sv := &server.Server{*listenAddr, st, mg, self, prefix}
 
