@@ -6,6 +6,7 @@ import (
 	"junta/timer"
 )
 
+// TODO remove this type entirely once store.Close is implemented
 type Session struct {
 	st    *store.Store
 	pp    paxos.Proposer

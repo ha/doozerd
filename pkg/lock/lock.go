@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// TODO remove this type entirely once store.Close is implemented
 type Lock struct {
 	st *store.Store
 	pp paxos.Proposer
