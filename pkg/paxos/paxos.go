@@ -10,5 +10,5 @@ type ReadFromer interface {
 }
 
 type Proposer interface {
-	Propose(v string) (uint64, string, os.Error)
+	Propose(v string) (seqn uint64, err os.Error)
 }

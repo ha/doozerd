@@ -206,18 +206,7 @@ func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
 		return 0, err
 	}
 
-	seqn, v, err := sv.Mg.Propose(mut)
-	if err != nil {
-		return 0, err
-	}
-
-	// We failed, but only because of a competing proposal. The client should
-	// retry.
-	if v != mut {
-		return 0, os.EAGAIN
-	}
-
-	return seqn, nil
+	return sv.Mg.Propose(mut)
 }
 
 func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
@@ -229,7 +218,7 @@ func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
 }
 
 func (sv *Server) Nop() os.Error {
-	_, _, err := sv.Mg.Propose(store.Nop)
+	_, err := sv.Mg.Propose(store.Nop)
 	return err
 }
 
@@ -244,18 +233,7 @@ func (sv *Server) delOnce(path, cas string) (uint64, os.Error) {
 		return 0, err
 	}
 
-	seqn, v, err := sv.Mg.Propose(mut)
-	if err != nil {
-		return 0, err
-	}
-
-	// We failed, but only because of a competing proposal. The client should
-	// retry.
-	if v != mut {
-		return 0, os.EAGAIN
-	}
-
-	return seqn, nil
+	return sv.Mg.Propose(mut)
 }
 
 func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {

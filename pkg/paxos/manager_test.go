@@ -181,8 +181,9 @@ func TestProposeAndStore(t *testing.T) {
 		}
 	}()
 
-	_, got, _ := mg.Propose(exp)
-	assert.Equal(t, exp, got, "")
+	ch := st.Wait(3)
+	mg.Propose(exp)
+	assert.Equal(t, exp, (<-ch).Mut)
 }
 
 func TestProposeBadMutation(t *testing.T) {
@@ -194,7 +195,7 @@ func TestProposeBadMutation(t *testing.T) {
 		}
 	}()
 
-	_, _, err := mg.Propose("foo")
+	_, err := mg.Propose("foo")
 	assert.Equal(t, store.ErrBadMutation, err)
 }
 
