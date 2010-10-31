@@ -195,7 +195,7 @@ func (sv *Server) checkPath(path string) (string, os.Error) {
 	return path[len(sv.Prefix):], nil
 }
 
-func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
+func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
 	shortPath, err := sv.checkPath(path)
 	if err != nil {
 		return 0, err
@@ -209,20 +209,11 @@ func (sv *Server) setOnce(path, body, cas string) (uint64, os.Error) {
 	return sv.Mg.Propose(mut)
 }
 
-func (sv *Server) Set(path, body, cas string) (seqn uint64, err os.Error) {
-	err = os.EAGAIN
-	for err == os.EAGAIN {
-		seqn, err = sv.setOnce(path, body, cas)
-	}
-	return
+func (sv *Server) Nop() {
+	sv.Mg.Propose(store.Nop)
 }
 
-func (sv *Server) Nop() os.Error {
-	_, err := sv.Mg.Propose(store.Nop)
-	return err
-}
-
-func (sv *Server) delOnce(path, cas string) (uint64, os.Error) {
+func (sv *Server) Del(path, cas string) (uint64, os.Error) {
 	shortPath, err := sv.checkPath(path)
 	if err != nil {
 		return 0, err
@@ -234,14 +225,6 @@ func (sv *Server) delOnce(path, cas string) (uint64, os.Error) {
 	}
 
 	return sv.Mg.Propose(mut)
-}
-
-func (sv *Server) Del(path, cas string) (seqn uint64, err os.Error) {
-	err = os.EAGAIN
-	for err == os.EAGAIN {
-		seqn, err = sv.delOnce(path, cas)
-	}
-	return
 }
 
 func (sv *Server) Get(path string) (v []string, cas string, err os.Error) {
@@ -267,7 +250,7 @@ func (sv *Server) Sget(path string) (body string, err os.Error) {
 // Repeatedly propose nop values until a successful read from `done`.
 func (sv *Server) AdvanceUntil(done chan int) {
 	for _, ok := <-done; !ok; _, ok = <-done {
-		sv.Mg.Propose(store.Nop)
+		sv.Nop()
 	}
 }
 
@@ -397,14 +380,9 @@ func (c *conn) serve() {
 			}
 
 			rlogger.Println("nop")
-			err := c.s.Nop()
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
-			} else {
-				rlogger.Printf("good")
-				pc.SendResponse(rid, []interface{}{"true"})
-			}
+			c.s.Nop()
+			rlogger.Printf("good")
+			pc.SendResponse(rid, []interface{}{"true"})
 		case "join":
 			// join abc123 1.2.3.4:999
 			if len(parts) != 3 {
