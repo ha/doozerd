@@ -34,10 +34,11 @@ func activate(st *store.Store, self, prefix string, c *client.Client) {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
 			_, err := c.Set(prefix+ev.Path, self, ev.Cas)
-			if err == nil {
-				return
+			if err != nil {
+				logger.Println(err)
+				continue
 			}
-			logger.Println(err)
+			close(ch)
 		}
 	}
 }
