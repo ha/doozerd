@@ -138,3 +138,19 @@ func (c *Client) Nop() os.Error {
 	_, err := c.call(1, "nop")
 	return err
 }
+
+func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
+	var parts []string
+
+	parts, err = c.call(2, "checkin", id, cas)
+	if err != nil {
+		return
+	}
+
+	t, err = strconv.Btoi64(parts[0], 10)
+	if err != nil {
+		return
+	}
+
+	return t, parts[1], nil
+}

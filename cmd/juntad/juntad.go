@@ -15,10 +15,12 @@ import (
 	"junta/web"
 	"net"
 	"os"
+	"time"
 )
 
 const (
-	alpha = 50
+	alpha    = 50
+	interval = 1e9 // ns == 1s
 )
 
 // Flags
@@ -172,6 +174,16 @@ func main() {
 	}()
 
 	sv := &server.Server{*listenAddr, st, mg, self, prefix}
+
+	go func() {
+		cas := store.Missing
+		for _ = range time.Tick(interval) {
+			_, cas, err = cl.Checkin(self, cas)
+			if err != nil {
+				logger.Println(err)
+			}
+		}
+	}()
 
 	go func() {
 		panic(mon.Monitor(self, prefix, st, cl))
