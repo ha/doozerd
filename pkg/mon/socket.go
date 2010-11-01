@@ -134,8 +134,10 @@ func (so *socket) close() {
 	}
 	so.lfiles = nil
 	so.sv.setActiveLFDs(nil)
+	so.logger.Println("closed, stopping service")
 	so.sv.stop() // just mark sv.wantUp = false
 
+	so.logger.Println("closed, updating status")
 	go so.setStatus("status", "down")
 	go so.setStatus("reason", "requested")
 	go so.delStatus("listen-addr")
