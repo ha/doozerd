@@ -63,14 +63,23 @@ func (sv *Server) ServeUdp(u jnet.Conn, outs chan paxos.Packet) os.Error {
 	panic("unreachable")
 }
 
-func (s *Server) Serve(l net.Listener) os.Error {
+var clg = util.NewLogger("cal")
+
+func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
+	var ok bool
 	for {
+		if !ok {
+			_, ok = <-cal
+		}
+		clg.Println(ok)
+
+
 		rw, e := l.Accept()
 		if e != nil {
 			return e
 		}
 		c := &conn{rw, s}
-		go c.serve()
+		go c.serve(ok)
 	}
 
 	panic("unreachable")
@@ -152,7 +161,7 @@ func (sv *Server) AdvanceUntil(done chan int) {
 	}
 }
 
-func (c *conn) serve() {
+func (c *conn) serve(cal bool) {
 	pc := proto.NewConn(c)
 	logger := util.NewLogger("%v", c.RemoteAddr())
 	logger.Println("accepted connection")
@@ -188,7 +197,7 @@ func (c *conn) serve() {
 			}
 
 			leader := c.s.leader()
-			if c.s.Self != leader {
+			if !cal {
 				addr := c.s.addrFor(leader)
 				if addr == "" {
 					rlogger.Printf("unknown address for leader: %s", leader)
@@ -218,7 +227,7 @@ func (c *conn) serve() {
 			}
 
 			leader := c.s.leader()
-			if c.s.Self != leader {
+			if !cal {
 				rlogger.Printf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
 				break
@@ -271,7 +280,7 @@ func (c *conn) serve() {
 			}
 
 			leader := c.s.leader()
-			if c.s.Self != leader {
+			if !cal {
 				rlogger.Printf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
 				break
@@ -290,7 +299,7 @@ func (c *conn) serve() {
 			}
 
 			leader := c.s.leader()
-			if c.s.Self != leader {
+			if !cal {
 				rlogger.Printf("redirect to %s", leader)
 				pc.SendRedirect(rid, leader)
 				break

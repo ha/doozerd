@@ -42,6 +42,7 @@ func activate(st *store.Store, self, prefix string, c *client.Client, cal chan i
 				continue
 			}
 			cal <- 1
+			cal <- 1
 			close(ch)
 		}
 	}
@@ -90,7 +91,7 @@ func main() {
 
 	outs := make(paxos.ChanPutCloserTo)
 
-	cal := make(chan int, 1)
+	cal := make(chan int, 2)
 
 	var cl *client.Client
 	self := util.RandId()
@@ -108,6 +109,7 @@ func main() {
 		seqn = claimSlot(st, seqn+1, "5", "")
 		seqn = addPing(st, seqn+1, "pong")
 
+		cal <- 1
 		cal <- 1
 
 		cl, err = client.Dial(*listenAddr)
@@ -176,7 +178,7 @@ func main() {
 	}()
 
 	go func() {
-		panic(sv.Serve(listener))
+		panic(sv.Serve(listener, cal))
 	}()
 
 	go func() {
