@@ -112,10 +112,10 @@ func (sv *Server) checkPath(path string) (string, os.Error) {
 	return path[len(sv.Prefix):], nil
 }
 
-func (sv *Server) Set(path, body, cas string) (uint64, os.Error) {
+func (sv *Server) Set(path, body, cas string) (uint64, string, os.Error) {
 	shortPath, err := sv.checkPath(path)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	return paxos.Set(sv.Mg, shortPath, body, cas)
@@ -211,7 +211,7 @@ func (c *conn) serve(cal bool) {
 			}
 
 			rlogger.Printf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-			seqn, err := c.s.Set(parts[1], parts[2], parts[3])
+			seqn, _, err := c.s.Set(parts[1], parts[2], parts[3])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
@@ -310,7 +310,7 @@ func (c *conn) serve(cal bool) {
 
 			key := c.s.Prefix + "/junta/members/" + who
 
-			seqn, err := c.s.Set(key, addr, store.Missing)
+			seqn, _, err := c.s.Set(key, addr, store.Missing)
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
