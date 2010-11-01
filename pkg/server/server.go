@@ -34,25 +34,6 @@ type Server struct {
 	Self, Prefix string
 }
 
-func (sv *Server) ListenAndServe() os.Error {
-	logger := util.NewLogger("server %s", sv.Addr)
-
-	logger.Println("binding")
-	l, err := net.Listen("tcp", sv.Addr)
-	if err != nil {
-		logger.Println(err)
-		return err
-	}
-	defer l.Close()
-	logger.Println("listening")
-
-	err = sv.Serve(l)
-	if err != nil {
-		logger.Printf("%s: %s", l, err)
-	}
-	return err
-}
-
 func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
 	logger := util.NewLogger("udp server %s", sv.Addr)
 
