@@ -1,6 +1,7 @@
 package server
 
 import (
+	jnet "junta/net"
 	"junta/paxos"
 	"junta/proto"
 	"junta/store"
@@ -9,14 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
-
-type ReadFromWriteToer interface {
-	ReadFrom([]byte) (int, net.Addr, os.Error)
-	WriteTo([]byte, net.Addr) (int, os.Error)
-	LocalAddr() net.Addr
-}
 
 const packetSize = 3000
 
@@ -78,78 +72,11 @@ func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
 	return err
 }
 
-func (sv *Server) ServeUdp(u ReadFromWriteToer, outs chan paxos.Packet) os.Error {
-	recvd := make(chan paxos.Packet)
-	sent := make(chan paxos.Packet)
+func (sv *Server) ServeUdp(u jnet.Conn, outs chan paxos.Packet) os.Error {
+	r := jnet.Ackify(u, outs)
 
-	logger := util.NewLogger("udp server %s", u.LocalAddr())
-	go func() {
-		logger.Println("reading messages...")
-		for {
-			msg, addr, err := paxos.ReadMsg(u, packetSize)
-			if err != nil {
-				logger.Println(err)
-				continue
-			}
-			logger.Printf("read %v from %s", msg, addr)
-			recvd <- paxos.Packet{msg, addr}
-			sv.Mg.PutFrom(addr, msg)
-		}
-	}()
-
-	go func() {
-		logger.Println("sending messages...")
-		for pk := range outs {
-			logger.Printf("sending %v", pk)
-			udpAddr, err := net.ResolveUDPAddr(pk.Addr)
-			if err != nil {
-				logger.Println(err)
-				continue
-			}
-
-			_, err = u.WriteTo(pk.Msg.WireBytes(), udpAddr)
-			if err != nil {
-				logger.Println(err)
-				continue
-			}
-			sent <- paxos.Packet{pk.Msg, pk.Addr}
-		}
-	}()
-
-	needsAck := make(map[string]bool)
-	resend := make(chan paxos.Packet)
-	for {
-		select {
-		case pk := <-recvd:
-			if pk.Msg.HasFlags(paxos.Ack) {
-				logger.Printf("got ack %s %v", pk.Addr, pk.Msg)
-				needsAck[pk.Id()] = false
-			} else {
-				logger.Printf("sending ack %s %v", pk.Addr, pk.Msg)
-				udpAddr, err := net.ResolveUDPAddr(pk.Addr)
-				if err != nil {
-					break
-				}
-				ack := pk.Msg.Dup().SetFlags(paxos.Ack)
-				u.WriteTo(ack.WireBytes(), udpAddr)
-			}
-		case pk := <-sent:
-			needsAck[pk.Id()] = true
-			logger.Printf("needs ack %s %v", pk.Addr, pk.Msg)
-			go func() {
-				time.Sleep(100000000) // ns == 0.1s
-				resend <- pk
-			}()
-		case pk := <-resend:
-			if needsAck[pk.Id()] {
-				logger.Printf("resending %s %v", pk.Addr, pk.Msg)
-				go func() {
-					outs <- pk
-				}()
-			} else {
-				needsAck[pk.Id()] = false, false
-			}
-		}
+	for p := range r {
+		sv.Mg.PutFrom(p.Addr, p.Msg)
 	}
 
 	panic("unreachable")
