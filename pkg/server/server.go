@@ -10,9 +10,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const packetSize = 3000
+
+const lease = 3e9 // ns == 3s
 
 var ErrBadPrefix = os.NewError("bad prefix in path")
 
@@ -119,6 +122,12 @@ func (sv *Server) Set(path, body, cas string) (uint64, string, os.Error) {
 	}
 
 	return paxos.Set(sv.Mg, shortPath, body, cas)
+}
+
+func (sv *Server) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
+	t = time.Nanoseconds() + lease
+	_, ncas, err = paxos.Set(sv.Mg, "/session/"+id, strconv.Itoa64(t), cas)
+	return
 }
 
 func (sv *Server) Nop() {
@@ -322,6 +331,36 @@ func (c *conn) serve(cal bool) {
 				close(done)
 				seqn, snap := c.s.St.Snapshot()
 				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn), snap})
+			}
+		case "checkin":
+			if len(parts) != 3 {
+				rlogger.Println("invalid checkin command:", parts)
+				pc.SendError(rid, "wrong number of parts")
+				break
+			}
+
+			leader := c.s.leader()
+			if !cal {
+				addr := c.s.addrFor(leader)
+				if addr == "" {
+					rlogger.Printf("unknown address for leader: %s", leader)
+					pc.SendError(rid, "unknown address for leader")
+					break
+				}
+
+				rlogger.Printf("redirect to %s", addr)
+				pc.SendRedirect(rid, addr)
+				break
+			}
+
+			rlogger.Printf("checkin %q (cas %q)", parts[1], parts[2])
+			t, cas, err := c.s.Checkin(parts[1], parts[2])
+			if err != nil {
+				rlogger.Printf("bad: %s", err)
+				pc.SendError(rid, err.String())
+			} else {
+				rlogger.Printf("good")
+				pc.SendResponse(rid, []interface{}{strconv.Itoa64(t), cas})
 			}
 		}
 	}
