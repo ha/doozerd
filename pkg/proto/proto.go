@@ -1,6 +1,7 @@
 package proto
 
 import (
+	"junta/util"
 	"os"
 	"io"
 	"fmt"
@@ -22,6 +23,8 @@ const (
 const (
 	InvalidCommand = "invalid command"
 )
+
+var logger = util.NewLogger("proto")
 
 type Line string
 
@@ -151,13 +154,9 @@ func decode(r *textproto.Reader) (parts []string, err os.Error) {
 
 Loop:
 	for count > 0 {
-		// TODO: test if len(line) == 0
 		line, err = r.ReadLine()
-		switch {
-		case err == os.EOF:
-			return
-		case err != nil:
-			panic(err)
+		if err != nil {
+			return nil, err
 		}
 		line = strings.TrimSpace(line)
 		if len(line) < 1 {
@@ -171,16 +170,14 @@ Loop:
 			count, _ = strconv.Atoi(line[1:])
 			parts = make([]string, count)
 		case '$':
-			// TODO: test for err
-			size, _ = strconv.Atoi(line[1:])
+			size, err = strconv.Atoi(line[1:])
+			if err != nil {
+				return nil, err
+			}
 			buf := make([]byte, size)
-			// TODO: test for err
-			n, err := io.ReadFull(r.R, buf)
-			switch {
-			case n != size:
-				panic(fmt.Sprintf("n:%d\n", n))
-			case err != nil:
-				panic(err)
+			_, err := io.ReadFull(r.R, buf)
+			if err != nil {
+				return nil, err
 			}
 			parts[len(parts)-count] = string(buf)
 			count--
