@@ -188,7 +188,7 @@ func (sv *service) exited(w *os.Waitmsg) {
 func (sv *service) check() {
 	sv.logger.Println("checking up/down state")
 
-	if sv.wantUp && sv.alfiles != nil {
+	if sv.wantUp {
 		if sv.lockCas == "" {
 			sv.kill()
 			if !sv.lockTaken {
