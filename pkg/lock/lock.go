@@ -36,14 +36,14 @@ func (lk *Lock) process() {
 		name := parts[2]
 		logger.Printf("lost session %s", name)
 
-		ch, err := store.Walk(lk.st, "/lock/**")
+		ch, err := store.Walk(ev, "/lock/**")
 		if err != nil {
 			continue
 		}
 
 		for ev := range ch {
 			if ev.Body == name {
-				paxos.Del(lk.pp, ev.Path, store.Clobber)
+				paxos.Del(lk.pp, ev.Path, ev.Cas)
 			}
 		}
 	}

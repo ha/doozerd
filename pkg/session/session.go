@@ -22,7 +22,8 @@ func New(st *store.Store, pp paxos.Proposer) *Session {
 
 func (ss *Session) process() {
 	for tick := range ss.timer.C {
-		paxos.Del(ss.pp, tick.Path, store.Clobber)
+		_, cas := ss.st.Get(tick.Path)
+		paxos.Del(ss.pp, tick.Path, cas)
 	}
 }
 
