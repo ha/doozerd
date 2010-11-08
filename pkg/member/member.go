@@ -36,7 +36,7 @@ func (mb *Cleaner) process() {
 		logger.Printf("lost session %s", name)
 
 		mb.clearSlot(ev, name)
-		mb.removeMember(ev, name, ev.Cas)
+		mb.removeMember(ev, name)
 		mb.removeInfo(ev, name)
 	}
 }
@@ -58,8 +58,12 @@ func (mb *Cleaner) clearSlot(g store.Getter, name string) {
 	}
 }
 
-func (mb *Cleaner) removeMember(g store.Getter, name, cas string) {
-	paxos.Del(mb.p, "/junta/members/"+name, cas)
+func (mb *Cleaner) removeMember(g store.Getter, name string) {
+	p := "/junta/members/"+name
+	_, cas := g.Get(p)
+	if cas != store.Missing {
+		paxos.Del(mb.p, p, cas)
+	}
 }
 
 func (mb *Cleaner) removeInfo(g store.Getter, name string) {
