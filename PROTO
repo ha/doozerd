@@ -1,0 +1,28 @@
+The protocol as of: Mon Nov  8 20:32:21 PST 2010
+
+VERB    ARGS                 RETURN ARGS
+----    ----                 -----------------------
+
+# Save a point-in-time snapshot for future reference.
+SNAP    opid                 opid sid
+
+# I'll give you 1 guess.
+SET     opid path body cas   opid cas
+
+# Get a value from snap `sid`.  If `sid` is `0` then value
+# is taken from current live tree.
+GET     opid path sid        opid body
+
+DEL     opid path            opid
+
+# Set a paths value to the servers Nanoseconds()+interval
+SETT    opid interval cas             opid cas
+
+# Increment the servers seqn without mutation.
+NOOP    opid                 opid
+
+# Walk tree `sid` SAX style.
+WALK    opid glob sid        [opid path body cas] ...
+
+# Watch tree `sid`.
+WATCH   opid glob sid        [opid path body cas] ...
