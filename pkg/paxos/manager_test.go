@@ -42,36 +42,25 @@ func TestProposeAndLearn(t *testing.T) {
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
-	got := (<-m.learned).v
 
-	assert.Equal(t, exp, got, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(3), got.seqn)
+	assert.Equal(t, exp, got.v)
 }
 
-func TestProposeAndRecv(t *testing.T) {
+func TestProposeAndLearnAltStart(t *testing.T) {
 	exp := "foo"
 	m, _ := selfRefNewManager("a", 1)
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
 
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(3), seqn, "")
-	assert.Equal(t, exp, v, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(3), got.seqn)
+	assert.Equal(t, exp, got.v)
 }
 
-func TestProposeAndRecvAltStart(t *testing.T) {
-	exp := "foo"
-	m, _ := selfRefNewManager("a", 1)
-
-	ix := m.getInstance(<-m.seqns)
-	ix.Propose(exp)
-
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(3), seqn, "")
-	assert.Equal(t, exp, v, "")
-}
-
-func TestProposeAndRecvMultiple(t *testing.T) {
+func TestProposeAndLearnMultiple(t *testing.T) {
 	exp := []string{"/foo", "/bar"}
 	seqnexp := []uint64{3, 4}
 	m, st := selfRefNewManager("a", 1)
@@ -79,21 +68,21 @@ func TestProposeAndRecvMultiple(t *testing.T) {
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp[0])
 
-	seqn0, v0 := m.Recv()
-	assert.Equal(t, seqnexp[0], seqn0, "seqn 1")
-	assert.Equal(t, exp[0], v0, "")
+	got0 := <-m.learned
+	assert.Equal(t, seqnexp[0], got0.seqn, "seqn 1")
+	assert.Equal(t, exp[0], got0.v, "")
 
-	st.Apply(seqn0, v0)
+	st.Apply(got0.seqn, got0.v)
 
 	ix = m.getInstance(<-m.seqns)
 	ix.Propose(exp[1])
 
-	seqn1, v1 := m.Recv()
-	assert.Equal(t, seqnexp[1], seqn1, "seqn 1")
-	assert.Equal(t, exp[1], v1, "")
+	got1 := <-m.learned
+	assert.Equal(t, seqnexp[1], got1.seqn, "seqn 1")
+	assert.Equal(t, exp[1], got1.v, "")
 }
 
-func TestProposeAndRecvFill(t *testing.T) {
+func TestProposeAndFill(t *testing.T) {
 	ms, st := mutualRefManagers(2, 10)
 
 	mut1 := store.MustEncodeSet("/foo", "a", store.Clobber)
@@ -123,9 +112,9 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	msg := newVote(1, exp)
 	msg.SetSeqn(1)
 	m.PutFrom(m.Self+"addr", msg)
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(1), seqn, "")
-	assert.Equal(t, exp, v, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(1), got.seqn)
+	assert.Equal(t, exp, got.v)
 }
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
@@ -135,9 +124,9 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	msg := newVote(1, exp)
 	msg.SetSeqn(1)
 	m.PutFrom(m.Self+"addr", msg)
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(1), seqn, "")
-	assert.Equal(t, exp, v, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(1), got.seqn)
+	assert.Equal(t, exp, got.v)
 }
 
 func TestUnusedSeqn(t *testing.T) {
@@ -147,15 +136,15 @@ func TestUnusedSeqn(t *testing.T) {
 	msg := newVote(1, exp1)
 	msg.SetSeqn(1)
 	m.PutFrom(m.Self+"addr", msg)
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(1), seqn, "")
-	assert.Equal(t, exp1, v, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(1), got.seqn)
+	assert.Equal(t, exp1, got.v)
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp2)
-	seqn, v = m.Recv()
-	assert.Equal(t, uint64(3), seqn, "")
-	assert.Equal(t, exp2, v, "")
+	got = <-m.learned
+	assert.Equal(t, uint64(3), got.seqn)
+	assert.Equal(t, exp2, got.v)
 }
 
 func TestIgnoreMalformedMsg(t *testing.T) {
@@ -166,9 +155,9 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose("y")
 
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(3), seqn, "")
-	assert.Equal(t, "y", v, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(3), got.seqn)
+	assert.Equal(t, "y", got.v)
 }
 
 func TestProposeAndStore(t *testing.T) {
@@ -254,9 +243,9 @@ func TestReadFromStore(t *testing.T) {
 	in.SetSeqn(5)
 	m.PutFrom(bAddr, in)
 
-	seqn, v := m.Recv()
-	assert.Equal(t, uint64(5), seqn, "")
-	assert.Equal(t, exp, v, "")
+	got := <-m.learned
+	assert.Equal(t, uint64(5), got.seqn)
+	assert.Equal(t, exp, got.v)
 }
 
 func play(st *store.Store) {
