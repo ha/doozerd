@@ -101,12 +101,24 @@ func TestEncodeSet(t *testing.T) {
 	}
 }
 
+func BenchmarkEncodeSet(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		EncodeSet("/x", "a", Clobber)
+	}
+}
+
 func TestEncodeDel(t *testing.T) {
 	for _, kcm := range DelKCMs {
 		k, c, exp := kcm[0], kcm[1], kcm[2]
 		got, err := EncodeDel(k, c)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
+	}
+}
+
+func BenchmarkEncodeDel(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		EncodeDel("/x", Clobber)
 	}
 }
 
@@ -183,6 +195,16 @@ func TestApplyInOrder(t *testing.T) {
 	v, cas := s.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
+}
+
+func BenchmarkApply(b *testing.B) {
+	s := New()
+	mut := MustEncodeSet("/x", "a", Clobber)
+
+	n := uint64(b.N + 1)
+	for i := uint64(1); i < n; i++ {
+		s.Apply(i, mut)
+	}
 }
 
 func TestGetSync(t *testing.T) {
