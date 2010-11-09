@@ -1027,3 +1027,12 @@ func TestGetDirAndWatch(t *testing.T) {
 	assert.Equal(t, Event{2, "/x/b", "2", "2", mut2, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{4, "/x/c", "3", "4", mut4, nil, nil}, clearGetter(<-ch))
 }
+
+func TestStoreClose(t *testing.T) {
+	s := New()
+	ch := make(chan Event)
+	s.Watch("/a/b/c", ch)
+	s.Close()
+	assert.Equal(t, Event{}, <-ch)
+	assert.T(t, closed(ch))
+}

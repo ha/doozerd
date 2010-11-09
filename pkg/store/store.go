@@ -187,6 +187,13 @@ func (s *Store) notify(e Event) {
 	s.watches = nwatches[0:i]
 }
 
+func (s *Store) closeWatches() {
+	for _, w := range s.watches {
+		close(w.in)
+		close(w.out)
+	}
+}
+
 func append(ws *[]watch, w watch) {
 	l := len(*ws)
 	if l+1 > cap(*ws) {
@@ -229,6 +236,7 @@ func buffer(in, out chan Event) {
 
 func (s *Store) process() {
 	logger := util.NewLogger("store")
+	defer s.closeWatches()
 
 	for {
 		ver, values := s.state.ver, s.state.root
@@ -236,6 +244,10 @@ func (s *Store) process() {
 		// Take any incoming requests and queue them up.
 		select {
 		case a := <-s.applyCh:
+			if closed(s.applyCh) {
+				return
+			}
+
 			if a.seqn > ver {
 				s.todo[a.seqn] = a
 			}
@@ -410,4 +422,8 @@ func (st *Store) GetDirAndWatch(path string, ch chan Event) {
 			}
 		}
 	}()
+}
+
+func (st *Store) Close() {
+	close(st.applyCh)
 }
