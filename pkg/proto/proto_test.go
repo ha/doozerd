@@ -12,9 +12,6 @@ import (
 	"testing/quick"
 )
 
-
-// == Testing =============================
-
 type ErroneousWriter struct {
 	// No exported fields
 	io.Writer
