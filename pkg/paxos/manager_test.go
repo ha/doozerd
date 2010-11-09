@@ -186,6 +186,20 @@ func TestProposeAndStore(t *testing.T) {
 	assert.Equal(t, exp, (<-ch).Mut)
 }
 
+func BenchmarkPropose(b *testing.B) {
+	mg, st := selfRefNewManager("a", 1)
+
+	go func() {
+		for {
+			st.Apply(mg.Recv())
+		}
+	}()
+
+	for i := 0; i < b.N; i++ {
+		mg.Propose("foo")
+	}
+}
+
 func TestProposeBadMutation(t *testing.T) {
 	mg, st := selfRefNewManager("a", 1)
 
