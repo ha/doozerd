@@ -70,8 +70,8 @@ func TestNodeSnapshotApply(t *testing.T) {
 	s1 := New()
 	mut1, _ := EncodeSet("/x", "a", Clobber)
 	mut2, _ := EncodeSet("/x", "b", Clobber)
-	s1.Apply(1, mut1)
-	s1.Apply(2, mut2)
+	s1.Ops <- Op{1, mut1}
+	s1.Ops <- Op{2, mut2}
 	s1.Sync(2)
 	_, m := s1.Snapshot()
 

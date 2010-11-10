@@ -143,7 +143,7 @@ func main() {
 		}
 
 		done := make(chan int)
-		st.Apply(1, snap)
+		st.Ops <- store.Op{1, snap}
 
 		go advanceUntil(cl, done)
 
@@ -156,13 +156,13 @@ func main() {
 		// TODO sink needs a way to pick up missing values if there are any
 		// gaps in its sequence
 	}
-	mg := paxos.NewManager(self, seqn, alpha, st, outs)
+	mg := paxos.NewManager(self, seqn, alpha, st, st.Ops, outs)
 
 	if *attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
 		for i := seqn + 1; i < seqn+alpha; i++ {
-			go st.Apply(i, store.Nop)
+			st.Ops <- store.Op{i, store.Nop}
 		}
 	}
 
@@ -193,19 +193,13 @@ func main() {
 		panic(sv.Serve(listener, cal))
 	}()
 
-	go func() {
-		panic(sv.ListenAndServeUdp(outs))
-	}()
-
 	if webListener != nil {
 		web.Store = st
 		web.ClusterName = *clusterName
 		go web.Serve(webListener)
 	}
 
-	for {
-		st.Apply(mg.Recv())
-	}
+	panic(sv.ListenAndServeUdp(outs))
 }
 
 func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
@@ -215,7 +209,7 @@ func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(seqn, mx)
+	st.Ops <- store.Op{seqn, mx}
 	return seqn
 }
 
@@ -226,7 +220,7 @@ func addHostname(st *store.Store, seqn uint64, self, addr string) uint64 {
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(seqn, mx)
+	st.Ops <- store.Op{seqn, mx}
 	return seqn
 }
 
@@ -236,7 +230,7 @@ func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(seqn, mx)
+	st.Ops <- store.Op{seqn, mx}
 	return seqn
 }
 
@@ -246,7 +240,7 @@ func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(seqn, mx)
+	st.Ops <- store.Op{seqn, mx}
 	return seqn
 }
 
@@ -256,7 +250,7 @@ func claimLeader(st *store.Store, seqn uint64, self string) uint64 {
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(seqn, mx)
+	st.Ops <- store.Op{seqn, mx}
 	return seqn
 }
 
@@ -266,6 +260,6 @@ func addPing(st *store.Store, seqn uint64, v string) uint64 {
 	if err != nil {
 		panic(err)
 	}
-	st.Apply(seqn, mx)
+	st.Ops <- store.Op{seqn, mx}
 	return seqn
 }

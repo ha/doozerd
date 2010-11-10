@@ -13,11 +13,6 @@ const (
 	fillDelay = 5e8 // 500ms
 )
 
-type result struct {
-	seqn uint64
-	v    string
-}
-
 type instReq struct {
 	seqn uint64
 	ch   chan instance
@@ -25,8 +20,8 @@ type instReq struct {
 
 type Manager struct {
 	st        *store.Store
+	ops       chan<- store.Op
 	rg        *Registrar
-	learned   chan result
 	seqns     chan uint64
 	fillUntil chan uint64
 	reqs      chan instReq
@@ -38,11 +33,11 @@ type Manager struct {
 
 // start is the seqn at which this member was defined.
 // start+alpha is the first seqn this manager is expected to participate in.
-func NewManager(self string, start uint64, alpha int, st *store.Store, outs PutterTo) *Manager {
+func NewManager(self string, start uint64, alpha int, st *store.Store, ops chan<- store.Op, outs PutterTo) *Manager {
 	m := &Manager{
 		st:        st,
+		ops:       ops,
 		rg:        NewRegistrar(st, start, alpha),
-		learned:   make(chan result),
 		seqns:     make(chan uint64),
 		fillUntil: make(chan uint64),
 		reqs:      make(chan instReq),
@@ -96,7 +91,7 @@ func (m *Manager) process() {
 		if !ok {
 			inst = make(instance)
 			instances[req.seqn] = inst
-			go inst.process(req.seqn, m, m.learned)
+			go inst.process(req.seqn, m, m.ops)
 		}
 		req.ch <- inst
 	}
@@ -141,10 +136,4 @@ func (m *Manager) fillOne(seqn uint64) {
 	// this is intentional, since we want to exersize this code all the time,
 	// not just during a failure.
 	m.proposeAt(seqn, store.Nop)
-}
-
-func (m *Manager) Recv() (uint64, string) {
-	result := <-m.learned
-	m.logger.Printf("paxos %d learned <- %q", result.seqn, result.v)
-	return result.seqn, result.v
 }

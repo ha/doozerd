@@ -40,17 +40,25 @@ func (e *BadPathError) String() string {
 	return "bad path: " + e.Path
 }
 
+// Applies mutations sent on Ops in sequence according to field Seqn. Any
+// errors that occur will be written to ErrorPath. Duplicate operations at a
+// given position are sliently ignored.
 type Store struct {
-	applyCh chan apply
+	Ops     chan<- Op
 	watchCh chan watch
 	watches []watch
-	todo    map[uint64]apply
+	todo    map[uint64]Op
 	state   *state
 }
 
-type apply struct {
-	seqn     uint64
-	mutation string
+// Represents an operation to apply to the store at position Seqn.
+//
+// If Mut is a snapshot, notifications will not be sent.
+//
+// If Mut is Nop, no change will be made, but a dummy event will still be sent.
+type Op struct {
+	Seqn uint64
+	Mut  string
 }
 
 type state struct {
@@ -67,15 +75,17 @@ type watch struct {
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
 func New() *Store {
+	ops := make(chan Op)
+
 	s := &Store{
-		applyCh: make(chan apply),
+		Ops:     ops,
 		watchCh: make(chan watch),
-		todo:    make(map[uint64]apply),
+		todo:    make(map[uint64]Op),
 		watches: []watch{},
 		state:   &state{0, emptyDir},
 	}
 
-	go s.process()
+	go s.process(ops)
 	return s
 }
 
@@ -234,7 +244,7 @@ func buffer(in, out chan Event) {
 	}
 }
 
-func (s *Store) process() {
+func (s *Store) process(ops <-chan Op) {
 	logger := util.NewLogger("store")
 	defer s.closeWatches()
 
@@ -243,13 +253,13 @@ func (s *Store) process() {
 
 		// Take any incoming requests and queue them up.
 		select {
-		case a := <-s.applyCh:
-			if closed(s.applyCh) {
+		case a := <-ops:
+			if closed(ops) {
 				return
 			}
 
-			if a.seqn > ver {
-				s.todo[a.seqn] = a
+			if a.Seqn > ver {
+				s.todo[a.Seqn] = a
 			}
 		case w := <-s.watchCh:
 			append(&s.watches, w)
@@ -258,28 +268,16 @@ func (s *Store) process() {
 		// If we have any mutations that can be applied, do them.
 		for t, ok := s.todo[ver+1]; ok; t, ok = s.todo[ver+1] {
 			var ev Event
-			values, ev = values.apply(t.seqn, t.mutation)
+			values, ev = values.apply(t.Seqn, t.Mut)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			s.state = &state{ev.Seqn, values}
 			s.notify(ev)
 			for ver < ev.Seqn {
 				ver++
-				s.todo[ver] = apply{}, false
+				s.todo[ver] = Op{}, false
 			}
 		}
 	}
-}
-
-// Applies `mutation` in sequence at position `seqn`. Any error that occurs
-// will be written to `ErrorPath`. If a mutation has already been applied at
-// this position, this one is sliently ignored.
-//
-// If `mutation` is a snapshot, notifications will not be sent.
-//
-// If `mutation` is `Nop`, no change will be made, but a dummy event will still
-// be sent.
-func (s *Store) Apply(seqn uint64, mutation string) {
-	s.applyCh <- apply{seqn, mutation}
 }
 
 // Gets the value stored at `path`, if any.
@@ -425,5 +423,5 @@ func (st *Store) GetDirAndWatch(path string, ch chan Event) {
 }
 
 func (st *Store) Close() {
-	close(st.applyCh)
+	close(st.Ops)
 }

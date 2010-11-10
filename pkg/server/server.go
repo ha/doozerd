@@ -76,7 +76,6 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 		}
 		clg.Println(ok)
 
-
 		rw, e := l.Accept()
 		if e != nil {
 			return e

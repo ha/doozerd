@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	interval = 1e8 // ns == 100ms
+	interval = 1e8  // ns == 100ms
 	timeout  = 1e10 // ns == 10s
 
 	max = 3000 // bytes. Definitely big enough for UDP over Ethernet.
@@ -44,7 +44,7 @@ func Ackify(c Conn, w <-chan paxos.Packet) (r <-chan paxos.Packet) {
 func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 	pend := make(map[string]bool)
 	rawIn := make(chan paxos.Packet)
-	ticker := time.Tick(interval/4)
+	ticker := time.Tick(interval / 4)
 	h := new(vector.Vector)
 
 	go recv(c, rawIn)
@@ -74,7 +74,7 @@ func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 			pend[p.Id()] = true
 			write(c, p.Msg, p.Addr)
 			t := time.Nanoseconds()
-			heap.Push(h, check{p, t+interval, t+timeout})
+			heap.Push(h, check{p, t + interval, t + timeout})
 		case t := <-ticker:
 			for k := peek(); k.at < t; k = peek() {
 				heap.Pop(h)
@@ -83,7 +83,7 @@ func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 				}
 				if pend[k.Id()] {
 					write(c, k.Msg, k.Addr)
-					heap.Push(h, check{k.Packet, t+interval, k.until})
+					heap.Push(h, check{k.Packet, t + interval, k.until})
 				}
 			}
 		}

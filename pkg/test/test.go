@@ -13,7 +13,7 @@ type FakeProposer struct {
 func (fp *FakeProposer) Propose(v string) (uint64, string, os.Error) {
 	fp.seqn++
 	ch := fp.Wait(fp.seqn)
-	fp.Apply(fp.seqn, v)
+	fp.Ops <- store.Op{fp.seqn, v}
 	ev := <-ch
 	return fp.seqn, ev.Cas, ev.Err
 }

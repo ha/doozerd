@@ -1,12 +1,16 @@
 package paxos
 
+import (
+	"junta/store"
+)
+
 type instance chan Packet
 
 type clusterer interface {
 	cluster(seqn uint64) *cluster
 }
 
-func (it instance) process(seqn uint64, cf clusterer, res chan result) {
+func (it instance) process(seqn uint64, cf clusterer, res chan<- store.Op) {
 	cx := cf.cluster(seqn)
 
 	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: cx}
@@ -23,12 +27,12 @@ func (it instance) process(seqn uint64, cf clusterer, res chan result) {
 
 		if sk.done {
 			cx.Put(newLearn(sk.v))
-			res <- result{seqn, sk.v}
+			res <- store.Op{seqn, sk.v}
 			return
 		}
 		if ln.done {
 			cx.Put(newLearn(ln.v))
-			res <- result{seqn, ln.v}
+			res <- store.Op{seqn, ln.v}
 			return
 		}
 	}

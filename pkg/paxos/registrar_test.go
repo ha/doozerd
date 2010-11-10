@@ -10,9 +10,9 @@ func TestRegistrarMembers(t *testing.T) {
 	st := store.New()
 	rg := NewRegistrar(st, 0, 2)
 	go func() {
-		go st.Apply(3, mustEncodeSet(membersKey+"/c", "1"))
-		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
-		go st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+		(st.Ops <- store.Op{3, mustEncodeSet(membersKey+"/c", "1")})
+		(st.Ops <- store.Op{2, mustEncodeSet(membersKey+"/b", "1")})
+		(st.Ops <- store.Op{1, mustEncodeSet(membersKey+"/a", "1")})
 	}()
 
 	members, active := rg.setsForSeqn(5)
@@ -45,9 +45,9 @@ func TestRegistrarActive(t *testing.T) {
 	st := store.New()
 	rg := NewRegistrar(st, 0, 2)
 	go func() {
-		go st.Apply(3, mustEncodeSet(slotDir+"0", "c"))
-		go st.Apply(2, mustEncodeSet(slotDir+"1", "b"))
-		go st.Apply(1, mustEncodeSet(slotDir+"2", "a"))
+		(st.Ops <- store.Op{3, mustEncodeSet(slotDir+"0", "c")})
+		(st.Ops <- store.Op{2, mustEncodeSet(slotDir+"1", "b")})
+		(st.Ops <- store.Op{1, mustEncodeSet(slotDir+"2", "a")})
 	}()
 
 	members, active := rg.setsForSeqn(5)
@@ -80,9 +80,9 @@ func TestRegistrarEmptySlot(t *testing.T) {
 	st := store.New()
 	rg := NewRegistrar(st, 0, 2)
 	go func() {
-		go st.Apply(3, mustEncodeSet(slotDir+"0", "c"))
-		go st.Apply(2, mustEncodeSet(slotDir+"1", ""))
-		go st.Apply(1, mustEncodeSet(slotDir+"2", "a"))
+		(st.Ops <- store.Op{3, mustEncodeSet(slotDir+"0", "c")})
+		(st.Ops <- store.Op{2, mustEncodeSet(slotDir+"1", "")})
+		(st.Ops <- store.Op{1, mustEncodeSet(slotDir+"2", "a")})
 	}()
 
 	members, active := rg.setsForSeqn(5)
@@ -113,7 +113,7 @@ func TestRegistrarEmptySlot(t *testing.T) {
 
 func TestRegistrarSlotInitFirst(t *testing.T) {
 	st := store.New()
-	st.Apply(1, mustEncodeSet(slotDir+"0", "a"))
+	(st.Ops <- store.Op{1, mustEncodeSet(slotDir+"0", "a")})
 	st.Sync(1)
 	rg := NewRegistrar(st, 1, 0)
 
@@ -124,8 +124,8 @@ func TestRegistrarSlotInitFirst(t *testing.T) {
 
 func TestRegistrarSlotInitTwo(t *testing.T) {
 	st := store.New()
-	st.Apply(1, mustEncodeSet(slotDir+"0", "b"))
-	st.Apply(2, mustEncodeSet(slotDir+"1", "a"))
+	(st.Ops <- store.Op{1, mustEncodeSet(slotDir+"0", "b")})
+	(st.Ops <- store.Op{2, mustEncodeSet(slotDir+"1", "a")})
 	rg := NewRegistrar(st, 2, 0)
 
 	members, active := rg.setsForVersion(2)
@@ -135,7 +135,7 @@ func TestRegistrarSlotInitTwo(t *testing.T) {
 
 func TestRegistrarInitFirst(t *testing.T) {
 	st := store.New()
-	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+	(st.Ops <- store.Op{1, mustEncodeSet(membersKey+"/a", "1")})
 	st.Sync(1)
 	rg := NewRegistrar(st, 1, 0)
 
@@ -146,11 +146,11 @@ func TestRegistrarInitFirst(t *testing.T) {
 
 func TestRegistrarInitNext(t *testing.T) {
 	st := store.New()
-	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
+	(st.Ops <- store.Op{1, mustEncodeSet(membersKey+"/a", "1")})
 	st.Sync(1)
 	rg := NewRegistrar(st, 1, 0)
 	go func() {
-		go st.Apply(2, mustEncodeSet(membersKey+"/b", "1"))
+		(st.Ops <- store.Op{2, mustEncodeSet(membersKey+"/b", "1")})
 	}()
 
 	members, active := rg.setsForVersion(2)
@@ -164,8 +164,8 @@ func TestRegistrarInitNext(t *testing.T) {
 
 func TestRegistrarTooOld(t *testing.T) {
 	st := store.New()
-	st.Apply(1, mustEncodeSet(membersKey+"/a", "1"))
-	st.Apply(2, mustEncodeSet(membersKey+"/a", "1"))
+	(st.Ops <- store.Op{1, mustEncodeSet(membersKey+"/a", "1")})
+	(st.Ops <- store.Op{2, mustEncodeSet(membersKey+"/a", "1")})
 	st.Sync(2)
 	rg := NewRegistrar(st, 2, 0)
 

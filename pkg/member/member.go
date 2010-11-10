@@ -10,7 +10,7 @@ import (
 // TODO remove this type entirely once store.Close is implemented
 type Cleaner struct {
 	st *store.Store
-	p paxos.Proposer
+	p  paxos.Proposer
 	ch chan store.Event
 }
 
@@ -59,7 +59,7 @@ func (mb *Cleaner) clearSlot(g store.Getter, name string) {
 }
 
 func (mb *Cleaner) removeMember(g store.Getter, name string) {
-	p := "/junta/members/"+name
+	p := "/junta/members/" + name
 	_, cas := g.Get(p)
 	if cas != store.Missing {
 		paxos.Del(mb.p, p, cas)

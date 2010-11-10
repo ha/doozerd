@@ -27,9 +27,9 @@ func TestManyOneshotTimers(t *testing.T) {
 	timer := New(testPattern, 10*OneMillisecond, st)
 	defer timer.Close()
 
-	st.Apply(1, encodeTimer("/timer/longest", 40*OneMillisecond))
-	st.Apply(2, encodeTimer("/timer/short", 10*OneMillisecond))
-	st.Apply(3, encodeTimer("/timer/long", 25*OneMillisecond))
+	st.Ops <- store.Op{1, encodeTimer("/timer/longest", 40*OneMillisecond)}
+	st.Ops <- store.Op{2, encodeTimer("/timer/short", 10*OneMillisecond)}
+	st.Ops <- store.Op{3, encodeTimer("/timer/long", 25*OneMillisecond)}
 
 	got := <-timer.C
 	assert.Equal(t, got.Path, "/timer/short")
@@ -56,11 +56,11 @@ func TestDeleteTimer(t *testing.T) {
 
 	// Wait one minute to ensure it doesn't tick before
 	// the following delete and assert.
-	st.Apply(1, encodeTimer(never, 30*OneMillisecond))
+	st.Ops <- store.Op{1, encodeTimer(never, 30*OneMillisecond)}
 
-	st.Apply(2, encodeTimer(does, 60*OneMillisecond))
+	st.Ops <- store.Op{2, encodeTimer(does, 60*OneMillisecond)}
 
-	st.Apply(3, store.MustEncodeDel(never, store.Clobber))
+	st.Ops <- store.Op{3, store.MustEncodeDel(never, store.Clobber)}
 
 	// If the first timer failed to delete, it would come out first.
 	assert.Equal(t, does, (<-timer.C).Path) // From seqn 2
@@ -71,9 +71,9 @@ func TestUpdate(t *testing.T) {
 	timer := New(testPattern, OneMillisecond, st)
 	defer timer.Close()
 
-	st.Apply(1, encodeTimer("/timer/y", 90*OneMillisecond))
-	st.Apply(2, encodeTimer("/timer/x", 30*OneMillisecond))
-	st.Apply(3, encodeTimer("/timer/x", 60*OneMillisecond))
+	st.Ops <- store.Op{1, encodeTimer("/timer/y", 90*OneMillisecond)}
+	st.Ops <- store.Op{2, encodeTimer("/timer/x", 30*OneMillisecond)}
+	st.Ops <- store.Op{3, encodeTimer("/timer/x", 60*OneMillisecond)}
 
 	// The deadline scheduled from seqn 2 should never fire. It should be
 	// replaced by seqn 3.
