@@ -55,6 +55,8 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 }
 
 func (t *Timer) process() {
+	defer close(t.C)
+
 	logger := util.NewLogger("timer (%s)", t.Pattern)
 
 	ticks := new(vector.Vector)
