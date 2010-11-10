@@ -9,9 +9,9 @@ import (
 
 func TestLockSimple(t *testing.T) {
 	st := store.New()
+	defer close(st.Ops)
 	fp := &test.FakeProposer{Store: st}
-	lk := New(fp.Store, fp)
-	defer lk.Close()
+	go Clean(fp.Store, fp)
 
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "1.2.3.4:55", store.Clobber))

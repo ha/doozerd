@@ -7,27 +7,12 @@ import (
 	"strings"
 )
 
-// TODO remove this type entirely once store.Close is implemented
-type Lock struct {
-	st *store.Store
-	pp paxos.Proposer
-	ch chan store.Event
-}
-
-func New(st *store.Store, pp paxos.Proposer) *Lock {
+func Clean(st *store.Store, pp paxos.Proposer) {
 	ch := make(chan store.Event)
 	st.Watch("/session/*", ch)
-
-	lk := &Lock{st, pp, ch}
-	go lk.process()
-	return lk
-}
-
-func (lk *Lock) process() {
 	logger := util.NewLogger("lock")
 
-	for ev := range lk.ch {
-
+	for ev := range ch {
 		if !ev.IsDel() {
 			continue
 		}
@@ -43,12 +28,8 @@ func (lk *Lock) process() {
 
 		for ev := range ch {
 			if ev.Body == name {
-				paxos.Del(lk.pp, ev.Path, ev.Cas)
+				paxos.Del(pp, ev.Path, ev.Cas)
 			}
 		}
 	}
-}
-
-func (lk *Lock) Close() {
-	close(lk.ch)
 }
