@@ -43,7 +43,7 @@ func TestManyOneshotTimers(t *testing.T) {
 	assert.Equal(t, got.Path, "/timer/longest")
 	assert.T(t, got.At <= time.Nanoseconds())
 
-	assert.Equal(t, 0, timer.Len())
+	assert.Equal(t, 0, timer.ticks.Len())
 }
 
 func TestDeleteTimer(t *testing.T) {

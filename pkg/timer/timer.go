@@ -33,8 +33,9 @@ type Timer struct {
 	C chan Tick
 
 	events  chan store.Event
-	lengths chan int
 	n       int64
+
+	ticks   *vector.Vector
 }
 
 func New(pattern string, interval int64, st *store.Store) *Timer {
@@ -42,8 +43,8 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 		Pattern: pattern,
 		C:       make(chan Tick),
 		events:  make(chan store.Event),
-		lengths: make(chan int),
 		n:       interval,
+		ticks:   new(vector.Vector),
 	}
 
 	// Begin watching as timers come and go
@@ -62,13 +63,11 @@ func (t *Timer) process() {
 
 	logger := util.NewLogger("timer (%s)", t.Pattern)
 
-	ticks := new(vector.Vector)
-
 	peek := func() Tick {
-		if ticks.Len() == 0 {
+		if t.ticks.Len() == 0 {
 			return Tick{At: math.MaxInt64}
 		}
-		return ticks.At(0).(Tick)
+		return t.ticks.At(0).(Tick)
 	}
 
 	for {
@@ -91,21 +90,21 @@ func (t *Timer) process() {
 				break
 			case e.IsSet():
 				// First remove it if it's already there.
-				for i := 0; i < ticks.Len(); i++ {
-					if ticks.At(i).(Tick).Path == x.Path {
-						heap.Remove(ticks, i)
+				for i := 0; i < t.ticks.Len(); i++ {
+					if t.ticks.At(i).(Tick).Path == x.Path {
+						heap.Remove(t.ticks, i)
 						i = 0 // have to start over; heap could be reordered
 					}
 				}
 
-				heap.Push(ticks, x)
+				heap.Push(t.ticks, x)
 			case e.IsDel():
 				logger.Println("deleting", e.Path, e.Body)
-				// This could be optimize since ticks is sorted; I can't
+				// This could be optimize since t.ticks is sorted; I can't
 				// find a way without implementing our own quick-find.
-				for i := 0; i < ticks.Len(); i++ {
-					if ticks.At(i).(Tick).Path == x.Path {
-						heap.Remove(ticks, i)
+				for i := 0; i < t.ticks.Len(); i++ {
+					if t.ticks.At(i).(Tick).Path == x.Path {
+						heap.Remove(t.ticks, i)
 						i = 0 // have to start over; heap could be reordered
 					}
 				}
@@ -114,17 +113,11 @@ func (t *Timer) process() {
 		case ns := <-ticker.C:
 			for next := peek(); next.At <= ns; next = peek() {
 				logger.Printf("ticked %#v", next)
-				heap.Pop(ticks)
+				heap.Pop(t.ticks)
 				t.C <- next
 			}
-		case t.lengths <- ticks.Len():
-			// pass
 		}
 	}
-}
-
-func (t *Timer) Len() int {
-	return <-t.lengths
 }
 
 func (t *Timer) Close() {
