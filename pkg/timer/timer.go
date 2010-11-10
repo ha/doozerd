@@ -56,6 +56,7 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 
 func (t *Timer) process() {
 	defer close(t.C)
+	defer t.ticker.Stop()
 
 	logger := util.NewLogger("timer (%s)", t.Pattern)
 
@@ -72,7 +73,7 @@ func (t *Timer) process() {
 		select {
 		case e := <-t.events:
 			if closed(t.events) {
-				goto done
+				return
 			}
 
 			logger.Printf("recvd: %v", e)
@@ -118,9 +119,6 @@ func (t *Timer) process() {
 			// pass
 		}
 	}
-
-done:
-	t.ticker.Stop()
 }
 
 func (t *Timer) Len() int {
