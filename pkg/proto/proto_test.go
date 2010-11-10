@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"os"
 	"io"
-	"net/textproto"
 
 	"testing"
 	"junta/assert"
@@ -58,17 +57,14 @@ var encTests = []encTest{
 func TestProtoEncode(t *testing.T) {
 	for _, e := range encTests {
 		b := new(bytes.Buffer)
-		w := bufio.NewWriter(b)
-		ww := textproto.NewWriter(w)
-
-		err := encode(ww, e.data)
+		err := encode(b, e.data)
 		if err != nil {
 			t.Error("unexpected err:", err)
 			continue
 		}
 		if e.encoding != string(b.Bytes()) {
-			t.Error("expected %q", e.encoding)
-			t.Error("     got %q", string(b.Bytes()))
+			t.Errorf("expected %q", e.encoding)
+			t.Errorf("     got %q", b.String())
 		}
 	}
 }
@@ -76,55 +72,42 @@ func TestProtoEncode(t *testing.T) {
 func TestProtoEncodeHeaderError(t *testing.T) {
 	b := new(bytes.Buffer)
 	ew := &ErroneousWriter{b, 0}
-	w := bufio.NewWriter(ew)
-	ww := textproto.NewWriter(w)
 
-	err := encode(ww, []string{"GET", "FOO"})
-	assert.T(t, err != nil)
+	err := encode(ew, []string{"GET", "FOO"})
+	assert.T(t, err != nil, err)
 }
 
 func TestProtoEncodeBodyError(t *testing.T) {
 	b := new(bytes.Buffer)
 	ew := &ErroneousWriter{b, 1}
-	w := bufio.NewWriter(ew)
-	ww := textproto.NewWriter(w)
 
-	err := encode(ww, []string{"GET", "FOO"})
-	assert.T(t, err != nil)
+	err := encode(ew, []string{"GET", "FOO"})
+	assert.T(t, err != nil, err)
 }
 
 func TestProtoDecodeEmptyLine(t *testing.T) {
 	b := new(bytes.Buffer)
-	r := bufio.NewReader(b)
-	rr := textproto.NewReader(r)
-
-	_, err := decode(rr)
-	assert.T(t, err != nil)
+	_, err := decode(bufio.NewReader(b))
+	assert.T(t, err != nil, err)
 }
 
 func TestProtoDecodeRecievedError(t *testing.T) {
 	b := bytes.NewBufferString("-ERR: foo\r\n")
-	r := bufio.NewReader(b)
-	rr := textproto.NewReader(r)
-
-	_, err := decode(rr)
+	_, err := decode(bufio.NewReader(b))
 	assert.Equal(t, "ERR: foo", err.String())
 }
 
 func TestProtoDecodeNonEmpty(t *testing.T) {
 	b := new(bytes.Buffer)
 	r := bufio.NewReader(b)
-	rr := textproto.NewReader(r)
-	w := bufio.NewWriter(b)
-	ww := textproto.NewWriter(w)
 
-	encode(ww, []interface{}{"SET", "foo", "bar"})
-	parts, err := decode(rr)
+	encode(b, []interface{}{"SET", "foo", "bar"})
+	parts, err := decode(r)
 
 	assert.Equal(t, nil, err, "")
 	assert.Equal(t, []string{"SET", "foo", "bar"}, parts, "")
 
-	parts, err = decode(rr)
+	parts, err = decode(r)
 	assert.Equal(t, os.EOF, err, "")
 	assert.Equal(t, []string{}, parts, "")
 }

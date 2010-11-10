@@ -1,6 +1,7 @@
 package proto
 
 import (
+	"bufio"
 	"junta/util"
 	"os"
 	"io"
@@ -23,6 +24,8 @@ const (
 const (
 	InvalidCommand = "invalid command"
 )
+
+var crnl = []byte{'\r', '\n'}
 
 var logger = util.NewLogger("proto")
 
@@ -68,17 +71,17 @@ func NewConn(conn io.ReadWriteCloser) *Conn {
 func (c *Conn) SendResponse(id uint, data interface{}) os.Error {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
-	err := encode(&c.Writer, data)
+	err := encode(c.W, data)
 	if err != nil {
 		return &ProtoError{id, SendRes, err}
 	}
-	return nil
+	return c.W.Flush()
 }
 
 func (c *Conn) SendError(id uint, msg string) os.Error {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
-	err := c.PrintfLine("-ERR: %s", msg)
+	err := printfLine(c.W, "-ERR: %s", msg)
 	if err != nil {
 		return &ProtoError{id, SendErr, err}
 	}
@@ -88,7 +91,7 @@ func (c *Conn) SendError(id uint, msg string) os.Error {
 func (c *Conn) SendRedirect(id uint, addr string) os.Error {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
-	err := c.PrintfLine("-REDIRECT: %s", addr)
+	err := printfLine(c.W, "-REDIRECT: %s", addr)
 	if err != nil {
 		return &ProtoError{id, SendErr, err}
 	}
@@ -98,7 +101,7 @@ func (c *Conn) SendRedirect(id uint, addr string) os.Error {
 func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 	id := c.Next()
 	c.StartRequest(id)
-	parts, err := decode(&c.Reader)
+	parts, err := decode(c.R)
 	c.EndRequest(id)
 	if err != nil {
 		if err == os.EOF {
@@ -115,19 +118,19 @@ func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 func (c *Conn) SendRequest(data interface{}) (uint, os.Error) {
 	id := c.Next()
 	c.StartRequest(id)
-	err := encode(&c.Writer, data)
-	c.EndRequest(id)
+	defer c.EndRequest(id)
+	err := encode(c.W, data)
 	if err != nil {
 		return 0, &ProtoError{id, SendReq, err}
 	}
-	return id, nil
+	return id, c.W.Flush()
 }
 
 func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
 
-	parts, err := decode(&c.Reader)
+	parts, err := decode(c.R)
 
 	switch terr := err.(type) {
 	default:
@@ -147,14 +150,14 @@ func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 
 // Helpers
 
-func decode(r *textproto.Reader) (parts []string, err os.Error) {
+func decode(r *bufio.Reader) (parts []string, err os.Error) {
 	var count int = 1
 	var size int
 	var line string
 
 Loop:
 	for count > 0 {
-		line, err = r.ReadLine()
+		line, err = readLine(r)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +178,7 @@ Loop:
 				return nil, err
 			}
 			buf := make([]byte, size)
-			_, err := io.ReadFull(r.R, buf)
+			_, err := io.ReadFull(r, buf)
 			if err != nil {
 				return nil, err
 			}
@@ -186,20 +189,20 @@ Loop:
 	return
 }
 
-func encode(w *textproto.Writer, data interface{}) (err os.Error) {
+func encode(w io.Writer, data interface{}) (err os.Error) {
 	switch t := data.(type) {
 	default:
 		return os.NewError(fmt.Sprintf("unexpected type %T", t))
 	case Line:
-		if err = w.PrintfLine("+%s", t); err != nil {
+		if err = printfLine(w, "+%s", t); err != nil {
 			return
 		}
 	case os.Error:
-		if err = w.PrintfLine("-%s", t.String()); err != nil {
+		if err = printfLine(w, "-%s", t.String()); err != nil {
 			return
 		}
 	case nil:
-		if err = w.PrintfLine("$-1"); err != nil {
+		if err = printfLine(w, "$-1"); err != nil {
 			return
 		}
 	case int:
@@ -240,26 +243,26 @@ func encode(w *textproto.Writer, data interface{}) (err os.Error) {
 	return nil
 }
 
-func encodeInt64(w *textproto.Writer, data int64) os.Error {
-	return w.PrintfLine(":%d", data)
+func encodeInt64(w io.Writer, data int64) os.Error {
+	return printfLine(w, ":%d", data)
 }
 
-func encodeUint64(w *textproto.Writer, data uint64) os.Error {
-	return w.PrintfLine(":%d", data)
+func encodeUint64(w io.Writer, data uint64) os.Error {
+	return printfLine(w, ":%d", data)
 }
 
-func encodeBytes(w *textproto.Writer, data []byte) (err os.Error) {
-	if err = w.PrintfLine("$%d", len(data)); err != nil {
+func encodeBytes(w io.Writer, data []byte) (err os.Error) {
+	if err = printfLine(w, "$%d", len(data)); err != nil {
 		return
 	}
-	if err = w.PrintfLine("%s", data); err != nil {
+	if err = printfLine(w, "%s", data); err != nil {
 		return
 	}
 	return nil
 }
 
-func encodeSlice(w *textproto.Writer, data []interface{}) (err os.Error) {
-	if err = w.PrintfLine("*%d", len(data)); err != nil {
+func encodeSlice(w io.Writer, data []interface{}) (err os.Error) {
+	if err = printfLine(w, "*%d", len(data)); err != nil {
 		return
 	}
 	for _, part := range data {
@@ -268,4 +271,30 @@ func encodeSlice(w *textproto.Writer, data []interface{}) (err os.Error) {
 		}
 	}
 	return nil
+}
+
+func printfLine(w io.Writer, format string, args ...interface{}) os.Error {
+	_, err := fmt.Fprintf(w, format, args...)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(crnl)
+	return err
+}
+
+func readLine(r *bufio.Reader) (string, os.Error) {
+	line, err := readLineBytes(r)
+	return string(line), err
+}
+
+func readLineBytes(r *bufio.Reader) ([]byte, os.Error) {
+	line, err := r.ReadBytes('\n')
+	n := len(line)
+	if n > 0 && line[n-1] == '\n' {
+		n--
+		if n > 0 && line[n-1] == '\r' {
+			n--
+		}
+	}
+	return line[0:n], err
 }
