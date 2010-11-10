@@ -7,26 +7,12 @@ import (
 	"strings"
 )
 
-// TODO remove this type entirely once store.Close is implemented
-type Cleaner struct {
-	st *store.Store
-	p  paxos.Proposer
-	ch chan store.Event
-}
-
-func New(st *store.Store, p paxos.Proposer) *Cleaner {
+func Clean(s *store.Store, p paxos.Proposer) {
 	ch := make(chan store.Event)
-	st.Watch("/session/*", ch)
-
-	mb := &Cleaner{st, p, ch}
-	go mb.process()
-	return mb
-}
-
-func (mb *Cleaner) process() {
+	s.Watch("/session/*", ch)
 	logger := util.NewLogger("member")
 
-	for ev := range mb.ch {
+	for ev := range ch {
 		if !ev.IsDel() {
 			continue
 		}
@@ -35,17 +21,13 @@ func (mb *Cleaner) process() {
 		name := parts[2]
 		logger.Printf("lost session %s", name)
 
-		mb.clearSlot(ev, name)
-		mb.removeMember(ev, name)
-		mb.removeInfo(ev, name)
+		clearSlot(p, ev, name)
+		removeMember(p, ev, name)
+		removeInfo(p, ev, name)
 	}
 }
 
-func (mb *Cleaner) Close() {
-	close(mb.ch)
-}
-
-func (mb *Cleaner) clearSlot(g store.Getter, name string) {
+func clearSlot(p paxos.Proposer, g store.Getter, name string) {
 	ch, err := store.Walk(g, "/junta/slot/*")
 	if err != nil {
 		panic(err)
@@ -53,26 +35,26 @@ func (mb *Cleaner) clearSlot(g store.Getter, name string) {
 
 	for ev := range ch {
 		if ev.Body == name {
-			paxos.Set(mb.p, ev.Path, "", ev.Cas)
+			paxos.Set(p, ev.Path, "", ev.Cas)
 		}
 	}
 }
 
-func (mb *Cleaner) removeMember(g store.Getter, name string) {
-	p := "/junta/members/" + name
-	_, cas := g.Get(p)
+func removeMember(p paxos.Proposer, g store.Getter, name string) {
+	k := "/junta/members/" + name
+	_, cas := g.Get(k)
 	if cas != store.Missing {
-		paxos.Del(mb.p, p, cas)
+		paxos.Del(p, k, cas)
 	}
 }
 
-func (mb *Cleaner) removeInfo(g store.Getter, name string) {
+func removeInfo(p paxos.Proposer, g store.Getter, name string) {
 	ch, err := store.Walk(g, "/junta/info/"+name+"/**")
 	if err != nil {
 		panic(err)
 	}
 
 	for ev := range ch {
-		paxos.Del(mb.p, ev.Path, ev.Cas)
+		paxos.Del(p, ev.Path, ev.Cas)
 	}
 }

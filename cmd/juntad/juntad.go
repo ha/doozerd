@@ -170,7 +170,7 @@ func main() {
 		<-cal
 		lock.New(st, mg)
 		session.New(st, mg)
-		member.New(st, mg)
+		go member.Clean(st, mg)
 	}()
 
 	sv := &server.Server{*listenAddr, st, mg, self, prefix}

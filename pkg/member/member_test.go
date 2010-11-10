@@ -9,9 +9,9 @@ import (
 
 func TestMemberSimple(t *testing.T) {
 	st := store.New()
+	defer close(st.Ops)
 	fp := &test.FakeProposer{Store: st}
-	mb := New(fp.Store, fp)
-	defer mb.Close()
+	go Clean(fp.Store, fp)
 
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing))
