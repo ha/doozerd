@@ -1032,7 +1032,7 @@ func TestStoreClose(t *testing.T) {
 	s := New()
 	ch := make(chan Event)
 	s.Watch("/a/b/c", ch)
-	s.Close()
+	close(s.Ops)
 	assert.Equal(t, Event{}, <-ch)
 	assert.T(t, closed(ch))
 }

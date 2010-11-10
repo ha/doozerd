@@ -421,7 +421,3 @@ func (st *Store) GetDirAndWatch(path string, ch chan Event) {
 		}
 	}()
 }
-
-func (st *Store) Close() {
-	close(st.Ops)
-}
