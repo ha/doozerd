@@ -204,17 +204,6 @@ func (s *Store) closeWatches() {
 	}
 }
 
-func append(ws *[]watch, w watch) {
-	l := len(*ws)
-	if l+1 > cap(*ws) {
-		ns := make([]watch, (l+1)*2)
-		copy(ns, *ws)
-		*ws = ns
-	}
-	*ws = (*ws)[0 : l+1]
-	(*ws)[l] = w
-}
-
 // Unbounded in-order buffering
 func buffer(in, out chan Event) {
 	defer close(in)
@@ -262,7 +251,7 @@ func (s *Store) process(ops <-chan Op) {
 				s.todo[a.Seqn] = a
 			}
 		case w := <-s.watchCh:
-			append(&s.watches, w)
+			s.watches = append(s.watches, w)
 		}
 
 		// If we have any mutations that can be applied, do them.
