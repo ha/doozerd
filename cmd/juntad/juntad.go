@@ -169,7 +169,7 @@ func main() {
 	go func() {
 		<-cal
 		lock.New(st, mg)
-		session.New(st, mg)
+		go session.Clean(st, mg)
 		go member.Clean(st, mg)
 	}()
 

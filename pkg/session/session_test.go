@@ -11,10 +11,9 @@ import (
 
 func TestSession(t *testing.T) {
 	st := store.New()
+	defer close(st.Ops)
 	fp := &test.FakeProposer{Store: st}
-	ss := New(st, fp)
-
-	defer ss.Close()
+	go Clean(st, fp)
 
 	ch := make(chan store.Event)
 	st.Watch("/session/*", ch)
