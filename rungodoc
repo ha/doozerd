@@ -1,0 +1,2 @@
+#!/bin/sh
+godoc -path junta -http :6060
