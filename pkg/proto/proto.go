@@ -169,7 +169,7 @@ func decode(r *bufio.Reader) (data interface{}, err os.Error) {
 		}
 		return i, nil
 	case '+':
-		return Line(line[1:]), nil
+		return []byte(line[1:]), nil
 	case '-':
 		return ResponseError(line[1:]), nil
 	case '$':

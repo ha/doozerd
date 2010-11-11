@@ -59,7 +59,7 @@ var decTests = []encTest{
 	{":-1\r\n", int64(-1)},
 	{":18446744073709551611\r\n", uint64(18446744073709551611)},
 	{"$3\r\nfoo\r\n", []byte{'f', 'o', 'o'}},
-	{"+hi\r\n", Line("hi")},
+	{"+hi\r\n", []byte("hi")},
 	{"-hi\r\n", ResponseError("hi")},
 	{"$-1\r\n", nil},
 	{"*2\r\n$1\r\na\r\n$1\r\nb\r\n", []interface{}{[]byte{'a'}, []byte{'b'}}},
