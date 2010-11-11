@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"testing/quick"
 )
 
 
@@ -165,5 +166,22 @@ func TestProtoDecodeErr(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected an error from %q", s)
 		}
+	}
+}
+
+func decodeFuzz(s string) (b bool) {
+	defer func() {
+		v := recover()
+		if v != nil {
+			b = false
+		}
+	}()
+	decode(bufio.NewReader(bytes.NewBufferString(s)))
+	return true
+}
+
+func TestDecodeFuzz(t *testing.T) {
+	if err := quick.Check(decodeFuzz, nil); err != nil {
+		t.Error(err)
 	}
 }
