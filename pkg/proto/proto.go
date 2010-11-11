@@ -79,23 +79,11 @@ func (c *Conn) SendResponse(id uint, data interface{}) os.Error {
 }
 
 func (c *Conn) SendError(id uint, msg string) os.Error {
-	c.StartResponse(id)
-	defer c.EndResponse(id)
-	err := printfLine(c.W, "-ERR: %s", msg)
-	if err != nil {
-		return &ProtoError{id, SendErr, err}
-	}
-	return nil
+	return c.SendResponse(id, os.NewError("ERR: "+msg))
 }
 
 func (c *Conn) SendRedirect(id uint, addr string) os.Error {
-	c.StartResponse(id)
-	defer c.EndResponse(id)
-	err := printfLine(c.W, "-REDIRECT: %s", addr)
-	if err != nil {
-		return &ProtoError{id, SendErr, err}
-	}
-	return nil
+	return c.SendResponse(id, os.NewError("REDIRECT: "+addr))
 }
 
 func (c *Conn) ReadRequest() (uint, []string, os.Error) {
