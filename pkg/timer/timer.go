@@ -33,9 +33,9 @@ type Timer struct {
 	C <-chan Tick
 
 	events  chan store.Event
-	n       int64
 
 	ticks   *vector.Vector
+	ticker  *time.Ticker
 }
 
 func New(pattern string, interval int64, st *store.Store) *Timer {
@@ -44,8 +44,8 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 		Pattern: pattern,
 		C:       c,
 		events:  make(chan store.Event),
-		n:       interval,
 		ticks:   new(vector.Vector),
+		ticker:  time.NewTicker(interval),
 	}
 
 	// Begin watching as timers come and go
@@ -59,8 +59,7 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 func (t *Timer) process(c chan Tick) {
 	defer close(c)
 
-	ticker := time.NewTicker(t.n)
-	defer ticker.Stop()
+	defer t.ticker.Stop()
 
 	logger := util.NewLogger("timer (%s)", t.Pattern)
 
@@ -111,7 +110,7 @@ func (t *Timer) process(c chan Tick) {
 				}
 			}
 
-		case ns := <-ticker.C:
+		case ns := <-t.ticker.C:
 			for next := peek(); next.At <= ns; next = peek() {
 				logger.Printf("ticked %#v", next)
 				heap.Pop(t.ticks)
