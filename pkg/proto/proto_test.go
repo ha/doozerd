@@ -6,6 +6,7 @@ import (
 	"io"
 	"junta/assert"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -53,6 +54,26 @@ var encTests = []encTest{
 	{"*2\r\n:1\r\n*1\r\n:1\r\n", []interface{}{1, []interface{}{1}}},
 }
 
+var decTests = []encTest{
+	{":0\r\n", int64(0)},
+	{":1\r\n", int64(1)},
+	{":-1\r\n", int64(-1)},
+	{":18446744073709551611\r\n", uint64(18446744073709551611)},
+	{"$3\r\nfoo\r\n", []byte{'f', 'o', 'o'}},
+	{"+hi\r\n", Line("hi")},
+	{"-hi\r\n", ResponseError("hi")},
+	{"$-1\r\n", nil},
+	{"*2\r\n$1\r\na\r\n$1\r\nb\r\n", []interface{}{[]byte{'a'}, []byte{'b'}}},
+	{"*1\r\n*1\r\n:1\r\n", []interface{}{[]interface{}{int64(1)}}},
+	{"\r\n:0\r\n", int64(0)}, // ignore blank lines
+}
+
+var decErrTests = []string{
+	":111118446744073709551611\r\n", // out of range for uint64
+	"$18446744073709551611\r\n", // out of range for int
+	"*18446744073709551611\r\n", // out of range for int
+}
+
 func TestProtoEncode(t *testing.T) {
 	for _, e := range encTests {
 		b := new(bytes.Buffer)
@@ -90,23 +111,31 @@ func TestProtoDecodeEmptyLine(t *testing.T) {
 	assert.T(t, err != nil, err)
 }
 
-func TestProtoDecodeRecievedError(t *testing.T) {
-	b := bytes.NewBufferString("-ERR: foo\r\n")
-	_, err := decode(bufio.NewReader(b))
-	assert.Equal(t, "ERR: foo", err.String())
+func TestProtoDecodeVal(t *testing.T) {
+	for _, e := range decTests {
+		b := bytes.NewBufferString(e.encoding)
+		r := bufio.NewReader(b)
+		data, err := decode(r)
+		if err != nil {
+			t.Errorf("in %q,", e.encoding)
+			t.Error("unexpected err:", err)
+			continue
+		}
+		if !reflect.DeepEqual(e.data, data) {
+			t.Errorf("in %q,", e.encoding)
+			t.Errorf("expected %T, %v", e.data, e.data)
+			t.Errorf("     got %T, %v", data, data)
+		}
+	}
 }
 
-func TestProtoDecodeNonEmpty(t *testing.T) {
-	b := new(bytes.Buffer)
-	r := bufio.NewReader(b)
-
-	encode(b, []interface{}{"SET", "foo", "bar"})
-	parts, err := decode(r)
-
-	assert.Equal(t, nil, err, "")
-	assert.Equal(t, []string{"SET", "foo", "bar"}, parts, "")
-
-	parts, err = decode(r)
-	assert.Equal(t, os.EOF, err, "")
-	assert.Equal(t, []string{}, parts, "")
+func TestProtoDecodeErr(t *testing.T) {
+	for _, s := range decErrTests {
+		b := bytes.NewBufferString(s)
+		r := bufio.NewReader(b)
+		_, err := decode(r)
+		if err == nil {
+			t.Errorf("expected an error from %q", s)
+		}
+	}
 }

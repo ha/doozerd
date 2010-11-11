@@ -89,7 +89,7 @@ func (c *Conn) SendRedirect(id uint, addr string) os.Error {
 func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 	id := c.Next()
 	c.StartRequest(id)
-	parts, err := decode(c.R)
+	data, err := decode(c.R)
 	c.EndRequest(id)
 	if err != nil {
 		if err == os.EOF {
@@ -97,6 +97,11 @@ func (c *Conn) ReadRequest() (uint, []string, os.Error) {
 		} else {
 			return 0, nil, &ProtoError{id, ReadReq, err}
 		}
+	}
+	logger.Println("got data", data)
+	parts, ok := stringParts(data)
+	if !ok {
+		return 0, nil, &ProtoError{id, ReadReq, os.NewError("not strings")}
 	}
 	return id, parts, nil
 }
@@ -118,12 +123,17 @@ func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 	c.StartResponse(id)
 	defer c.EndResponse(id)
 
-	parts, err := decode(c.R)
+	data, err := decode(c.R)
 
 	switch terr := err.(type) {
 	default:
 		return nil, &ProtoError{id, ReadRes, err}
 	case nil:
+		logger.Println("got data", data)
+		parts, ok := stringParts(data)
+		if !ok {
+			return nil, &ProtoError{id, ReadReq, os.NewError("not strings")}
+		}
 		return parts, nil
 	case ResponseError:
 		if terr[0:9] == "REDIRECT:" {
@@ -138,43 +148,64 @@ func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
 
 // Helpers
 
-func decode(r *bufio.Reader) (parts []string, err os.Error) {
-	var count int = 1
-	var size int
+func decode(r *bufio.Reader) (data interface{}, err os.Error) {
 	var line string
 
-Loop:
-	for count > 0 {
+	for len(line) < 1 {
 		line, err = readLine(r)
 		if err != nil {
 			return nil, err
 		}
-		line = strings.TrimSpace(line)
-		if len(line) < 1 {
-			continue Loop
-		}
-		switch line[0] {
-		case '-':
-			err = ResponseError(line[1:])
-			return
-		case '*':
-			count, _ = strconv.Atoi(line[1:])
-			parts = make([]string, count)
-		case '$':
-			size, err = strconv.Atoi(line[1:])
-			if err != nil {
-				return nil, err
-			}
-			buf := make([]byte, size)
-			_, err := io.ReadFull(r, buf)
-			if err != nil {
-				return nil, err
-			}
-			parts[len(parts)-count] = string(buf)
-			count--
-		}
 	}
-	return
+
+	switch line[0] {
+	case ':':
+		i, e := strconv.Atoi64(line[1:])
+		if e != nil {
+			if ne, ok := e.(*strconv.NumError); ok && ne.Error == os.ERANGE {
+				return strconv.Atoui64(line[1:])
+			}
+			return nil, e
+		}
+		return i, nil
+	case '+':
+		return Line(line[1:]), nil
+	case '-':
+		return ResponseError(line[1:]), nil
+	case '$':
+		n, e := strconv.Atoi(line[1:])
+		if e != nil {
+			return nil, e
+		}
+
+		// in redis, "$-1" means nil
+		if n < 0 {
+			return nil, nil
+		}
+
+		b := make([]byte, n)
+		_, e = io.ReadFull(r, b)
+		if e != nil {
+			return nil, e
+		}
+		return b, nil
+	case '*':
+		n, e := strconv.Atoi(line[1:])
+		if e != nil {
+			return nil, e
+		}
+
+		d := make([]interface{}, n)
+		for i := range d {
+			d[i], err = decode(r)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return d, nil
+	}
+
+	return nil, os.NewError("unknown line: " + line) // TODO use ProtoError
 }
 
 func encode(w io.Writer, data interface{}) (err os.Error) {
@@ -285,4 +316,20 @@ func readLineBytes(r *bufio.Reader) ([]byte, os.Error) {
 		}
 	}
 	return line[0:n], err
+}
+
+func stringParts(d interface{}) (a []string, ok bool) {
+	t, ok := d.([]interface{})
+	if !ok {
+		return nil, false
+	}
+	a = make([]string, len(t))
+	for i, x := range t {
+		b, ok := x.([]byte)
+		if !ok {
+			return nil, false
+		}
+		a[i] = string(b)
+	}
+	return a, true
 }
