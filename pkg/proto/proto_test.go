@@ -28,30 +28,30 @@ func (ew *ErroneousWriter) Write(bytes []byte) (int, os.Error) {
 }
 
 type encTest struct {
-	data     interface{}
 	encoding string
+	data     interface{}
 }
 
 var encTests = []encTest{
-	{int(0), ":0\r\n"},
-	{int8(0), ":0\r\n"},
-	{int16(0), ":0\r\n"},
-	{int32(0), ":0\r\n"},
-	{int64(0), ":0\r\n"},
-	{uint(0), ":0\r\n"},
-	{uint8(0), ":0\r\n"}, // aka byte
-	{uint16(0), ":0\r\n"},
-	{uint32(0), ":0\r\n"},
-	{uint64(0), ":0\r\n"},
+	{":0\r\n", int(0)},
+	{":0\r\n", int8(0)},
+	{":0\r\n", int16(0)},
+	{":0\r\n", int32(0)},
+	{":0\r\n", int64(0)},
+	{":0\r\n", uint(0)},
+	{":0\r\n", uint8(0)}, // aka byte
+	{":0\r\n", uint16(0)},
+	{":0\r\n", uint32(0)},
+	{":0\r\n", uint64(0)},
 
-	{[]byte{'f', 'o', 'o'}, "$3\r\nfoo\r\n"},
-	{"foo", "$3\r\nfoo\r\n"},
-	{Line("hi"), "+hi\r\n"},
-	{os.NewError("hi"), "-hi\r\n"},
-	{nil, "$-1\r\n"},
-	{[]interface{}{[]byte{'a'}, []byte{'b'}}, "*2\r\n$1\r\na\r\n$1\r\nb\r\n"},
-	{[]string{"GET", "FOO"}, "*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n"},
-	{[]interface{}{1, []interface{}{1}}, "*2\r\n:1\r\n*1\r\n:1\r\n"},
+	{"$3\r\nfoo\r\n", []byte{'f', 'o', 'o'}},
+	{"$3\r\nfoo\r\n", "foo"},
+	{"+hi\r\n", Line("hi")},
+	{"-hi\r\n", os.NewError("hi")},
+	{"$-1\r\n", nil},
+	{"*2\r\n$1\r\na\r\n$1\r\nb\r\n", []interface{}{[]byte{'a'}, []byte{'b'}}},
+	{"*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n", []string{"GET", "FOO"}},
+	{"*2\r\n:1\r\n*1\r\n:1\r\n", []interface{}{1, []interface{}{1}}},
 }
 
 func TestProtoEncode(t *testing.T) {
