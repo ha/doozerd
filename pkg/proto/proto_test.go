@@ -1,13 +1,12 @@
 package proto
 
 import (
-	"bytes"
 	"bufio"
-	"os"
+	"bytes"
 	"io"
-
-	"testing"
 	"junta/assert"
+	"os"
+	"testing"
 )
 
 
