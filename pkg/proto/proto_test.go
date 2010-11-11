@@ -74,7 +74,7 @@ var decErrTests = []string{
 	"*18446744073709551611\r\n", // out of range for int
 }
 
-func TestProtoEncode(t *testing.T) {
+func TestProtoEncodeVal(t *testing.T) {
 	for _, e := range encTests {
 		b := new(bytes.Buffer)
 		err := encode(b, e.data)
