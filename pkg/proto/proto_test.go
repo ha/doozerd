@@ -145,8 +145,7 @@ func TestProtoDecodeShort(t *testing.T) {
 
 func TestProtoDecodeErr(t *testing.T) {
 	for _, s := range decErrTests {
-		b := bytes.NewBufferString(s)
-		r := bufio.NewReader(b)
+		r := bufio.NewReader(bytes.NewBufferString(s))
 		_, err := decode(r)
 		if err == nil {
 			t.Errorf("expected an error from %q", s)
