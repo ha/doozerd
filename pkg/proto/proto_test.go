@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"junta/assert"
+	"junta/test"
 	"os"
 	"reflect"
 	"testing"
@@ -85,6 +86,20 @@ func TestProtoEncodeVal(t *testing.T) {
 		if e.encoding != string(b.Bytes()) {
 			t.Errorf("expected %q", e.encoding)
 			t.Errorf("     got %q", b.String())
+		}
+	}
+}
+
+func TestProtoEncodeShort(t *testing.T) {
+	for _, e := range encTests {
+		n := len(e.encoding)
+		for i := 0; i < n; i++ {
+			t.Logf("trying %d bytes", i)
+			w := test.ErrWriter{i}
+			err := encode(&w, e.data)
+			if err == nil {
+				t.Errorf("expected an error encoding %T %v in %d bytes", e.data, e.data, i)
+			}
 		}
 	}
 }
