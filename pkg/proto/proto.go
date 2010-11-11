@@ -183,12 +183,16 @@ func decode(r *bufio.Reader) (data interface{}, err os.Error) {
 			return nil, nil
 		}
 
-		b := make([]byte, n)
+		b := make([]byte, n+2) // add space for trailing CR+LF
 		_, e = io.ReadFull(r, b)
 		if e != nil {
 			return nil, e
 		}
-		return b, nil
+		if b[n] != '\r' || b[n+1] != '\n' {
+			// TODO use ProtoError
+			return nil, os.NewError("expected trailing CR+LF")
+		}
+		return b[0:n], nil
 	case '*':
 		n, e := strconv.Atoi(line[1:])
 		if e != nil {

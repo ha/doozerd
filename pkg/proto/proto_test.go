@@ -129,6 +129,20 @@ func TestProtoDecodeVal(t *testing.T) {
 	}
 }
 
+func TestProtoDecodeShort(t *testing.T) {
+	for _, e := range decTests {
+		n := len(e.encoding)
+		for i := 0; i < n; i++ {
+			s := e.encoding[0:i]
+			r := bufio.NewReader(bytes.NewBufferString(s))
+			_, err := decode(r)
+			if err == nil {
+				t.Errorf("expected an error from %q", s)
+			}
+		}
+	}
+}
+
 func TestProtoDecodeErr(t *testing.T) {
 	for _, s := range decErrTests {
 		b := bytes.NewBufferString(s)
