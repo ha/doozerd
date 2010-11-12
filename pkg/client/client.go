@@ -24,6 +24,7 @@ func Dial(addr string) (*Client, os.Error) {
 		return nil, err
 	}
 	p := proto.NewConn(c)
+	go p.ReadResponses()
 	return &Client{p: p, lg: util.NewLogger(addr)}, nil
 }
 
@@ -57,28 +58,29 @@ func (c *Client) proto() (*proto.Conn, os.Error) {
 		}
 		c.lg = util.NewLogger(c.p.RedirectAddr)
 		c.p = proto.NewConn(conn)
+		go c.p.ReadResponses()
 	}
 
 	return c.p, nil
 }
 
-func (c *Client) callWithoutRedirect(a interface{}) ([]string, os.Error) {
+func (c *Client) callWithoutRedirect(verb string, a interface{}) ([]string, os.Error) {
 	p, err := c.proto()
 	if err != nil {
 		return nil, err
 	}
 
-	rid, err := p.SendRequest(a)
+	ch, err := p.SendRequest(verb, a)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.ReadResponse(rid)
+	return proto.GetResponse(ch)
 }
 
-func (c *Client) call(n int, a ...interface{}) (parts []string, err os.Error) {
+func (c *Client) call(n int, verb string, a ...interface{}) (parts []string, err os.Error) {
 	for {
-		parts, err = c.callWithoutRedirect(a)
+		parts, err = c.callWithoutRedirect(verb, a)
 		if r, ok := err.(proto.Redirect); ok {
 			c.lg.Println(r)
 			continue

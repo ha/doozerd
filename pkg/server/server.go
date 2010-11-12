@@ -174,7 +174,7 @@ func (c *conn) serve(cal bool) {
 	logger := util.NewLogger("%v", c.RemoteAddr())
 	logger.Println("accepted connection")
 	for {
-		rid, parts, err := pc.ReadRequest()
+		rid, verb, parts, err := pc.ReadRequest()
 		if err != nil {
 			if err == os.EOF {
 				logger.Println("connection closed by peer")
@@ -187,18 +187,12 @@ func (c *conn) serve(cal bool) {
 		rlogger := util.NewLogger("%v - req [%d]", c.RemoteAddr(), rid)
 		rlogger.Printf("received <%v>", parts)
 
-		if len(parts) == 0 {
-			rlogger.Println("zero parts supplied")
-			pc.SendError(rid, proto.InvalidCommand+": no command")
-			continue
-		}
-
-		switch parts[0] {
+		switch verb {
 		default:
-			rlogger.Printf("unknown command <%s>", parts[0])
-			pc.SendError(rid, proto.InvalidCommand+" "+parts[0])
+			rlogger.Printf("unknown command <%s>", verb)
+			pc.SendError(rid, proto.InvalidCommand+" "+verb)
 		case "set":
-			if len(parts) != 4 {
+			if len(parts) != 3 {
 				rlogger.Printf("invalid set command: %#v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
@@ -218,8 +212,8 @@ func (c *conn) serve(cal bool) {
 				break
 			}
 
-			rlogger.Printf("set %q=%q (cas %q)", parts[1], parts[2], parts[3])
-			seqn, _, err := c.s.Set(parts[1], parts[2], parts[3])
+			rlogger.Printf("set %q=%q (cas %q)", parts[0], parts[1], parts[2])
+			seqn, _, err := c.s.Set(parts[0], parts[1], parts[2])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
@@ -228,7 +222,7 @@ func (c *conn) serve(cal bool) {
 				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn)})
 			}
 		case "del":
-			if len(parts) != 3 {
+			if len(parts) != 2 {
 				rlogger.Printf("invalid del command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
@@ -241,8 +235,8 @@ func (c *conn) serve(cal bool) {
 				break
 			}
 
-			rlogger.Printf("del %q (cas %q)", parts[1], parts[2])
-			_, err := c.s.Del(parts[1], parts[2])
+			rlogger.Printf("del %q (cas %q)", parts[0], parts[1])
+			_, err := c.s.Del(parts[0], parts[1])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
@@ -251,13 +245,13 @@ func (c *conn) serve(cal bool) {
 				pc.SendResponse(rid, []interface{}{"true"})
 			}
 		case "get":
-			if len(parts) != 2 {
+			if len(parts) != 1 {
 				rlogger.Printf("invalid get command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
-			rlogger.Printf("get %q", parts[1])
-			v, cas, err := c.s.Get(parts[1])
+			rlogger.Printf("get %q", parts[0])
+			v, cas, err := c.s.Get(parts[0])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
@@ -266,13 +260,13 @@ func (c *conn) serve(cal bool) {
 				pc.SendResponse(rid, []interface{}{v, cas})
 			}
 		case "sget":
-			if len(parts) != 2 {
+			if len(parts) != 1 {
 				rlogger.Printf("invalid sget command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
 			}
-			rlogger.Printf("sget %q", parts[1])
-			body, err := c.s.Sget(parts[1])
+			rlogger.Printf("sget %q", parts[0])
+			body, err := c.s.Sget(parts[0])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())
@@ -281,7 +275,7 @@ func (c *conn) serve(cal bool) {
 				pc.SendResponse(rid, []interface{}{body})
 			}
 		case "nop":
-			if len(parts) != 1 {
+			if len(parts) != 0 {
 				rlogger.Printf("invalid nop command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
@@ -300,7 +294,7 @@ func (c *conn) serve(cal bool) {
 			pc.SendResponse(rid, []interface{}{"true"})
 		case "join":
 			// join abc123 1.2.3.4:999
-			if len(parts) != 3 {
+			if len(parts) != 2 {
 				rlogger.Printf("invalid join command: %v", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
@@ -313,7 +307,7 @@ func (c *conn) serve(cal bool) {
 				break
 			}
 
-			who, addr := parts[1], parts[2]
+			who, addr := parts[0], parts[1]
 			rlogger.Printf("membership requested for %s at %s", who, addr)
 
 			key := c.s.Prefix + "/junta/members/" + who
@@ -332,7 +326,7 @@ func (c *conn) serve(cal bool) {
 				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn), snap})
 			}
 		case "checkin":
-			if len(parts) != 3 {
+			if len(parts) != 2 {
 				rlogger.Println("invalid checkin command:", parts)
 				pc.SendError(rid, "wrong number of parts")
 				break
@@ -352,8 +346,8 @@ func (c *conn) serve(cal bool) {
 				break
 			}
 
-			rlogger.Printf("checkin %q (cas %q)", parts[1], parts[2])
-			t, cas, err := c.s.Checkin(parts[1], parts[2])
+			rlogger.Printf("checkin %q (cas %q)", parts[0], parts[1])
+			t, cas, err := c.s.Checkin(parts[0], parts[1])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
 				pc.SendError(rid, err.String())

@@ -6,9 +6,10 @@ import (
 	"os"
 	"io"
 	"fmt"
+	"reflect"
 	"strings"
 	"strconv"
-	"net/textproto"
+	"sync"
 )
 
 // Operations
@@ -31,8 +32,25 @@ var logger = util.NewLogger("proto")
 type Line string
 
 type Conn struct {
-	*textproto.Conn
+	c  io.ReadWriteCloser
+	r  *bufio.Reader
+	id uint
+	cb map[uint]chan interface{}
+
+	rl, wl, bl sync.Mutex
+
 	RedirectAddr string
+}
+
+type request struct {
+	Id   uint
+	Verb Line
+	Data interface{}
+}
+
+type response struct {
+	Id   uint
+	Data interface{}
 }
 
 type ProtoError struct {
@@ -61,20 +79,26 @@ func (e Redirect) Addr() string {
 	return string(e)
 }
 
-func NewConn(conn io.ReadWriteCloser) *Conn {
-	return &Conn{Conn: textproto.NewConn(conn)}
+func NewConn(rw io.ReadWriteCloser) *Conn {
+	return &Conn{
+		c:rw,
+		r:bufio.NewReader(rw),
+		cb:make(map[uint]chan interface{}),
+	}
 }
 
 // Server functions
 
 func (c *Conn) SendResponse(id uint, data interface{}) os.Error {
-	c.StartResponse(id)
-	defer c.EndResponse(id)
-	err := encode(c.W, data)
+	c.wl.Lock()
+	defer c.wl.Unlock()
+
+	err := encode(c.c, response{id, data})
 	if err != nil {
+		// TODO poison
 		return &ProtoError{id, SendRes, err}
 	}
-	return c.W.Flush()
+	return nil
 }
 
 func (c *Conn) SendError(id uint, msg string) os.Error {
@@ -85,64 +109,109 @@ func (c *Conn) SendRedirect(id uint, addr string) os.Error {
 	return c.SendResponse(id, os.NewError("REDIRECT: "+addr))
 }
 
-func (c *Conn) ReadRequest() (uint, []string, os.Error) {
-	id := c.Next()
-	c.StartRequest(id)
-	data, err := decode(c.R)
-	c.EndRequest(id)
+func (c *Conn) ReadRequest() (uint, string, []string, os.Error) {
+	c.rl.Lock()
+	defer c.rl.Unlock()
+
+	id := c.next()
+	data, err := decode(c.r)
 	if err != nil {
+		// TODO poison
 		if err == os.EOF {
-			return 0, nil, err
+			return 0, "", nil, err
 		} else {
-			return 0, nil, &ProtoError{id, ReadReq, err}
+			return 0, "", nil, &ProtoError{id, ReadReq, err}
 		}
 	}
-	logger.Println("got data", data)
-	parts, ok := stringParts(data)
-	if !ok {
-		return 0, nil, &ProtoError{id, ReadReq, os.NewError("not strings")}
+
+	var req request
+	err = Fit(data, &req)
+	if err != nil {
+		return 0, "", nil, &ProtoError{0, ReadReq, err}
 	}
-	return id, parts, nil
+
+	logger.Println("got data", req.Data)
+	parts, ok := stringParts(req.Data)
+	if !ok {
+		return 0, "", nil, &ProtoError{req.Id, ReadReq, os.NewError("not strings")}
+	}
+	return req.Id, string(req.Verb), parts, nil
 }
 
 // Client functions
 
-func (c *Conn) SendRequest(data interface{}) (uint, os.Error) {
-	id := c.Next()
-	c.StartRequest(id)
-	defer c.EndRequest(id)
-	err := encode(c.W, data)
-	if err != nil {
-		return 0, &ProtoError{id, SendReq, err}
-	}
-	return id, c.W.Flush()
+func (c *Conn) next() uint {
+	c.id++
+	return c.id
 }
 
-func (c *Conn) ReadResponse(id uint) ([]string, os.Error) {
-	c.StartResponse(id)
-	defer c.EndResponse(id)
-
-	data, err := decode(c.R)
-
-	switch terr := err.(type) {
-	default:
-		return nil, &ProtoError{id, ReadRes, err}
-	case nil:
-		logger.Println("got data", data)
-		parts, ok := stringParts(data)
-		if !ok {
-			return nil, &ProtoError{id, ReadReq, os.NewError("not strings")}
-		}
-		return parts, nil
-	case ResponseError:
-		if terr[0:9] == "REDIRECT:" {
-			c.RedirectAddr = strings.TrimSpace(string(terr)[10:])
-			err = Redirect(c.RedirectAddr)
-		}
-		return nil, err
+func (c *Conn) SendRequest(verb string, data interface{}) (<-chan interface{}, os.Error) {
+	c.wl.Lock()
+	id := c.next()
+	err := encode(c.c, request{id, Line(verb), data})
+	c.wl.Unlock()
+	if err != nil {
+		// TODO poison
+		return nil, &ProtoError{id, SendReq, err}
 	}
 
-	panic("unreachable")
+	ch := make(chan interface{})
+	c.bl.Lock()
+	c.cb[id] = ch
+	c.bl.Unlock()
+
+	return ch, nil
+}
+
+func GetResponse(ch <-chan interface{}) ([]string, os.Error) {
+	data := <-ch
+
+	if e, ok := data.(os.Error); ok {
+		return nil, e
+	}
+
+	logger.Println("got data", data)
+	parts, ok := stringParts(data)
+	if !ok {
+		return nil, &ProtoError{0, ReadRes, os.NewError("not strings")}
+	}
+	return parts, nil
+}
+
+func (c *Conn) ReadResponses() {
+	c.rl.Lock()
+	defer c.rl.Unlock()
+
+	for {
+		data, err := decode(c.r)
+		if err != nil {
+			break
+		}
+
+		var res response
+		err = Fit(data, &res)
+		if re, ok := err.(ResponseError); ok {
+			if re[0:9] == "REDIRECT:" {
+				c.RedirectAddr = strings.TrimSpace(string(re)[10:])
+				err = Redirect(c.RedirectAddr)
+			}
+		}
+		if err != nil {
+			res.Data = err
+		}
+
+		if res.Id == 0 {
+			continue
+		}
+
+		c.bl.Lock()
+		c.cb[res.Id] <- res.Data
+		c.cb[res.Id] = nil, false
+		c.bl.Unlock()
+	}
+
+	// TODO poison
+	// TODO send errors to all waiting requests
 }
 
 // Helpers
@@ -218,8 +287,6 @@ func decode(r *bufio.Reader) (data interface{}, err os.Error) {
 
 func encode(w io.Writer, data interface{}) (err os.Error) {
 	switch t := data.(type) {
-	default:
-		return os.NewError(fmt.Sprintf("unexpected type %T", t))
 	case Line:
 		if err = printfLine(w, "+%s", t); err != nil {
 			return
@@ -264,6 +331,14 @@ func encode(w io.Writer, data interface{}) (err os.Error) {
 		return encodeSlice(w, d)
 	case []interface{}:
 		return encodeSlice(w, t)
+	default:
+		v := reflect.NewValue(data)
+		switch tv := v.(type) {
+		case *reflect.StructValue:
+			return encodeStruct(w, tv)
+		default:
+			return os.NewError(fmt.Sprintf("unexpected type %T", t))
+		}
 	}
 	return nil
 }
@@ -292,6 +367,19 @@ func encodeSlice(w io.Writer, data []interface{}) (err os.Error) {
 	}
 	for _, part := range data {
 		if err = encode(w, part); err != nil {
+			return
+		}
+	}
+	return nil
+}
+
+func encodeStruct(w io.Writer, v *reflect.StructValue) (err os.Error) {
+	n := v.NumField()
+	if err = printfLine(w, "*%d", n); err != nil {
+		return
+	}
+	for i := 0; i < n; i++ {
+		if err = encode(w, v.Field(i).Interface()); err != nil {
 			return
 		}
 	}
