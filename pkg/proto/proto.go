@@ -15,7 +15,6 @@ import (
 const (
 	SendReq = "send req"
 	SendRes = "send res"
-	SendErr = "send err"
 	ReadReq = "read req"
 	ReadRes = "read res"
 )
