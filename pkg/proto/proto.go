@@ -109,7 +109,7 @@ func (c *Conn) SendRedirect(id uint, addr string) os.Error {
 	return c.SendResponse(id, os.NewError("REDIRECT: "+addr))
 }
 
-func (c *Conn) ReadRequest() (uint, string, []string, os.Error) {
+func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 	c.rl.Lock()
 	defer c.rl.Unlock()
 
@@ -131,11 +131,7 @@ func (c *Conn) ReadRequest() (uint, string, []string, os.Error) {
 	}
 
 	logger.Println("got data", req.Data)
-	parts, ok := stringParts(req.Data)
-	if !ok {
-		return 0, "", nil, &ProtoError{req.Id, ReadReq, os.NewError("not strings")}
-	}
-	return req.Id, string(req.Verb), parts, nil
+	return req.Id, string(req.Verb), req.Data, nil
 }
 
 // Client functions

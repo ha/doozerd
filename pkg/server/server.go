@@ -174,7 +174,7 @@ func (c *conn) serve(cal bool) {
 	logger := util.NewLogger("%v", c.RemoteAddr())
 	logger.Println("accepted connection")
 	for {
-		rid, verb, parts, err := pc.ReadRequest()
+		rid, verb, data, err := pc.ReadRequest()
 		if err != nil {
 			if err == os.EOF {
 				logger.Println("connection closed by peer")
@@ -182,6 +182,13 @@ func (c *conn) serve(cal bool) {
 				logger.Println(err)
 			}
 			return
+		}
+
+		var parts []string
+		err = proto.Fit(data, &parts)
+		if err != nil {
+			pc.SendError(rid, err.String())
+			continue
 		}
 
 		rlogger := util.NewLogger("%v - req [%d]", c.RemoteAddr(), rid)
