@@ -20,8 +20,10 @@ const lease = 3e9 // ns == 3s
 var ErrBadPrefix = os.NewError("bad prefix in path")
 
 type conn struct {
-	net.Conn
-	s *Server
+	*proto.Conn
+	c   net.Conn
+	s   *Server
+	cal bool
 }
 
 type Manager interface {
@@ -80,8 +82,8 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 		if e != nil {
 			return e
 		}
-		c := &conn{rw, s}
-		go c.serve(ok)
+		c := &conn{proto.NewConn(rw), rw, s, ok}
+		go c.serve()
 	}
 
 	panic("unreachable")
@@ -169,12 +171,42 @@ func (sv *Server) AdvanceUntil(done chan int) {
 	}
 }
 
-func (c *conn) serve(cal bool) {
-	pc := proto.NewConn(c)
-	logger := util.NewLogger("%v", c.RemoteAddr())
+func (c *conn) redirect(rid uint) {
+	leader := c.s.leader()
+	addr := c.s.addrFor(leader)
+	if addr == "" {
+		c.SendError(rid, "unknown address for leader")
+	} else {
+		c.SendRedirect(rid, addr)
+	}
+}
+
+func (c *conn) set(rid uint, data interface{}) {
+	var r proto.ReqSet
+	err := proto.Fit(data, &r)
+	if err != nil {
+		c.SendError(rid, err.String())
+		return
+	}
+
+	if !c.cal {
+		c.redirect(rid)
+		return
+	}
+
+	seqn, _, err := c.s.Set(r.Path, r.Body, r.Cas)
+	if err != nil {
+		c.SendError(rid, err.String())
+	} else {
+		c.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn)})
+	}
+}
+
+func (c *conn) serve() {
+	logger := util.NewLogger("%v", c.c.RemoteAddr())
 	logger.Println("accepted connection")
 	for {
-		rid, verb, data, err := pc.ReadRequest()
+		rid, verb, data, err := c.ReadRequest()
 		if err != nil {
 			if err == os.EOF {
 				logger.Println("connection closed by peer")
@@ -187,58 +219,31 @@ func (c *conn) serve(cal bool) {
 		var parts []string
 		err = proto.Fit(data, &parts)
 		if err != nil {
-			pc.SendError(rid, err.String())
+			c.SendError(rid, err.String())
 			continue
 		}
 
-		rlogger := util.NewLogger("%v - req [%d]", c.RemoteAddr(), rid)
+		rlogger := util.NewLogger("%v - req [%d]", c.c.RemoteAddr(), rid)
 		rlogger.Printf("received <%v>", parts)
 
 		switch verb {
 		default:
 			rlogger.Printf("unknown command <%s>", verb)
-			pc.SendError(rid, proto.InvalidCommand+" "+verb)
+			c.SendError(rid, proto.InvalidCommand+" "+verb)
 		case "set":
-			if len(parts) != 3 {
-				rlogger.Printf("invalid set command: %#v", parts)
-				pc.SendError(rid, "wrong number of parts")
-				break
-			}
-
-			leader := c.s.leader()
-			if !cal {
-				addr := c.s.addrFor(leader)
-				if addr == "" {
-					rlogger.Printf("unknown address for leader: %s", leader)
-					pc.SendError(rid, "unknown address for leader")
-					break
-				}
-
-				rlogger.Printf("redirect to %s", addr)
-				pc.SendRedirect(rid, addr)
-				break
-			}
-
-			rlogger.Printf("set %q=%q (cas %q)", parts[0], parts[1], parts[2])
-			seqn, _, err := c.s.Set(parts[0], parts[1], parts[2])
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
-			} else {
-				rlogger.Printf("good")
-				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn)})
-			}
+			rlogger.Printf("set %v", data)
+			c.set(rid, data)
 		case "del":
 			if len(parts) != 2 {
 				rlogger.Printf("invalid del command: %v", parts)
-				pc.SendError(rid, "wrong number of parts")
+				c.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
-			if !cal {
+			if !c.cal {
 				rlogger.Printf("redirect to %s", leader)
-				pc.SendRedirect(rid, leader)
+				c.SendRedirect(rid, leader)
 				break
 			}
 
@@ -246,71 +251,71 @@ func (c *conn) serve(cal bool) {
 			_, err := c.s.Del(parts[0], parts[1])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
+				c.SendError(rid, err.String())
 			} else {
 				rlogger.Printf("good")
-				pc.SendResponse(rid, []interface{}{"true"})
+				c.SendResponse(rid, []interface{}{"true"})
 			}
 		case "get":
 			if len(parts) != 1 {
 				rlogger.Printf("invalid get command: %v", parts)
-				pc.SendError(rid, "wrong number of parts")
+				c.SendError(rid, "wrong number of parts")
 				break
 			}
 			rlogger.Printf("get %q", parts[0])
 			v, cas, err := c.s.Get(parts[0])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
+				c.SendError(rid, err.String())
 			} else {
 				rlogger.Println("good get cas", cas)
-				pc.SendResponse(rid, []interface{}{v, cas})
+				c.SendResponse(rid, []interface{}{v, cas})
 			}
 		case "sget":
 			if len(parts) != 1 {
 				rlogger.Printf("invalid sget command: %v", parts)
-				pc.SendError(rid, "wrong number of parts")
+				c.SendError(rid, "wrong number of parts")
 				break
 			}
 			rlogger.Printf("sget %q", parts[0])
 			body, err := c.s.Sget(parts[0])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
+				c.SendError(rid, err.String())
 			} else {
 				rlogger.Printf("good %q", body)
-				pc.SendResponse(rid, []interface{}{body})
+				c.SendResponse(rid, []interface{}{body})
 			}
 		case "nop":
 			if len(parts) != 0 {
 				rlogger.Printf("invalid nop command: %v", parts)
-				pc.SendError(rid, "wrong number of parts")
+				c.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
-			if !cal {
+			if !c.cal {
 				rlogger.Printf("redirect to %s", leader)
-				pc.SendRedirect(rid, leader)
+				c.SendRedirect(rid, leader)
 				break
 			}
 
 			rlogger.Println("nop")
 			c.s.Nop()
 			rlogger.Printf("good")
-			pc.SendResponse(rid, []interface{}{"true"})
+			c.SendResponse(rid, []interface{}{"true"})
 		case "join":
 			// join abc123 1.2.3.4:999
 			if len(parts) != 2 {
 				rlogger.Printf("invalid join command: %v", parts)
-				pc.SendError(rid, "wrong number of parts")
+				c.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
-			if !cal {
+			if !c.cal {
 				rlogger.Printf("redirect to %s", leader)
-				pc.SendRedirect(rid, leader)
+				c.SendRedirect(rid, leader)
 				break
 			}
 
@@ -322,7 +327,7 @@ func (c *conn) serve(cal bool) {
 			seqn, _, err := c.s.Set(key, addr, store.Missing)
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
+				c.SendError(rid, err.String())
 			} else {
 				rlogger.Printf("good")
 				done := make(chan int)
@@ -330,26 +335,26 @@ func (c *conn) serve(cal bool) {
 				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
 				close(done)
 				seqn, snap := c.s.St.Snapshot()
-				pc.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn), snap})
+				c.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn), snap})
 			}
 		case "checkin":
 			if len(parts) != 2 {
 				rlogger.Println("invalid checkin command:", parts)
-				pc.SendError(rid, "wrong number of parts")
+				c.SendError(rid, "wrong number of parts")
 				break
 			}
 
 			leader := c.s.leader()
-			if !cal {
+			if !c.cal {
 				addr := c.s.addrFor(leader)
 				if addr == "" {
 					rlogger.Printf("unknown address for leader: %s", leader)
-					pc.SendError(rid, "unknown address for leader")
+					c.SendError(rid, "unknown address for leader")
 					break
 				}
 
 				rlogger.Printf("redirect to %s", addr)
-				pc.SendRedirect(rid, addr)
+				c.SendRedirect(rid, addr)
 				break
 			}
 
@@ -357,10 +362,10 @@ func (c *conn) serve(cal bool) {
 			t, cas, err := c.s.Checkin(parts[0], parts[1])
 			if err != nil {
 				rlogger.Printf("bad: %s", err)
-				pc.SendError(rid, err.String())
+				c.SendError(rid, err.String())
 			} else {
 				rlogger.Printf("good")
-				pc.SendResponse(rid, []interface{}{strconv.Itoa64(t), cas})
+				c.SendResponse(rid, []interface{}{strconv.Itoa64(t), cas})
 			}
 		}
 	}

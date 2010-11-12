@@ -137,24 +137,27 @@ func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 // Client functions
 
 func (c *Conn) next() uint {
+	c.wl.Lock()
+	defer c.wl.Unlock()
 	c.id++
 	return c.id
 }
 
 func (c *Conn) SendRequest(verb string, data interface{}) (<-chan interface{}, os.Error) {
-	c.wl.Lock()
+	ch := make(chan interface{})
 	id := c.next()
+
+	c.bl.Lock()
+	c.cb[id] = ch
+	c.bl.Unlock()
+
+	c.wl.Lock()
 	err := encode(c.c, request{id, Line(verb), data})
 	c.wl.Unlock()
 	if err != nil {
 		// TODO poison
 		return nil, &ProtoError{id, SendReq, err}
 	}
-
-	ch := make(chan interface{})
-	c.bl.Lock()
-	c.cb[id] = ch
-	c.bl.Unlock()
 
 	return ch, nil
 }
@@ -201,9 +204,14 @@ func (c *Conn) ReadResponses() {
 		}
 
 		c.bl.Lock()
-		c.cb[res.Id] <- res.Data
-		c.cb[res.Id] = nil, false
+		ch, ok := c.cb[res.Id]
+		if ok {
+			c.cb[res.Id] = nil, false
+		}
 		c.bl.Unlock()
+		if ok {
+			ch <- res.Data
+		}
 	}
 
 	// TODO poison
