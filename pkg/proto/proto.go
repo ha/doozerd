@@ -198,6 +198,11 @@ func decode(r *bufio.Reader) (data interface{}, err os.Error) {
 			return nil, e
 		}
 
+		// in redis, "*-1" means nil
+		if n < 0 {
+			return nil, nil
+		}
+
 		d := make([]interface{}, n)
 		for i := range d {
 			d[i], err = decode(r)

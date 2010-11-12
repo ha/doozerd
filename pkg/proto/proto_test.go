@@ -62,6 +62,7 @@ var decTests = []encTest{
 	{"+hi\r\n", []byte("hi")},
 	{"-hi\r\n", ResponseError("hi")},
 	{"$-1\r\n", nil},
+	{"*-1\r\n", nil},
 	{"*2\r\n$1\r\na\r\n$1\r\nb\r\n", []interface{}{[]byte{'a'}, []byte{'b'}}},
 	{"*1\r\n*1\r\n:1\r\n", []interface{}{[]interface{}{int64(1)}}},
 	{"\r\n:0\r\n", int64(0)}, // ignore blank lines
