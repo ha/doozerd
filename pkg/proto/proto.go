@@ -257,8 +257,6 @@ func encode(w io.Writer, data interface{}) (err os.Error) {
 	case []byte:
 		return encodeBytes(w, t)
 	case []string:
-		// TODO use the builtin append function when it gets released:
-		//return encodeSlice(w, append([]interface{}, t...))
 		d := make([]interface{}, len(t))
 		for i, x := range t {
 			d[i] = x
