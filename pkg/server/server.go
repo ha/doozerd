@@ -8,6 +8,7 @@ import (
 	"junta/util"
 	"net"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -181,25 +182,18 @@ func (c *conn) redirect(rid uint) {
 	}
 }
 
-func (c *conn) set(rid uint, data interface{}) {
-	var r proto.ReqSet
-	err := proto.Fit(data, &r)
-	if err != nil {
-		c.SendError(rid, err.String())
-		return
-	}
+func set(s *Server, data interface{}) (interface{}, os.Error) {
+	r := data.(*proto.ReqSet)
 
-	if !c.cal {
-		c.redirect(rid)
-		return
-	}
-
-	seqn, _, err := c.s.Set(r.Path, r.Body, r.Cas)
+	seqn, _, err := s.Set(r.Path, r.Body, r.Cas)
 	if err != nil {
-		c.SendError(rid, err.String())
-	} else {
-		c.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn)})
+		return nil, err
 	}
+	return []interface{}{strconv.Uitoa64(seqn)}, nil
+}
+
+func indirect(x interface{}) interface{} {
+	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
 
 func (c *conn) serve() {
@@ -216,6 +210,32 @@ func (c *conn) serve() {
 			return
 		}
 
+		rlogger := util.NewLogger("%v - req [%d]", c.c.RemoteAddr(), rid)
+
+		if verb == "set" {
+			rlogger.Printf("set %v", data)
+
+			var p interface{} = new(*proto.ReqSet)
+			err := proto.Fit(data, p)
+			if err != nil {
+				c.SendError(rid, err.String())
+				continue
+			}
+
+			if !c.cal {
+				c.redirect(rid)
+				continue
+			}
+
+			res, err := set(c.s, indirect(p))
+			if err != nil {
+				c.SendError(rid, err.String())
+			} else {
+				c.SendResponse(rid, res)
+			}
+			continue
+		}
+
 		var parts []string
 		err = proto.Fit(data, &parts)
 		if err != nil {
@@ -223,16 +243,12 @@ func (c *conn) serve() {
 			continue
 		}
 
-		rlogger := util.NewLogger("%v - req [%d]", c.c.RemoteAddr(), rid)
 		rlogger.Printf("received <%v>", parts)
 
 		switch verb {
 		default:
 			rlogger.Printf("unknown command <%s>", verb)
 			c.SendError(rid, proto.InvalidCommand+" "+verb)
-		case "set":
-			rlogger.Printf("set %v", data)
-			c.set(rid, data)
 		case "del":
 			if len(parts) != 2 {
 				rlogger.Printf("invalid del command: %v", parts)
