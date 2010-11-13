@@ -196,6 +196,15 @@ func indirect(x interface{}) interface{} {
 	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
 
+type op struct {
+	p interface{}
+	f func(*Server, interface{}) (interface{}, os.Error)
+}
+
+var ops = map[string]op{
+	"set":{new(*proto.ReqSet), set},
+}
+
 func (c *conn) serve() {
 	logger := util.NewLogger("%v", c.c.RemoteAddr())
 	logger.Println("accepted connection")
@@ -212,11 +221,10 @@ func (c *conn) serve() {
 
 		rlogger := util.NewLogger("%v - req [%d]", c.c.RemoteAddr(), rid)
 
-		if verb == "set" {
-			rlogger.Printf("set %v", data)
+		if o, ok := ops[verb]; ok {
+			rlogger.Printf("%s %v", verb, data)
 
-			var p interface{} = new(*proto.ReqSet)
-			err := proto.Fit(data, p)
+			err := proto.Fit(data, o.p)
 			if err != nil {
 				c.SendError(rid, err.String())
 				continue
@@ -227,7 +235,7 @@ func (c *conn) serve() {
 				continue
 			}
 
-			res, err := set(c.s, indirect(p))
+			res, err := o.f(c.s, indirect(o.p))
 			if err != nil {
 				c.SendError(rid, err.String())
 			} else {
