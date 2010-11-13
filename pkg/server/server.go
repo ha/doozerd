@@ -199,10 +199,12 @@ func indirect(x interface{}) interface{} {
 type op struct {
 	p interface{}
 	f func(*Server, interface{}) (interface{}, os.Error)
+
+	redirect bool
 }
 
 var ops = map[string]op{
-	"set":{new(*proto.ReqSet), set},
+	"set":{p:new(*proto.ReqSet), f:set, redirect:true},
 }
 
 func (c *conn) serve() {
@@ -230,7 +232,7 @@ func (c *conn) serve() {
 				continue
 			}
 
-			if !c.cal {
+			if o.redirect && !c.cal {
 				c.redirect(rid)
 				continue
 			}
