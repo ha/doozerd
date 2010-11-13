@@ -142,6 +142,33 @@ func TestFitVal(t *testing.T) {
 	}
 }
 
+func TestFitNewPtr(t *testing.T) {
+	var p interface{} = new(*T)
+
+	x := []interface{}{1, hi, hi}
+	y := []interface{}{2, hi, hi}
+
+	err := Fit(x, p)
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+		return
+	}
+
+	r := **p.(**T)
+
+	err = Fit(y, p)
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+		return
+	}
+
+	s := **p.(**T)
+
+	if reflect.DeepEqual(r, s) {
+		t.Errorf("r and s are the same: %v", r)
+	}
+}
+
 func TestFitErr(t *testing.T) {
 	for i, f := range fitErrors {
 		i++

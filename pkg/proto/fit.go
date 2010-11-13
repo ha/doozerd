@@ -36,10 +36,8 @@ func fitValue(x interface{}, v reflect.Value) os.Error {
 			pv.PointTo(nil)
 			return nil
 		}
-		if pv.IsNil() {
-			pv.PointTo(reflect.MakeZero(pv.Type().(*reflect.PtrType).Elem()))
-			v = pv.Elem()
-		}
+		pv.PointTo(reflect.MakeZero(pv.Type().(*reflect.PtrType).Elem()))
+		v = pv.Elem()
 		pv, ok = v.(*reflect.PtrValue)
 	}
 
