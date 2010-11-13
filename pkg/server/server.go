@@ -182,6 +182,27 @@ func (c *conn) redirect(rid uint) {
 	}
 }
 
+func get(s *Server, data interface{}) (interface{}, os.Error) {
+	r := data.(*proto.ReqGet)
+
+	v, cas, err := s.Get(r.Path)
+	if err != nil {
+		return nil, err
+	}
+	return []interface{}{v, cas}, nil
+}
+
+func sget(s *Server, data interface{}) (interface{}, os.Error) {
+	r := data.(*proto.ReqGet)
+
+	body, err := s.Sget(r.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	return []interface{}{body}, nil
+}
+
 func set(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqSet)
 
@@ -190,6 +211,48 @@ func set(s *Server, data interface{}) (interface{}, os.Error) {
 		return nil, err
 	}
 	return []interface{}{strconv.Uitoa64(seqn)}, nil
+}
+
+func del(s *Server, data interface{}) (interface{}, os.Error) {
+	r := data.(*proto.ReqDel)
+
+	_, err := s.Del(r.Path, r.Cas)
+	if err != nil {
+		return nil, err
+	}
+
+	return []interface{}{"true"}, nil
+}
+
+func nop(s *Server, data interface{}) (interface{}, os.Error) {
+	s.Nop()
+	return []interface{}{"true"}, nil
+}
+
+func join(s *Server, data interface{}) (interface{}, os.Error) {
+	r := data.(*proto.ReqJoin)
+	key := s.Prefix + "/junta/members/" + r.Who
+	seqn, _, err := s.Set(key, r.Addr, store.Missing)
+	if err != nil {
+		return nil, err
+	}
+
+	done := make(chan int)
+	go s.AdvanceUntil(done)
+	s.St.Sync(seqn + uint64(s.Mg.Alpha()))
+	close(done)
+	seqn, snap := s.St.Snapshot()
+	return []interface{}{strconv.Uitoa64(seqn), snap}, nil
+}
+
+func checkin(s *Server, data interface{}) (interface{}, os.Error) {
+	r := data.(*proto.ReqCheckin)
+
+	t, cas, err := s.Checkin(r.Sid, r.Cas)
+	if err != nil {
+		return nil, err
+	}
+	return []interface{}{strconv.Itoa64(t), cas}, nil
 }
 
 func indirect(x interface{}) interface{} {
@@ -204,7 +267,13 @@ type op struct {
 }
 
 var ops = map[string]op{
+	"get":{p:new(*proto.ReqGet), f:get},
+	"sget":{p:new(*proto.ReqGet), f:sget},
 	"set":{p:new(*proto.ReqSet), f:set, redirect:true},
+	"del":{p:new(*proto.ReqDel), f:del, redirect:true},
+	"nop":{p:new(*[]interface{}), f:nop, redirect:true},
+	"join":{p:new(*proto.ReqJoin), f:join, redirect:true},
+	"checkin":{p:new(*proto.ReqCheckin), f:checkin, redirect:true},
 }
 
 func (c *conn) serve() {
@@ -246,153 +315,7 @@ func (c *conn) serve() {
 			continue
 		}
 
-		var parts []string
-		err = proto.Fit(data, &parts)
-		if err != nil {
-			c.SendError(rid, err.String())
-			continue
-		}
-
-		rlogger.Printf("received <%v>", parts)
-
-		switch verb {
-		default:
-			rlogger.Printf("unknown command <%s>", verb)
-			c.SendError(rid, proto.InvalidCommand+" "+verb)
-		case "del":
-			if len(parts) != 2 {
-				rlogger.Printf("invalid del command: %v", parts)
-				c.SendError(rid, "wrong number of parts")
-				break
-			}
-
-			leader := c.s.leader()
-			if !c.cal {
-				rlogger.Printf("redirect to %s", leader)
-				c.SendRedirect(rid, leader)
-				break
-			}
-
-			rlogger.Printf("del %q (cas %q)", parts[0], parts[1])
-			_, err := c.s.Del(parts[0], parts[1])
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				c.SendError(rid, err.String())
-			} else {
-				rlogger.Printf("good")
-				c.SendResponse(rid, []interface{}{"true"})
-			}
-		case "get":
-			if len(parts) != 1 {
-				rlogger.Printf("invalid get command: %v", parts)
-				c.SendError(rid, "wrong number of parts")
-				break
-			}
-			rlogger.Printf("get %q", parts[0])
-			v, cas, err := c.s.Get(parts[0])
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				c.SendError(rid, err.String())
-			} else {
-				rlogger.Println("good get cas", cas)
-				c.SendResponse(rid, []interface{}{v, cas})
-			}
-		case "sget":
-			if len(parts) != 1 {
-				rlogger.Printf("invalid sget command: %v", parts)
-				c.SendError(rid, "wrong number of parts")
-				break
-			}
-			rlogger.Printf("sget %q", parts[0])
-			body, err := c.s.Sget(parts[0])
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				c.SendError(rid, err.String())
-			} else {
-				rlogger.Printf("good %q", body)
-				c.SendResponse(rid, []interface{}{body})
-			}
-		case "nop":
-			if len(parts) != 0 {
-				rlogger.Printf("invalid nop command: %v", parts)
-				c.SendError(rid, "wrong number of parts")
-				break
-			}
-
-			leader := c.s.leader()
-			if !c.cal {
-				rlogger.Printf("redirect to %s", leader)
-				c.SendRedirect(rid, leader)
-				break
-			}
-
-			rlogger.Println("nop")
-			c.s.Nop()
-			rlogger.Printf("good")
-			c.SendResponse(rid, []interface{}{"true"})
-		case "join":
-			// join abc123 1.2.3.4:999
-			if len(parts) != 2 {
-				rlogger.Printf("invalid join command: %v", parts)
-				c.SendError(rid, "wrong number of parts")
-				break
-			}
-
-			leader := c.s.leader()
-			if !c.cal {
-				rlogger.Printf("redirect to %s", leader)
-				c.SendRedirect(rid, leader)
-				break
-			}
-
-			who, addr := parts[0], parts[1]
-			rlogger.Printf("membership requested for %s at %s", who, addr)
-
-			key := c.s.Prefix + "/junta/members/" + who
-
-			seqn, _, err := c.s.Set(key, addr, store.Missing)
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				c.SendError(rid, err.String())
-			} else {
-				rlogger.Printf("good")
-				done := make(chan int)
-				go c.s.AdvanceUntil(done)
-				c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
-				close(done)
-				seqn, snap := c.s.St.Snapshot()
-				c.SendResponse(rid, []interface{}{strconv.Uitoa64(seqn), snap})
-			}
-		case "checkin":
-			if len(parts) != 2 {
-				rlogger.Println("invalid checkin command:", parts)
-				c.SendError(rid, "wrong number of parts")
-				break
-			}
-
-			leader := c.s.leader()
-			if !c.cal {
-				addr := c.s.addrFor(leader)
-				if addr == "" {
-					rlogger.Printf("unknown address for leader: %s", leader)
-					c.SendError(rid, "unknown address for leader")
-					break
-				}
-
-				rlogger.Printf("redirect to %s", addr)
-				c.SendRedirect(rid, addr)
-				break
-			}
-
-			rlogger.Printf("checkin %q (cas %q)", parts[0], parts[1])
-			t, cas, err := c.s.Checkin(parts[0], parts[1])
-			if err != nil {
-				rlogger.Printf("bad: %s", err)
-				c.SendError(rid, err.String())
-			} else {
-				rlogger.Printf("good")
-				c.SendResponse(rid, []interface{}{strconv.Itoa64(t), cas})
-			}
-		}
+		rlogger.Printf("unknown command <%s>", verb)
+		c.SendError(rid, proto.InvalidCommand+" "+verb)
 	}
 }
