@@ -78,9 +78,9 @@ func (c *Client) callWithoutRedirect(verb string, a interface{}) ([]string, os.E
 	return proto.GetResponse(ch)
 }
 
-func (c *Client) call(n int, verb string, a ...interface{}) (parts []string, err os.Error) {
+func (c *Client) call(n int, verb string, data interface{}) (parts []string, err os.Error) {
 	for {
-		parts, err = c.callWithoutRedirect(verb, a)
+		parts, err = c.callWithoutRedirect(verb, data)
 		if r, ok := err.(proto.Redirect); ok {
 			c.lg.Println(r)
 			continue
@@ -102,7 +102,7 @@ func (c *Client) call(n int, verb string, a ...interface{}) (parts []string, err
 
 func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
 	var parts []string
-	parts, err = c.call(2, "join", id, addr)
+	parts, err = c.call(2, "join", proto.ReqJoin{id, addr})
 	if err != nil {
 		return
 	}
@@ -118,7 +118,7 @@ func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Err
 
 func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
 	var parts []string
-	parts, err = c.call(1, "set", path, body, cas)
+	parts, err = c.call(1, "set", proto.ReqSet{path, body, cas})
 	if err != nil {
 		return
 	}
@@ -128,7 +128,7 @@ func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
 
 func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
 	var parts []string
-	parts, err = c.call(1, "del", path, cas)
+	parts, err = c.call(1, "del", proto.ReqDel{path, cas})
 	if err != nil {
 		return
 	}
@@ -137,14 +137,14 @@ func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
 }
 
 func (c *Client) Nop() os.Error {
-	_, err := c.call(1, "nop")
+	_, err := c.call(1, "nop", nil)
 	return err
 }
 
 func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
 	var parts []string
 
-	parts, err = c.call(2, "checkin", id, cas)
+	parts, err = c.call(2, "checkin", proto.ReqCheckin{id, cas})
 	if err != nil {
 		return
 	}
