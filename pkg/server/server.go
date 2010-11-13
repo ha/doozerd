@@ -284,7 +284,7 @@ func (c *conn) serve() {
 				continue
 			}
 
-			c.handle(rid, o.f, indirect(o.p))
+			go c.handle(rid, o.f, indirect(o.p))
 			continue
 		}
 
