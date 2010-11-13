@@ -135,18 +135,12 @@ func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 
 // Client functions
 
-func (c *Conn) next() uint {
-	c.wl.Lock()
-	defer c.wl.Unlock()
-	c.id++
-	return c.id
-}
-
 func (c *Conn) SendRequest(verb string, data interface{}) ([]string, os.Error) {
 	ch := make(chan interface{})
-	id := c.next()
 
 	c.bl.Lock()
+	c.id++
+	id := c.id
 	c.cb[id] = ch
 	c.bl.Unlock()
 
