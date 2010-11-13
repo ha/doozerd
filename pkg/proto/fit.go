@@ -147,6 +147,9 @@ func fitSeq(s []interface{}, v reflect.Value) os.Error {
 			}
 		}
 	default:
+		if v == nil {
+			return &FitError{"cannot hold a sequence", s, "slot", nil}
+		}
 		return &FitError{"cannot hold a sequence", s, "slot", v.Type()}
 	}
 

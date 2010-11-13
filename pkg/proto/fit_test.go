@@ -66,6 +66,8 @@ var fitTests = []fitTest{
 
 	{nil, &T{I:1}, T{}},
 	{[]interface{}{int64(1), hi, hi}, &T{}, T{1, string(hi), hi}},
+	{[]interface{}{int64(1), hi, hi}, new(T), T{1, string(hi), hi}},
+	{[]interface{}{int64(1), hi, hi}, new(*T), &T{1, string(hi), hi}},
 
 	{[]interface{}{[]interface{}{int64(1), hi, hi},
 	               []interface{}{int64(1), hi, hi}},
@@ -94,6 +96,7 @@ var fitErrors = []fitTest{
 	{[]interface{}{hi, hi}, new(interface{a()}), nil},
 
 	{ResponseError("hi"), new(int), ResponseError("hi")},
+	{[]interface{}{int64(1), hi, hi}, *new(*T), nil},
 }
 
 func TestFitVal(t *testing.T) {
