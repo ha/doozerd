@@ -70,12 +70,7 @@ func (c *Client) callWithoutRedirect(verb string, a interface{}) ([]string, os.E
 		return nil, err
 	}
 
-	ch, err := p.SendRequest(verb, a)
-	if err != nil {
-		return nil, err
-	}
-
-	return proto.GetResponse(ch)
+	return p.SendRequest(verb, a)
 }
 
 func (c *Client) call(n int, verb string, data interface{}) (parts []string, err os.Error) {

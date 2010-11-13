@@ -143,7 +143,7 @@ func (c *Conn) next() uint {
 	return c.id
 }
 
-func (c *Conn) SendRequest(verb string, data interface{}) (<-chan interface{}, os.Error) {
+func (c *Conn) SendRequest(verb string, data interface{}) ([]string, os.Error) {
 	ch := make(chan interface{})
 	id := c.next()
 
@@ -159,11 +159,7 @@ func (c *Conn) SendRequest(verb string, data interface{}) (<-chan interface{}, o
 		return nil, &ProtoError{id, SendReq, err}
 	}
 
-	return ch, nil
-}
-
-func GetResponse(ch <-chan interface{}) ([]string, os.Error) {
-	data := <-ch
+	data = <-ch
 
 	if e, ok := data.(os.Error); ok {
 		return nil, e
