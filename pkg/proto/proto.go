@@ -113,14 +113,13 @@ func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 	c.rl.Lock()
 	defer c.rl.Unlock()
 
-	id := c.next()
 	data, err := decode(c.r)
 	if err != nil {
 		// TODO poison
 		if err == os.EOF {
 			return 0, "", nil, err
 		} else {
-			return 0, "", nil, &ProtoError{id, ReadReq, err}
+			return 0, "", nil, &ProtoError{0, ReadReq, err}
 		}
 	}
 
