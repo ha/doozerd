@@ -226,9 +226,11 @@ func indirect(x interface{}) interface{} {
 	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
 
+type handler func(*Server, interface{}) (interface{}, os.Error)
+
 type op struct {
 	p interface{}
-	f func(*Server, interface{}) (interface{}, os.Error)
+	f handler
 
 	redirect bool
 }
@@ -241,6 +243,15 @@ var ops = map[string]op{
 	"nop":{p:new(*[]interface{}), f:nop, redirect:true},
 	"join":{p:new(*proto.ReqJoin), f:join, redirect:true},
 	"checkin":{p:new(*proto.ReqCheckin), f:checkin, redirect:true},
+}
+
+func (c *conn) handle(rid uint, f handler, data interface{}) {
+	res, err := f(c.s, data)
+	if err != nil {
+		c.SendError(rid, err.String())
+	} else {
+		c.SendResponse(rid, res)
+	}
 }
 
 func (c *conn) serve() {
@@ -273,12 +284,7 @@ func (c *conn) serve() {
 				continue
 			}
 
-			res, err := o.f(c.s, indirect(o.p))
-			if err != nil {
-				c.SendError(rid, err.String())
-			} else {
-				c.SendResponse(rid, res)
-			}
+			c.handle(rid, o.f, indirect(o.p))
 			continue
 		}
 
