@@ -117,58 +117,10 @@ func (sv *Server) checkPath(path string) (string, os.Error) {
 	return path[len(sv.Prefix):], nil
 }
 
-func (sv *Server) Set(path, body, cas string) (uint64, string, os.Error) {
-	shortPath, err := sv.checkPath(path)
-	if err != nil {
-		return 0, "", err
-	}
-
-	return paxos.Set(sv.Mg, shortPath, body, cas)
-}
-
-func (sv *Server) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
-	t = time.Nanoseconds() + lease
-	_, ncas, err = paxos.Set(sv.Mg, "/session/"+id, strconv.Itoa64(t), cas)
-	return
-}
-
-func (sv *Server) Nop() {
-	sv.Mg.Propose(store.Nop)
-}
-
-func (sv *Server) Del(path, cas string) (uint64, os.Error) {
-	shortPath, err := sv.checkPath(path)
-	if err != nil {
-		return 0, err
-	}
-
-	return paxos.Del(sv.Mg, shortPath, cas)
-}
-
-func (sv *Server) Get(path string) (v []string, cas string, err os.Error) {
-	var shortPath string
-	shortPath, err = sv.checkPath(path)
-	if err != nil {
-		return
-	}
-
-	v, cas = sv.St.Get(shortPath)
-	return
-}
-
-func (sv *Server) Sget(path string) (body string, err os.Error) {
-	shortPath, err := sv.checkPath(path)
-	if err != nil {
-		return "", err
-	}
-
-	return store.GetString(sv.St.SyncPath(shortPath), shortPath), nil
-}
-
 // Repeatedly propose nop values until a successful read from `done`.
 func (sv *Server) AdvanceUntil(done chan int) {
 	for _, ok := <-done; !ok; _, ok = <-done {
-		sv.Nop()
+		sv.Mg.Propose(store.Nop)
 	}
 }
 
@@ -184,18 +136,23 @@ func (c *conn) redirect(rid uint) {
 
 func get(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqGet)
-
-	v, cas, err := s.Get(r.Path)
+	shortPath, err := s.checkPath(r.Path)
 	if err != nil {
 		return nil, err
 	}
+
+	v, cas := s.St.Get(shortPath)
 	return []interface{}{v, cas}, nil
 }
 
 func sget(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqGet)
+	shortPath, err := s.checkPath(r.Path)
+	if err != nil {
+		return "", err
+	}
 
-	body, err := s.Sget(r.Path)
+	body, err := store.GetString(s.St.SyncPath(shortPath), shortPath), nil
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +163,12 @@ func sget(s *Server, data interface{}) (interface{}, os.Error) {
 func set(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqSet)
 
-	seqn, _, err := s.Set(r.Path, r.Body, r.Cas)
+	shortPath, err := s.checkPath(r.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	seqn, _, err := paxos.Set(s.Mg, shortPath, r.Body, r.Cas)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +178,12 @@ func set(s *Server, data interface{}) (interface{}, os.Error) {
 func del(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqDel)
 
-	_, err := s.Del(r.Path, r.Cas)
+	shortPath, err := s.checkPath(r.Path)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = paxos.Del(s.Mg, shortPath, r.Cas)
 	if err != nil {
 		return nil, err
 	}
@@ -225,14 +192,14 @@ func del(s *Server, data interface{}) (interface{}, os.Error) {
 }
 
 func nop(s *Server, data interface{}) (interface{}, os.Error) {
-	s.Nop()
+	s.Mg.Propose(store.Nop)
 	return []interface{}{"true"}, nil
 }
 
 func join(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqJoin)
-	key := s.Prefix + "/junta/members/" + r.Who
-	seqn, _, err := s.Set(key, r.Addr, store.Missing)
+	key := "/junta/members/" + r.Who
+	seqn, _, err := paxos.Set(s.Mg, key, r.Addr, store.Missing)
 	if err != nil {
 		return nil, err
 	}
@@ -247,8 +214,8 @@ func join(s *Server, data interface{}) (interface{}, os.Error) {
 
 func checkin(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqCheckin)
-
-	t, cas, err := s.Checkin(r.Sid, r.Cas)
+	t := time.Nanoseconds() + lease
+	_, cas, err := paxos.Set(s.Mg, "/session/"+r.Sid, strconv.Itoa64(t), r.Cas)
 	if err != nil {
 		return nil, err
 	}
