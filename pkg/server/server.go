@@ -209,7 +209,7 @@ func join(s *Server, data interface{}) (interface{}, os.Error) {
 	s.St.Sync(seqn + uint64(s.Mg.Alpha()))
 	close(done)
 	seqn, snap := s.St.Snapshot()
-	return proto.ResJoin{strconv.Uitoa64(seqn), snap}, nil
+	return proto.ResJoin{seqn, snap}, nil
 }
 
 func checkin(s *Server, data interface{}) (interface{}, os.Error) {
@@ -219,7 +219,7 @@ func checkin(s *Server, data interface{}) (interface{}, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	return proto.ResCheckin{strconv.Itoa64(t), cas}, nil
+	return proto.ResCheckin{t, cas}, nil
 }
 
 func indirect(x interface{}) interface{} {

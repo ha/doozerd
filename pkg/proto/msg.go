@@ -27,9 +27,11 @@ type ResGet struct {
 }
 
 type ResJoin struct {
-    Seqn, Snapshot string
+    Seqn     uint64
+    Snapshot string
 }
 
 type ResCheckin struct {
-    T, Cas string
+    T   int64
+    Cas string
 }

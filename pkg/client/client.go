@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"sync"
 )
 
@@ -96,13 +95,7 @@ func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Err
 		return
 	}
 
-	seqn, err = strconv.Btoui64(r.Seqn, 10)
-	if err != nil {
-		return
-	}
-
-	snapshot = r.Snapshot
-	return
+	return r.Seqn, r.Snapshot, nil
 }
 
 func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
@@ -126,10 +119,5 @@ func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
 		return
 	}
 
-	t, err = strconv.Btoi64(r.T, 10)
-	if err != nil {
-		return
-	}
-
-	return t, r.Cas, nil
+	return r.T, r.Cas, nil
 }
