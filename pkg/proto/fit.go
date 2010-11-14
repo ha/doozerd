@@ -19,11 +19,20 @@ func (e *FitError) String() string {
 }
 
 // Slot must be a pointer.
+// As a special case, slot may be nil if data is also nil.
 func Fit(data, slot interface{}) os.Error {
+	if data == nil && slot == nil {
+		return nil
+	}
+
 	v := reflect.NewValue(slot)
 	pv, ok := v.(*reflect.PtrValue)
 	if !ok {
-		return &FitError{"not a pointer", data, "slot", v.Type()}
+		err := &FitError{Desc:"not a pointer", Val:data, Label:"slot"}
+		if v != nil {
+			err.Type = v.Type()
+		}
+		return err
 	}
 
 	return fitValue(data, pv.Elem())

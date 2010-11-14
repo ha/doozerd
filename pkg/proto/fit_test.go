@@ -103,6 +103,13 @@ var fitErrors = []fitTest{
 	{[]interface{}{1, 1}, new([3]int), nil},
 }
 
+func TestFitNil(t *testing.T) {
+	err := Fit(nil, nil)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+}
+
 func TestFitVal(t *testing.T) {
 	for i, f := range fitTests {
 		i++
