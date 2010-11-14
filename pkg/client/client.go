@@ -90,59 +90,46 @@ func (c *Client) call(verb string, data, slot interface{}) (err os.Error) {
 }
 
 func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
-	var parts [2]string
-	err = c.call("join", proto.ReqJoin{id, addr}, &parts)
+	var r proto.ResJoin
+	err = c.call("join", proto.ReqJoin{id, addr}, &r)
 	if err != nil {
 		return
 	}
 
-	seqn, err = strconv.Btoui64(parts[0], 10)
+	seqn, err = strconv.Btoui64(r.Seqn, 10)
 	if err != nil {
 		return
 	}
 
-	snapshot = parts[1]
+	snapshot = r.Snapshot
 	return
 }
 
 func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
-	var parts [1]string
-	err = c.call("set", proto.ReqSet{path, body, cas}, &parts)
-	if err != nil {
-		return
-	}
-
-	return strconv.Btoui64(parts[0], 10)
+	err = c.call("set", proto.ReqSet{path, body, cas}, &seqn)
+	return
 }
 
 func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
-	var parts [1]string
-	err = c.call("del", proto.ReqDel{path, cas}, &parts)
-	if err != nil {
-		return
-	}
-
-	return strconv.Btoui64(parts[0], 10)
+	err = c.call("del", proto.ReqDel{path, cas}, &seqn)
+	return
 }
 
 func (c *Client) Nop() os.Error {
-	var parts [0]string
-	err := c.call("nop", nil, &parts)
-	return err
+	return c.call("nop", nil, nil)
 }
 
 func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
-	var parts [2]string
-
-	err = c.call("checkin", proto.ReqCheckin{id, cas}, &parts)
+	var r proto.ResCheckin
+	err = c.call("checkin", proto.ReqCheckin{id, cas}, &r)
 	if err != nil {
 		return
 	}
 
-	t, err = strconv.Btoi64(parts[0], 10)
+	t, err = strconv.Btoi64(r.T, 10)
 	if err != nil {
 		return
 	}
 
-	return t, parts[1], nil
+	return t, r.Cas, nil
 }

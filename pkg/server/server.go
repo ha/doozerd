@@ -172,7 +172,7 @@ func set(s *Server, data interface{}) (interface{}, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	return []interface{}{strconv.Uitoa64(seqn)}, nil
+	return seqn, nil
 }
 
 func del(s *Server, data interface{}) (interface{}, os.Error) {
@@ -183,17 +183,17 @@ func del(s *Server, data interface{}) (interface{}, os.Error) {
 		return 0, err
 	}
 
-	_, err = paxos.Del(s.Mg, shortPath, r.Cas)
+	seqn, err := paxos.Del(s.Mg, shortPath, r.Cas)
 	if err != nil {
 		return nil, err
 	}
 
-	return []interface{}{"true"}, nil
+	return seqn, nil
 }
 
 func nop(s *Server, data interface{}) (interface{}, os.Error) {
 	s.Mg.Propose(store.Nop)
-	return []interface{}{"true"}, nil
+	return nil, nil
 }
 
 func join(s *Server, data interface{}) (interface{}, os.Error) {

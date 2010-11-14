@@ -20,3 +20,11 @@ type ReqJoin struct {
 type ReqCheckin struct {
     Sid, Cas string
 }
+
+type ResJoin struct {
+    Seqn, Snapshot string
+}
+
+type ResCheckin struct {
+    T, Cas string
+}
