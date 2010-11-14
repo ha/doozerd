@@ -64,18 +64,18 @@ func (c *Client) proto() (*proto.Conn, os.Error) {
 	return c.p, nil
 }
 
-func (c *Client) callWithoutRedirect(verb string, a interface{}) ([]string, os.Error) {
+func (c *Client) callWithoutRedirect(verb string, a, slot interface{}) os.Error {
 	p, err := c.proto()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return p.SendRequest(verb, a)
+	return p.SendRequest(verb, a, slot)
 }
 
 func (c *Client) call(n int, verb string, data interface{}) (parts []string, err os.Error) {
 	for {
-		parts, err = c.callWithoutRedirect(verb, data)
+		err = c.callWithoutRedirect(verb, data, &parts)
 		if r, ok := err.(proto.Redirect); ok {
 			c.lg.Println(r)
 			continue

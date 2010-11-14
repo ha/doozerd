@@ -135,7 +135,7 @@ func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 
 // Client functions
 
-func (c *Conn) SendRequest(verb string, data interface{}) ([]string, os.Error) {
+func (c *Conn) SendRequest(verb string, data, slot interface{}) os.Error {
 	ch := make(chan interface{})
 
 	c.bl.Lock()
@@ -149,21 +149,20 @@ func (c *Conn) SendRequest(verb string, data interface{}) ([]string, os.Error) {
 	c.wl.Unlock()
 	if err != nil {
 		// TODO poison
-		return nil, &ProtoError{id, SendReq, err}
+		return &ProtoError{id, SendReq, err}
 	}
 
 	data = <-ch
-
 	if e, ok := data.(os.Error); ok {
-		return nil, e
+		return e
 	}
 
 	logger.Println("got data", data)
-	parts, ok := stringParts(data)
-	if !ok {
-		return nil, &ProtoError{0, ReadRes, os.NewError("not strings")}
+	err = Fit(data, slot)
+	if err != nil {
+		return &ProtoError{id, ReadRes, err}
 	}
-	return parts, nil
+	return nil
 }
 
 func (c *Conn) ReadResponses() {
@@ -403,20 +402,4 @@ func readLineBytes(r *bufio.Reader) ([]byte, os.Error) {
 		}
 	}
 	return line[0:n], err
-}
-
-func stringParts(d interface{}) (a []string, ok bool) {
-	t, ok := d.([]interface{})
-	if !ok {
-		return nil, false
-	}
-	a = make([]string, len(t))
-	for i, x := range t {
-		b, ok := x.([]byte)
-		if !ok {
-			return nil, false
-		}
-		a[i] = string(b)
-	}
-	return a, true
 }
