@@ -136,6 +136,16 @@ func fitSeq(s []interface{}, v reflect.Value) os.Error {
 				return err
 			}
 		}
+	case *reflect.ArrayValue:
+		if len(s) != t.Len() {
+			return &FitError{"arity mismatch", s, "array" , v.Type()}
+		}
+		for i := range s {
+			err := fitValue(s[i], t.Elem(i))
+			if err != nil {
+				return err
+			}
+		}
 	case *reflect.SliceValue:
 		t.Set(reflect.MakeSlice(t.Type().(*reflect.SliceType), len(s), len(s)))
 		for i := range s {
