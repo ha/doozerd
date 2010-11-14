@@ -21,6 +21,11 @@ type ReqCheckin struct {
     Sid, Cas string
 }
 
+type ResGet struct {
+    V   []string
+    Cas string
+}
+
 type ResJoin struct {
     Seqn, Snapshot string
 }

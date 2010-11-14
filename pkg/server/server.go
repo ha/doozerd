@@ -142,7 +142,7 @@ func get(s *Server, data interface{}) (interface{}, os.Error) {
 	}
 
 	v, cas := s.St.Get(shortPath)
-	return []interface{}{v, cas}, nil
+	return proto.ResGet{v, cas}, nil
 }
 
 func sget(s *Server, data interface{}) (interface{}, os.Error) {
@@ -157,7 +157,7 @@ func sget(s *Server, data interface{}) (interface{}, os.Error) {
 		return nil, err
 	}
 
-	return []interface{}{body}, nil
+	return body, nil
 }
 
 func set(s *Server, data interface{}) (interface{}, os.Error) {
@@ -209,7 +209,7 @@ func join(s *Server, data interface{}) (interface{}, os.Error) {
 	s.St.Sync(seqn + uint64(s.Mg.Alpha()))
 	close(done)
 	seqn, snap := s.St.Snapshot()
-	return []interface{}{strconv.Uitoa64(seqn), snap}, nil
+	return proto.ResJoin{strconv.Uitoa64(seqn), snap}, nil
 }
 
 func checkin(s *Server, data interface{}) (interface{}, os.Error) {
@@ -219,7 +219,7 @@ func checkin(s *Server, data interface{}) (interface{}, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	return []interface{}{strconv.Itoa64(t), cas}, nil
+	return proto.ResCheckin{strconv.Itoa64(t), cas}, nil
 }
 
 func indirect(x interface{}) interface{} {
