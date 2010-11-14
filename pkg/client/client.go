@@ -73,9 +73,9 @@ func (c *Client) callWithoutRedirect(verb string, a, slot interface{}) os.Error 
 	return p.SendRequest(verb, a, slot)
 }
 
-func (c *Client) call(n int, verb string, data interface{}) (parts []string, err os.Error) {
+func (c *Client) call(verb string, data, slot interface{}) (err os.Error) {
 	for {
-		err = c.callWithoutRedirect(verb, data, &parts)
+		err = c.callWithoutRedirect(verb, data, slot)
 		if r, ok := err.(proto.Redirect); ok {
 			c.lg.Println(r)
 			continue
@@ -84,20 +84,14 @@ func (c *Client) call(n int, verb string, data interface{}) (parts []string, err
 	}
 	if err != nil {
 		c.lg.Println(err)
-		return
 	}
 
-	if len(parts) != n {
-		err = ErrInvalidResponse
-		return
-	}
-
-	return
+	return err
 }
 
 func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
-	var parts []string
-	parts, err = c.call(2, "join", proto.ReqJoin{id, addr})
+	var parts [2]string
+	err = c.call("join", proto.ReqJoin{id, addr}, &parts)
 	if err != nil {
 		return
 	}
@@ -112,8 +106,8 @@ func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Err
 }
 
 func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
-	var parts []string
-	parts, err = c.call(1, "set", proto.ReqSet{path, body, cas})
+	var parts [1]string
+	err = c.call("set", proto.ReqSet{path, body, cas}, &parts)
 	if err != nil {
 		return
 	}
@@ -122,8 +116,8 @@ func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
 }
 
 func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
-	var parts []string
-	parts, err = c.call(1, "del", proto.ReqDel{path, cas})
+	var parts [1]string
+	err = c.call("del", proto.ReqDel{path, cas}, &parts)
 	if err != nil {
 		return
 	}
@@ -132,14 +126,15 @@ func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
 }
 
 func (c *Client) Nop() os.Error {
-	_, err := c.call(1, "nop", nil)
+	var parts [0]string
+	err := c.call("nop", nil, &parts)
 	return err
 }
 
 func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
-	var parts []string
+	var parts [2]string
 
-	parts, err = c.call(2, "checkin", proto.ReqCheckin{id, cas})
+	err = c.call("checkin", proto.ReqCheckin{id, cas}, &parts)
 	if err != nil {
 		return
 	}
