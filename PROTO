@@ -26,3 +26,13 @@ WALK    opid glob sid        [opid flag path body cas] ...
 
 # Watch tree.
 WATCH   opid glob            [opid flag path body cas] ...
+
+
+FLAGS:
+
+Closed = 1 << iota
+  The opid in given in the response is now and forever closed.  The trailing
+  arguments are to be ignored This indicates to clients that they should
+  clean-up any listeners for that opid.
+Last
+  Same as above except the trailing arguments are valid.
