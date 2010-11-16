@@ -43,8 +43,8 @@ type Conn struct {
 }
 
 type request struct {
-	Id   uint
 	Verb Line
+	Id   uint
 	Data interface{}
 }
 
@@ -135,7 +135,7 @@ func (c *Conn) SendRequest(verb string, data, slot interface{}) os.Error {
 	c.bl.Unlock()
 
 	c.wl.Lock()
-	err := encode(c.c, request{id, Line(verb), data})
+	err := encode(c.c, request{Line(verb), id, data})
 	c.wl.Unlock()
 	if err != nil {
 		// TODO poison
