@@ -69,16 +69,6 @@ func (e ResponseError) String() string {
 	return string(e)
 }
 
-type Redirect string
-
-func (e Redirect) String() string {
-	return "redirect to " + e.Addr()
-}
-
-func (e Redirect) Addr() string {
-	return string(e)
-}
-
 func NewConn(rw io.ReadWriteCloser) *Conn {
 	return &Conn{
 		c:rw,
@@ -180,7 +170,8 @@ func (c *Conn) ReadResponses() {
 		if re, ok := err.(ResponseError); ok {
 			if re[0:9] == "REDIRECT:" {
 				c.RedirectAddr = strings.TrimSpace(string(re)[10:])
-				err = Redirect(c.RedirectAddr)
+				logger.Println("redirect to", c.RedirectAddr)
+				err = os.EAGAIN
 			}
 		}
 		if err != nil {

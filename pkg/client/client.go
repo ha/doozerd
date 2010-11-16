@@ -73,13 +73,8 @@ func (c *Client) callWithoutRedirect(verb string, a, slot interface{}) os.Error 
 }
 
 func (c *Client) call(verb string, data, slot interface{}) (err os.Error) {
-	for {
+	for err = os.EAGAIN; err == os.EAGAIN; {
 		err = c.callWithoutRedirect(verb, data, slot)
-		if r, ok := err.(proto.Redirect); ok {
-			c.lg.Println(r)
-			continue
-		}
-		break
 	}
 	if err != nil {
 		c.lg.Println(err)
