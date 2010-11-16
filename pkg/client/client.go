@@ -69,7 +69,12 @@ func (c *Client) callWithoutRedirect(verb string, a, slot interface{}) os.Error 
 		return err
 	}
 
-	return p.SendRequest(verb, a, slot)
+	r, err := p.SendRequest(verb, a)
+	if err != nil {
+		return err
+	}
+
+	return r.Get(slot)
 }
 
 func (c *Client) call(verb string, data, slot interface{}) (err os.Error) {

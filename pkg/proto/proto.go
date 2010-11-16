@@ -135,7 +135,7 @@ func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 
 // Client functions
 
-func (c *Conn) SendRequest(verb string, data, slot interface{}) os.Error {
+func (c *Conn) SendRequest(verb string, data interface{}) (Response, os.Error) {
 	ch := make(chan interface{})
 
 	c.bl.Lock()
@@ -149,20 +149,10 @@ func (c *Conn) SendRequest(verb string, data, slot interface{}) os.Error {
 	c.wl.Unlock()
 	if err != nil {
 		// TODO poison
-		return &ProtoError{id, SendReq, err}
+		return nil, &ProtoError{id, SendReq, err}
 	}
 
-	data = <-ch
-	if e, ok := data.(os.Error); ok {
-		return e
-	}
-
-	logger.Println("got data", data)
-	err = Fit(data, slot)
-	if err != nil {
-		return &ProtoError{id, ReadRes, err}
-	}
-	return nil
+	return Response(ch), nil
 }
 
 func (c *Conn) ReadResponses() {
@@ -208,6 +198,22 @@ func (c *Conn) ReadResponses() {
 
 	// TODO poison
 	// TODO send errors to all waiting requests
+}
+
+type Response <-chan interface{}
+
+func (r Response) Get(slot interface{}) os.Error {
+	data := <-r
+	if e, ok := data.(os.Error); ok {
+		return e
+	}
+
+	logger.Println("got data", data)
+	err := Fit(data, slot)
+	if err != nil {
+		return &ProtoError{0, ReadRes, err}
+	}
+	return nil
 }
 
 // Helpers
