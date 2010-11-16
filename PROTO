@@ -4,25 +4,25 @@ VERB    ARGS                 RETURN ARGS
 ----    ----                 -----------------------
 
 # Save a point-in-time snapshot for future reference.
-SNAP    opid                 opid sid
+SNAP    opid                 opid flag sid
 
 # I'll give you 1 guess.
-SET     opid path body cas   opid cas
+SET     opid path body cas   opid flag cas
 
 # Get a value from snap `sid`.  If `sid` is `0` then value
 # is taken from current live tree.
-GET     opid path sid        opid body
+GET     opid path sid        opid flag body
 
-DEL     opid path            opid
+DEL     opid path            opid flag
 
 # Set a paths value to the servers Nanoseconds()+interval
-SETT    opid interval cas             opid cas
+SETT    opid interval cas    opid flag cas
 
 # Increment the servers seqn without mutation.
-NOOP    opid                 opid
+NOOP    opid                 opid flag
 
 # Walk tree `sid` SAX style.
-WALK    opid glob sid        [opid path body cas] ...
+WALK    opid glob sid        [opid flag path body cas] ...
 
-# Watch tree `sid`.
-WATCH   opid glob sid        [opid path body cas] ...
+# Watch tree.
+WATCH   opid glob            [opid flag path body cas] ...
