@@ -2,6 +2,38 @@
 
 set -e
 
-./fr 1 & sleep 1
-./fr 2 & sleep 1
-./fr 3 & sleep 1
+n=$1
+[ -z "$n" ] && n=3
+
+which seq  && seq=seq
+which gseq && seq=gseq
+
+if [ -z "$seq" ]
+then
+    printf 'Could not find `seq` or `gseq`\n'
+    exit 1
+fi
+
+waitall() {
+    for _ in $($seq $n)
+    do wait
+    done
+}
+
+quit() {
+    killall juntad
+    waitall
+}
+
+trap quit INT
+
+for i in $($seq $n)
+do
+    uname | grep -q Darwin && {
+        sudo ifconfig lo0 add 127.0.0.$n
+    }
+
+    ./fr $i & sleep 1
+done
+
+waitall
