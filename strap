@@ -29,8 +29,8 @@ trap quit INT
 
 for i in $($seq $n)
 do
-    uname | grep -q Darwin && {
-        sudo ifconfig lo0 add 127.0.0.$n
+    (uname | grep -q Darwin) && {
+        sudo ifconfig lo0 add 127.0.0.$i
     }
 
     ./fr $i & sleep 1
