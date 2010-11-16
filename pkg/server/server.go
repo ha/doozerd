@@ -250,7 +250,7 @@ func (c *conn) handle(rid uint, f handler, data interface{}) {
 	if err != nil {
 		c.SendError(rid, err.String())
 	} else {
-		c.SendResponse(rid, res)
+		c.SendResponse(rid, proto.Last, res)
 	}
 }
 

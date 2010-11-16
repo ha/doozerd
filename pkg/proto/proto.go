@@ -25,6 +25,11 @@ const (
 	InvalidCommand = "invalid command"
 )
 
+// Response flags
+const (
+	Last = 1 << iota
+)
+
 var crnl = []byte{'\r', '\n'}
 
 var logger = util.NewLogger("proto")
@@ -50,7 +55,12 @@ type request struct {
 
 type response struct {
 	Id   uint
+	Flag uint
 	Data interface{}
+}
+
+func (r *response) IsLast() bool {
+	return r.Flag & Last != 0
 }
 
 type ProtoError struct {
@@ -79,11 +89,11 @@ func NewConn(rw io.ReadWriteCloser) *Conn {
 
 // Server functions
 
-func (c *Conn) SendResponse(id uint, data interface{}) os.Error {
+func (c *Conn) SendResponse(id, flag uint, data interface{}) os.Error {
 	c.wl.Lock()
 	defer c.wl.Unlock()
 
-	err := encode(c.c, response{id, data})
+	err := encode(c.c, response{id, flag, data})
 	if err != nil {
 		// TODO poison
 		return &ProtoError{id, SendRes, err}
@@ -92,11 +102,11 @@ func (c *Conn) SendResponse(id uint, data interface{}) os.Error {
 }
 
 func (c *Conn) SendError(id uint, msg string) os.Error {
-	return c.SendResponse(id, os.NewError("ERR: "+msg))
+	return c.SendResponse(id, Last, os.NewError("ERR: "+msg))
 }
 
 func (c *Conn) SendRedirect(id uint, addr string) os.Error {
-	return c.SendResponse(id, os.NewError("REDIRECT: "+addr))
+	return c.SendResponse(id, Last, os.NewError("REDIRECT: "+addr))
 }
 
 func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
@@ -184,12 +194,15 @@ func (c *Conn) ReadResponses() {
 
 		c.bl.Lock()
 		ch, ok := c.cb[res.Id]
-		if ok {
+		if ok && res.IsLast() {
 			c.cb[res.Id] = nil, false
 		}
 		c.bl.Unlock()
 		if ok {
 			ch <- res.Data
+			if res.IsLast() {
+				close(ch)
+			}
 		}
 	}
 
