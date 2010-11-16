@@ -27,7 +27,8 @@ const (
 
 // Response flags
 const (
-	Last = 1 << iota
+	Closed = 1 << iota
+	Last
 )
 
 var crnl = []byte{'\r', '\n'}
@@ -59,8 +60,12 @@ type response struct {
 	Data interface{}
 }
 
-func (r *response) IsLast() bool {
-	return r.Flag & Last != 0
+func (r *response) IsDone() bool {
+	return r.Flag & (Closed|Last) != 0
+}
+
+func (r *response) IsValid() bool {
+	return r.Flag & Closed == 0
 }
 
 type ProtoError struct {
@@ -184,13 +189,15 @@ func (c *Conn) ReadResponses() {
 
 		c.bl.Lock()
 		ch, ok := c.cb[res.Id]
-		if ok && res.IsLast() {
+		if ok && res.IsDone() {
 			c.cb[res.Id] = nil, false
 		}
 		c.bl.Unlock()
 		if ok {
-			ch <- res.Data
-			if res.IsLast() {
+			if res.IsValid() {
+				ch <- res.Data
+			}
+			if res.IsDone() {
 				close(ch)
 			}
 		}
