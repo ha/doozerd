@@ -44,7 +44,7 @@ func Serve(listener net.Listener) {
 	http.Serve(listener, nil)
 }
 
-func send(ws *websocket.Conn, path string, evs chan store.Event, logger *log.Logger) {
+func send(ws *websocket.Conn, path string, evs <-chan store.Event, logger *log.Logger) {
 	defer close(evs)
 	l := len(path) - 1
 	for ev := range evs {
@@ -65,12 +65,12 @@ func send(ws *websocket.Conn, path string, evs chan store.Event, logger *log.Log
 }
 
 func evServer(w http.ResponseWriter, r *http.Request) {
-	evs, wevs := make(chan store.Event), make(chan store.Event)
+	wevs := make(chan store.Event)
 	logger := util.NewLogger(w.RemoteAddr())
 	path := r.URL.Path[len(evPrefix):]
 	logger.Println("new", path)
 
-	Store.WatchOn(path+"**", evs)
+	evs := Store.Watch(path+"**")
 
 	// TODO convert store.Snapshot to json and use that
 	go func() {

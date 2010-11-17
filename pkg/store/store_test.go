@@ -426,8 +426,7 @@ func TestDelDirParents(t *testing.T) {
 func TestWatchSet(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/x", ch)
+	ch := s.Watch("/x")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -446,8 +445,7 @@ func TestWatchSet(t *testing.T) {
 func TestWatchSetOutOfOrder(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/x", ch)
+	ch := s.Watch("/x")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -467,8 +465,7 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 func TestWatchDel(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/x", ch)
+	ch := s.Watch("/x")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -493,8 +490,7 @@ func TestWatchDel(t *testing.T) {
 func TestWatchAdd(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/*", ch)
+	ch := s.Watch("/*")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -512,8 +508,7 @@ func TestWatchAdd(t *testing.T) {
 func TestWatchAddOutOfOrder(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/*", ch)
+	ch := s.Watch("/*")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -532,8 +527,7 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 func TestWatchRem(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/*", ch)
+	ch := s.Watch("/*")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -561,8 +555,7 @@ func TestWatchRem(t *testing.T) {
 func TestWatchSetDirParents(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/x/**", ch)
+	ch := s.Watch("/x/**")
 
 	mut1 := MustEncodeSet("/x/y/z", "a", Clobber)
 	s.Ops <- Op{1, mut1}
@@ -574,8 +567,7 @@ func TestWatchSetDirParents(t *testing.T) {
 func TestWatchDelDirParents(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/**", ch)
+	ch := s.Watch("/**")
 
 	mut1 := MustEncodeSet("/x/y/z", "a", Clobber)
 	s.Ops <- Op{1, mut1}
@@ -591,8 +583,7 @@ func TestWatchDelDirParents(t *testing.T) {
 func TestWatchApply(t *testing.T) {
 	s := New()
 
-	ch := make(chan Event)
-	s.WatchOn("/**", ch)
+	ch := s.Watch("/**")
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -618,9 +609,7 @@ func TestWatchApply(t *testing.T) {
 
 func TestWatchClose(t *testing.T) {
 	s := New()
-	ch := make(chan Event)
-
-	s.WatchOn("/x", ch)
+	ch := s.Watch("/x")
 
 	s.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
 	s.Ops <- Op{0, ""} // just for synchronization
@@ -822,9 +811,7 @@ func TestStoreWaitWorks(t *testing.T) {
 	st := New()
 	mut := MustEncodeSet("/x", "a", Clobber)
 
-	evCh := make(chan Event)
-
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 
 	statusCh := st.Wait(1)
 	st.Ops <- Op{1, mut}
@@ -841,9 +828,7 @@ func TestStoreWaitWorks(t *testing.T) {
 
 func TestStoreWaitOutOfOrder(t *testing.T) {
 	st := New()
-	evCh := make(chan Event)
-
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
@@ -864,10 +849,8 @@ func TestStoreWaitBadMutation(t *testing.T) {
 	st := New()
 	mut := BadMutations[0]
 
-	evCh := make(chan Event)
+	evCh := st.Watch("/**")
 	t.Logf("evCh=%v", evCh)
-
-	st.WatchOn("/**", evCh)
 
 	statusCh := st.Wait(1)
 	st.Ops <- Op{1, mut}
@@ -884,9 +867,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 	st := New()
 	mut := BadInstructions[0]
 
-	evCh := make(chan Event)
-
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 
 	statusCh := st.Wait(1)
 	st.Ops <- Op{1, mut}
@@ -903,11 +884,9 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 func TestStoreWaitCasMatchAdd(t *testing.T) {
 	mut := MustEncodeSet("/a", "foo", Missing)
 
-	evCh := make(chan Event)
-
 	st := New()
 
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 	statusCh := st.Wait(1)
 	st.Ops <- Op{1, mut}
 
@@ -923,11 +902,9 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 	mut1 := MustEncodeSet("/a", "foo", Clobber)
 	mut2 := MustEncodeSet("/a", "foo", "1")
 
-	evCh := make(chan Event)
-
 	st := New()
 
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 	statusCh := st.Wait(2)
 	st.Ops <- Op{1, mut1}
 	st.Ops <- Op{2, mut2}
@@ -944,11 +921,9 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 func TestStoreWaitCasMismatchMissing(t *testing.T) {
 	mut := MustEncodeSet("/a", "foo", "123")
 
-	evCh := make(chan Event)
-
 	st := New()
 
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 	statusCh := st.Wait(1)
 	st.Ops <- Op{1, mut}
 
@@ -964,11 +939,9 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	mut1 := MustEncodeSet("/a", "foo", Clobber)
 	mut2 := MustEncodeSet("/a", "foo", "123")
 
-	evCh := make(chan Event)
-
 	st := New()
 
-	st.WatchOn("/**", evCh)
+	evCh := st.Watch("/**")
 	statusCh := st.Wait(2)
 	st.Ops <- Op{1, mut1}
 	st.Ops <- Op{2, mut2}
@@ -1030,8 +1003,7 @@ func TestGetDirAndWatch(t *testing.T) {
 
 func TestStoreClose(t *testing.T) {
 	s := New()
-	ch := make(chan Event)
-	s.WatchOn("/a/b/c", ch)
+	ch := s.Watch("/a/b/c")
 	close(s.Ops)
 	assert.Equal(t, Event{}, <-ch)
 	assert.T(t, closed(ch))

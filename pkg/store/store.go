@@ -333,17 +333,21 @@ func (s *Store) WatchOn(pattern string, ch chan Event) {
 	s.watchCh <- watch{out: ch, in: in, re: re}
 }
 
+func (s *Store) Watch(pattern string) <-chan Event {
+	ch := make(chan Event)
+	s.WatchOn(pattern, ch)
+	return ch
+}
+
 // Returns a read-only chan that will receive a single event representing the
 // change made at position `seqn`.
 //
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
 func (s *Store) Wait(seqn uint64) <-chan Event {
-	ch, all := make(chan Event, 1), make(chan Event)
+	ch, all := make(chan Event, 1), s.Watch("**")
 
-	s.WatchOn("**", all)
-
-	// Reading shared state. This must happen after the call to s.WatchOn.
+	// Reading shared state. This must happen after the call to s.Watch.
 	if s.state.ver >= seqn {
 		close(all)
 		ch <- Event{Seqn: seqn, Err: ErrTooLate}
@@ -372,10 +376,8 @@ func (st *Store) Sync(seqn uint64) {
 // Returns an immutable copy of `st` in which `path` exists as a regular file
 // (not a dir). Waits for `path` to be set, if necessary.
 func (st *Store) SyncPath(path string) Getter {
-	evs := make(chan Event)
+	evs := st.Watch(path)
 	defer close(evs)
-
-	st.WatchOn(path, evs)
 
 	g := st.state.root // TODO make this use a public method
 	_, cas := g.Get(path)

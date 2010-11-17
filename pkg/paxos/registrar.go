@@ -12,7 +12,7 @@ import (
 type Registrar struct {
 	alpha    int
 	st       *store.Store
-	evs      chan store.Event
+	evs      <-chan store.Event
 	lookupCh chan *lookup
 	lookups  *lookupQueue
 }
@@ -46,11 +46,10 @@ func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
 	rg := &Registrar{
 		alpha:    alpha,
 		st:       st,
-		evs:      make(chan store.Event),
+		evs:      st.Watch("**"), // watch absolutely everything
 		lookupCh: make(chan *lookup),
 		lookups:  new(lookupQueue),
 	}
-	st.WatchOn("**", rg.evs) // watch absolutely everything
 	go rg.process(start, readdirMap(st, membersKey), readdirMap(st, slotKey))
 	return rg
 }

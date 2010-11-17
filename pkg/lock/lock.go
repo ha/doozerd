@@ -8,11 +8,8 @@ import (
 )
 
 func Clean(st *store.Store, pp paxos.Proposer) {
-	ch := make(chan store.Event)
-	st.WatchOn("/session/*", ch)
 	logger := util.NewLogger("lock")
-
-	for ev := range ch {
+	for ev := range st.Watch("/session/*") {
 		if !ev.IsDel() {
 			continue
 		}
