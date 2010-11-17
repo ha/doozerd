@@ -185,3 +185,12 @@ func TestDecodeFuzz(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestRedirect(t *testing.T) {
+	var c Conn
+	addr := "foo"
+	rerr := ResponseError(redirectPrefix + addr)
+	res := c.fit([]interface{}{int64(0), int64(0), rerr})
+	assert.Equal(t, os.EAGAIN, res.Data)
+	assert.Equal(t, addr, c.RedirectAddr)
+}

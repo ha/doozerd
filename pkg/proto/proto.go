@@ -23,6 +23,7 @@ const (
 // Errors we can have
 const (
 	InvalidCommand = "invalid command"
+	redirectPrefix = "REDIRECT:"
 )
 
 // Response flags
@@ -111,7 +112,7 @@ func (c *Conn) SendError(id uint, msg string) os.Error {
 }
 
 func (c *Conn) SendRedirect(id uint, addr string) os.Error {
-	return c.SendResponse(id, Last, os.NewError("REDIRECT: "+addr))
+	return c.SendResponse(id, Last, os.NewError(redirectPrefix+addr))
 }
 
 func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
@@ -160,6 +161,22 @@ func (c *Conn) SendRequest(verb string, data interface{}) (Response, os.Error) {
 	return Response(ch), nil
 }
 
+func (c *Conn) fit(x interface{}) (res response) {
+	err := Fit(x, &res)
+	if re, ok := err.(ResponseError); ok {
+		s := string(re)
+		if strings.HasPrefix(s, redirectPrefix) {
+			c.RedirectAddr = strings.TrimSpace(s[len(redirectPrefix):])
+			logger.Println("redirect to", c.RedirectAddr)
+			err = os.EAGAIN
+		}
+	}
+	if err != nil {
+		res.Data = err
+	}
+	return res
+}
+
 func (c *Conn) ReadResponses() {
 	c.rl.Lock()
 	defer c.rl.Unlock()
@@ -170,19 +187,7 @@ func (c *Conn) ReadResponses() {
 			break
 		}
 
-		var res response
-		err = Fit(data, &res)
-		if re, ok := err.(ResponseError); ok {
-			if re[0:9] == "REDIRECT:" {
-				c.RedirectAddr = strings.TrimSpace(string(re)[10:])
-				logger.Println("redirect to", c.RedirectAddr)
-				err = os.EAGAIN
-			}
-		}
-		if err != nil {
-			res.Data = err
-		}
-
+		res := c.fit(data)
 		if res.Id == 0 {
 			continue
 		}
