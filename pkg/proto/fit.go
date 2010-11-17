@@ -61,6 +61,9 @@ func fitValue(x interface{}, v reflect.Value) os.Error {
 	iv, ok := v.(*reflect.InterfaceValue)
 	if ok && iv.Type().(*reflect.InterfaceType).NumMethod() == 0 {
 		iv.Set(reflect.NewValue(x))
+		if re, ok := x.(ResponseError); ok {
+			return re
+		}
 		return nil
 	}
 

@@ -110,6 +110,26 @@ func TestFitNil(t *testing.T) {
 	}
 }
 
+func TestFitPartial(t *testing.T) {
+	rerr := ResponseError("hi")
+
+	data := []interface{}{
+		int64(1),
+		rerr,
+	}
+
+	var res struct{N int; X interface{}}
+
+	err := Fit(data, &res)
+	if !reflect.DeepEqual(err, rerr) {
+		t.Error("expected", rerr, "got", err)
+	}
+
+	if res.N != 1 {
+		t.Error("expected 1 got", res.N)
+	}
+}
+
 func TestFitVal(t *testing.T) {
 	for i, f := range fitTests {
 		i++
