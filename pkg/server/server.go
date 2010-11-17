@@ -224,6 +224,28 @@ func checkin(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
 	return proto.ResCheckin{t, cas}, nil
 }
 
+func watch(c *conn, id uint, data interface{}) (interface{}, os.Error) {
+	glob := data.(string)
+	// TODO check glob pattern for errors
+	ch := c.s.St.Watch(glob)
+	for ev := range ch {
+		var r proto.ResWatch
+		r.Path = ev.Path
+		r.Body = ev.Body
+		r.Cas = ev.Cas
+		err := c.SendResponse(id, 0, r)
+		if err == proto.ErrClosed {
+			close(ch)
+			err = nil
+		}
+		if err != nil {
+			// TODO log error
+			break
+		}
+	}
+	return nil, responded
+}
+
 func indirect(x interface{}) interface{} {
 	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
@@ -238,6 +260,8 @@ type op struct {
 }
 
 var ops = map[string]op{
+	"WATCH": {p: new(string), f: watch},
+
 	"get":     {p: new(*proto.ReqGet), f: get},
 	"sget":    {p: new(*proto.ReqGet), f: sget},
 	"set":     {p: new(*proto.ReqSet), f: set, redirect: true},

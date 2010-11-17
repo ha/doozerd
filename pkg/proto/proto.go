@@ -26,6 +26,10 @@ const (
 	redirectPrefix = "REDIRECT:"
 )
 
+var (
+	ErrClosed = os.NewError("response was closed")
+)
+
 // Response flags
 const (
 	Closed = 1 << iota

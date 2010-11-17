@@ -35,3 +35,7 @@ type ResCheckin struct {
 	T   int64
 	Cas string
 }
+
+type ResWatch struct {
+	Path, Body, Cas string
+}
