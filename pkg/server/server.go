@@ -20,6 +20,8 @@ const lease = 3e9 // ns == 3s
 
 var ErrBadPrefix = os.NewError("bad prefix in path")
 
+var responded = os.NewError("already responded")
+
 type conn struct {
 	*proto.Conn
 	c   net.Conn
@@ -247,6 +249,10 @@ var ops = map[string]op{
 
 func (c *conn) handle(rid uint, f handler, data interface{}) {
 	res, err := f(c.s, data)
+	if err == responded {
+		return
+	}
+
 	if err != nil {
 		c.SendError(rid, err.String())
 	} else {
