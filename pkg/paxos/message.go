@@ -1,7 +1,7 @@
 package paxos
 
 import (
-	"junta/util"
+	"doozer/util"
 	"os"
 )
 

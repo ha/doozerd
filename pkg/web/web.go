@@ -3,8 +3,8 @@ package web
 import (
 	"http"
 	"io"
-	"junta/store"
-	"junta/util"
+	"doozer/store"
+	"doozer/util"
 	"json"
 	"log"
 	"net"
@@ -32,10 +32,10 @@ func (sh stringHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func Serve(listener net.Listener) {
-	prefix := "/j/" + ClusterName
+	prefix := "/d/" + ClusterName
 	evPrefix = "/events" + prefix
 
-	http.Handle("/", http.RedirectHandler("/view/j/"+ClusterName+"/", 307))
+	http.Handle("/", http.RedirectHandler("/view/d/"+ClusterName+"/", 307))
 	http.HandleFunc("/view/", viewHtml)
 	http.Handle("/main.js", stringHandler{"application/javascript", main_js})
 	http.Handle("/main.css", stringHandler{"text/css", main_css})

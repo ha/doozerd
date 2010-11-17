@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/store
+TARG=doozer/store
 GOFILES=\
 	event.go\
 	getter.go\

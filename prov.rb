@@ -2,10 +2,10 @@
 require 'rubygems'
 require 'redis'
 
-junta = Redis::Client.new :port => 8046
+doozer = Redis::Client.new :port => 8046
 
 exe = `which beanstalkd`.chomp
 
-junta.call "set", "/j/local/mon/def/a.service/service/exec-start", exe, ""
-junta.call "set", "/j/local/mon/def/a.service/service/restart", "restart-always", ""
-junta.call "set", "/j/local/mon/ctl/a.service", "start", ""
+doozer.call "set", "/d/local/mon/def/a.service/service/exec-start", exe, ""
+doozer.call "set", "/d/local/mon/def/a.service/service/restart", "restart-always", ""
+doozer.call "set", "/d/local/mon/ctl/a.service", "start", ""

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"container/list"
 	"gob"
-	"junta/util"
+	"doozer/util"
 	"os"
 	"regexp"
 	"strings"

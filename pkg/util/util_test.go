@@ -1,7 +1,7 @@
 package util
 
 import (
-	"junta/assert"
+	"doozer/assert"
 	"regexp"
 	"testing"
 )

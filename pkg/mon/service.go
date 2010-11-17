@@ -1,9 +1,9 @@
 package mon
 
 import (
-	"junta/exec"
-	"junta/store"
-	"junta/util"
+	"doozer/exec"
+	"doozer/store"
+	"doozer/util"
 	"log"
 	"os"
 	"strconv"

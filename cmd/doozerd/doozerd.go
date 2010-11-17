@@ -3,16 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"junta/client"
-	"junta/lock"
-	"junta/member"
-	"junta/mon"
-	"junta/paxos"
-	"junta/server"
-	"junta/session"
-	"junta/store"
-	"junta/util"
-	"junta/web"
+	"doozer/client"
+	"doozer/lock"
+	"doozer/member"
+	"doozer/mon"
+	"doozer/paxos"
+	"doozer/server"
+	"doozer/session"
+	"doozer/store"
+	"doozer/util"
+	"doozer/web"
 	"net"
 	"os"
 	"time"
@@ -34,7 +34,7 @@ var (
 func activate(st *store.Store, self, prefix string, c *client.Client, cal chan int) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
-	st.GetDirAndWatch("/junta/slot", ch)
+	st.GetDirAndWatch("/doozer/slot", ch)
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
@@ -69,7 +69,7 @@ func main() {
 	flag.Parse()
 	flag.Usage = Usage
 
-	prefix := "/j/" + *clusterName
+	prefix := "/d/" + *clusterName
 
 	if *listenAddr == "" {
 		logger.Println("require a listen address")
@@ -124,13 +124,13 @@ func main() {
 			panic(err)
 		}
 
-		path := prefix + "/junta/info/" + self + "/public-addr"
+		path := prefix + "/doozer/info/" + self + "/public-addr"
 		_, err = cl.Set(path, *listenAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
 
-		path = prefix + "/junta/info/" + self + "/hostname"
+		path = prefix + "/doozer/info/" + self + "/hostname"
 		_, err = cl.Set(path, os.Getenv("HOSTNAME"), store.Clobber)
 		if err != nil {
 			panic(err)
@@ -204,7 +204,7 @@ func main() {
 
 func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	path := "/junta/info/" + self + "/public-addr"
+	path := "/doozer/info/" + self + "/public-addr"
 	mx, err := store.EncodeSet(path, addr, store.Missing)
 	if err != nil {
 		panic(err)
@@ -215,7 +215,7 @@ func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
 
 func addHostname(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	path := "/junta/info/" + self + "/hostname"
+	path := "/doozer/info/" + self + "/hostname"
 	mx, err := store.EncodeSet(path, addr, store.Missing)
 	if err != nil {
 		panic(err)
@@ -226,7 +226,7 @@ func addHostname(st *store.Store, seqn uint64, self, addr string) uint64 {
 
 func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/junta/members/"+self, addr, store.Missing)
+	mx, err := store.EncodeSet("/doozer/members/"+self, addr, store.Missing)
 	if err != nil {
 		panic(err)
 	}
@@ -236,7 +236,7 @@ func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
 
 func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/junta/slot/"+slot, self, store.Missing)
+	mx, err := store.EncodeSet("/doozer/slot/"+slot, self, store.Missing)
 	if err != nil {
 		panic(err)
 	}
@@ -246,7 +246,7 @@ func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
 
 func claimLeader(st *store.Store, seqn uint64, self string) uint64 {
 	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/junta/leader", self, store.Missing)
+	mx, err := store.EncodeSet("/doozer/leader", self, store.Missing)
 	if err != nil {
 		panic(err)
 	}

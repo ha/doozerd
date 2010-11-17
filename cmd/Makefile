@@ -1,7 +1,7 @@
 all: install
 
 DIRS=\
-     juntad\
+     doozerd\
 
 %.install:
 	+cd $* && gomake install

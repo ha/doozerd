@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/exec
+TARG=doozer/exec
 GOFILES=\
 	exec.go\
 	fd_$(GOOS).go\

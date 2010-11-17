@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/lock
+TARG=doozer/lock
 GOFILES=\
 	lock.go\
 

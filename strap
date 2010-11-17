@@ -21,7 +21,7 @@ waitall() {
 }
 
 quit() {
-    killall juntad
+    killall doozerd
     waitall
 }
 

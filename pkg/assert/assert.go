@@ -1,5 +1,5 @@
 package assert
-// Testing helpers for junta.
+// Testing helpers for doozer.
 
 import (
 	"reflect"

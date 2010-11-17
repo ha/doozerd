@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/paxos
+TARG=doozer/paxos
 GOFILES=\
 	paxos.go\
 	cluster.go\

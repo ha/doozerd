@@ -1,8 +1,8 @@
 package paxos
 
 import (
-	"junta/assert"
-	"junta/store"
+	"doozer/assert"
+	"doozer/store"
 	"testing"
 )
 

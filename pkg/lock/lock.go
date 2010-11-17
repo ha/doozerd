@@ -1,9 +1,9 @@
 package lock
 
 import (
-	"junta/paxos"
-	"junta/store"
-	"junta/util"
+	"doozer/paxos"
+	"doozer/store"
+	"doozer/util"
 	"strings"
 )
 

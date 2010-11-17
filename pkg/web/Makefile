@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/web
+TARG=doozer/web
 GOFILES=\
 	main.css.go\
 	main.html.go\

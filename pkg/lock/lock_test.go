@@ -1,9 +1,9 @@
 package lock
 
 import (
-	"junta/assert"
-	"junta/store"
-	"junta/test"
+	"doozer/assert"
+	"doozer/store"
+	"doozer/test"
 	"testing"
 )
 

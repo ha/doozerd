@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"junta/store"
-	"junta/util"
+	"doozer/store"
+	"doozer/util"
 	"time"
 )
 

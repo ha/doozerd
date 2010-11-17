@@ -1,4 +1,4 @@
-package junta
+package doozer
 
 import "testing"
 

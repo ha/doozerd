@@ -1,8 +1,8 @@
-# Junta
+# Doozer
 
 # A word about OS X
 
-Junta has deep integration with the /proc file system
+Doozer has deep integration with the /proc file system
 and takes advantage of Unix features not available on OS X.
 
 There are some "hacks" in place to allow you to do everything
@@ -14,15 +14,15 @@ If you use Windows, you're fired.
 
 http://golang.org/doc/install.html
 
-### Installing junta
+### Installing Doozer
 
-    $ git clone git@github.com:bmizerany/junta.git
-    $ cd junta
+    $ git clone git@github.com:bmizerany/doozer.git
+    $ cd doozer
     $ make
 
 
 You can test it works with:
 
-    $ juntad
+    $ doozerd
 
 Point your browser at http://127.0.0.1:8080

@@ -1,2 +1,2 @@
 #!/bin/sh
-godoc -path junta -http :6060
+godoc -path doozer -http :6060

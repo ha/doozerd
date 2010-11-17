@@ -1,8 +1,8 @@
 package mon
 
 import (
-	"junta/store"
-	"junta/util"
+	"doozer/store"
+	"doozer/util"
 	"log"
 	"os"
 	"path"

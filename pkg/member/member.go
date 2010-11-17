@@ -1,9 +1,9 @@
 package member
 
 import (
-	"junta/paxos"
-	"junta/store"
-	"junta/util"
+	"doozer/paxos"
+	"doozer/store"
+	"doozer/util"
 	"strings"
 )
 
@@ -28,7 +28,7 @@ func Clean(s *store.Store, p paxos.Proposer) {
 }
 
 func clearSlot(p paxos.Proposer, g store.Getter, name string) {
-	ch, err := store.Walk(g, "/junta/slot/*")
+	ch, err := store.Walk(g, "/doozer/slot/*")
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func clearSlot(p paxos.Proposer, g store.Getter, name string) {
 }
 
 func removeMember(p paxos.Proposer, g store.Getter, name string) {
-	k := "/junta/members/" + name
+	k := "/doozer/members/" + name
 	_, cas := g.Get(k)
 	if cas != store.Missing {
 		paxos.Del(p, k, cas)
@@ -49,7 +49,7 @@ func removeMember(p paxos.Proposer, g store.Getter, name string) {
 }
 
 func removeInfo(p paxos.Proposer, g store.Getter, name string) {
-	ch, err := store.Walk(g, "/junta/info/"+name+"/**")
+	ch, err := store.Walk(g, "/doozer/info/"+name+"/**")
 	if err != nil {
 		panic(err)
 	}

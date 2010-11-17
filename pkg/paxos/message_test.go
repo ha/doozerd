@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/quick"
 
-	"junta/assert"
+	"doozer/assert"
 )
 
 // For testing convenience

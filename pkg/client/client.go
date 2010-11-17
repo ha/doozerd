@@ -1,8 +1,8 @@
 package client
 
 import (
-	"junta/proto"
-	"junta/util"
+	"doozer/proto"
+	"doozer/util"
 	"log"
 	"net"
 	"os"

@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/timer
+TARG=doozer/timer
 GOFILES=\
 	timer.go\
 

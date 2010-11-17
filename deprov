@@ -1,4 +1,4 @@
 #!/bin/sh
 set -e
 
-cmd/juntad/junta-del /j/local/mon/ctl/a.socket ''
+cmd/doozerd/doozer-del /d/local/mon/ctl/a.socket ''

@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-session_name = ARGV[0] || 'junta'
+session_name = ARGV[0] || 'doozer'
 
 
 def _system(*args)
@@ -15,8 +15,8 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
     "-X",
     [
       "screen",
-      "-t", "juntadM",
-      "#{__DIR__}/juntad",
+      "-t", "doozerdM",
+      "#{__DIR__}/doozerd",
       "-i", master_id,
       "-l", ":8040"
     ],
@@ -30,8 +30,8 @@ __DIR__ = File.expand_path(File.dirname(__FILE__))
     "-X",
     [
       "screen",
-      "-t", "juntad#{port}",
-      "#{__DIR__}/juntad",
+      "-t", "doozerd#{port}",
+      "#{__DIR__}/doozerd",
       "-a", master_id+"=:8040",
       "-l", ":#{port}"
     ]

@@ -2,8 +2,8 @@ package paxos
 
 import (
 	"fmt"
-	"junta/assert"
-	"junta/store"
+	"doozer/assert"
+	"doozer/store"
 	"strconv"
 	"testing"
 )

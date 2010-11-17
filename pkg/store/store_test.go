@@ -1,7 +1,7 @@
 package store
 
 import (
-	"junta/assert"
+	"doozer/assert"
 	"bytes"
 	"gob"
 	"strconv"

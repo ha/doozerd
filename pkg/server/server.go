@@ -1,11 +1,11 @@
 package server
 
 import (
-	jnet "junta/net"
-	"junta/paxos"
-	"junta/proto"
-	"junta/store"
-	"junta/util"
+	jnet "doozer/net"
+	"doozer/paxos"
+	"doozer/proto"
+	"doozer/store"
+	"doozer/util"
 	"net"
 	"os"
 	"reflect"
@@ -91,7 +91,7 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 }
 
 func (sv *Server) leader() string {
-	parts, cas := sv.St.Get("/junta/leader")
+	parts, cas := sv.St.Get("/doozer/leader")
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -99,7 +99,7 @@ func (sv *Server) leader() string {
 }
 
 func (sv *Server) addrFor(id string) string {
-	parts, cas := sv.St.Get("/junta/members/" + id)
+	parts, cas := sv.St.Get("/doozer/members/" + id)
 	if cas == store.Dir && cas == store.Missing {
 		return ""
 	}
@@ -198,7 +198,7 @@ func nop(s *Server, data interface{}) (interface{}, os.Error) {
 
 func join(s *Server, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqJoin)
-	key := "/junta/members/" + r.Who
+	key := "/doozer/members/" + r.Who
 	seqn, _, err := paxos.Set(s.Mg, key, r.Addr, store.Missing)
 	if err != nil {
 		return nil, err

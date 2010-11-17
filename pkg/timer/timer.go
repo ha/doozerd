@@ -3,8 +3,8 @@ package timer
 import (
 	"container/heap"
 	"container/vector"
-	"junta/store"
-	"junta/util"
+	"doozer/store"
+	"doozer/util"
 	"math"
 	"strconv"
 	"time"

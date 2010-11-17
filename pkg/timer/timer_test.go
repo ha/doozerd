@@ -1,8 +1,8 @@
 package timer
 
 import (
-	"junta/assert"
-	"junta/store"
+	"doozer/assert"
+	"doozer/store"
 	"testing"
 	"time"
 	"strconv"

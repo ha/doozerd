@@ -1,7 +1,7 @@
 package paxos
 
 import (
-	"junta/store"
+	"doozer/store"
 	"container/heap"
 	"container/vector"
 	"math"

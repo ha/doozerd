@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta/client
+TARG=doozer/client
 GOFILES=\
 	client.go\
 

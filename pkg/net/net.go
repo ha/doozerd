@@ -3,8 +3,8 @@ package net
 import (
 	"container/heap"
 	"container/vector"
-	"junta/paxos"
-	"junta/util"
+	"doozer/paxos"
+	"doozer/util"
 	"math"
 	"net"
 	"os"

@@ -2,7 +2,7 @@ package proto
 
 import (
 	"bufio"
-	"junta/util"
+	"doozer/util"
 	"os"
 	"io"
 	"fmt"

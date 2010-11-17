@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=junta
+TARG=doozer
 GOFILES=\
-	junta.go\
+	doozer.go\
 
 include $(GOROOT)/src/Make.pkg

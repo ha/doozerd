@@ -1,8 +1,8 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=juntad
+TARG=doozerd
 GOFILES=\
-	juntad.go\
+	doozerd.go\
 
 include $(GOROOT)/src/Make.cmd
 

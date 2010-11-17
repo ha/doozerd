@@ -1,7 +1,7 @@
 package mon
 
 import (
-	"junta/assert"
+	"doozer/assert"
 	"testing"
 )
 

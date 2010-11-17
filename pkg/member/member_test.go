@@ -1,9 +1,9 @@
 package member
 
 import (
-	"junta/assert"
-	"junta/store"
-	"junta/test"
+	"doozer/assert"
+	"doozer/store"
+	"doozer/test"
 	"testing"
 )
 
@@ -17,10 +17,10 @@ func TestMemberSimple(t *testing.T) {
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing))
 
 	keys := [][2]string{
-		{"/junta/slot/0", "a"},
-		{"/junta/members/a", "addr"},
-		{"/junta/info/a/x", "a"},
-		{"/junta/info/a/y", "b"},
+		{"/doozer/slot/0", "a"},
+		{"/doozer/members/a", "addr"},
+		{"/doozer/info/a/x", "a"},
+		{"/doozer/info/a/y", "b"},
 	}
 
 	// join the cluster
@@ -30,7 +30,7 @@ func TestMemberSimple(t *testing.T) {
 
 	// watch the keys to be deleted
 	ch := make(chan store.Event)
-	fp.Watch("/junta/**", ch)
+	fp.Watch("/doozer/**", ch)
 
 	// end the session
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))

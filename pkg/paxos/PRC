@@ -25,12 +25,12 @@ Package Responsibility and Collaboration
 * auth
     ^ sasl (??)
     + .Auth
-* junta
+* doozer
     ^ tls (??)
     ^ net
     ^ proto
     ^ router (use Msg)
     ^ mgmt
     + .ListenAndServe
-* juntad (cli)
-    + junta
+* doozerd (cli)
+    + doozer

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# juntafs -- FUSE plugin for junta (readonly)
+# doozerfs -- FUSE plugin for doozer (readonly)
 
 import errno
 import fuse
@@ -22,9 +22,9 @@ fuse.fuse_python_api = (0,2)
 DIR = 'dir'
 MISSING = '0'
 
-junta_host = 'localhost'
-junta_port = 8046
-junta_name = 'local'
+doozer_host = 'localhost'
+doozer_port = 8046
+doozer_name = 'local'
 
 class Stat(fuse.Stat):
     def __init__(self):
@@ -82,12 +82,12 @@ class JuntaFS(fuse.Fuse):
 
         if path == '/':
             cas = DIR
-        elif ps[0] != junta_name:
+        elif ps[0] != doozer_name:
             return -errno.ENOENT
         elif len(ps) == 1:
             cas = DIR
         else:
-            v, cas = self.redis.execute_command('get', '/j' + path)
+            v, cas = self.redis.execute_command('get', '/d' + path)
 
         if cas == DIR:
             pass # Stat object defaults to dir
@@ -106,16 +106,16 @@ class JuntaFS(fuse.Fuse):
         cas = MISSING
 
         if path == '/':
-            dents.append(junta_name)
+            dents.append(doozer_name)
             cas = DIR
-        elif ps[0] != junta_name:
+        elif ps[0] != doozer_name:
             return
         elif len(ps) == 1:
-            # TODO remove this workaround when junta gets fixed
-            v, cas = self.redis.execute_command('get', '/j' + path + '/')
+            # TODO remove this workaround when doozer gets fixed
+            v, cas = self.redis.execute_command('get', '/d' + path + '/')
             dents.extend(v)
         else:
-            v, cas = self.redis.execute_command('get', '/j' + path)
+            v, cas = self.redis.execute_command('get', '/d' + path)
             dents.extend(v)
 
         if cas != DIR:
@@ -136,12 +136,12 @@ class JuntaFS(fuse.Fuse):
 
         if path == '/':
             cas = DIR
-        elif ps[0] != junta_name:
+        elif ps[0] != doozer_name:
             return -errno.ENOENT
         elif len(ps) == 1:
             cas = DIR
         else:
-            v, cas = self.redis.execute_command('get', '/j' + path)
+            v, cas = self.redis.execute_command('get', '/d' + path)
 
         if cas == DIR:
             pass # Stat object defaults to dir
@@ -181,14 +181,14 @@ class JuntaFS(fuse.Fuse):
         return 0
 
 def main():
-    usage='''juntafs: a FUSE plugin to access junta files from the Linux VFS.
+    usage='''doozerfs: a FUSE plugin to access doozer files from the Linux VFS.
 
     Note: this is readonly for now.
     ''' + fuse.Fuse.fusage
 
-    r = redis.Redis(host=junta_host, port=junta_port)
+    r = redis.Redis(host=doozer_host, port=doozer_port)
     try:
-        r.execute_command('get', '/j/' + junta_name + '/')
+        r.execute_command('get', '/d/' + doozer_name + '/')
     except Exception, ex:
         pass # swallow the initial SELECT command error
 

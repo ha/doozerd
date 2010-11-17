@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"junta/assert"
+	"doozer/assert"
 	"io/ioutil"
 	"os"
 	"testing"

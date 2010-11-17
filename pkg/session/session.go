@@ -1,9 +1,9 @@
 package session
 
 import (
-	"junta/paxos"
-	"junta/store"
-	"junta/timer"
+	"doozer/paxos"
+	"doozer/store"
+	"doozer/timer"
 )
 
 func Clean(s *store.Store, p paxos.Proposer) {

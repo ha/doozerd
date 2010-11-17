@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"gob"
 	"io"
-	"junta/assert"
+	"doozer/assert"
 	"os"
 	"testing"
 )

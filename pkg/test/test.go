@@ -1,7 +1,7 @@
 package test
 
 import (
-	"junta/store"
+	"doozer/store"
 	"os"
 )
 
