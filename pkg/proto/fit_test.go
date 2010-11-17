@@ -6,7 +6,7 @@ import (
 )
 
 type fitTest struct {
-    val, slot, exp interface{}
+	val, slot, exp interface{}
 }
 
 type T struct {
@@ -64,15 +64,15 @@ var fitTests = []fitTest{
 
 	{[]interface{}{hi, hi}, new(interface{}), []interface{}{hi, hi}},
 
-	{nil, &T{I:1}, T{}},
+	{nil, &T{I: 1}, T{}},
 	{[]interface{}{int64(1), hi, hi}, &T{}, T{1, string(hi), hi}},
 	{[]interface{}{int64(1), hi, hi}, new(T), T{1, string(hi), hi}},
 	{[]interface{}{int64(1), hi, hi}, new(*T), &T{1, string(hi), hi}},
 
 	{[]interface{}{[]interface{}{int64(1), hi, hi},
-	               []interface{}{int64(1), hi, hi}},
-	 &U{},
-	 U{T{1, string(hi), hi}, &T{1, string(hi), hi}}},
+		[]interface{}{int64(1), hi, hi}},
+		&U{},
+		U{T{1, string(hi), hi}, &T{1, string(hi), hi}}},
 
 	{[]interface{}{nil, nil}, &U{T{}, &T{}}, U{T{}, nil}},
 
@@ -87,14 +87,16 @@ var fitTests = []fitTest{
 }
 
 var fitErrors = []fitTest{
-	{int64(5e9), new(int32), nil}, // out of range
-	{uint64(5e9), new(uint32), nil}, // out of range
-	{int64(5e9), new(uint32), nil}, // out of range
-	{uint64(5e9), new(int32), nil}, // out of range
-	{int64(-5), new(uint64), nil}, // out of range
+	{int64(5e9), new(int32), nil},                 // out of range
+	{uint64(5e9), new(uint32), nil},               // out of range
+	{int64(5e9), new(uint32), nil},                // out of range
+	{uint64(5e9), new(int32), nil},                // out of range
+	{int64(-5), new(uint64), nil},                 // out of range
 	{uint64(0xfffffffffffffffb), new(int64), nil}, // out of range
 
-	{[]interface{}{hi, hi}, new(interface{a()}), nil},
+	{[]interface{}{hi, hi}, new(interface {
+		a()
+	}), nil},
 
 	{ResponseError("hi"), new(int), ResponseError("hi")},
 	{[]interface{}{int64(1), hi, hi}, *new(*T), nil},
@@ -118,7 +120,10 @@ func TestFitPartial(t *testing.T) {
 		rerr,
 	}
 
-	var res struct{N int; X interface{}}
+	var res struct {
+		N int
+		X interface{}
+	}
 
 	err := Fit(data, &res)
 	if !reflect.DeepEqual(err, rerr) {

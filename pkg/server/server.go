@@ -238,13 +238,13 @@ type op struct {
 }
 
 var ops = map[string]op{
-	"get":{p:new(*proto.ReqGet), f:get},
-	"sget":{p:new(*proto.ReqGet), f:sget},
-	"set":{p:new(*proto.ReqSet), f:set, redirect:true},
-	"del":{p:new(*proto.ReqDel), f:del, redirect:true},
-	"nop":{p:new(*[]interface{}), f:nop, redirect:true},
-	"join":{p:new(*proto.ReqJoin), f:join, redirect:true},
-	"checkin":{p:new(*proto.ReqCheckin), f:checkin, redirect:true},
+	"get":     {p: new(*proto.ReqGet), f: get},
+	"sget":    {p: new(*proto.ReqGet), f: sget},
+	"set":     {p: new(*proto.ReqSet), f: set, redirect: true},
+	"del":     {p: new(*proto.ReqDel), f: del, redirect: true},
+	"nop":     {p: new(*[]interface{}), f: nop, redirect: true},
+	"join":    {p: new(*proto.ReqJoin), f: join, redirect: true},
+	"checkin": {p: new(*proto.ReqCheckin), f: checkin, redirect: true},
 }
 
 func (c *conn) handle(rid uint, f handler, data interface{}) {

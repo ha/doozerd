@@ -72,8 +72,8 @@ var decTests = []encTest{
 
 var decErrTests = []string{
 	":111118446744073709551611\r\n", // out of range for uint64
-	"$18446744073709551611\r\n", // out of range for int
-	"*18446744073709551611\r\n", // out of range for int
+	"$18446744073709551611\r\n",     // out of range for int
+	"*18446744073709551611\r\n",     // out of range for int
 }
 
 func TestProtoEncodeVal(t *testing.T) {

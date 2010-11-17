@@ -91,7 +91,7 @@ func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
 	mon.logger.Println("reading units")
 	evs := make(chan store.Event)
 	st.GetDirAndWatch(ctlKey, evs)
-	st.Watch(lockKey+"/*", evs)
+	st.WatchOn(lockKey+"/*", evs)
 
 	for {
 		select {

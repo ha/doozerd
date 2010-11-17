@@ -23,7 +23,7 @@ func TestLockSimple(t *testing.T) {
 
 	// watch the locks to be deleted
 	ch := make(chan store.Event)
-	fp.Watch("/lock/*", ch)
+	fp.WatchOn("/lock/*", ch)
 
 	// end the session
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))

@@ -62,11 +62,11 @@ type response struct {
 }
 
 func (r *response) IsDone() bool {
-	return r.Flag & (Closed|Last) != 0
+	return r.Flag&(Closed|Last) != 0
 }
 
 func (r *response) IsValid() bool {
-	return r.Flag & Closed == 0
+	return r.Flag&Closed == 0
 }
 
 type ProtoError struct {
@@ -87,9 +87,9 @@ func (e ResponseError) String() string {
 
 func NewConn(rw io.ReadWriteCloser) *Conn {
 	return &Conn{
-		c:rw,
-		r:bufio.NewReader(rw),
-		cb:make(map[uint]chan interface{}),
+		c:  rw,
+		r:  bufio.NewReader(rw),
+		cb: make(map[uint]chan interface{}),
 	}
 }
 

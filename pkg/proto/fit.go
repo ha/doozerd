@@ -28,7 +28,7 @@ func Fit(data, slot interface{}) os.Error {
 	v := reflect.NewValue(slot)
 	pv, ok := v.(*reflect.PtrValue)
 	if !ok {
-		err := &FitError{Desc:"not a pointer", Val:data, Label:"slot"}
+		err := &FitError{Desc: "not a pointer", Val: data, Label: "slot"}
 		if v != nil {
 			err.Type = v.Type()
 		}
@@ -136,7 +136,7 @@ func fitSeq(s []interface{}, v reflect.Value) os.Error {
 	switch t := v.(type) {
 	case *reflect.StructValue:
 		if len(s) != t.NumField() {
-			return &FitError{"arity mismatch", s, "struct" , v.Type()}
+			return &FitError{"arity mismatch", s, "struct", v.Type()}
 		}
 		for i := range s {
 			f := t.Type().(*reflect.StructType).Field(i)
@@ -150,7 +150,7 @@ func fitSeq(s []interface{}, v reflect.Value) os.Error {
 		}
 	case *reflect.ArrayValue:
 		if len(s) != t.Len() {
-			return &FitError{"arity mismatch", s, "array" , v.Type()}
+			return &FitError{"arity mismatch", s, "array", v.Type()}
 		}
 		for i := range s {
 			err := fitValue(s[i], t.Elem(i))

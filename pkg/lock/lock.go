@@ -9,7 +9,7 @@ import (
 
 func Clean(st *store.Store, pp paxos.Proposer) {
 	ch := make(chan store.Event)
-	st.Watch("/session/*", ch)
+	st.WatchOn("/session/*", ch)
 	logger := util.NewLogger("lock")
 
 	for ev := range ch {

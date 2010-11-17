@@ -30,7 +30,7 @@ func TestMemberSimple(t *testing.T) {
 
 	// watch the keys to be deleted
 	ch := make(chan store.Event)
-	fp.Watch("/doozer/**", ch)
+	fp.WatchOn("/doozer/**", ch)
 
 	// end the session
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))

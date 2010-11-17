@@ -32,10 +32,10 @@ type Timer struct {
 	// Ticks are sent here
 	C <-chan Tick
 
-	events  chan store.Event
+	events chan store.Event
 
-	ticks   *vector.Vector
-	ticker  *time.Ticker
+	ticks  *vector.Vector
+	ticker *time.Ticker
 }
 
 func New(pattern string, interval int64, st *store.Store) *Timer {
@@ -49,7 +49,7 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 	}
 
 	// Begin watching as timers come and go
-	st.Watch(pattern, t.events)
+	st.WatchOn(pattern, t.events)
 
 	go t.process(c)
 

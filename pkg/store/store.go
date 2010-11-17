@@ -326,7 +326,7 @@ func (s *Store) Snapshot() (seqn uint64, mutation string) {
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
-func (s *Store) Watch(pattern string, ch chan Event) {
+func (s *Store) WatchOn(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
 	in := make(chan Event)
 	go buffer(in, ch)
@@ -341,9 +341,9 @@ func (s *Store) Watch(pattern string, ch chan Event) {
 func (s *Store) Wait(seqn uint64) <-chan Event {
 	ch, all := make(chan Event, 1), make(chan Event)
 
-	s.Watch("**", all)
+	s.WatchOn("**", all)
 
-	// Reading shared state. This must happen after the call to s.Watch.
+	// Reading shared state. This must happen after the call to s.WatchOn.
 	if s.state.ver >= seqn {
 		close(all)
 		ch <- Event{Seqn: seqn, Err: ErrTooLate}
@@ -375,7 +375,7 @@ func (st *Store) SyncPath(path string) Getter {
 	evs := make(chan Event)
 	defer close(evs)
 
-	st.Watch(path, evs)
+	st.WatchOn(path, evs)
 
 	g := st.state.root // TODO make this use a public method
 	_, cas := g.Get(path)
@@ -399,7 +399,7 @@ func (st *Store) SyncPath(path string) Getter {
 // guarantees no entry will be missed, but one or more of the dummy events may
 // duplicate a true event.
 func (st *Store) GetDirAndWatch(path string, ch chan Event) {
-	st.Watch(path+"/*", ch)
+	st.WatchOn(path+"/*", ch)
 	go func() {
 		for _, ent := range GetDir(st, path) {
 			p := path + "/" + ent
