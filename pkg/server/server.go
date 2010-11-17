@@ -136,25 +136,25 @@ func (c *conn) redirect(rid uint) {
 	}
 }
 
-func get(s *Server, data interface{}) (interface{}, os.Error) {
+func get(c *conn, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqGet)
-	shortPath, err := s.checkPath(r.Path)
+	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	v, cas := s.St.Get(shortPath)
+	v, cas := c.s.St.Get(shortPath)
 	return proto.ResGet{v, cas}, nil
 }
 
-func sget(s *Server, data interface{}) (interface{}, os.Error) {
+func sget(c *conn, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqGet)
-	shortPath, err := s.checkPath(r.Path)
+	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
 		return "", err
 	}
 
-	body, err := store.GetString(s.St.SyncPath(shortPath), shortPath), nil
+	body, err := store.GetString(c.s.St.SyncPath(shortPath), shortPath), nil
 	if err != nil {
 		return nil, err
 	}
@@ -162,30 +162,30 @@ func sget(s *Server, data interface{}) (interface{}, os.Error) {
 	return body, nil
 }
 
-func set(s *Server, data interface{}) (interface{}, os.Error) {
+func set(c *conn, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqSet)
 
-	shortPath, err := s.checkPath(r.Path)
+	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
 		return nil, err
 	}
 
-	seqn, _, err := paxos.Set(s.Mg, shortPath, r.Body, r.Cas)
+	seqn, _, err := paxos.Set(c.s.Mg, shortPath, r.Body, r.Cas)
 	if err != nil {
 		return nil, err
 	}
 	return seqn, nil
 }
 
-func del(s *Server, data interface{}) (interface{}, os.Error) {
+func del(c *conn, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqDel)
 
-	shortPath, err := s.checkPath(r.Path)
+	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
 		return 0, err
 	}
 
-	seqn, err := paxos.Del(s.Mg, shortPath, r.Cas)
+	seqn, err := paxos.Del(c.s.Mg, shortPath, r.Cas)
 	if err != nil {
 		return nil, err
 	}
@@ -193,31 +193,31 @@ func del(s *Server, data interface{}) (interface{}, os.Error) {
 	return seqn, nil
 }
 
-func nop(s *Server, data interface{}) (interface{}, os.Error) {
-	s.Mg.Propose(store.Nop)
+func nop(c *conn, data interface{}) (interface{}, os.Error) {
+	c.s.Mg.Propose(store.Nop)
 	return nil, nil
 }
 
-func join(s *Server, data interface{}) (interface{}, os.Error) {
+func join(c *conn, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqJoin)
 	key := "/doozer/members/" + r.Who
-	seqn, _, err := paxos.Set(s.Mg, key, r.Addr, store.Missing)
+	seqn, _, err := paxos.Set(c.s.Mg, key, r.Addr, store.Missing)
 	if err != nil {
 		return nil, err
 	}
 
 	done := make(chan int)
-	go s.AdvanceUntil(done)
-	s.St.Sync(seqn + uint64(s.Mg.Alpha()))
+	go c.s.AdvanceUntil(done)
+	c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
 	close(done)
-	seqn, snap := s.St.Snapshot()
+	seqn, snap := c.s.St.Snapshot()
 	return proto.ResJoin{seqn, snap}, nil
 }
 
-func checkin(s *Server, data interface{}) (interface{}, os.Error) {
+func checkin(c *conn, data interface{}) (interface{}, os.Error) {
 	r := data.(*proto.ReqCheckin)
 	t := time.Nanoseconds() + lease
-	_, cas, err := paxos.Set(s.Mg, "/session/"+r.Sid, strconv.Itoa64(t), r.Cas)
+	_, cas, err := paxos.Set(c.s.Mg, "/session/"+r.Sid, strconv.Itoa64(t), r.Cas)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func indirect(x interface{}) interface{} {
 	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
 
-type handler func(*Server, interface{}) (interface{}, os.Error)
+type handler func(*conn, interface{}) (interface{}, os.Error)
 
 type op struct {
 	p interface{}
@@ -248,7 +248,7 @@ var ops = map[string]op{
 }
 
 func (c *conn) handle(rid uint, f handler, data interface{}) {
-	res, err := f(c.s, data)
+	res, err := f(c, data)
 	if err == responded {
 		return
 	}
