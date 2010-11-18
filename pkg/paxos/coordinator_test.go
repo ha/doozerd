@@ -44,6 +44,26 @@ func TestCoordStartAlt(t *testing.T) {
 	assert.Equal(t, newInvite(2), got)
 }
 
+func TestCoordQuorum(t *testing.T) {
+	var got Msg
+	cx := newCluster("b", tenNodes, tenIds, nil)
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
+
+	co.Put(newPropose("foo"))
+
+	got = nil
+	co.Put(newRsvpFrom(2, 1, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(3, 1, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(4, 1, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(5, 1, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(6, 1, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+}
+
 func TestCoordTargetNomination(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
