@@ -22,6 +22,10 @@ var ErrBadPrefix = os.NewError("bad prefix in path")
 
 var responded = os.NewError("already responded")
 
+const (
+	Ok = proto.Line("OK")
+)
+
 type conn struct {
 	*proto.Conn
 	c   net.Conn
@@ -224,10 +228,19 @@ func checkin(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
 	return proto.ResCheckin{t, cas}, nil
 }
 
+func closeOp(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+	err := c.CloseResponse(data.(uint))
+	if err != nil {
+		return nil, err
+	}
+	return Ok, nil
+}
+
 func watch(c *conn, id uint, data interface{}) (interface{}, os.Error) {
 	glob := data.(string)
 	// TODO check glob pattern for errors
 	ch := c.s.St.Watch(glob)
+	// TODO buffer (and possibly discard) events
 	for ev := range ch {
 		var r proto.ResWatch
 		r.Path = ev.Path
@@ -260,6 +273,7 @@ type op struct {
 }
 
 var ops = map[string]op{
+	"CLOSE": {p: new(uint), f: closeOp},
 	"WATCH": {p: new(string), f: watch},
 
 	"get":     {p: new(*proto.ReqGet), f: get},

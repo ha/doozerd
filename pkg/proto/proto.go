@@ -42,11 +42,15 @@ var logger = util.NewLogger("proto")
 
 type Line string
 
+// This needs to be refactored. There is client stuff and server stuff mixed up
+// in here. This type should contain only symmetric low-level connection stuff.
 type Conn struct {
 	c  io.ReadWriteCloser
 	r  *bufio.Reader
 	id uint
 	cb map[uint]chan interface{}
+
+	closed map[uint]bool
 
 	rl, wl, bl sync.Mutex
 
@@ -94,14 +98,34 @@ func NewConn(rw io.ReadWriteCloser) *Conn {
 		c:  rw,
 		r:  bufio.NewReader(rw),
 		cb: make(map[uint]chan interface{}),
+
+		closed: make(map[uint]bool),
 	}
 }
 
 // Server functions
 
+func (c *Conn) CloseResponse(id uint) os.Error {
+	c.wl.Lock()
+	if c.closed[id] {
+		c.wl.Unlock()
+		return ErrClosed
+	}
+	c.closed[id] = false // create an entry
+	c.wl.Unlock()
+	return c.SendResponse(id, Closed, nil)
+}
+
 func (c *Conn) SendResponse(id, flag uint, data interface{}) os.Error {
 	c.wl.Lock()
 	defer c.wl.Unlock()
+
+	if fullyClosed, wantClosed := c.closed[id]; wantClosed {
+		if fullyClosed || flag&(Closed|Last) == 0 {
+			return ErrClosed
+		}
+		c.closed[id] = true
+	}
 
 	err := encode(c.c, response{id, flag, data})
 	if err != nil {
