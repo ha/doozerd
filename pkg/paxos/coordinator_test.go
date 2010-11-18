@@ -178,3 +178,25 @@ func TestCoordStartRsvp(t *testing.T) {
 	// nominate.
 	assert.Equal(t, newInvite(1), got)
 }
+
+func TestCoordDuel(t *testing.T) {
+	var got Msg
+	cx := newCluster("b", tenNodes, tenIds, nil)
+	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
+
+	co.Put(newPropose("foo"))
+
+	got = nil
+	co.Put(newRsvpFrom(2, 1, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(3, 2, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(4, 2, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(5, 2, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(6, 2, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+	co.Put(newRsvpFrom(7, 2, 0, ""))
+	assert.Equal(t, Msg(nil), got)
+}

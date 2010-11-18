@@ -42,7 +42,7 @@ func (co *coordinator) Put(in Msg) {
 			break
 		}
 
-		if i < co.crnd {
+		if i != co.crnd {
 			break
 		}
 
