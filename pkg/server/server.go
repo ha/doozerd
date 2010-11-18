@@ -273,9 +273,11 @@ type op struct {
 }
 
 var ops = map[string]op{
+	// new stuff, see doc/proto.md
 	"CLOSE": {p: new(uint), f: closeOp},
 	"WATCH": {p: new(string), f: watch},
 
+	// former stuff
 	"get":     {p: new(*proto.ReqGet), f: get},
 	"sget":    {p: new(*proto.ReqGet), f: sget},
 	"set":     {p: new(*proto.ReqSet), f: set, redirect: true},
