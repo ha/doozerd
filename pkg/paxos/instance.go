@@ -2,7 +2,11 @@ package paxos
 
 import (
 	"doozer/store"
+	"rand"
+	"time"
 )
+
+const initialBound = 1e6 // ns == 1ms
 
 type instance chan Packet
 
@@ -11,6 +15,8 @@ type clusterer interface {
 }
 
 func (it instance) process(seqn uint64, cf clusterer, res chan<- store.Op) {
+	var sched bool
+	var waitBound int64 = initialBound
 	cx := cf.cluster(seqn)
 
 	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: cx}
@@ -19,11 +25,24 @@ func (it instance) process(seqn uint64, cf clusterer, res chan<- store.Op) {
 	var sk sink
 
 	for p := range it {
+		if p.Cmd() == tick {
+			sched = false
+		}
+
 		p.SetFrom(cx.indexByAddr(p.Addr))
 		co.Put(p.Msg)
 		ac.Put(p.Msg)
 		ln.Put(p.Msg)
 		sk.Put(p.Msg)
+
+		if co.seen > co.crnd && !sched {
+			sched = true
+			waitBound *= 2
+			go func() {
+				time.Sleep(rand.Int63n(waitBound))
+				it.PutFrom("", msgTick)
+			}()
+		}
 
 		if sk.done {
 			cx.Put(newLearn(sk.v))

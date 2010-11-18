@@ -144,6 +144,31 @@ func TestInstanceSendsLearn(t *testing.T) {
 	close(it)
 }
 
+func TestInstanceRetry(t *testing.T) {
+	ps := make(FakePutterFrom, 3)
+	nodes := map[string]string{"a": "x", "b": "y", "c": "z"}
+	cals := []string{"a", "b", "c"}
+	cxA := newCluster("a", nodes, cals, putFromWrapperTo{ps, "x"})
+	insA := make(instance)
+	defer close(insA)
+	insB := make(instance)
+	go insA.process(0, (*clusterK)(cxA), nil)
+	ps[0] = insA
+	ps[1] = insB
+	ps[2] = make(instance)
+
+	insA.Propose("bar")
+	<-insB // invite copy 1
+	<-insB // invite copy 2
+	<-insB // invite copy 3
+	<-insB // rsvp copy 1
+	<-insB // rsvp copy 2
+	<-insB // rsvp copy 3
+
+	insA.PutFrom("b", newRsvp(4, 0, ""))
+	assert.Equal(t, Packet{newInvite(6), "x"}, <-insB)
+}
+
 //func TestDeadlock(t *testing.T) {
 //	<-make(chan int)
 //}

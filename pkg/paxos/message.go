@@ -75,6 +75,10 @@ const (
 	learnLen    = 0 // not including v
 )
 
+var (
+	msgTick = newTick()
+)
+
 func newInvite(crnd uint64) Msg {
 	m := make(Msg, baseLen+inviteLen)
 	m[mCmd] = invite
