@@ -80,19 +80,16 @@ func TestCoordTargetNomination(t *testing.T) {
 	assert.Equal(t, newNominate(1, "foo"), got)
 }
 
-func TestCoordRestart(t *testing.T) {
+func TestCoordRetry(t *testing.T) {
 	var got Msg
 	cx := newCluster("b", tenNodes, tenIds, nil)
 	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: msgSlot{&got}}
 
 	co.Put(newPropose("foo"))
 
-	// never reach majority (force timeout)
-	co.Put(newRsvpFrom(2, 1, 0, ""))
-	co.Put(newRsvpFrom(3, 1, 0, ""))
-	co.Put(newRsvpFrom(4, 1, 0, ""))
-	co.Put(newRsvpFrom(5, 1, 0, ""))
-	co.Put(newRsvpFrom(6, 1, 0, ""))
+	// message from a future round and another proposer
+	co.Put(newRsvpFrom(2, 2, 0, ""))
+	assert.Equal(t, uint64(2), co.seen)
 
 	co.Put(newTick()) // force the start of a new round
 	assert.Equal(t, newInvite(11), got)

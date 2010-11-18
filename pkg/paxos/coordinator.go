@@ -11,6 +11,8 @@ type coordinator struct {
 	rsvps  int
 	vr     uint64
 	vv     string
+
+	seen   uint64
 }
 
 func (co *coordinator) Put(in Msg) {
@@ -40,6 +42,10 @@ func (co *coordinator) Put(in Msg) {
 
 		if co.cval != "" {
 			break
+		}
+
+		if i > co.seen {
+			co.seen = i
 		}
 
 		if i != co.crnd {
