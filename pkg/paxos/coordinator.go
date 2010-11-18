@@ -8,7 +8,7 @@ type coordinator struct {
 	target string
 	crnd   uint64
 	cval   string
-	rsvps  int
+	rsvps  map[int]bool
 	vr     uint64
 	vv     string
 
@@ -31,7 +31,7 @@ func (co *coordinator) Put(in Msg) {
 		co.outs.Put(newInvite(co.crnd))
 		co.vr = 0
 		co.vv = ""
-		co.rsvps = 0
+		co.rsvps = make(map[int]bool)
 		co.cval = ""
 	case rsvp:
 		if !co.begun {
@@ -57,8 +57,8 @@ func (co *coordinator) Put(in Msg) {
 			co.vv = vval
 		}
 
-		co.rsvps++
-		if co.rsvps >= co.cx.Quorum() {
+		co.rsvps[in.From()] = true
+		if len(co.rsvps) >= co.cx.Quorum() {
 			var v string
 
 			if co.vr > 0 {
@@ -76,7 +76,7 @@ func (co *coordinator) Put(in Msg) {
 		co.outs.Put(newInvite(co.crnd))
 		co.vr = 0
 		co.vv = ""
-		co.rsvps = 0
+		co.rsvps = make(map[int]bool)
 		co.cval = ""
 	}
 }
