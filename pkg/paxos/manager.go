@@ -116,18 +116,22 @@ func (m *Manager) proposeAt(seqn uint64, v string) {
 	m.logger.Printf("paxos propose -> %d %q", seqn, v)
 }
 
+func (m *Manager) ProposeOnce(v string) store.Event {
+	seqn := <-m.seqns
+	ch := m.st.Wait(seqn)
+	m.proposeAt(seqn, v)
+	m.fillUntil <- seqn
+	return <-ch
+}
+
 func (m *Manager) Propose(v string) (seqn uint64, cas string, err os.Error) {
 	var ev store.Event
 
 	// If a competing proposal succeeded in the same seqn, we should try again.
 	for v != ev.Mut {
-		seqn = <-m.seqns
-		ch := m.st.Wait(seqn)
-		m.proposeAt(seqn, v)
-		m.fillUntil <- seqn
-		ev = <-ch
+		ev = m.ProposeOnce(v)
 	}
-	return seqn, ev.Cas, ev.Err
+	return ev.Seqn, ev.Cas, ev.Err
 }
 
 func (m *Manager) fillOne(seqn uint64) {
