@@ -105,10 +105,10 @@ func main() {
 		seqn = addMember(st, seqn+1, self, *listenAddr)
 		seqn = claimSlot(st, seqn+1, "1", self)
 		seqn = claimLeader(st, seqn+1, self)
-		seqn = claimSlot(st, seqn+1, "2", "")
-		seqn = claimSlot(st, seqn+1, "3", "")
-		seqn = claimSlot(st, seqn+1, "4", "")
-		seqn = claimSlot(st, seqn+1, "5", "")
+		//seqn = claimSlot(st, seqn+1, "2", "")
+		//seqn = claimSlot(st, seqn+1, "3", "")
+		//seqn = claimSlot(st, seqn+1, "4", "")
+		//seqn = claimSlot(st, seqn+1, "5", "")
 		seqn = addPing(st, seqn+1, "pong")
 
 		cal <- 1

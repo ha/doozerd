@@ -8,6 +8,7 @@ import (
 	"doozer/util"
 	"net"
 	"os"
+	"rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -98,20 +99,12 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 	panic("unreachable")
 }
 
-func (sv *Server) leader() string {
+func (sv *Server) cals() []string {
 	parts, cas := sv.St.Get("/doozer/leader")
 	if cas == store.Dir && cas == store.Missing {
-		return ""
+		return nil
 	}
-	return parts[0]
-}
-
-func (sv *Server) addrFor(id string) string {
-	parts, cas := sv.St.Get("/doozer/members/" + id)
-	if cas == store.Dir && cas == store.Missing {
-		return ""
-	}
-	return parts[0]
+	return parts
 }
 
 // Checks that path begins with the proper prefix and returns the short path
@@ -133,13 +126,18 @@ func (sv *Server) AdvanceUntil(done chan int) {
 }
 
 func (c *conn) redirect(rid uint) {
-	leader := c.s.leader()
-	addr := c.s.addrFor(leader)
-	if addr == "" {
+	cals := c.s.cals()
+	if len(cals) < 1 {
 		c.SendResponse(rid, proto.Last, ErrNoWrite)
-	} else {
-		c.SendResponse(rid, proto.Last, proto.Redirect(addr))
+		return
 	}
+	cal := cals[rand.Intn(len(cals))]
+	parts, cas := c.s.St.Get("/doozer/info/" + cal + "/public-addr")
+	if cas == store.Dir && cas == store.Missing {
+		c.SendResponse(rid, proto.Last, ErrNoWrite)
+		return
+	}
+	c.SendResponse(rid, proto.Last, proto.Redirect(parts[0]))
 }
 
 func get(c *conn, _ uint, data interface{}) interface{} {
