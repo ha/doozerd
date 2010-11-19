@@ -63,6 +63,8 @@ var fitTests = []fitTest{
 	{hi, new(**[]byte), &phi},
 
 	{[]interface{}{hi, hi}, new(interface{}), []interface{}{hi, hi}},
+	{ResponseError("hi"), new(interface{}), ResponseError("hi")},
+	{Redirect("hi"), new(interface{}), Redirect("hi")},
 
 	{nil, &T{I: 1}, T{}},
 	{[]interface{}{int64(1), hi, hi}, &T{}, T{1, string(hi), hi}},
@@ -98,8 +100,6 @@ var fitErrors = []fitTest{
 		a()
 	}), nil},
 
-	{ResponseError("hi"), new(int), ResponseError("hi")},
-	{Redirect("hi"), new(int), Redirect("hi")},
 	{[]interface{}{int64(1), hi, hi}, *new(*T), nil},
 
 	{[]interface{}{1, 1}, new([1]int), nil},
@@ -110,29 +110,6 @@ func TestFitNil(t *testing.T) {
 	err := Fit(nil, nil)
 	if err != nil {
 		t.Error("unexpected error:", err)
-	}
-}
-
-func TestFitPartial(t *testing.T) {
-	rerr := ResponseError("hi")
-
-	data := []interface{}{
-		int64(1),
-		rerr,
-	}
-
-	var res struct {
-		N int
-		X interface{}
-	}
-
-	err := Fit(data, &res)
-	if !reflect.DeepEqual(err, rerr) {
-		t.Error("expected", rerr, "got", err)
-	}
-
-	if res.N != 1 {
-		t.Error("expected 1 got", res.N)
 	}
 }
 

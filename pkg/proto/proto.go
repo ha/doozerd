@@ -199,13 +199,13 @@ func (c *Conn) SendRequest(verb string, data interface{}) (Response, os.Error) {
 
 func (c *Conn) fitResponse(x interface{}) (res response) {
 	err := Fit(x, &res)
-	if r, ok := err.(Redirect); ok {
-		c.RedirectAddr = string(r)
-		logger.Println("redirect to", c.RedirectAddr)
-		err = os.EAGAIN
-	}
 	if err != nil {
 		res.Data = err
+	}
+	if r, ok := res.Data.(Redirect); ok {
+		c.RedirectAddr = string(r)
+		logger.Println("redirect to", c.RedirectAddr)
+		res.Data = os.EAGAIN
 	}
 	return res
 }
