@@ -24,6 +24,7 @@ const (
 const (
 	InvalidCommand = "invalid command"
 	redirectPrefix = "REDIRECT:"
+	errPrefix      = "ERR:"
 )
 
 var (
@@ -41,6 +42,13 @@ var crnl = []byte{'\r', '\n'}
 var logger = util.NewLogger("proto")
 
 type Line string
+
+type Redirect string
+
+// This is to satisfy os.Error.
+func (r Redirect) String() string {
+	return string(r)
+}
 
 // This needs to be refactored. There is client stuff and server stuff mixed up
 // in here. This type should contain only symmetric low-level connection stuff.
@@ -136,11 +144,11 @@ func (c *Conn) SendResponse(id, flag uint, data interface{}) os.Error {
 }
 
 func (c *Conn) SendError(id uint, msg string) os.Error {
-	return c.SendResponse(id, Last, os.NewError("ERR: "+msg))
+	return c.SendResponse(id, Last, os.NewError(msg))
 }
 
 func (c *Conn) SendRedirect(id uint, addr string) os.Error {
-	return c.SendResponse(id, Last, os.NewError(redirectPrefix+addr))
+	return c.SendResponse(id, Last, Redirect(addr))
 }
 
 func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
@@ -189,15 +197,12 @@ func (c *Conn) SendRequest(verb string, data interface{}) (Response, os.Error) {
 	return Response(ch), nil
 }
 
-func (c *Conn) fit(x interface{}) (res response) {
+func (c *Conn) fitResponse(x interface{}) (res response) {
 	err := Fit(x, &res)
-	if re, ok := err.(ResponseError); ok {
-		s := string(re)
-		if strings.HasPrefix(s, redirectPrefix) {
-			c.RedirectAddr = strings.TrimSpace(s[len(redirectPrefix):])
-			logger.Println("redirect to", c.RedirectAddr)
-			err = os.EAGAIN
-		}
+	if r, ok := err.(Redirect); ok {
+		c.RedirectAddr = string(r)
+		logger.Println("redirect to", c.RedirectAddr)
+		err = os.EAGAIN
 	}
 	if err != nil {
 		res.Data = err
@@ -215,7 +220,7 @@ func (c *Conn) ReadResponses() {
 			break
 		}
 
-		res := c.fit(data)
+		res := c.fitResponse(data)
 		if res.Id == 0 {
 			continue
 		}
@@ -281,7 +286,14 @@ func decode(r *bufio.Reader) (data interface{}, err os.Error) {
 	case '+':
 		return []byte(line[1:]), nil
 	case '-':
-		return ResponseError(line[1:]), nil
+		s := line[1:]
+		switch {
+		case strings.HasPrefix(s, errPrefix):
+			return ResponseError(strings.TrimSpace(s[len(errPrefix):])), nil
+		case strings.HasPrefix(s, redirectPrefix):
+			return Redirect(strings.TrimSpace(s[len(redirectPrefix):])), nil
+		}
+		return os.ErrorString(s), nil
 	case '$':
 		n, e := strconv.Atoi(line[1:])
 		if e != nil {
@@ -333,8 +345,12 @@ func encode(w io.Writer, data interface{}) (err os.Error) {
 		if err = printfLine(w, "+%s", t); err != nil {
 			return
 		}
+	case Redirect:
+		if err = printfLine(w, "-%s %s", redirectPrefix, t); err != nil {
+			return
+		}
 	case os.Error:
-		if err = printfLine(w, "-%s", t.String()); err != nil {
+		if err = printfLine(w, "-%s %s", errPrefix, t.String()); err != nil {
 			return
 		}
 	case nil:

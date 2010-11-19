@@ -46,7 +46,8 @@ var encTests = []encTest{
 	{"$3\r\nfoo\r\n", []byte{'f', 'o', 'o'}},
 	{"$3\r\nfoo\r\n", "foo"},
 	{"+hi\r\n", Line("hi")},
-	{"-hi\r\n", os.NewError("hi")},
+	{"-ERR: hi\r\n", os.NewError("hi")},
+	{"-REDIRECT: hi\r\n", Redirect("hi")},
 	{"$-1\r\n", nil},
 	{"*2\r\n$1\r\na\r\n$1\r\nb\r\n", []interface{}{[]byte{'a'}, []byte{'b'}}},
 	{"*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n", []string{"GET", "FOO"}},
@@ -62,7 +63,9 @@ var decTests = []encTest{
 	{":18446744073709551611\r\n", uint64(18446744073709551611)},
 	{"$3\r\nfoo\r\n", []byte{'f', 'o', 'o'}},
 	{"+hi\r\n", []byte("hi")},
-	{"-hi\r\n", ResponseError("hi")},
+	{"-ERR: hi\r\n", ResponseError("hi")},
+	{"-REDIRECT: hi\r\n", Redirect("hi")},
+	{"-hi\r\n", os.ErrorString("hi")},
 	{"$-1\r\n", nil},
 	{"*-1\r\n", nil},
 	{"*2\r\n$1\r\na\r\n$1\r\nb\r\n", []interface{}{[]byte{'a'}, []byte{'b'}}},
@@ -188,8 +191,8 @@ func TestDecodeFuzz(t *testing.T) {
 func TestRedirect(t *testing.T) {
 	var c Conn
 	addr := "foo"
-	rerr := ResponseError(redirectPrefix + addr)
-	res := c.fit([]interface{}{int64(0), int64(0), rerr})
+	rerr := Redirect(addr)
+	res := c.fitResponse([]interface{}{int64(0), int64(0), rerr})
 	assert.Equal(t, os.EAGAIN, res.Data)
 	assert.Equal(t, addr, c.RedirectAddr)
 }

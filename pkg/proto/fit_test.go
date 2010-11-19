@@ -99,6 +99,7 @@ var fitErrors = []fitTest{
 	}), nil},
 
 	{ResponseError("hi"), new(int), ResponseError("hi")},
+	{Redirect("hi"), new(int), Redirect("hi")},
 	{[]interface{}{int64(1), hi, hi}, *new(*T), nil},
 
 	{[]interface{}{1, 1}, new([1]int), nil},

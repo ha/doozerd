@@ -61,8 +61,8 @@ func fitValue(x interface{}, v reflect.Value) os.Error {
 	iv, ok := v.(*reflect.InterfaceValue)
 	if ok && iv.Type().(*reflect.InterfaceType).NumMethod() == 0 {
 		iv.Set(reflect.NewValue(x))
-		if re, ok := x.(ResponseError); ok {
-			return re
+		if e, ok := x.(os.Error); ok {
+			return e
 		}
 		return nil
 	}
@@ -106,7 +106,7 @@ func fitValue(x interface{}, v reflect.Value) os.Error {
 		return &FitError{"cannot hold an integer", t, "slot", v.Type()}
 	case []byte:
 		return fitBytes(t, v)
-	case ResponseError:
+	case os.Error:
 		return t
 	case nil:
 		v.SetValue(reflect.MakeZero(v.Type()))
