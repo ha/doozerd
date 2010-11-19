@@ -28,7 +28,7 @@ Every response is formatted in three parts: opid, flags, data.
     SETT    [interval cas]       cas
 
     # Increment the servers seqn without mutation.
-    NOOP                         +OK
+    NOOP    nil                  +OK
 
     # Walk tree `sid` SAX style.
     WALK    [glob sid]           [path body cas] ...

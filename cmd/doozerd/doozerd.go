@@ -52,7 +52,7 @@ func activate(st *store.Store, self, prefix string, c *client.Client, cal chan i
 
 func advanceUntil(cl *client.Client, done chan int) {
 	for _, ok := <-done; !ok; _, ok = <-done {
-		cl.Nop()
+		cl.Noop()
 	}
 }
 

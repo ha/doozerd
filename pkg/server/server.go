@@ -197,9 +197,9 @@ func del(c *conn, _ uint, data interface{}) interface{} {
 	return seqn
 }
 
-func nop(c *conn, _ uint, data interface{}) interface{} {
+func noop(c *conn, _ uint, data interface{}) interface{} {
 	c.s.Mg.Propose(store.Nop)
-	return nil
+	return Ok
 }
 
 func join(c *conn, _ uint, data interface{}) interface{} {
@@ -275,6 +275,7 @@ type op struct {
 var ops = map[string]op{
 	// new stuff, see doc/proto.md
 	"CLOSE": {p: new(uint), f: closeOp},
+	"NOOP":  {p: new(interface{}), f: noop, redirect: true},
 	"WATCH": {p: new(string), f: watch},
 
 	// former stuff
@@ -282,7 +283,6 @@ var ops = map[string]op{
 	"sget":    {p: new(*proto.ReqGet), f: sget},
 	"set":     {p: new(*proto.ReqSet), f: set, redirect: true},
 	"del":     {p: new(*proto.ReqDel), f: del, redirect: true},
-	"nop":     {p: new(*[]interface{}), f: nop, redirect: true},
 	"join":    {p: new(*proto.ReqJoin), f: join, redirect: true},
 	"checkin": {p: new(*proto.ReqCheckin), f: checkin, redirect: true},
 }

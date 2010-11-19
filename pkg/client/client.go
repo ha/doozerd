@@ -108,8 +108,8 @@ func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
 	return
 }
 
-func (c *Client) Nop() os.Error {
-	return c.call("nop", nil, nil)
+func (c *Client) Noop() os.Error {
+	return c.call("NOOP", nil, nil)
 }
 
 func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
