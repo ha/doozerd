@@ -95,7 +95,6 @@ func TestProtoEncodeShort(t *testing.T) {
 	for _, e := range encTests {
 		n := len(e.encoding)
 		for i := 0; i < n; i++ {
-			t.Logf("trying %d bytes", i)
 			w := test.ErrWriter{i}
 			err := encode(&w, e.data)
 			if err == nil {
