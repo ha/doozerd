@@ -142,74 +142,74 @@ func (c *conn) redirect(rid uint) {
 	}
 }
 
-func get(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func get(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqGet)
 	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	v, cas := c.s.St.Get(shortPath)
-	return proto.ResGet{v, cas}, nil
+	return proto.ResGet{v, cas}
 }
 
-func sget(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func sget(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqGet)
 	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	body, err := store.GetString(c.s.St.SyncPath(shortPath), shortPath), nil
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return body, nil
+	return body
 }
 
-func set(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func set(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqSet)
 
 	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	seqn, _, err := paxos.Set(c.s.Mg, shortPath, r.Body, r.Cas)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return seqn, nil
+	return seqn
 }
 
-func del(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func del(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqDel)
 
 	shortPath, err := c.s.checkPath(r.Path)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	seqn, err := paxos.Del(c.s.Mg, shortPath, r.Cas)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return seqn, nil
+	return seqn
 }
 
-func nop(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func nop(c *conn, _ uint, data interface{}) interface{} {
 	c.s.Mg.Propose(store.Nop)
-	return nil, nil
+	return nil
 }
 
-func join(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func join(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqJoin)
 	key := "/doozer/members/" + r.Who
 	seqn, _, err := paxos.Set(c.s.Mg, key, r.Addr, store.Missing)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	done := make(chan int)
@@ -217,28 +217,28 @@ func join(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
 	c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
 	close(done)
 	seqn, snap := c.s.St.Snapshot()
-	return proto.ResJoin{seqn, snap}, nil
+	return proto.ResJoin{seqn, snap}
 }
 
-func checkin(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func checkin(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqCheckin)
 	t := time.Nanoseconds() + lease
 	_, cas, err := paxos.Set(c.s.Mg, "/session/"+r.Sid, strconv.Itoa64(t), r.Cas)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return proto.ResCheckin{t, cas}, nil
+	return proto.ResCheckin{t, cas}
 }
 
-func closeOp(c *conn, _ uint, data interface{}) (interface{}, os.Error) {
+func closeOp(c *conn, _ uint, data interface{}) interface{} {
 	err := c.CloseResponse(data.(uint))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return Ok, nil
+	return Ok
 }
 
-func watch(c *conn, id uint, data interface{}) (interface{}, os.Error) {
+func watch(c *conn, id uint, data interface{}) interface{} {
 	glob := data.(string)
 	// TODO check glob pattern for errors
 	ch := c.s.St.Watch(glob)
@@ -258,14 +258,14 @@ func watch(c *conn, id uint, data interface{}) (interface{}, os.Error) {
 			break
 		}
 	}
-	return nil, responded
+	return responded
 }
 
 func indirect(x interface{}) interface{} {
 	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
 
-type handler func(*conn, uint, interface{}) (interface{}, os.Error)
+type handler func(*conn, uint, interface{}) interface{}
 
 type op struct {
 	p interface{}
@@ -290,16 +290,12 @@ var ops = map[string]op{
 }
 
 func (c *conn) handle(rid uint, f handler, data interface{}) {
-	res, err := f(c, rid, data)
-	if err == responded {
+	res := f(c, rid, data)
+	if res == responded {
 		return
 	}
 
-	if err != nil {
-		c.SendResponse(rid, proto.Last, err)
-	} else {
-		c.SendResponse(rid, proto.Last, res)
-	}
+	c.SendResponse(rid, proto.Last, res)
 }
 
 func (c *conn) serve() {
