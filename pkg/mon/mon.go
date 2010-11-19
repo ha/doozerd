@@ -52,7 +52,7 @@ type exit struct {
 
 type SetDeler interface {
 	Set(p, body, oldCas string) (newCas string, err os.Error)
-	Del(p, cas string) (seqn uint64, err os.Error)
+	Del(p, cas string) os.Error
 }
 
 type monitor struct {

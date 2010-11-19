@@ -22,7 +22,7 @@ Every response is formatted in three parts: opid, flags, data.
     # is taken from current live tree.
     GET     [path sid]           body
 
-    DEL     path                 +OK
+    DEL     [path cas]           +OK
 
     # Set a paths value to the servers Nanoseconds()+interval
     SETT    [interval cas]       cas

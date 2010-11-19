@@ -23,13 +23,12 @@ func Set(p Proposer, path, body, cas string) (uint64, string, os.Error) {
 	return p.Propose(mut)
 }
 
-func Del(p Proposer, path, cas string) (seqn uint64, err os.Error) {
-	var mut string
-	mut, err = store.EncodeDel(path, cas)
+func Del(p Proposer, path, cas string) os.Error {
+	mut, err := store.EncodeDel(path, cas)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	seqn, _, err = p.Propose(mut)
-	return seqn, err
+	_, _, err = p.Propose(mut)
+	return err
 }

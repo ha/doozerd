@@ -103,9 +103,8 @@ func (c *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
 	return
 }
 
-func (c *Client) Del(path, cas string) (seqn uint64, err os.Error) {
-	err = c.call("del", proto.ReqDel{path, cas}, &seqn)
-	return
+func (c *Client) Del(path, cas string) os.Error {
+	return c.call("DEL", proto.ReqDel{path, cas}, nil)
 }
 
 func (c *Client) Noop() os.Error {
