@@ -18,9 +18,11 @@ const packetSize = 3000
 
 const lease = 3e9 // ns == 3s
 
-var ErrBadPrefix = os.NewError("bad prefix in path")
-
-var responded = os.NewError("already responded")
+var (
+	ErrBadPrefix = os.NewError("bad prefix in path")
+	ErrNoWrite = os.NewError("no known writeable address")
+	responded = os.NewError("already responded")
+)
 
 const (
 	Ok = proto.Line("OK")
@@ -134,9 +136,9 @@ func (c *conn) redirect(rid uint) {
 	leader := c.s.leader()
 	addr := c.s.addrFor(leader)
 	if addr == "" {
-		c.SendError(rid, "unknown address for leader")
+		c.SendResponse(rid, proto.Last, ErrNoWrite)
 	} else {
-		c.SendRedirect(rid, addr)
+		c.SendResponse(rid, proto.Last, proto.Redirect(addr))
 	}
 }
 
@@ -294,7 +296,7 @@ func (c *conn) handle(rid uint, f handler, data interface{}) {
 	}
 
 	if err != nil {
-		c.SendError(rid, err.String())
+		c.SendResponse(rid, proto.Last, err)
 	} else {
 		c.SendResponse(rid, proto.Last, res)
 	}
@@ -321,7 +323,7 @@ func (c *conn) serve() {
 
 			err := proto.Fit(data, o.p)
 			if err != nil {
-				c.SendError(rid, err.String())
+				c.SendResponse(rid, proto.Last, err)
 				continue
 			}
 
@@ -335,6 +337,6 @@ func (c *conn) serve() {
 		}
 
 		rlogger.Printf("unknown command <%s>", verb)
-		c.SendError(rid, proto.InvalidCommand+" "+verb)
+		c.SendResponse(rid, proto.Last, os.ErrorString(proto.InvalidCommand+" "+verb))
 	}
 }

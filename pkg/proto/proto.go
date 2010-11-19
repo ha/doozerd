@@ -143,14 +143,6 @@ func (c *Conn) SendResponse(id, flag uint, data interface{}) os.Error {
 	return nil
 }
 
-func (c *Conn) SendError(id uint, msg string) os.Error {
-	return c.SendResponse(id, Last, os.NewError(msg))
-}
-
-func (c *Conn) SendRedirect(id uint, addr string) os.Error {
-	return c.SendResponse(id, Last, Redirect(addr))
-}
-
 func (c *Conn) ReadRequest() (uint, string, interface{}, os.Error) {
 	c.rl.Lock()
 	defer c.rl.Unlock()
