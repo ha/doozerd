@@ -120,3 +120,13 @@ func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
 
 	return r.T, r.Cas, nil
 }
+
+func (c *Client) Sett(path string, n int64, cas string) (t int64, ncas string, err os.Error) {
+	var r proto.ResSett
+	err = c.call("SETT", proto.ReqSett{path, n, cas}, &r)
+	if err != nil {
+		return
+	}
+
+	return r.T, r.Cas, nil
+}
