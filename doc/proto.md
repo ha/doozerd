@@ -18,14 +18,14 @@ Every response is formatted in three parts: opid, flags, data.
     # I'll give you 1 guess.
     SET     [path body cas]      cas
 
+    # Set a paths value to the servers current time + interval ns.
+    SETT    [path interval cas]  [t, cas]
+
     # Get a value from snap `sid`.  If `sid` is `0` then value
     # is taken from current live tree.
     GET     [path sid]           body
 
     DEL     [path cas]           +OK
-
-    # Set a paths value to the servers Nanoseconds()+interval
-    SETT    [interval cas]       cas
 
     # Increment the servers seqn without mutation.
     NOOP    nil                  +OK

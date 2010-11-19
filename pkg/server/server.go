@@ -207,6 +207,16 @@ func join(c *conn, _ uint, data interface{}) interface{} {
 	return proto.ResJoin{seqn, snap}
 }
 
+func sett(c *conn, _ uint, data interface{}) interface{} {
+	r := data.(*proto.ReqSett)
+	t := time.Nanoseconds() + r.Interval
+	_, cas, err := paxos.Set(c.s.Mg, r.Path, strconv.Itoa64(t), r.Cas)
+	if err != nil {
+		return err
+	}
+	return proto.ResSett{t, cas}
+}
+
 func checkin(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqCheckin)
 	t := time.Nanoseconds() + lease
@@ -267,6 +277,7 @@ var ops = map[string]op{
 	"DEL":   {p: new(*proto.ReqDel), f: del, redirect: true},
 	"NOOP":  {p: new(interface{}), f: noop, redirect: true},
 	"SET":   {p: new(*proto.ReqSet), f: set, redirect: true},
+	"SETT":  {p: new(*proto.ReqSett), f: sett, redirect: true},
 	"WATCH": {p: new(string), f: watch},
 
 	// former stuff

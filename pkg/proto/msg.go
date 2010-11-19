@@ -8,6 +8,12 @@ type ReqSet struct {
 	Path, Body, Cas string
 }
 
+type ReqSett struct {
+	Path     string
+	Interval int64
+	Cas      string
+}
+
 type ReqDel struct {
 	Path, Cas string
 }
@@ -32,6 +38,11 @@ type ResJoin struct {
 }
 
 type ResCheckin struct {
+	T   int64
+	Cas string
+}
+
+type ResSett struct {
 	T   int64
 	Cas string
 }
