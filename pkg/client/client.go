@@ -98,8 +98,8 @@ func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Err
 	return r.Seqn, r.Snapshot, nil
 }
 
-func (c *Client) Set(path, body, cas string) (seqn uint64, err os.Error) {
-	err = c.call("set", proto.ReqSet{path, body, cas}, &seqn)
+func (c *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
+	err = c.call("SET", proto.ReqSet{path, body, oldCas}, &newCas)
 	return
 }
 

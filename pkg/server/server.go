@@ -169,17 +169,11 @@ func sget(c *conn, _ uint, data interface{}) interface{} {
 
 func set(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqSet)
-
-	shortPath, err := c.s.checkPath(r.Path)
+	_, cas, err := paxos.Set(c.s.Mg, r.Path, r.Body, r.Cas)
 	if err != nil {
 		return err
 	}
-
-	seqn, _, err := paxos.Set(c.s.Mg, shortPath, r.Body, r.Cas)
-	if err != nil {
-		return err
-	}
-	return seqn
+	return cas
 }
 
 func del(c *conn, _ uint, data interface{}) interface{} {
@@ -277,12 +271,12 @@ var ops = map[string]op{
 	// new stuff, see doc/proto.md
 	"CLOSE": {p: new(uint), f: closeOp},
 	"NOOP":  {p: new(interface{}), f: noop, redirect: true},
+	"SET":   {p: new(*proto.ReqSet), f: set, redirect: true},
 	"WATCH": {p: new(string), f: watch},
 
 	// former stuff
 	"get":     {p: new(*proto.ReqGet), f: get},
 	"sget":    {p: new(*proto.ReqGet), f: sget},
-	"set":     {p: new(*proto.ReqSet), f: set, redirect: true},
 	"del":     {p: new(*proto.ReqDel), f: del, redirect: true},
 	"join":    {p: new(*proto.ReqJoin), f: join, redirect: true},
 	"checkin": {p: new(*proto.ReqCheckin), f: checkin, redirect: true},
