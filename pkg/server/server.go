@@ -38,6 +38,7 @@ type conn struct {
 
 type Manager interface {
 	paxos.Proposer
+	ProposeOnce(v string) store.Event
 	PutFrom(string, paxos.Msg)
 	Alpha() int
 }
@@ -198,7 +199,7 @@ func del(c *conn, _ uint, data interface{}) interface{} {
 }
 
 func noop(c *conn, _ uint, data interface{}) interface{} {
-	c.s.Mg.Propose(store.Nop)
+	c.s.Mg.ProposeOnce(store.Nop)
 	return Ok
 }
 
