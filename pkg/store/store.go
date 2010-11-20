@@ -51,6 +51,7 @@ type Store struct {
 	state   *state
 	log     map[uint64]Event
 	cleanCh chan uint64
+	seqnCh  chan uint64
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -87,6 +88,7 @@ func New() *Store {
 		state:   &state{0, emptyDir},
 		log:     make(map[uint64]Event),
 		cleanCh: make(chan uint64),
+		seqnCh:  make(chan uint64),
 	}
 
 	go s.process(ops)
@@ -262,6 +264,8 @@ func (s *Store) process(ops <-chan Op) {
 			for ; head <= seqn; head++ {
 				s.log[head] = Event{}, false
 			}
+		case s.seqnCh <- ver:
+			// nothing to do here
 		}
 
 		// If we have any mutations that can be applied, do them.
@@ -430,4 +434,8 @@ func (st *Store) GetDirAndWatch(path string, ch chan Event) {
 
 func (st *Store) Clean(seqn uint64) {
 	st.cleanCh <- seqn
+}
+
+func (st *Store) Seqn() uint64 {
+	return <-st.seqnCh
 }
