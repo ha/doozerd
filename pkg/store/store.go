@@ -45,13 +45,13 @@ func (e *BadPathError) String() string {
 // given position are sliently ignored.
 type Store struct {
 	Ops     chan<- Op
+	Seqns   <-chan uint64
 	watchCh chan watch
 	watches []watch
 	todo    map[uint64]Op
 	state   *state
 	log     map[uint64]Event
 	cleanCh chan uint64
-	seqnCh  chan uint64
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -78,20 +78,21 @@ type watch struct {
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
 func New() *Store {
-	ops := make(chan Op)
+	ops   := make(chan Op)
+	seqns := make(chan uint64)
 
 	s := &Store{
 		Ops:     ops,
+		Seqns:   seqns,
 		watchCh: make(chan watch),
 		todo:    make(map[uint64]Op),
 		watches: []watch{},
 		state:   &state{0, emptyDir},
 		log:     make(map[uint64]Event),
 		cleanCh: make(chan uint64),
-		seqnCh:  make(chan uint64),
 	}
 
-	go s.process(ops)
+	go s.process(ops, seqns)
 	return s
 }
 
@@ -239,7 +240,7 @@ func buffer(in, out chan Event) {
 	}
 }
 
-func (s *Store) process(ops <-chan Op) {
+func (s *Store) process(ops <-chan Op, seqns chan<-uint64) {
 	logger := util.NewLogger("store")
 	defer s.closeWatches()
 
@@ -264,7 +265,7 @@ func (s *Store) process(ops <-chan Op) {
 			for ; head <= seqn; head++ {
 				s.log[head] = Event{}, false
 			}
-		case s.seqnCh <- ver:
+		case seqns <- ver:
 			// nothing to do here
 		}
 
@@ -434,8 +435,4 @@ func (st *Store) GetDirAndWatch(path string, ch chan Event) {
 
 func (st *Store) Clean(seqn uint64) {
 	st.cleanCh <- seqn
-}
-
-func (st *Store) Seqn() uint64 {
-	return <-st.seqnCh
 }

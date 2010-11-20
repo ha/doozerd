@@ -1025,7 +1025,7 @@ func TestStoreClean(t *testing.T) {
 
 func TestStoreSeqn(t *testing.T) {
 	s := New()
-	assert.Equal(t, uint64(0), s.Seqn())
+	assert.Equal(t, uint64(0), <-s.Seqns)
 	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	assert.Equal(t, uint64(1), s.Seqn())
+	assert.Equal(t, uint64(1), <-s.Seqns)
 }
