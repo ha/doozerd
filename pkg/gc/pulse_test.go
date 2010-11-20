@@ -2,7 +2,6 @@ package gc
 
 import (
 	"doozer/assert"
-	"doozer/store"
 	"os"
 	"testing"
 )
@@ -20,15 +19,16 @@ func (fs *FakeSetter) Set(path, body, oldCas string) (string, os.Error) {
 }
 
 func TestGcPulse(t *testing.T) {
-	st := store.New()
+	seqns := make(chan uint64)
 	fs := &FakeSetter{make(chan string), make(chan string)}
 
-	go Pulse("test", st, fs, 1)
+	go Pulse("test", seqns, fs, 1)
 
+	seqns <- 0
 	assert.Equal(t, "/doozer/info/test/applied", <-fs.path)
 	assert.Equal(t, "0", <-fs.body)
 
-	st.Ops <- store.Op{1, store.Nop}
+	seqns <- 1
 	assert.Equal(t, "/doozer/info/test/applied", <-fs.path)
 	assert.Equal(t, "1", <-fs.body)
 }
