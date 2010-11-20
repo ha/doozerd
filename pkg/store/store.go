@@ -49,6 +49,8 @@ type Store struct {
 	watches []watch
 	todo    map[uint64]Op
 	state   *state
+	log     map[uint64]Event
+	cleanCh chan uint64
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -83,6 +85,8 @@ func New() *Store {
 		todo:    make(map[uint64]Op),
 		watches: []watch{},
 		state:   &state{0, emptyDir},
+		log:     make(map[uint64]Event),
+		cleanCh: make(chan uint64),
 	}
 
 	go s.process(ops)
@@ -237,6 +241,8 @@ func (s *Store) process(ops <-chan Op) {
 	logger := util.NewLogger("store")
 	defer s.closeWatches()
 
+	var head uint64
+
 	for {
 		ver, values := s.state.ver, s.state.root
 
@@ -252,6 +258,10 @@ func (s *Store) process(ops <-chan Op) {
 			}
 		case w := <-s.watchCh:
 			s.watches = append(s.watches, w)
+		case seqn := <-s.cleanCh:
+			for ; head <= seqn; head++ {
+				s.log[head] = Event{}, false
+			}
 		}
 
 		// If we have any mutations that can be applied, do them.
@@ -260,6 +270,7 @@ func (s *Store) process(ops <-chan Op) {
 			values, ev = values.apply(t.Seqn, t.Mut)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			s.state = &state{ev.Seqn, values}
+			s.log[t.Seqn] = ev
 			s.notify(ev)
 			for ver < ev.Seqn {
 				ver++
@@ -350,7 +361,11 @@ func (s *Store) Wait(seqn uint64) <-chan Event {
 	// Reading shared state. This must happen after the call to s.Watch.
 	if s.state.ver >= seqn {
 		close(all)
-		ch <- Event{Seqn: seqn, Err: ErrTooLate}
+		if ev, ok := s.log[seqn]; ok {
+			ch <- ev
+		} else {
+			ch <- Event{Seqn: seqn, Err: ErrTooLate}
+		}
 	}
 
 	go func() {
@@ -411,4 +426,8 @@ func (st *Store) GetDirAndWatch(path string, ch chan Event) {
 			}
 		}
 	}()
+}
+
+func (st *Store) Clean(seqn uint64) {
+	st.cleanCh <- seqn
 }

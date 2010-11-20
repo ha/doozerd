@@ -834,13 +834,6 @@ func TestStoreWaitOutOfOrder(t *testing.T) {
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	st.Sync(2)
 
-	statusCh := st.Wait(1)
-
-	got := <-statusCh
-	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, ErrTooLate, got.Err)
-	assert.Equal(t, "", got.Mut)
-
 	assert.Equal(t, uint64(1), (<-evCh).Seqn)
 	assert.Equal(t, uint64(2), (<-evCh).Seqn)
 }
@@ -1007,4 +1000,25 @@ func TestStoreClose(t *testing.T) {
 	close(s.Ops)
 	assert.Equal(t, Event{}, <-ch)
 	assert.T(t, closed(ch))
+}
+
+func TestStoreKeepsLog(t *testing.T) {
+	s := New()
+	mut := MustEncodeSet("/x", "a", Clobber)
+	s.Ops <- Op{1, mut}
+	ev := <-s.Wait(1)
+	assert.Equal(t, Event{1, "/x", "a", "1", mut, nil, nil}, clearGetter(ev))
+}
+
+func TestStoreClean(t *testing.T) {
+	s := New()
+	mut := MustEncodeSet("/x", "a", Clobber)
+	s.Ops <- Op{1, mut}
+
+	s.Clean(1)
+
+	ev := <-s.Wait(1)
+	assert.Equal(t, uint64(1), ev.Seqn)
+	assert.Equal(t, ErrTooLate, ev.Err)
+	assert.Equal(t, "", ev.Mut)
 }
