@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"doozer/client"
 	"doozer/lock"
+	"doozer/gc"
 	"doozer/member"
 	"doozer/mon"
 	"doozer/paxos"
@@ -20,7 +21,8 @@ import (
 
 const (
 	alpha    = 50
-	interval = 1e9 // ns == 1s
+	checkinInterval = 1e9 // ns == 1s
+	pulseInterval = 1e9
 )
 
 // Flags
@@ -171,13 +173,14 @@ func main() {
 		go lock.Clean(st, mg)
 		go session.Clean(st, mg)
 		go member.Clean(st, mg)
+		go gc.Pulse(self, st.Seqns, cl, pulseInterval)
 	}()
 
 	sv := &server.Server{*listenAddr, st, mg, self, prefix}
 
 	go func() {
 		cas := store.Missing
-		for _ = range time.Tick(interval) {
+		for _ = range time.Tick(checkinInterval) {
 			_, cas, err = cl.Checkin(self, cas)
 			if err != nil {
 				logger.Println(err)
