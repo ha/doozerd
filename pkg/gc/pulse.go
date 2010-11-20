@@ -20,13 +20,16 @@ func Pulse(node string, seqns <-chan uint64, s Setter, sleep int64) {
 
 	for {
 		seqn := strconv.Uitoa64(<-seqns)
+		if closed(seqns) {
+			break
+		}
+
 		cas, err = s.Set("/doozer/info/" + node + "/applied", seqn, cas)
 		if err != nil {
 			logger.Println(err)
 		}
+
 		time.Sleep(sleep)
 	}
-
-	panic("unreachable")
 }
 
