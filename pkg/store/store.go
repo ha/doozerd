@@ -2,7 +2,6 @@ package store
 
 import (
 	"bytes"
-	"container/list"
 	"gob"
 	"doozer/util"
 	"os"
@@ -188,8 +187,7 @@ func (s *Store) notify(e Event) {
 
 	i := 0
 	for _, w := range s.watches {
-		_, _ = <-w.in
-		if closed(w.in) {
+		if closed(w.out) {
 			continue
 		}
 
@@ -197,7 +195,7 @@ func (s *Store) notify(e Event) {
 		i++
 
 		if w.re.MatchString(e.Path) {
-			w.in <- e
+			w.out <- e
 		}
 	}
 
@@ -206,37 +204,7 @@ func (s *Store) notify(e Event) {
 
 func (s *Store) closeWatches() {
 	for _, w := range s.watches {
-		close(w.in)
 		close(w.out)
-	}
-}
-
-// Unbounded in-order buffering
-func buffer(in, out chan Event) {
-	defer close(in)
-	list := list.New()
-	for {
-		f, e := list.Front(), Event{}
-		var ch chan Event
-		if f != nil {
-			e = f.Value.(Event)
-			ch = out
-		}
-		select {
-		case x := <-in:
-			list.PushBack(x)
-		case ch <- e:
-			list.Remove(f)
-		}
-
-		// check if out was closed
-		e, ok := <-out
-		if closed(out) {
-			return
-		}
-		if ok {
-			list.PushFront(e) // others may be sending events
-		}
 	}
 }
 
@@ -344,9 +312,7 @@ func (s *Store) Snapshot() (seqn uint64, mutation string) {
 // snapshot.
 func (s *Store) WatchOn(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
-	in := make(chan Event)
-	go buffer(in, ch)
-	s.watchCh <- watch{out: ch, in: in, re: re}
+	s.watchCh <- watch{out: ch, re: re}
 }
 
 func (s *Store) Watch(pattern string) <-chan Event {
@@ -397,7 +363,10 @@ func (st *Store) Sync(seqn uint64) {
 // (not a dir). Waits for `path` to be set, if necessary.
 func (st *Store) SyncPath(path string) Getter {
 	evs := st.Watch(path)
-	defer close(evs)
+	defer func() {
+		close(evs)
+		<-evs
+	}()
 
 	g := st.state.root // TODO make this use a public method
 	_, cas := g.Get(path)
