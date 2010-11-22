@@ -80,7 +80,7 @@ func New() *Store {
 	ops   := make(chan Op)
 	seqns := make(chan uint64)
 
-	s := &Store{
+	st := &Store{
 		Ops:     ops,
 		Seqns:   seqns,
 		watchCh: make(chan watch),
@@ -91,8 +91,8 @@ func New() *Store {
 		cleanCh: make(chan uint64),
 	}
 
-	go s.process(ops, seqns)
-	return s
+	go st.process(ops, seqns)
+	return st
 }
 
 func split(path string) []string {
@@ -182,11 +182,11 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	panic("unreachable")
 }
 
-func (s *Store) notify(e Event) {
-	nwatches := make([]watch, len(s.watches))
+func (st *Store) notify(e Event) {
+	nwatches := make([]watch, len(st.watches))
 
 	i := 0
-	for _, w := range s.watches {
+	for _, w := range st.watches {
 		if closed(w.out) {
 			continue
 		}
@@ -199,23 +199,23 @@ func (s *Store) notify(e Event) {
 		}
 	}
 
-	s.watches = nwatches[0:i]
+	st.watches = nwatches[0:i]
 }
 
-func (s *Store) closeWatches() {
-	for _, w := range s.watches {
+func (st *Store) closeWatches() {
+	for _, w := range st.watches {
 		close(w.out)
 	}
 }
 
-func (s *Store) process(ops <-chan Op, seqns chan<-uint64) {
+func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
 	logger := util.NewLogger("store")
-	defer s.closeWatches()
+	defer st.closeWatches()
 
 	var head uint64
 
 	for {
-		ver, values := s.state.ver, s.state.root
+		ver, values := st.state.ver, st.state.root
 
 		// Take any incoming requests and queue them up.
 		select {
@@ -225,29 +225,29 @@ func (s *Store) process(ops <-chan Op, seqns chan<-uint64) {
 			}
 
 			if a.Seqn > ver {
-				s.todo[a.Seqn] = a
+				st.todo[a.Seqn] = a
 			}
-		case w := <-s.watchCh:
-			s.watches = append(s.watches, w)
-		case seqn := <-s.cleanCh:
+		case w := <-st.watchCh:
+			st.watches = append(st.watches, w)
+		case seqn := <-st.cleanCh:
 			for ; head <= seqn; head++ {
-				s.log[head] = Event{}, false
+				st.log[head] = Event{}, false
 			}
 		case seqns <- ver:
 			// nothing to do here
 		}
 
 		// If we have any mutations that can be applied, do them.
-		for t, ok := s.todo[ver+1]; ok; t, ok = s.todo[ver+1] {
+		for t, ok := st.todo[ver+1]; ok; t, ok = st.todo[ver+1] {
 			var ev Event
 			values, ev = values.apply(t.Seqn, t.Mut)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
-			s.state = &state{ev.Seqn, values}
-			s.log[t.Seqn] = ev
-			s.notify(ev)
+			st.state = &state{ev.Seqn, values}
+			st.log[t.Seqn] = ev
+			st.notify(ev)
 			for ver < ev.Seqn {
 				ver++
-				s.todo[ver] = Op{}, false
+				st.todo[ver] = Op{}, false
 			}
 		}
 	}
@@ -262,10 +262,10 @@ func (s *Store) process(ops <-chan Op, seqns chan<-uint64) {
 // entries.
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
-func (s *Store) Get(path string) (value []string, cas string) {
-	// WARNING: Be sure to read the pointer value of s.state only once. If you
+func (st *Store) Get(path string) (value []string, cas string) {
+	// WARNING: Be sure to read the pointer value of st.state only once. If you
 	// need multiple accesses, copy the pointer first.
-	return s.state.root.Get(path)
+	return st.state.root.Get(path)
 }
 
 // Encodes the entire storage state, including the current sequence number, as
@@ -278,12 +278,12 @@ func (s *Store) Get(path string) (value []string, cas string) {
 // applied, the store's sequence number will be set to `seqn`.
 //
 // Note that applying a snapshot does not send notifications.
-func (s *Store) Snapshot() (seqn uint64, mutation string) {
+func (st *Store) Snapshot() (seqn uint64, mutation string) {
 	w := new(bytes.Buffer)
 
-	// WARNING: Be sure to read the pointer value of s.state only once. If you
+	// WARNING: Be sure to read the pointer value of st.state only once. If you
 	// need multiple accesses, copy the pointer first.
-	ss := s.state
+	ss := st.state
 
 	err := gob.NewEncoder(w).Encode(ss.ver)
 	if err != nil {
@@ -310,14 +310,14 @@ func (s *Store) Snapshot() (seqn uint64, mutation string) {
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
-func (s *Store) WatchOn(pattern string, ch chan Event) {
+func (st *Store) WatchOn(pattern string, ch chan Event) {
 	re, _ := compileGlob(pattern)
-	s.watchCh <- watch{out: ch, re: re}
+	st.watchCh <- watch{out: ch, re: re}
 }
 
-func (s *Store) Watch(pattern string) <-chan Event {
+func (st *Store) Watch(pattern string) <-chan Event {
 	ch := make(chan Event)
-	s.WatchOn(pattern, ch)
+	st.WatchOn(pattern, ch)
 	return ch
 }
 
@@ -326,13 +326,13 @@ func (s *Store) Watch(pattern string) <-chan Event {
 //
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
-func (s *Store) Wait(seqn uint64) <-chan Event {
-	ch, all := make(chan Event, 1), s.Watch("**")
+func (st *Store) Wait(seqn uint64) <-chan Event {
+	ch, all := make(chan Event, 1), st.Watch("**")
 
-	// Reading shared state. This must happen after the call to s.Watch.
-	if s.state.ver >= seqn {
+	// Reading shared state. This must happen after the call to st.Watch.
+	if st.state.ver >= seqn {
 		close(all)
-		if ev, ok := s.log[seqn]; ok {
+		if ev, ok := st.log[seqn]; ok {
 			ch <- ev
 		} else {
 			ch <- Event{Seqn: seqn, Err: ErrTooLate}

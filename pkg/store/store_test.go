@@ -162,67 +162,67 @@ func TestDecodeBadMutations(t *testing.T) {
 }
 
 func TestGetMissing(t *testing.T) {
-	s := New()
-	v, cas := s.Get("/x")
+	st := New()
+	v, cas := st.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v)
 }
 
 func TestGet(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Sync(1)
-	v, cas := s.Get("/x")
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Sync(1)
+	v, cas := st.Get("/x")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, []string{"a"}, v)
 }
 
 func TestGetDeleted(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeDel("/x", Clobber)}
-	s.Sync(2)
-	v, cas := s.Get("/x")
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeDel("/x", Clobber)}
+	st.Sync(2)
+	v, cas := st.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v)
 }
 
 func TestApplyInOrder(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s.Sync(2)
-	v, cas := s.Get("/x")
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
+	st.Sync(2)
+	v, cas := st.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
 
 func BenchmarkApply(b *testing.B) {
-	s := New()
+	st := New()
 	mut := MustEncodeSet("/x", "a", Clobber)
 
 	n := uint64(b.N + 1)
 	for i := uint64(1); i < n; i++ {
-		s.Ops <- Op{i, mut}
+		st.Ops <- Op{i, mut}
 	}
 }
 
 func TestGetSync(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
-	s := New()
+	st := New()
 	go func() {
-		s.Sync(5)
-		v, cas := s.Get("/x")
+		st.Sync(5)
+		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
 	}()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
-	s.Sync(5)
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
+	st.Sync(5)
 	assert.Equal(t, []string{"b"}, <-chV)
 	assert.Equal(t, "5", <-chCas)
 }
@@ -230,28 +230,28 @@ func TestGetSync(t *testing.T) {
 func TestGetSyncSeveral(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
-	s := New()
+	st := New()
 	go func() {
-		s.Sync(0)
-		v, cas := s.Get("/x")
+		st.Sync(0)
+		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		s.Sync(5)
-		v, cas = s.Get("/x")
+		st.Sync(5)
+		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		s.Sync(0)
-		v, cas = s.Get("/x")
+		st.Sync(0)
+		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
 	}()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
 	v := <-chV
 	assert.Equal(t, 1, len(v))
 	assert.T(t, "a" == v[0] || "b" == v[0])
@@ -268,21 +268,21 @@ func TestGetSyncSeveral(t *testing.T) {
 func TestGetSyncExtra(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
-	s := New()
+	st := New()
 
 	go func() {
-		s.Sync(0)
-		v, cas := s.Get("/x")
+		st.Sync(0)
+		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		s.Sync(5)
-		v, cas = s.Get("/x")
+		st.Sync(5)
+		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		s.Sync(0)
-		v, cas = s.Get("/x")
+		st.Sync(0)
+		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
 	}()
@@ -291,16 +291,16 @@ func TestGetSyncExtra(t *testing.T) {
 	assert.Equal(t, []string{""}, <-chV)
 	assert.Equal(t, Missing, <-chCas)
 
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
 	// 5 is below
-	s.Ops <- Op{6, MustEncodeSet("/x", "c", Clobber)}
-	s.Ops <- Op{7, MustEncodeSet("/x", "c", Clobber)}
-	s.Ops <- Op{8, MustEncodeSet("/x", "c", Clobber)}
+	st.Ops <- Op{6, MustEncodeSet("/x", "c", Clobber)}
+	st.Ops <- Op{7, MustEncodeSet("/x", "c", Clobber)}
+	st.Ops <- Op{8, MustEncodeSet("/x", "c", Clobber)}
 	// do 5 last
-	s.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
+	st.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
 
 	v := <-chV
 	assert.Equal(t, 1, len(v))
@@ -318,124 +318,124 @@ func TestGetSyncExtra(t *testing.T) {
 }
 
 func TestApplyBadThenGood(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, "foo"} // bad mutation
-	s.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s.Sync(2)
-	v, cas := s.Get("/x")
+	st := New()
+	st.Ops <- Op{1, "foo"} // bad mutation
+	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
+	st.Sync(2)
+	v, cas := st.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
 
 func TestApplyOutOfOrder(t *testing.T) {
-	s := New()
-	s.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st := New()
+	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 
-	s.Sync(2)
-	v, cas := s.Get("/x")
+	st.Sync(2)
+	v, cas := st.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 }
 
 func TestApplyIgnoreDuplicate(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{1, MustEncodeSet("/x", "b", Clobber)}
-	s.Sync(1)
-	v, cas := s.Get("/x")
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x", "b", Clobber)}
+	st.Sync(1)
+	v, cas := st.Get("/x")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, []string{"a"}, v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s.todo))
+	assert.Equal(t, 0, len(st.todo))
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s.Ops <- Op{1, MustEncodeSet("/x", "c", Clobber)}
-	s.Sync(1)
-	v, cas := s.Get("/x")
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x", "c", Clobber)}
+	st.Sync(1)
+	v, cas := st.Get("/x")
 	assert.Equal(t, "2", cas)
 	assert.Equal(t, []string{"b"}, v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s.todo))
+	assert.Equal(t, 0, len(st.todo))
 }
 
 func TestGetWithDir(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
-	s.Sync(2)
-	dents, cas := s.Get("/")
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
+	st.Sync(2)
+	dents, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"x", "y"}, dents)
 }
 
 func TestDirParents(t *testing.T) {
-	s := New()
+	st := New()
 
-	s.Ops <- Op{1, MustEncodeSet("/x/y/z", "a", Clobber)}
-	s.Sync(1)
+	st.Ops <- Op{1, MustEncodeSet("/x/y/z", "a", Clobber)}
+	st.Sync(1)
 
-	dents, cas := s.Get("/")
+	dents, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"x"}, dents)
 
-	dents, cas = s.Get("/x")
+	dents, cas = st.Get("/x")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"y"}, dents)
 
-	dents, cas = s.Get("/x/y")
+	dents, cas = st.Get("/x/y")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{"z"}, dents)
 
-	v, cas := s.Get("/x/y/z")
+	v, cas := st.Get("/x/y/z")
 	assert.Equal(t, "1", cas)
 	assert.Equal(t, []string{"a"}, v)
 }
 
 func TestDelDirParents(t *testing.T) {
-	s := New()
+	st := New()
 
-	s.Ops <- Op{1, MustEncodeSet("/x/y/z", "a", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x/y/z", "a", Clobber)}
 
-	s.Ops <- Op{2, MustEncodeDel("/x/y/z", Clobber)}
-	s.Sync(2)
+	st.Ops <- Op{2, MustEncodeDel("/x/y/z", Clobber)}
+	st.Sync(2)
 
-	v, cas := s.Get("/")
+	v, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
 	assert.Equal(t, []string{""}, v, "lookup /")
 
-	v, cas = s.Get("/x")
+	v, cas = st.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v, "lookup /x")
 
-	v, cas = s.Get("/x/y")
+	v, cas = st.Get("/x/y")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v, "lookup /x/y")
 
-	v, cas = s.Get("/x/y/z")
+	v, cas = st.Get("/x/y/z")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v, "lookup /x/y/z")
 }
 
 func TestWatchSetSimple(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/x", ch)
+	st.WatchOn("/x", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
 	mut3 := MustEncodeSet("/y", "c", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{3, mut3}
-	s.Sync(3)
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{3, mut3}
+	st.Sync(3)
 
 	expa := clearGetter(<-ch)
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, expa)
@@ -444,19 +444,19 @@ func TestWatchSetSimple(t *testing.T) {
 }
 
 func TestWatchSetOutOfOrder(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/x", ch)
+	st.WatchOn("/x", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
 	mut3 := MustEncodeSet("/y", "c", Clobber)
 
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{3, mut3}
-	s.Sync(3)
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{3, mut3}
+	st.Sync(3)
 
 	expa := clearGetter(<-ch)
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, expa)
@@ -465,10 +465,10 @@ func TestWatchSetOutOfOrder(t *testing.T) {
 }
 
 func TestWatchDel(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/x", ch)
+	st.WatchOn("/x", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -476,13 +476,13 @@ func TestWatchDel(t *testing.T) {
 	mut4 := MustEncodeDel("/x", Clobber)
 	mut5 := MustEncodeDel("/y", Clobber)
 	mut6 := MustEncodeDel("/x", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{3, mut3}
-	s.Ops <- Op{4, mut4}
-	s.Ops <- Op{5, mut5}
-	s.Ops <- Op{6, mut6}
-	s.Sync(6)
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{3, mut3}
+	st.Ops <- Op{4, mut4}
+	st.Ops <- Op{5, mut5}
+	st.Ops <- Op{6, mut6}
+	st.Sync(6)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
@@ -491,18 +491,18 @@ func TestWatchDel(t *testing.T) {
 }
 
 func TestWatchAddSimple(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/*", ch)
+	st.WatchOn("/*", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
 	mut3 := MustEncodeSet("/y", "c", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{3, mut3}
-	s.Sync(3)
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{3, mut3}
+	st.Sync(3)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
@@ -510,19 +510,19 @@ func TestWatchAddSimple(t *testing.T) {
 }
 
 func TestWatchAddOutOfOrder(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/*", ch)
+	st.WatchOn("/*", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
 	mut3 := MustEncodeSet("/y", "c", Clobber)
 
-	s.Ops <- Op{3, mut3}
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Sync(2)
+	st.Ops <- Op{3, mut3}
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{2, mut2}
+	st.Sync(2)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
@@ -530,10 +530,10 @@ func TestWatchAddOutOfOrder(t *testing.T) {
 }
 
 func TestWatchRem(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/*", ch)
+	st.WatchOn("/*", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -541,13 +541,13 @@ func TestWatchRem(t *testing.T) {
 	mut4 := MustEncodeDel("/x", Clobber)
 	mut5 := MustEncodeDel("/y", Clobber)
 	mut6 := MustEncodeDel("/x", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{3, mut3}
-	s.Ops <- Op{4, mut4}
-	s.Ops <- Op{5, mut5}
-	s.Ops <- Op{6, mut6}
-	s.Sync(6)
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{3, mut3}
+	st.Ops <- Op{4, mut4}
+	st.Ops <- Op{5, mut5}
+	st.Ops <- Op{6, mut6}
+	st.Sync(6)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
@@ -559,40 +559,40 @@ func TestWatchRem(t *testing.T) {
 }
 
 func TestWatchSetDirParents(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/x/**", ch)
+	st.WatchOn("/x/**", ch)
 
 	mut1 := MustEncodeSet("/x/y/z", "a", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Sync(1)
+	st.Ops <- Op{1, mut1}
+	st.Sync(1)
 
 	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchDelDirParents(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/**", ch)
+	st.WatchOn("/**", ch)
 
 	mut1 := MustEncodeSet("/x/y/z", "a", Clobber)
-	s.Ops <- Op{1, mut1}
+	st.Ops <- Op{1, mut1}
 
 	mut2 := MustEncodeDel("/x/y/z", Clobber)
-	s.Ops <- Op{2, mut2}
-	s.Sync(2)
+	st.Ops <- Op{2, mut2}
+	st.Sync(2)
 
 	assert.Equal(t, Event{1, "/x/y/z", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x/y/z", "", Missing, mut2, nil, nil}, clearGetter(<-ch))
 }
 
 func TestWatchApply(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/**", ch)
+	st.WatchOn("/**", ch)
 
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
@@ -600,13 +600,13 @@ func TestWatchApply(t *testing.T) {
 	mut4 := MustEncodeDel("/x", Clobber)
 	mut5 := MustEncodeDel("/y", Clobber)
 	mut6 := MustEncodeDel("/x", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{3, mut3}
-	s.Ops <- Op{4, mut4}
-	s.Ops <- Op{5, mut5}
-	s.Ops <- Op{6, mut6}
-	s.Sync(6)
+	st.Ops <- Op{1, mut1}
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{3, mut3}
+	st.Ops <- Op{4, mut4}
+	st.Ops <- Op{5, mut5}
+	st.Ops <- Op{6, mut6}
+	st.Sync(6)
 
 	assert.Equal(t, Event{1, "/x", "a", "1", mut1, nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x", "b", "2", mut2, nil, nil}, clearGetter(<-ch))
@@ -617,15 +617,15 @@ func TestWatchApply(t *testing.T) {
 }
 
 func TestWatchClose(t *testing.T) {
-	s := New()
+	st := New()
 
 	ch := make(chan Event, 100)
-	s.WatchOn("/x", ch)
+	st.WatchOn("/x", ch)
 
-	s.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{0, ""} // just for synchronization
+	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 1, len(s.watches))
+	assert.Equal(t, 1, len(st.watches))
 
 	close(ch)
 	<-ch // Read the first event
@@ -633,55 +633,55 @@ func TestWatchClose(t *testing.T) {
 
 	// Send an operation to trigger the removal of
 	// the watch.
-	s.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{0, ""} // just for synchronization
+	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 0, len(s.watches))
+	assert.Equal(t, 0, len(st.watches))
 }
 
 func TestWaitClose(t *testing.T) {
-	s := New()
+	st := New()
 
-	s.Wait(1)
+	st.Wait(1)
 
-	s.Ops <- Op{0, ""} // just for synchronization
+	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 1, len(s.watches))
+	assert.Equal(t, 1, len(st.watches))
 
-	s.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{0, ""} // just for synchronization
+	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 0, len(s.watches))
+	assert.Equal(t, 0, len(st.watches))
 }
 
 func TestSyncPathClose(t *testing.T) {
-	s := New()
+	st := New()
 	ch := make(chan int)
 
 	go func() {
-		s.SyncPath("/x")
+		st.SyncPath("/x")
 		ch <- 1
 	}()
 
 	for {
-		s.Ops <- Op{0, ""} // just for synchronization
-		x := s.watches
+		st.Ops <- Op{0, ""} // just for synchronization
+		x := st.watches
 		if len(x) > 0 {
 			break
 		}
 	}
 
-	s.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
 
 	<-ch
 
-	s.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
-	s.Ops <- Op{0, ""} // just for synchronization
+	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 0, len(s.watches))
+	assert.Equal(t, 0, len(st.watches))
 }
 
 func TestSnapshotApply(t *testing.T) {
@@ -1002,19 +1002,19 @@ func TestSyncPathImmediate(t *testing.T) {
 }
 
 func TestGetDirAndWatch(t *testing.T) {
-	s := New()
-	s.Ops <- Op{1, MustEncodeSet("/x/a", "1", Clobber)}
-	s.Sync(1)
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/x/a", "1", Clobber)}
+	st.Sync(1)
 
 	ch := make(chan Event, 100)
-	s.GetDirAndWatch("/x", ch)
+	st.GetDirAndWatch("/x", ch)
 
 	mut2 := MustEncodeSet("/x/b", "2", Clobber)
 	mut4 := MustEncodeSet("/x/c", "3", Clobber)
-	s.Ops <- Op{2, mut2}
-	s.Ops <- Op{3, MustEncodeSet("/y/a", "1", Clobber)}
-	s.Ops <- Op{4, mut4}
-	s.Sync(4)
+	st.Ops <- Op{2, mut2}
+	st.Ops <- Op{3, MustEncodeSet("/y/a", "1", Clobber)}
+	st.Ops <- Op{4, mut4}
+	st.Sync(4)
 
 	assert.Equal(t, Event{0, "/x/a", "1", "1", "", nil, nil}, clearGetter(<-ch))
 	assert.Equal(t, Event{2, "/x/b", "2", "2", mut2, nil, nil}, clearGetter(<-ch))
@@ -1022,37 +1022,37 @@ func TestGetDirAndWatch(t *testing.T) {
 }
 
 func TestStoreClose(t *testing.T) {
-	s := New()
-	ch := s.Watch("/a/b/c")
-	close(s.Ops)
+	st := New()
+	ch := st.Watch("/a/b/c")
+	close(st.Ops)
 	assert.Equal(t, Event{}, <-ch)
 	assert.T(t, closed(ch))
 }
 
 func TestStoreKeepsLog(t *testing.T) {
-	s := New()
+	st := New()
 	mut := MustEncodeSet("/x", "a", Clobber)
-	s.Ops <- Op{1, mut}
-	ev := <-s.Wait(1)
+	st.Ops <- Op{1, mut}
+	ev := <-st.Wait(1)
 	assert.Equal(t, Event{1, "/x", "a", "1", mut, nil, nil}, clearGetter(ev))
 }
 
 func TestStoreClean(t *testing.T) {
-	s := New()
+	st := New()
 	mut := MustEncodeSet("/x", "a", Clobber)
-	s.Ops <- Op{1, mut}
+	st.Ops <- Op{1, mut}
 
-	s.Clean(1)
+	st.Clean(1)
 
-	ev := <-s.Wait(1)
+	ev := <-st.Wait(1)
 	assert.Equal(t, uint64(1), ev.Seqn)
 	assert.Equal(t, ErrTooLate, ev.Err)
 	assert.Equal(t, "", ev.Mut)
 }
 
 func TestStoreSeqn(t *testing.T) {
-	s := New()
-	assert.Equal(t, uint64(0), <-s.Seqns)
-	s.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	assert.Equal(t, uint64(1), <-s.Seqns)
+	st := New()
+	assert.Equal(t, uint64(0), <-st.Seqns)
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	assert.Equal(t, uint64(1), <-st.Seqns)
 }
