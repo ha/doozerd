@@ -1,10 +1,9 @@
 package doozer
 
 import (
-	"flag"
 	"doozer/client"
-	"doozer/lock"
 	"doozer/gc"
+	"doozer/lock"
 	"doozer/member"
 	"doozer/mon"
 	"doozer/paxos"
@@ -13,6 +12,7 @@ import (
 	"doozer/store"
 	"doozer/util"
 	"doozer/web"
+	"flag"
 	"net"
 	"os"
 	"time"
