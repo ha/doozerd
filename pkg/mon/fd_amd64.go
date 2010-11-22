@@ -4,13 +4,13 @@ import (
 	"syscall"
 )
 
-const nfdbits = 32 // linux 386 only
+const nfdbits = 64
 
 func fdDelt(n int) int {
 	return n / nfdbits
 }
 
-func fdMask(n int) int32 {
+func fdMask(n int) int64 {
 	return 1 << uint(n%nfdbits)
 }
 

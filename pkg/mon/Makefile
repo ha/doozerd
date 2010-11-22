@@ -2,7 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=doozer/mon
 GOFILES=\
-	fd.go\
+	fd_$(GOARCH).go\
 	mon.go\
 	poll_$(GOOS).go\
 	service.go\
