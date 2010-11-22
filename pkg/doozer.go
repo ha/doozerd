@@ -111,6 +111,7 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 		// TODO sink needs a way to pick up missing values if there are any
 		// gaps in its sequence
 	}
+
 	mg := paxos.NewManager(self, seqn, alpha, st, st.Ops, outs)
 
 	if attachAddr == "" {
