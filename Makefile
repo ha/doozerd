@@ -9,7 +9,6 @@ bench: bench.pkg
 
 %.pkg:
 	cd pkg/assert && make $*
-	cd pkg/gc && make $*
 	cd pkg/util && make $*
 	cd pkg/exec && make $*
 	cd pkg/store && make $*
@@ -25,5 +24,6 @@ bench: bench.pkg
 	cd pkg/timer && make $*
 	cd pkg/session && make $*
 	cd pkg/member && make $*
+	cd pkg/gc && make $*
 	cd pkg && make $*
 
