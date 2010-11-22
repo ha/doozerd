@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	alpha    = 50
+	alpha           = 50
 	checkinInterval = 1e9 // ns == 1s
-	pulseInterval = 1e9
+	pulseInterval   = 1e9
 )
 
 func Main(clusterName, listenAddr, attachAddr, webAddr string) {
