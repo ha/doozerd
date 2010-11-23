@@ -15,7 +15,8 @@ func TestSession(t *testing.T) {
 	fp := &test.FakeProposer{Store: st}
 	go Clean(st, fp)
 
-	ch := st.Watch("/session/*")
+	ch := make(chan store.Event, 100)
+	st.WatchOn("/session/*", ch)
 
 	// check-in with less than a nanosecond to live
 	body := strconv.Itoa64(time.Nanoseconds() + 1)
