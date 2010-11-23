@@ -38,12 +38,12 @@ type ResJoin struct {
 }
 
 type ResCheckin struct {
-	T   int64
+	Exp int64
 	Cas string
 }
 
 type ResSett struct {
-	T   int64
+	Exp int64
 	Cas string
 }
 

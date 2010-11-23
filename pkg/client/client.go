@@ -119,7 +119,7 @@ func (cl *Client) Checkin(id, cas string) (int64, string, os.Error) {
 		return 0, "", err
 	}
 
-	return res.T, res.Cas, nil
+	return res.Exp, res.Cas, nil
 }
 
 func (cl *Client) Sett(path string, n int64, cas string) (int64, string, os.Error) {
@@ -129,5 +129,5 @@ func (cl *Client) Sett(path string, n int64, cas string) (int64, string, os.Erro
 		return 0, "", err
 	}
 
-	return res.T, res.Cas, nil
+	return res.Exp, res.Cas, nil
 }
