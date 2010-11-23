@@ -12,7 +12,7 @@ import (
 var ErrInvalidResponse = os.NewError("invalid response")
 
 type Client struct {
-	p  *proto.Conn
+	pr *proto.Conn
 	lg *log.Logger
 	lk sync.Mutex
 }
@@ -22,9 +22,9 @@ func Dial(addr string) (*Client, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	p := proto.NewConn(c)
-	go p.ReadResponses()
-	return &Client{p: p, lg: util.NewLogger(addr)}, nil
+	pr := proto.NewConn(c)
+	go pr.ReadResponses()
+	return &Client{pr: pr, lg: util.NewLogger(addr)}, nil
 }
 
 // This is a little subtle. We want to follow redirects while still pipelining
@@ -46,87 +46,88 @@ func Dial(addr string) (*Client, os.Error) {
 // continue functioning as it was. Any writes on the old connection will retry,
 // and then they are guaranteed to pick up the new connection. Any reads on the
 // old connection will just succeed directly.
-func (c *Client) proto() (*proto.Conn, os.Error) {
-	c.lk.Lock()
-	defer c.lk.Unlock()
+func (cl *Client) proto() (*proto.Conn, os.Error) {
+	cl.lk.Lock()
+	defer cl.lk.Unlock()
 
-	if c.p.RedirectAddr != "" {
-		conn, err := net.Dial("tcp", "", c.p.RedirectAddr)
+	if cl.pr.RedirectAddr != "" {
+		conn, err := net.Dial("tcp", "", cl.pr.RedirectAddr)
 		if err != nil {
 			return nil, err
 		}
-		c.lg = util.NewLogger(c.p.RedirectAddr)
-		c.p = proto.NewConn(conn)
-		go c.p.ReadResponses()
+		cl.lg = util.NewLogger(cl.pr.RedirectAddr)
+		cl.pr = proto.NewConn(conn)
+		go cl.pr.ReadResponses()
 	}
 
-	return c.p, nil
+	return cl.pr, nil
 }
 
-func (c *Client) callWithoutRedirect(verb string, a, slot interface{}) os.Error {
-	p, err := c.proto()
+func (cl *Client) callWithoutRedirect(verb string, args, slot interface{}) os.Error {
+	pr, err := cl.proto()
 	if err != nil {
 		return err
 	}
 
-	r, err := p.SendRequest(verb, a)
+	req, err := pr.SendRequest(verb, args)
 	if err != nil {
 		return err
 	}
 
-	return r.Get(slot)
+	return req.Get(slot)
 }
 
-func (c *Client) call(verb string, data, slot interface{}) (err os.Error) {
+func (cl *Client) call(verb string, data, slot interface{}) (err os.Error) {
 	for err = os.EAGAIN; err == os.EAGAIN; {
-		err = c.callWithoutRedirect(verb, data, slot)
+		err = cl.callWithoutRedirect(verb, data, slot)
 	}
+
 	if err != nil {
-		c.lg.Println(err)
+		cl.lg.Println(err)
 	}
 
 	return err
 }
 
-func (c *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
-	var r proto.ResJoin
-	err = c.call("join", proto.ReqJoin{id, addr}, &r)
+func (cl *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
+	var res proto.ResJoin
+	err = cl.call("join", proto.ReqJoin{id, addr}, &res)
 	if err != nil {
 		return
 	}
 
-	return r.Seqn, r.Snapshot, nil
+	return res.Seqn, res.Snapshot, nil
 }
 
-func (c *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
-	err = c.call("SET", proto.ReqSet{path, body, oldCas}, &newCas)
+func (cl *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
+	err = cl.call("SET", proto.ReqSet{path, body, oldCas}, &newCas)
 	return
 }
 
-func (c *Client) Del(path, cas string) os.Error {
-	return c.call("DEL", proto.ReqDel{path, cas}, nil)
+func (cl *Client) Del(path, cas string) os.Error {
+	return cl.call("DEL", proto.ReqDel{path, cas}, nil)
 }
 
-func (c *Client) Noop() os.Error {
-	return c.call("NOOP", nil, nil)
+func (cl *Client) Noop() os.Error {
+	return cl.call("NOOP", nil, nil)
 }
 
-func (c *Client) Checkin(id, cas string) (t int64, ncas string, err os.Error) {
-	var r proto.ResCheckin
-	err = c.call("checkin", proto.ReqCheckin{id, cas}, &r)
+func (cl *Client) Checkin(id, cas string) (int64, string, os.Error) {
+	var res proto.ResCheckin
+	err := cl.call("checkin", proto.ReqCheckin{id, cas}, &res)
 	if err != nil {
-		return
+		return 0, "", err
 	}
 
-	return r.T, r.Cas, nil
+	return res.T, res.Cas, nil
 }
 
-func (c *Client) Sett(path string, n int64, cas string) (t int64, ncas string, err os.Error) {
-	var r proto.ResSett
-	err = c.call("SETT", proto.ReqSett{path, n, cas}, &r)
+func (cl *Client) Sett(path string, n int64, cas string) (int64, string, os.Error) {
+	var res proto.ResSett
+	err := cl.call("SETT", proto.ReqSett{path, n, cas}, &res)
 	if err != nil {
-		return
+		return 0, "", err
 	}
 
-	return r.T, r.Cas, nil
+	return res.T, res.Cas, nil
 }
