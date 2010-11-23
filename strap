@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -15,8 +15,10 @@ then
 fi
 
 waitall() {
-    for _ in $($seq $n)
-    do wait
+    while test $running -ge 1
+    do
+        wait
+        running=$(expr $running - 1)
     done
 }
 
@@ -27,13 +29,17 @@ quit() {
 
 trap quit INT
 
+running=0
 for i in $($seq $n)
 do
     (uname | grep -q Darwin) && {
         sudo ifconfig lo0 add 127.0.0.$i
     }
 
-    ./fr $i & sleep 1
+    ./fr $i &
+    running=$(expr $running + 1)
+
+    sleep 1
 done
 
 waitall
