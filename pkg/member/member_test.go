@@ -16,16 +16,16 @@ func TestMemberSimple(t *testing.T) {
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing))
 
-	keys := [][2]string{
-		{"/doozer/slot/0", "a"},
-		{"/doozer/members/a", "addr"},
-		{"/doozer/info/a/x", "a"},
-		{"/doozer/info/a/y", "b"},
+	keys := map[string]string{
+		"/doozer/slot/0": "a",
+		"/doozer/members/a": "addr",
+		"/doozer/info/a/x": "a",
+		"/doozer/info/a/y": "b",
 	}
 
 	// join the cluster
-	for _, k := range keys {
-		fp.Propose(store.MustEncodeSet(k[0], k[1], store.Missing))
+	for k, p := range keys {
+		fp.Propose(store.MustEncodeSet(k, p, store.Missing))
 	}
 
 	// watch the keys to be deleted
@@ -35,9 +35,11 @@ func TestMemberSimple(t *testing.T) {
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))
 
 	// now that the session has ended, check its membership is cleaned up
-	for _, k := range keys {
+	for i := 0; i < len(keys); i++ {
 		ev := <-ch
-		assert.Equal(t, k[0], ev.Path)
-		assert.Equal(t, "", ev.Body, ev.Path)
+		_, ok := keys[ev.Path]
+		keys[ev.Path] = "", false
+		assert.T(t, ok)
+		assert.Equal(t, "", ev.Body)
 	}
 }

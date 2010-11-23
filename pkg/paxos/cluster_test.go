@@ -8,6 +8,7 @@ import (
 func TestCluster(t *testing.T) {
 	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a", "b", "c"}
+	addrs := map[string]bool{"x":true, "y":true, "z":true}
 	outs := make(ChanPutCloserTo)
 	cx := newCluster("c", membership, active, outs)
 	assert.Equal(t, 3, cx.Len(), "Len")
@@ -26,9 +27,13 @@ func TestCluster(t *testing.T) {
 
 	m := newInvite(1)
 	cx.Put(m)
-	assert.Equal(t, Packet{m, "x"}, <-outs)
-	assert.Equal(t, Packet{m, "y"}, <-outs)
-	assert.Equal(t, Packet{m, "z"}, <-outs)
+	for i := 0; i < 3; i++ {
+		o := <-outs
+		_, ok := addrs[o.Addr]
+		assert.T(t, ok)
+		addrs[o.Addr] = false, false
+		assert.Equal(t, m, o.Msg)
+	}
 }
 
 func TestClusterActive(t *testing.T) {

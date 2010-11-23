@@ -4,6 +4,7 @@ import (
 	"doozer/assert"
 	"bytes"
 	"gob"
+	"sort"
 	"strconv"
 	"testing"
 )
@@ -372,6 +373,7 @@ func TestGetWithDir(t *testing.T) {
 	st.Sync(2)
 	dents, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
+	sort.SortStrings(dents)
 	assert.Equal(t, []string{"x", "y"}, dents)
 }
 
