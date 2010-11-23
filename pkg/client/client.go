@@ -109,7 +109,8 @@ func (cl *Client) Del(path, cas string) os.Error {
 }
 
 func (cl *Client) Noop() os.Error {
-	return cl.call("NOOP", nil, nil)
+	var res string
+	return cl.call("NOOP", nil, &res)
 }
 
 func (cl *Client) Checkin(id, cas string) (int64, string, os.Error) {
