@@ -8,6 +8,10 @@ import (
 )
 
 func TestTrue(t *testing.T) {
+	if !hasProc() {
+		return
+	}
+
 	cx := Context{}
 	pid, err := cx.ForkExec("/bin/true", nil)
 	assert.Equal(t, nil, err)
@@ -18,6 +22,10 @@ func TestTrue(t *testing.T) {
 }
 
 func TestFalse(t *testing.T) {
+	if !hasProc() {
+		return
+	}
+
 	cx := Context{}
 	pid, err := cx.ForkExec("/bin/false", nil)
 	assert.Equal(t, nil, err)
@@ -28,6 +36,10 @@ func TestFalse(t *testing.T) {
 }
 
 func TestLF(t *testing.T) {
+	if !hasProc() {
+		return
+	}
+
 	cx := Context{}
 	pr, pw, err := os.Pipe()
 	lf := []*os.File{pw}

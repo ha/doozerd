@@ -50,6 +50,11 @@ type run struct {
 	cmd string
 }
 
+func hasProc() bool {
+	_, err := os.Stat("/proc")
+	return err == nil
+}
+
 // ForkExec runs `cmd` in a child process, with all configuration options as
 // specified in `cx` and the listen fds `lf` in its initial set of fds.
 func (cx *Context) ForkExec(cmd string, lf []*os.File) (pid int, err os.Error) {
@@ -63,6 +68,11 @@ func (cx *Context) ForkExec(cmd string, lf []*os.File) (pid int, err os.Error) {
 	// the child reads the configuration data from its pipe, it has enough
 	// information to set up the process environment and exec a second time,
 	// starting the program we really want.
+
+
+	if !hasProc() {
+		return 0, os.NewError("doozer: Your OS doesn't have /proc")
+	}
 
 	var r run
 	r.Context = *cx
