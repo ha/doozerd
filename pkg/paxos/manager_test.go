@@ -2,7 +2,7 @@ package paxos
 
 import (
 	"fmt"
-	"github.com/bmizerany/assert"
+	"assert"
 	"doozer/store"
 	"strconv"
 	"testing"

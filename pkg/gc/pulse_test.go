@@ -1,7 +1,7 @@
 package gc
 
 import (
-	"github.com/bmizerany/assert"
+	"assert"
 	"os"
 	"testing"
 )

@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/bmizerany/assert"
+	"assert"
 	"bytes"
 	"gob"
 	"sort"

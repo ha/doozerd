@@ -1,7 +1,7 @@
 package member
 
 import (
-	"github.com/bmizerany/assert"
+	"assert"
 	"doozer/store"
 	"doozer/test"
 	"testing"

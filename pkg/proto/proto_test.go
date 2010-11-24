@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"github.com/bmizerany/assert"
+	"assert"
 	"doozer/test"
 	"os"
 	"reflect"

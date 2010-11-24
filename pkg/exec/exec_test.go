@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"github.com/bmizerany/assert"
+	"assert"
 	"io/ioutil"
 	"os"
 	"testing"
