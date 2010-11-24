@@ -1,7 +1,7 @@
 package store
 
 import (
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 	"testing"
 )
 

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"gob"
 	"io"
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 	"os"
 	"testing"
 )

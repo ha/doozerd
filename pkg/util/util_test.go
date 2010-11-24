@@ -1,7 +1,7 @@
 package util
 
 import (
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 	"regexp"
 	"testing"
 )

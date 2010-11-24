@@ -1,7 +1,7 @@
 package lock
 
 import (
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 	"doozer/store"
 	"doozer/test"
 	"testing"

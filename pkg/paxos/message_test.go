@@ -6,7 +6,7 @@ import (
 	"testing"
 	"testing/quick"
 
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 )
 
 // For testing convenience

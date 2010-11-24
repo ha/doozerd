@@ -1,7 +1,7 @@
 package exec
 
 import (
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 	"io/ioutil"
 	"os"
 	"testing"

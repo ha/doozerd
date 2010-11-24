@@ -1,7 +1,7 @@
 package gc
 
 import (
-	"doozer/assert"
+	"github.com/bmizerany/assert"
 	"os"
 	"testing"
 )
