@@ -1,7 +1,7 @@
 package util
 
 import (
-	"assert"
+	"github.com/bmizerany/assert"
 	"regexp"
 	"testing"
 )

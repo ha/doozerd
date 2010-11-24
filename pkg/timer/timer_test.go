@@ -1,7 +1,7 @@
 package timer
 
 import (
-	"assert"
+	"github.com/bmizerany/assert"
 	"doozer/store"
 	"testing"
 	"time"

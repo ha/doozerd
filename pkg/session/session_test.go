@@ -1,7 +1,7 @@
 package session
 
 import (
-	"assert"
+	"github.com/bmizerany/assert"
 	"doozer/store"
 	"doozer/test"
 	"strconv"

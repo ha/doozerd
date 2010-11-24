@@ -1,7 +1,7 @@
 package paxos
 
 import (
-	"assert"
+	"github.com/bmizerany/assert"
 	"testing"
 )
 

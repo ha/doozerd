@@ -1,7 +1,7 @@
 package mon
 
 import (
-	"assert"
+	"github.com/bmizerany/assert"
 	"testing"
 )
 
