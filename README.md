@@ -16,7 +16,6 @@ http://golang.org/doc/install.html
 
 ### Installing Doozer
 
-    $ goinstall github.com/bmizerany/assert
     $ git clone git@github.com:bmizerany/doozer.git
     $ cd doozer
     $ make
@@ -25,5 +24,10 @@ http://golang.org/doc/install.html
 You can test it works with:
 
     $ doozerd
+
+### Run Tests
+
+    $ goinstall github.com/bmizerany/assert
+    $ make test
 
 Point your browser at http://127.0.0.1:8080
