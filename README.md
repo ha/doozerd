@@ -16,6 +16,7 @@ http://golang.org/doc/install.html
 
 ### Installing Doozer
 
+    $ goinstall github.com/bmizerany/assert
     $ git clone git@github.com:bmizerany/doozer.git
     $ cd doozer
     $ make
