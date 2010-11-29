@@ -1,6 +1,8 @@
+include $(GOROOT)/src/Make.inc
+
 all: install
 install: install.cmd
-clean: clean.cmd
+clean: clean.cmd clean.pkg-inst clean.doozerd-inst
 test: test.pkg
 bench: bench.pkg
 
@@ -26,3 +28,11 @@ bench: bench.pkg
 	cd pkg/gc && make $*
 	cd pkg && make $*
 
+.PHONY: clean.pkg-inst
+clean.pkg-inst:
+	rm -rf $(GOROOT)/pkg/$(GOOS)_$(GOARCH)/doozer
+	rm -rf $(GOROOT)/pkg/$(GOOS)_$(GOARCH)/doozer.a
+
+.PHONY: clean.doozerd-inst
+clean.doozerd-inst:
+	rm -rf $(GOBIN)/doozerd
