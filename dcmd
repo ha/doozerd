@@ -12,4 +12,11 @@ encstrs() {
   done
 }
 
-encstrs "$@" | nc localhost 8046
+verb=$1; shift
+
+(
+    printf '*3\r\n'
+    encstr "$verb"
+    printf ':0\r\n'
+    encstrs "$@"
+) | nc localhost 8046
