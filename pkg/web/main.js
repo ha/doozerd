@@ -27,7 +27,7 @@ function apply(ev) {
   var dir = $('#root');
   for (var i = 0; i < dir_parts.length; i++) {
     var part = dir_parts[i];
-    var next = dir.find('div[name="'+part+'"] > dd');
+    var next = dir.find('> dl > div[name="'+part+'"] > dd');
     if (next.length < 1) {
       var div = $('<div>').attr('name', part);
       var dd = $('<dd>');
