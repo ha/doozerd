@@ -5,7 +5,6 @@ import (
 	"doozer/gc"
 	"doozer/lock"
 	"doozer/member"
-	"doozer/mon"
 	"doozer/paxos"
 	"doozer/server"
 	"doozer/session"
@@ -138,10 +137,6 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 				logger.Println(err)
 			}
 		}
-	}()
-
-	go func() {
-		panic(mon.Monitor(self, st, cl))
 	}()
 
 	go func() {
