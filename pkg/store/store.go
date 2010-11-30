@@ -69,8 +69,8 @@ type state struct {
 }
 
 type watch struct {
-	in, out chan Event
-	re      *regexp.Regexp
+	out chan Event
+	re  *regexp.Regexp
 }
 
 // Creates a new, empty data store. Mutations will be applied in order,
