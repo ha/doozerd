@@ -56,15 +56,15 @@ type SetDeler interface {
 }
 
 type monitor struct {
-	self, prefix string
-	st           *store.Store
-	cl           SetDeler
-	clock        chan ticker
-	units        map[string]unit
-	refs         map[string]int
-	exitCh       chan exit
-	readyCh      chan ready
-	logger       *log.Logger
+	self    string
+	st      *store.Store
+	cl      SetDeler
+	clock   chan ticker
+	units   map[string]unit
+	refs    map[string]int
+	exitCh  chan exit
+	readyCh chan ready
+	logger  *log.Logger
 }
 
 func splitId(id string) (name, ext string) {
@@ -73,11 +73,10 @@ func splitId(id string) (name, ext string) {
 	return
 }
 
-func Monitor(self, prefix string, st *store.Store, cl SetDeler) os.Error {
+func Monitor(self string, st *store.Store, cl SetDeler) os.Error {
 
 	mon := &monitor{
 		self:    self,
-		prefix:  prefix,
 		st:      st,
 		cl:      cl,
 		clock:   make(chan ticker),
@@ -156,19 +155,19 @@ func (mon *monitor) lookupParam(id, param string) string {
 }
 
 func (mon *monitor) setStatus(id, param, val string) {
-	mon.cl.Set(mon.prefix+statusKey+"/"+id+"/"+param, val, store.Clobber)
+	mon.cl.Set(statusKey+"/"+id+"/"+param, val, store.Clobber)
 }
 
 func (mon *monitor) delStatus(id, param string) {
-	mon.cl.Del(mon.prefix+statusKey+"/"+id+"/"+param, store.Clobber)
+	mon.cl.Del(statusKey+"/"+id+"/"+param, store.Clobber)
 }
 
 func (mon *monitor) tryLock(id string) {
-	mon.cl.Set(mon.prefix+lockKey+"/"+id, mon.self, store.Missing)
+	mon.cl.Set(lockKey+"/"+id, mon.self, store.Missing)
 }
 
 func (mon *monitor) release(id, cas string) {
-	mon.cl.Del(mon.prefix+lockKey+"/"+id, cas)
+	mon.cl.Del(lockKey+"/"+id, cas)
 }
 
 // `p` should look like `/foo/bar/name.ext

@@ -27,17 +27,17 @@ type service struct {
 	id, name     string
 	pid          int
 	st           *store.Store
-	self, prefix string
-	cl           SetDeler
-	logger       *log.Logger
-	mon          *monitor
-	wantUp       bool
-	lockCas      string
-	lockTaken    bool
-	restart      int
-	alfiles      []*os.File
-	cx           exec.Context
-	so           *socket
+	self      string
+	cl        SetDeler
+	logger    *log.Logger
+	mon       *monitor
+	wantUp    bool
+	lockCas   string
+	lockTaken bool
+	restart   int
+	alfiles   []*os.File
+	cx        exec.Context
+	so        *socket
 }
 
 func newService(id, name string, mon *monitor) *service {
@@ -49,7 +49,6 @@ func newService(id, name string, mon *monitor) *service {
 		cl:     mon.cl,
 		mon:    mon,
 		logger: util.NewLogger(id),
-		prefix: mon.prefix,
 	}
 	sv.logger.Println("new")
 	return sv

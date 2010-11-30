@@ -10,17 +10,17 @@ import (
 
 type socket struct {
 	id, name     string
-	sv           *service
-	st           *store.Store
-	self, prefix string
-	cl           SetDeler
-	logger       *log.Logger
-	lfiles       []*os.File
-	mon          *monitor
-	wantUp       bool
-	lockCas      string
-	lockTaken    bool
-	restart      int
+	sv        *service
+	st        *store.Store
+	self      string
+	cl        SetDeler
+	logger    *log.Logger
+	lfiles    []*os.File
+	mon       *monitor
+	wantUp    bool
+	lockCas   string
+	lockTaken bool
+	restart   int
 }
 
 type filer interface {
@@ -42,7 +42,6 @@ func newSocket(id, name string, mon *monitor) *socket {
 		sv:     sv,
 		mon:    mon,
 		logger: util.NewLogger(id),
-		prefix: mon.prefix,
 	}
 	so.logger.Println("new")
 	return so

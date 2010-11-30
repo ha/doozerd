@@ -28,8 +28,6 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 	util.LogWriter = os.Stderr
 	logger := util.NewLogger("main")
 
-	prefix := "/d/" + clusterName
-
 	if listenAddr == "" {
 		logger.Println("require a listen address")
 		flag.Usage()
@@ -79,13 +77,13 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 			panic(err)
 		}
 
-		path := prefix + "/doozer/info/" + self + "/public-addr"
+		path := "/doozer/info/" + self + "/public-addr"
 		_, err = cl.Set(path, listenAddr, store.Clobber)
 		if err != nil {
 			panic(err)
 		}
 
-		path = prefix + "/doozer/info/" + self + "/hostname"
+		path = "/doozer/info/" + self + "/hostname"
 		_, err = cl.Set(path, os.Getenv("HOSTNAME"), store.Clobber)
 		if err != nil {
 			panic(err)
@@ -105,7 +103,7 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 		go func() {
 			st.Sync(seqn + alpha)
 			close(done)
-			activate(st, self, prefix, cl, cal)
+			activate(st, self, cl, cal)
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -130,7 +128,7 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 		go gc.Pulse(self, st.Seqns, cl, pulseInterval)
 	}()
 
-	sv := &server.Server{listenAddr, st, mg, self, prefix}
+	sv := &server.Server{listenAddr, st, mg, self}
 
 	go func() {
 		cas := store.Missing
@@ -143,7 +141,7 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 	}()
 
 	go func() {
-		panic(mon.Monitor(self, prefix, st, cl))
+		panic(mon.Monitor(self, st, cl))
 	}()
 
 	go func() {
@@ -159,14 +157,14 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 	panic(sv.ListenAndServeUdp(outs))
 }
 
-func activate(st *store.Store, self, prefix string, c *client.Client, cal chan int) {
+func activate(st *store.Store, self string, c *client.Client, cal chan int) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
 	st.GetDirAndWatch("/doozer/slot", ch)
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			_, err := c.Set(prefix+ev.Path, self, ev.Cas)
+			_, err := c.Set(ev.Path, self, ev.Cas)
 			if err != nil {
 				logger.Println(err)
 				continue

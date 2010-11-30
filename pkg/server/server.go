@@ -11,7 +11,6 @@ import (
 	"rand"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -20,7 +19,6 @@ const packetSize = 3000
 const lease = 3e9 // ns == 3s
 
 var (
-	ErrBadPrefix = os.NewError("bad prefix in path")
 	ErrNoWrite = os.NewError("no known writeable address")
 	responded = os.NewError("already responded")
 )
@@ -44,10 +42,10 @@ type Manager interface {
 }
 
 type Server struct {
-	Addr         string
-	St           *store.Store
-	Mg           Manager
-	Self, Prefix string
+	Addr string
+	St   *store.Store
+	Mg   Manager
+	Self string
 }
 
 func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
@@ -108,17 +106,6 @@ func (sv *Server) cals() []string {
 	return parts
 }
 
-// Checks that path begins with the proper prefix and returns the short path
-// without the prefix.
-func (sv *Server) checkPath(path string) (string, os.Error) {
-	logger := util.NewLogger("checkPath")
-	if !strings.HasPrefix(path, sv.Prefix+"/") {
-		logger.Printf("prefix %q not in %q", sv.Prefix+"/", path)
-		return "", ErrBadPrefix
-	}
-	return path[len(sv.Prefix):], nil
-}
-
 // Repeatedly propose nop values until a successful read from `done`.
 func (sv *Server) AdvanceUntil(done chan int) {
 	for _, ok := <-done; !ok; _, ok = <-done {
@@ -143,28 +130,13 @@ func (c *conn) redirect(rid uint) {
 
 func get(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqGet)
-	shortPath, err := c.s.checkPath(r.Path)
-	if err != nil {
-		return err
-	}
-
-	v, cas := c.s.St.Get(shortPath)
+	v, cas := c.s.St.Get(r.Path)
 	return proto.ResGet{v, cas}
 }
 
 func sget(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqGet)
-	shortPath, err := c.s.checkPath(r.Path)
-	if err != nil {
-		return err
-	}
-
-	body, err := store.GetString(c.s.St.SyncPath(shortPath), shortPath), nil
-	if err != nil {
-		return err
-	}
-
-	return body
+	return store.GetString(c.s.St.SyncPath(r.Path), r.Path)
 }
 
 func set(c *conn, _ uint, data interface{}) interface{} {
