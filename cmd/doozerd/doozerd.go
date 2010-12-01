@@ -46,5 +46,5 @@ func main() {
 		}
 	}
 
-	doozer.Main(*clusterName, *attachAddr, listener, wl)
+	doozer.Main(*clusterName, *attachAddr, listener, wl, make(chan int))
 }
