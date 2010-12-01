@@ -6,7 +6,6 @@ import (
 	"net"
 	"rand"
 	"testing"
-	"time"
 )
 
 // TODO make sure all these goroutines are cleaned up nicely
@@ -33,10 +32,8 @@ func TestFoo(t *testing.T) {
 	a0, w := l.Addr().String(), randAddr()
 	fmt.Println("web", w)
 	go Main("a", "", w, l)
-	time.Sleep(1e8)
 	go Main("a", a0, "", mustListen())
 	go Main("a", a0, "", mustListen())
-	time.Sleep(1e8)
 
 	cl, err := client.Dial(a0)
 	if err != nil {
