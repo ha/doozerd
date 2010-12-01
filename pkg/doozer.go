@@ -107,6 +107,7 @@ func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 		go session.Clean(st, mg)
 		go member.Clean(st, mg)
 		go gc.Pulse(self, st.Seqns, cl, pulseInterval)
+		go gc.Clean(st)
 	}()
 
 	sv := &server.Server{listenAddr, st, mg, self}
