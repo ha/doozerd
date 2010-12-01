@@ -3,6 +3,7 @@ package doozer
 import (
 	"doozer/client"
 	"fmt"
+	"net"
 	"rand"
 	"testing"
 	"time"
@@ -19,13 +20,22 @@ func randAddr() string {
 	return fmt.Sprintf("127.%d.%d.%d:%d", randN(), randN(), randN(), port)
 }
 
+func mustListen() net.Listener {
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+	return l
+}
+
 func TestFoo(t *testing.T) {
-	a0, w := randAddr(), randAddr()
+	l := mustListen()
+	a0, w := l.Addr().String(), randAddr()
 	fmt.Println("web", w)
-	go Main("a", a0, "", w)
+	go Main("a", "", w, l)
 	time.Sleep(1e8)
-	go Main("a", randAddr(), a0, "")
-	go Main("a", randAddr(), a0, "")
+	go Main("a", a0, "", mustListen())
+	go Main("a", a0, "", mustListen())
 	time.Sleep(1e8)
 
 	cl, err := client.Dial(a0)

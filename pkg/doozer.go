@@ -11,7 +11,6 @@ import (
 	"doozer/store"
 	"doozer/util"
 	"doozer/web"
-	"flag"
 	"net"
 	"os"
 	"time"
@@ -23,15 +22,9 @@ const (
 	pulseInterval   = 1e9
 )
 
-func Main(clusterName, listenAddr, attachAddr, webAddr string) {
+func Main(clusterName, attachAddr, webAddr string, listener net.Listener) {
 	util.LogWriter = os.Stderr
 	logger := util.NewLogger("main")
-
-	if listenAddr == "" {
-		logger.Println("require a listen address")
-		flag.Usage()
-		os.Exit(1)
-	}
 
 	var webListener net.Listener
 	if webAddr != "" {
@@ -42,10 +35,9 @@ func Main(clusterName, listenAddr, attachAddr, webAddr string) {
 		webListener = wl
 	}
 
-	listener, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		panic(err)
-	}
+	var err os.Error
+
+	listenAddr := listener.Addr().String()
 
 	outs := make(paxos.ChanPutCloserTo)
 

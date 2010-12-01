@@ -4,6 +4,7 @@ import (
 	"doozer"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -24,5 +25,17 @@ func main() {
 	flag.Parse()
 	flag.Usage = Usage
 
-	doozer.Main(*clusterName, *listenAddr, *attachAddr, *webAddr)
+	if *listenAddr == "" {
+		fmt.Fprintln(os.Stderr, "require a listen address")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	listener, err := net.Listen("tcp", *listenAddr)
+	if err != nil {
+		panic(err)
+	}
+
+
+	doozer.Main(*clusterName, *attachAddr, *webAddr, listener)
 }
