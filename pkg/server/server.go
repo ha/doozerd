@@ -80,18 +80,12 @@ func (sv *Server) ServeUdp(u jnet.Conn, outs chan paxos.Packet) os.Error {
 var clg = util.NewLogger("cal")
 
 func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
-	var ok bool
 	for {
-		if !ok {
-			_, ok = <-cal
-		}
-		clg.Println(ok)
-
 		rw, e := l.Accept()
 		if e != nil {
 			return e
 		}
-		c := &conn{proto.NewConn(rw), rw, s, ok}
+		c := &conn{proto.NewConn(rw), rw, s, closed(cal)}
 		go c.serve()
 	}
 

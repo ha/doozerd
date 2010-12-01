@@ -31,7 +31,7 @@ func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 
 	outs := make(paxos.ChanPutCloserTo)
 
-	cal := make(chan int, 2)
+	cal := make(chan int)
 
 	var cl *client.Client
 	self := util.RandId()
@@ -45,8 +45,7 @@ func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 		seqn = claimLeader(st, seqn+1, self)
 		seqn = addPing(st, seqn+1, "pong")
 
-		cal <- 1
-		cal <- 1
+		close(cal)
 
 		cl, err = client.Dial(listenAddr)
 		if err != nil {
@@ -147,8 +146,7 @@ func activate(st *store.Store, self string, c *client.Client, cal chan int) {
 				logger.Println(err)
 				continue
 			}
-			cal <- 1
-			cal <- 1
+			close(cal)
 			close(ch)
 		}
 	}
