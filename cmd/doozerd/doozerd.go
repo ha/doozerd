@@ -38,6 +38,13 @@ func main() {
 		panic(err)
 	}
 
+	var wl net.Listener
+	if *webAddr != "" {
+		wl, err = net.Listen("tcp", *webAddr)
+		if err != nil {
+			panic(err)
+		}
+	}
 
-	doozer.Main(*clusterName, *attachAddr, *webAddr, listener)
+	doozer.Main(*clusterName, *attachAddr, listener, wl)
 }

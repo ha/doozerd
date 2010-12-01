@@ -22,17 +22,8 @@ const (
 	pulseInterval   = 1e9
 )
 
-func Main(clusterName, attachAddr, webAddr string, listener net.Listener) {
+func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 	logger := util.NewLogger("main")
-
-	var webListener net.Listener
-	if webAddr != "" {
-		wl, err := net.Listen("tcp", webAddr)
-		if err != nil {
-			panic(err)
-		}
-		webListener = wl
-	}
 
 	var err os.Error
 
