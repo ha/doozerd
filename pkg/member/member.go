@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func Clean(s *store.Store, p paxos.Proposer) {
+func Clean(st *store.Store, p paxos.Proposer) {
 	logger := util.NewLogger("member")
-	for ev := range s.Watch("/session/*") {
+	for ev := range st.Watch("/session/*") {
 		if !ev.IsDel() {
 			continue
 		}
