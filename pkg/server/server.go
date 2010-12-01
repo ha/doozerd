@@ -1,7 +1,7 @@
 package server
 
 import (
-	jnet "doozer/net"
+	dnet "doozer/net"
 	"doozer/paxos"
 	"doozer/proto"
 	"doozer/store"
@@ -67,8 +67,8 @@ func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
 	return err
 }
 
-func (sv *Server) ServeUdp(u jnet.Conn, outs chan paxos.Packet) os.Error {
-	r := jnet.Ackify(u, outs)
+func (sv *Server) ServeUdp(u dnet.Conn, outs chan paxos.Packet) os.Error {
+	r := dnet.Ackify(u, outs)
 
 	for p := range r {
 		sv.Mg.PutFrom(p.Addr, p.Msg)
