@@ -23,7 +23,6 @@ const (
 )
 
 func Main(clusterName, attachAddr, webAddr string, listener net.Listener) {
-	util.LogWriter = os.Stderr
 	logger := util.NewLogger("main")
 
 	var webListener net.Listener

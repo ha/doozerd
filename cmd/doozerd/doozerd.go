@@ -2,6 +2,7 @@ package main
 
 import (
 	"doozer"
+	"doozer/util"
 	"flag"
 	"fmt"
 	"net"
@@ -22,6 +23,7 @@ func Usage() {
 	flag.PrintDefaults()
 }
 func main() {
+	util.LogWriter = os.Stderr
 	flag.Parse()
 	flag.Usage = Usage
 
