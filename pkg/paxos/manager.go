@@ -87,6 +87,10 @@ func (mg *Manager) fill(seqn uint64) {
 func (m *Manager) process() {
 	instances := make(map[uint64]instance)
 	for req := range m.reqs {
+		if <-m.st.Seqns >= req.seqn {
+			req.ch <- nil
+			continue
+		}
 		inst, ok := instances[req.seqn]
 		if !ok {
 			inst = make(instance)
@@ -107,7 +111,12 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	m.getInstance(msg.Seqn()).PutFrom(addr, msg)
+	it := m.getInstance(msg.Seqn())
+	if it == nil {
+		// TODO something
+	} else {
+		it.PutFrom(addr, msg)
+	}
 }
 
 func (m *Manager) proposeAt(seqn uint64, v string) {

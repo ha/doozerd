@@ -105,11 +105,11 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
 	m, _, ops := selfRefNewManager("a", 1)
 
-	msg := newVote(1, exp)
-	msg.SetSeqn(1)
+	msg := newVote(3, exp)
+	msg.SetSeqn(3)
 	m.PutFrom(m.Self+"addr", msg)
 	got := <-ops
-	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
@@ -117,30 +117,23 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
 	m, _, ops := selfRefNewManager("a", 1)
 
-	msg := newVote(1, exp)
-	msg.SetSeqn(1)
+	msg := newVote(3, exp)
+	msg.SetSeqn(3)
 	m.PutFrom(m.Self+"addr", msg)
 	got := <-ops
-	assert.Equal(t, uint64(1), got.Seqn)
+	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
 func TestUnusedSeqn(t *testing.T) {
-	exp1, exp2 := "foo", "bar"
+	exp := "bar"
 	m, _, ops := selfRefNewManager("a", 1)
 
-	msg := newVote(1, exp1)
-	msg.SetSeqn(1)
-	m.PutFrom(m.Self+"addr", msg)
-	got := <-ops
-	assert.Equal(t, uint64(1), got.Seqn)
-	assert.Equal(t, exp1, got.Mut)
-
 	ix := m.getInstance(<-m.seqns)
-	ix.Propose(exp2)
-	got = <-ops
+	ix.Propose(exp)
+	got := <-ops
 	assert.Equal(t, uint64(3), got.Seqn)
-	assert.Equal(t, exp2, got.Mut)
+	assert.Equal(t, exp, got.Mut)
 }
 
 func TestIgnoreMalformedMsg(t *testing.T) {
@@ -306,4 +299,15 @@ func TestManagerGetSeqnsD(t *testing.T) {
 
 	assert.Equal(t, uint64(17), <-m.seqns)
 	assert.Equal(t, uint64(23), <-m.seqns)
+}
+
+func TestManagerApplied(t *testing.T) {
+	st := store.New()
+	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
+	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
+	mg := NewManager("a", 2, 1, st, st.Ops, nil)
+
+	assert.NotEqual(t, instance(nil), mg.getInstance(3))
+	st.Ops <- store.Op{3, store.Nop}
+	assert.Equal(t, instance(nil), mg.getInstance(3))
 }
