@@ -18,14 +18,14 @@ var (
 )
 
 func Usage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] <cluster-name>\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\nOptions:\n")
 	flag.PrintDefaults()
 }
 func main() {
 	util.LogWriter = os.Stderr
-	flag.Parse()
 	flag.Usage = Usage
+	flag.Parse()
 
 	if *listenAddr == "" {
 		fmt.Fprintln(os.Stderr, "require a listen address")
