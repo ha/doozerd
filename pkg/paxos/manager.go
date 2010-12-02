@@ -111,9 +111,11 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	it := m.getInstance(msg.Seqn())
+	n := msg.Seqn()
+	it := m.getInstance(n)
 	if it == nil {
-		// TODO something
+		ev := <-m.st.Wait(n)
+		putToWrapper{n, m.outs}.PutTo(newLearn(ev.Mut), addr)
 	} else {
 		it.PutFrom(addr, msg)
 	}

@@ -311,3 +311,20 @@ func TestManagerApplied(t *testing.T) {
 	st.Ops <- store.Op{3, store.Nop}
 	assert.Equal(t, instance(nil), mg.getInstance(3))
 }
+
+func TestManagerReply(t *testing.T) {
+	st := store.New()
+	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
+	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
+	ch := make(ChanPutCloserTo)
+	mg := NewManager("a", 2, 1, st, st.Ops, ch)
+
+	mut := store.MustEncodeSet("/foo", "bar", store.Clobber)
+	st.Ops <- store.Op{3, mut}
+	msg := newInvite(1)
+	msg.SetSeqn(3)
+	mg.PutFrom("x", msg)
+	exp := newLearn(mut)
+	exp.SetSeqn(3)
+	assert.Equal(t, Packet{exp, "x"}, <-ch)
+}
