@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+import "log"
+
 const packetSize = 3000
 
 const lease = 3e9 // ns == 3s
@@ -42,48 +44,32 @@ type Manager interface {
 }
 
 type Server struct {
+	Conn net.PacketConn
 	Addr string
 	St   *store.Store
 	Mg   Manager
 	Self string
 }
 
-func (sv *Server) ListenAndServeUdp(outs chan paxos.Packet) os.Error {
-	logger := util.NewLogger("udp server %s", sv.Addr)
-
-	logger.Println("binding")
-	u, err := net.ListenPacket("udp", sv.Addr)
-	if err != nil {
-		logger.Println(err)
-		return err
-	}
-	defer u.Close()
-	logger.Println("listening")
-
-	err = sv.ServeUdp(u, outs)
-	if err != nil {
-		logger.Printf("%s: %s", u, err)
-	}
-	return err
-}
-
-func (sv *Server) ServeUdp(u dnet.Conn, outs chan paxos.Packet) os.Error {
-	r := dnet.Ackify(u, outs)
+func (sv *Server) ServeUdp(outs chan paxos.Packet) {
+	r := dnet.Ackify(sv.Conn, outs)
 
 	for p := range r {
 		sv.Mg.PutFrom(p.Addr, p.Msg)
 	}
-
-	panic("unreachable")
 }
 
 var clg = util.NewLogger("cal")
 
 func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 	for {
-		rw, e := l.Accept()
-		if e != nil {
-			return e
+		rw, err := l.Accept()
+		if err != nil {
+			log.Printf("%#v", err)
+			if e, ok := err.(*net.OpError); ok && e.Error == os.EINVAL {
+				return nil
+			}
+			return err
 		}
 		c := &conn{proto.NewConn(rw), rw, s, closed(cal)}
 		go c.serve()

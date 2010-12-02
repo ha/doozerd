@@ -22,7 +22,7 @@ const (
 	pulseInterval   = 1e9
 )
 
-func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
+func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener) {
 	logger := util.NewLogger("main")
 
 	var err os.Error
@@ -109,7 +109,7 @@ func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 		go gc.Clean(st)
 	}()
 
-	sv := &server.Server{listenAddr, st, mg, self}
+	sv := &server.Server{udpConn, listenAddr, st, mg, self}
 
 	go func() {
 		cas := store.Missing
@@ -122,7 +122,10 @@ func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 	}()
 
 	go func() {
-		panic(sv.Serve(listener, cal))
+		err := sv.Serve(listener, cal)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	if webListener != nil {
@@ -131,7 +134,7 @@ func Main(clusterName, attachAddr string, listener, webListener net.Listener) {
 		go web.Serve(webListener)
 	}
 
-	panic(sv.ListenAndServeUdp(outs))
+	sv.ServeUdp(outs)
 }
 
 func activate(st *store.Store, self string, c *client.Client, cal chan int) {

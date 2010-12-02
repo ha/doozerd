@@ -38,6 +38,11 @@ func main() {
 		panic(err)
 	}
 
+	conn, err := net.ListenPacket("udp", *listenAddr)
+	if err != nil {
+		panic(err)
+	}
+
 	var wl net.Listener
 	if *webAddr != "" {
 		wl, err = net.Listen("tcp", *webAddr)
@@ -46,5 +51,5 @@ func main() {
 		}
 	}
 
-	doozer.Main(*clusterName, *attachAddr, listener, wl)
+	doozer.Main(*clusterName, *attachAddr, conn, listener, wl)
 }

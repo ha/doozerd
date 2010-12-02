@@ -37,17 +37,25 @@ func (k check) Less(y interface{}) bool {
 
 func Ackify(c Conn, w <-chan paxos.Packet) (r <-chan paxos.Packet) {
 	in := make(chan paxos.Packet)
-	go process(c, in, w)
+	go func() {
+		process(c, in, w)
+		close(in)
+	}()
 	return in
 }
 
 func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 	pend := make(map[string]bool)
-	rawIn := make(chan paxos.Packet)
-	ticker := time.Tick(interval / 4)
 	h := new(vector.Vector)
 
-	go recv(c, rawIn)
+	ticker := time.NewTicker(interval / 4)
+	defer ticker.Stop()
+
+	rawIn := make(chan paxos.Packet)
+	go func() {
+		recv(c, rawIn)
+		close(rawIn)
+	}()
 
 	peek := func() check {
 		if h.Len() < 1 {
@@ -59,6 +67,10 @@ func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 	for {
 		select {
 		case p := <-rawIn:
+			if closed(rawIn) {
+				return
+			}
+
 			if p.Msg.HasFlags(paxos.Ack) {
 				if pend[p.Id()] {
 					pend[p.Id()] = false, false
@@ -75,7 +87,7 @@ func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 			write(c, p.Msg, p.Addr)
 			t := time.Nanoseconds()
 			heap.Push(h, check{p, t + interval, t + timeout})
-		case t := <-ticker:
+		case t := <-ticker.C:
 			for k := peek(); k.at < t; k = peek() {
 				heap.Pop(h)
 				if t > k.until {
@@ -90,14 +102,18 @@ func process(c Conn, in chan paxos.Packet, out <-chan paxos.Packet) {
 	}
 }
 
-func recv(c Conn, rawIn chan paxos.Packet) {
+func recv(c Conn, ch chan paxos.Packet) {
 	for {
 		msg, addr, err := paxos.ReadMsg(c, max)
 		if err != nil {
+			if err == os.EINVAL {
+				return
+			}
+
 			logger.Println(err)
 			continue
 		}
-		rawIn <- paxos.Packet{msg, addr}
+		ch <- paxos.Packet{msg, addr}
 	}
 }
 
