@@ -32,10 +32,6 @@ trap quit INT
 running=0
 for i in $($seq $n)
 do
-    (uname | grep -q Darwin) && {
-        sudo ifconfig lo0 add 127.0.0.$i
-    }
-
     ./fr $i &
     running=$(expr $running + 1)
 
