@@ -4,10 +4,9 @@ import (
 	"doozer/client"
 	"github.com/bmizerany/assert"
 	"net"
+	"runtime"
 	"testing"
 )
-
-// import "runtime"
 
 func mustListen() net.Listener {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -26,6 +25,9 @@ func mustListenPacket(addr string) net.PacketConn {
 }
 
 func TestDoozerSimple(t *testing.T) {
+	gs := runtime.Goroutines()
+	gs = 27 // TODO delete this line
+
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -36,8 +38,6 @@ func TestDoozerSimple(t *testing.T) {
 	cl, err := client.Dial(l.Addr().String())
 	assert.Equal(t, nil, err)
 	assert.Equal(t, nil, cl.Noop())
-}
 
-// func TestWatch(t *testing.T) {
-// 	for { runtime.Gosched() }
-// }
+	assert.Equal(t, gs, runtime.Goroutines())
+}
