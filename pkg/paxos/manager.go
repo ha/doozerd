@@ -107,8 +107,7 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 	if !msg.Ok() {
 		return
 	}
-	it := m.getInstance(msg.Seqn())
-	it.PutFrom(addr, msg)
+	m.getInstance(msg.Seqn()).PutFrom(addr, msg)
 }
 
 func (m *Manager) proposeAt(seqn uint64, v string) {
