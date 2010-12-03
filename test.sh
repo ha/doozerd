@@ -1,7 +1,8 @@
+#!/bin/sh
 set -e
 
 if [ -f env.sh ]
-then . env.sh
+then . ./env.sh
 else
     echo 1>&2 "! $0 must be run from the root directory"
     exit 1
