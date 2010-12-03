@@ -9,8 +9,10 @@ else
 fi
 
 mtest() {
+    echo
+    echo --- test $1
     cd pkg/$1
-    gomake test
+    gotest
 }
 
 (mtest)
