@@ -51,6 +51,10 @@ func NewManager(self string, start uint64, alpha int, st *store.Store, ops chan<
 	go m.fill(start + uint64(alpha))
 	go m.process()
 
+	// Wait until process is ready
+	// TODO: is there something we can do to avoid this?
+	m.getInstance(0)
+
 	return m
 }
 
@@ -86,14 +90,27 @@ func (mg *Manager) fill(seqn uint64) {
 
 func (m *Manager) process() {
 	instances := make(map[uint64]instance)
+	var ver uint64
+	seqns := m.st.Watch("**")
 	for {
 		select {
+		case ev := <-seqns:
+			if closed(seqns) {
+				return
+			}
+
+			it, ok := instances[ev.Seqn]
+			if ok {
+				close(it)
+				instances[ev.Seqn] = nil, false
+			}
+			ver = ev.Seqn
 		case req := <-m.reqs:
 			if closed(m.reqs) {
 				return
 			}
 
-			if <-m.st.Seqns >= req.seqn {
+			if ver >= req.seqn {
 				req.ch <- nil
 				continue
 			}
@@ -129,8 +146,11 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 }
 
 func (m *Manager) proposeAt(seqn uint64, v string) {
-	m.getInstance(seqn).Propose(v)
-	m.logger.Printf("paxos propose -> %d %q", seqn, v)
+	it := m.getInstance(seqn)
+	if it != nil {
+		it.Propose(v)
+		m.logger.Printf("paxos propose -> %d %q", seqn, v)
+	}
 }
 
 func (m *Manager) ProposeOnce(v string) store.Event {

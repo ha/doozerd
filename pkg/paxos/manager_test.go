@@ -1,10 +1,8 @@
 package paxos
 
 import (
-	"fmt"
 	"github.com/bmizerany/assert"
 	"doozer/store"
-	"strconv"
 	"testing"
 )
 
@@ -23,28 +21,6 @@ func selfRefNewManager(self string, alpha int) (*Manager, *store.Store, chan sto
 	m := NewManager(self, 2, alpha, st, ops, putFromWrapperTo{p, "x"})
 	p[0] = m
 	return m, st, ops
-}
-
-func mutualRefManagers(n, alpha int) ([]*Manager, *store.Store, chan store.Op) {
-	ops := make(chan store.Op)
-	ops1 := ops
-	st := store.New()
-	p := make(FakePutterFrom, n)
-	ms := make([]*Manager, n)
-	for i := 0; i < n; i++ {
-		addr := fmt.Sprintf("addr%d", i)
-		id := fmt.Sprintf("id%d", i)
-		st.Ops <- store.Op{uint64(2*i + 1), mustEncodeSet(membersDir+id, addr)}
-		st.Ops <- store.Op{uint64(2*i + 2), mustEncodeSet(slotDir+strconv.Itoa(i), id)}
-		ms[i] = NewManager(id, uint64(2*n), alpha, st, ops1, putFromWrapperTo{p, addr})
-		p[i] = ms[i]
-		ops1 = make(chan store.Op)
-		close(ops1)
-	}
-	for s := uint64(2*n + 1); s < uint64(2*n+alpha); s++ {
-		st.Ops <- store.Op{s, store.Nop}
-	}
-	return ms, st, ops
 }
 
 func TestProposeAndLearn(t *testing.T) {
@@ -82,23 +58,15 @@ func TestProposeAndLearnMultiple(t *testing.T) {
 	assert.Equal(t, exp[1], got1.Mut, "")
 }
 
-func TestProposeAndFill(t *testing.T) {
-	ms, st, ops := mutualRefManagers(2, 10)
+func TestManagerFill(t *testing.T) {
+	st := store.New()
+	p := make(ChanPutCloserTo)
+	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
+	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
+	mg := NewManager("a", 2, 1, st, st.Ops, p)
 
-	mut1 := store.MustEncodeSet("/foo", "a", store.Clobber)
-	mut2 := store.MustEncodeSet("/bar", "b", store.Clobber)
-
-	ch14 := st.Wait(14)
-	ch15 := st.Wait(15)
-	ch16 := st.Wait(16)
-
-	go fw(st.Ops, ops)
-	go ms[0].Propose(mut1)
-	go ms[0].Propose(mut2)
-
-	assert.Equal(t, mut1, (<-ch14).Mut)
-	assert.Equal(t, store.Nop, (<-ch15).Mut)
-	assert.Equal(t, mut2, (<-ch16).Mut)
+	mg.fillUntil <- 4
+	assert.Equal(t, uint64(3), (<-p).Msg.Seqn())
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
@@ -301,14 +269,29 @@ func TestManagerGetSeqnsD(t *testing.T) {
 	assert.Equal(t, uint64(23), <-m.seqns)
 }
 
-func TestManagerApplied(t *testing.T) {
+func TestManagerAppliedShutdown(t *testing.T) {
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
 	mg := NewManager("a", 2, 1, st, st.Ops, nil)
 
 	assert.NotEqual(t, instance(nil), mg.getInstance(3))
+
 	st.Ops <- store.Op{3, store.Nop}
+	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
+
+	assert.Equal(t, instance(nil), mg.getInstance(3))
+}
+
+func TestManagerAppliedNeverStarted(t *testing.T) {
+	st := store.New()
+	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
+	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
+	mg := NewManager("a", 2, 1, st, st.Ops, nil)
+
+	st.Ops <- store.Op{3, store.Nop}
+	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
+
 	assert.Equal(t, instance(nil), mg.getInstance(3))
 }
 
@@ -321,10 +304,25 @@ func TestManagerReply(t *testing.T) {
 
 	mut := store.MustEncodeSet("/foo", "bar", store.Clobber)
 	st.Ops <- store.Op{3, mut}
+	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
 	msg := newInvite(1)
 	msg.SetSeqn(3)
+	it := mg.getInstance(3)
+	assert.Equal(t, instance(nil), it)
 	mg.PutFrom("x", msg)
 	exp := newLearn(mut)
 	exp.SetSeqn(3)
 	assert.Equal(t, Packet{exp, "x"}, <-ch)
+}
+
+func TestManagerClosesInstance(t *testing.T) {
+	st := store.New()
+	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
+	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
+	mg := NewManager("a", 2, 1, st, st.Ops, nil)
+
+	it := mg.getInstance(3)
+	st.Ops <- store.Op{3, store.Nop}
+	<-it
+	assert.T(t, closed(it))
 }
