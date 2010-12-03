@@ -1,2 +1,2 @@
 #!/bin/sh
-godoc -path doozer -http :6060
+godoc -path src/pkg -http :6060

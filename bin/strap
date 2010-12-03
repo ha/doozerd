@@ -32,7 +32,7 @@ trap quit INT
 running=0
 for i in $($seq $n)
 do
-    ./fr $i &
+    bin/fr $i &
     running=$(expr $running + 1)
 
     sleep 1

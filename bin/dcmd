@@ -19,4 +19,4 @@ verb=$1; shift
     encstr "$verb"
     printf ':0\r\n'
     encstrs "$@"
-) | nc localhost 8046
+) | nc localhost 8041
