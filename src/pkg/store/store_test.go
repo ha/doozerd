@@ -188,6 +188,20 @@ func TestGetDeleted(t *testing.T) {
 	assert.Equal(t, []string{""}, v)
 }
 
+func TestSnap(t *testing.T) {
+	st := New()
+	mut := MustEncodeSet("/x", "a", Clobber)
+	st.Ops <- Op{1, mut}
+
+	snap := st.Snap()
+
+	root, ok := snap.(node)
+	assert.Equal(t, true, ok)
+
+	exp, _ := emptyDir.apply(1, mut)
+	assert.Equal(t, exp, root)
+}
+
 func TestApplyInOrder(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}

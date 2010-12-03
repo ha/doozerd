@@ -253,6 +253,13 @@ func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
 	}
 }
 
+// Returns a point-in-time snapshot of the contents of the store.
+func (st *Store) Snap() Getter {
+	// WARNING: Be sure to read the pointer value of st.state only once. If you
+	// need multiple accesses, copy the pointer first.
+	return st.state.root
+}
+
 // Gets the value stored at `path`, if any.
 //
 // If no value is stored at `path`, `cas` will be `Missing` and `value` will be
@@ -263,9 +270,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
 func (st *Store) Get(path string) (value []string, cas string) {
-	// WARNING: Be sure to read the pointer value of st.state only once. If you
-	// need multiple accesses, copy the pointer first.
-	return st.state.root.Get(path)
+	return st.Snap().Get(path)
 }
 
 // Encodes the entire storage state, including the current sequence number, as
