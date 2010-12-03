@@ -40,6 +40,5 @@ done
 
 echo
 echo "# TESTING"
-echo
 
 sh test.sh
