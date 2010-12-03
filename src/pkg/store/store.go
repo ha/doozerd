@@ -257,7 +257,9 @@ func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
 func (st *Store) Snap() Getter {
 	// WARNING: Be sure to read the pointer value of st.state only once. If you
 	// need multiple accesses, copy the pointer first.
-	return st.state.root
+	p := st.state
+
+	return p.root
 }
 
 // Gets the value stored at `path`, if any.
