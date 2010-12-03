@@ -8,11 +8,13 @@ else
     exit 1
 fi
 
+args="$@"
+
 mtest() {
     echo
     echo --- test $1
     cd pkg/$1
-    gotest
+    gotest $args
 }
 
 (mtest)
