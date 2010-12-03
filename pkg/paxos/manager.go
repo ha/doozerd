@@ -86,18 +86,25 @@ func (mg *Manager) fill(seqn uint64) {
 
 func (m *Manager) process() {
 	instances := make(map[uint64]instance)
-	for req := range m.reqs {
-		if <-m.st.Seqns >= req.seqn {
-			req.ch <- nil
-			continue
+	for {
+		select {
+		case req := <-m.reqs:
+			if closed(m.reqs) {
+				return
+			}
+
+			if <-m.st.Seqns >= req.seqn {
+				req.ch <- nil
+				continue
+			}
+			inst, ok := instances[req.seqn]
+			if !ok {
+				inst = make(instance)
+				instances[req.seqn] = inst
+				go inst.process(req.seqn, m, m.ops)
+			}
+			req.ch <- inst
 		}
-		inst, ok := instances[req.seqn]
-		if !ok {
-			inst = make(instance)
-			instances[req.seqn] = inst
-			go inst.process(req.seqn, m, m.ops)
-		}
-		req.ch <- inst
 	}
 }
 
