@@ -18,12 +18,7 @@ See <http://golang.org/doc/install.html>.
 
     $ git clone git@github.com:bmizerany/doozer.git
     $ cd doozer
-    $ make
-
-## Run Tests
-
-    $ goinstall github.com/bmizerany/assert
-    $ make test
+    $ ./all.sh
 
 ## Try It Out
 
