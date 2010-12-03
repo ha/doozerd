@@ -17,7 +17,7 @@ See <http://golang.org/doc/install.html>.
 ## Installing Doozer
 
     $ git clone git@github.com:bmizerany/doozer.git
-    $ cd doozer
+    $ cd doozer/src
     $ ./all.sh
 
 ## Try It Out

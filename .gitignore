@@ -5,7 +5,7 @@ _test
 _testmain.go
 *.out
 *.[568]
-cmd/doozerd/doozerd
+src/cmd/doozerd/doozerd
 *.css.go
 *.js.go
 *.html.go
