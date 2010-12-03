@@ -1,3 +1,5 @@
+set -e
+
 if [ -f env.sh ]
 then . env.sh
 else
