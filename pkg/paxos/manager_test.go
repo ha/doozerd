@@ -12,26 +12,26 @@ func fw(t chan<- store.Op, s <-chan store.Op) {
 	}
 }
 
-func selfRefNewManager(self string, alpha int) (*Manager, *store.Store, chan store.Op) {
-	ops := make(chan store.Op)
+func selfRefNewManager(self string, alpha int) (*Manager, *store.Store) {
 	p := make(FakePutterFrom, 1)
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
-	m := NewManager(self, 2, alpha, st, ops, putFromWrapperTo{p, "x"})
+	m := NewManager(self, alpha, st, putFromWrapperTo{p, "x"})
 	p[0] = m
-	return m, st, ops
+	return m, st
 }
 
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
-	m, _, ops := selfRefNewManager("a", 1)
+	m, st := selfRefNewManager("a", 1)
+	ch := st.Watch("**")
 
 	seqn := <-m.seqns
 	ix := m.getInstance(seqn)
 	ix.Propose(exp)
 
-	got := <-ops
+	got := <-ch
 	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
@@ -39,12 +39,13 @@ func TestProposeAndLearn(t *testing.T) {
 func TestProposeAndLearnMultiple(t *testing.T) {
 	exp := []string{"/foo", "/bar"}
 	seqnexp := []uint64{3, 4}
-	m, st, ops := selfRefNewManager("a", 1)
+	m, st := selfRefNewManager("a", 1)
+	ch := st.Watch("**")
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp[0])
 
-	got0 := <-ops
+	got0 := <-ch
 	assert.Equal(t, seqnexp[0], got0.Seqn, "seqn 1")
 	assert.Equal(t, exp[0], got0.Mut, "")
 
@@ -53,7 +54,7 @@ func TestProposeAndLearnMultiple(t *testing.T) {
 	ix = m.getInstance(<-m.seqns)
 	ix.Propose(exp[1])
 
-	got1 := <-ops
+	got1 := <-ch
 	assert.Equal(t, seqnexp[1], got1.Seqn, "seqn 1")
 	assert.Equal(t, exp[1], got1.Mut, "")
 }
@@ -63,7 +64,7 @@ func TestManagerFill(t *testing.T) {
 	p := make(ChanPutCloserTo)
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
-	mg := NewManager("a", 2, 1, st, st.Ops, p)
+	mg := NewManager("a", 1, st, p)
 
 	mg.fillUntil <- 4
 	assert.Equal(t, uint64(3), (<-p).Msg.Seqn())
@@ -71,56 +72,62 @@ func TestManagerFill(t *testing.T) {
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
-	m, _, ops := selfRefNewManager("a", 1)
+	m, st := selfRefNewManager("a", 1)
+	ch := st.Watch("**")
 
 	msg := newVote(3, exp)
 	msg.SetSeqn(3)
 	m.PutFrom(m.Self+"addr", msg)
-	got := <-ops
+
+	got := <-ch
 	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
-	m, _, ops := selfRefNewManager("a", 1)
+	m, st := selfRefNewManager("a", 1)
+	ch := st.Watch("**")
 
 	msg := newVote(3, exp)
 	msg.SetSeqn(3)
 	m.PutFrom(m.Self+"addr", msg)
-	got := <-ops
+
+	got := <-ch
 	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
 func TestUnusedSeqn(t *testing.T) {
 	exp := "bar"
-	m, _, ops := selfRefNewManager("a", 1)
+	m, st := selfRefNewManager("a", 1)
+	ch := st.Watch("**")
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
-	got := <-ops
+
+	got := <-ch
 	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
 func TestIgnoreMalformedMsg(t *testing.T) {
-	m, _, ops := selfRefNewManager("a", 1)
+	m, st := selfRefNewManager("a", 1)
+	ch := st.Watch("**")
 
 	m.PutFrom(m.Self+"addr", resize(newVote(1, ""), -1))
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose("y")
 
-	got := <-ops
+	got := <-ch
 	assert.Equal(t, uint64(3), got.Seqn)
 	assert.Equal(t, "y", got.Mut)
 }
 
 func TestProposeAndStore(t *testing.T) {
 	exp := "foo"
-	mg, st, ops := selfRefNewManager("a", 1)
-	go fw(st.Ops, ops)
+	mg, st := selfRefNewManager("a", 1)
 
 	ch := st.Wait(3)
 	mg.Propose(exp)
@@ -128,8 +135,7 @@ func TestProposeAndStore(t *testing.T) {
 }
 
 func BenchmarkPropose(b *testing.B) {
-	mg, st, ops := selfRefNewManager("a", 1)
-	go fw(st.Ops, ops)
+	mg, _ := selfRefNewManager("a", 1)
 
 	for i := 0; i < b.N; i++ {
 		mg.Propose("foo")
@@ -137,8 +143,7 @@ func BenchmarkPropose(b *testing.B) {
 }
 
 func TestProposeBadMutation(t *testing.T) {
-	mg, st, ops := selfRefNewManager("a", 1)
-	go fw(st.Ops, ops)
+	mg, _ := selfRefNewManager("a", 1)
 
 	_, _, err := mg.Propose("foo")
 	assert.Equal(t, store.ErrBadMutation, err)
@@ -154,14 +159,18 @@ func mustEncodeSet(k, v string) string {
 
 func TestReadFromStore(t *testing.T) {
 	// The cluster initially has 1 node (quorum of 1).
-	st := store.New()
-	ops := make(chan store.Op)
 	p := make(ChanPutCloserTo)
 	self := "a"
 	addr := "x"
+
+	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+self, addr)}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", self)}
-	m := NewManager(self, 2, 1, st, ops, p)
+
+	ch := make(chan store.Event, 100)
+	st.WatchOn("**", ch)
+
+	m := NewManager(self, 1, st, p)
 
 	// Fire up a new instance with a vote message. This instance should block
 	// trying to read the list of members. If it doesn't wait, it'll
@@ -186,7 +195,9 @@ func TestReadFromStore(t *testing.T) {
 	in.SetSeqn(5)
 	m.PutFrom(bAddr, in)
 
-	got := <-ops
+	<-ch
+	<-ch
+	got := <-ch
 	assert.Equal(t, uint64(5), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
@@ -211,8 +222,7 @@ func play(st *store.Store) {
 }
 
 func TestManagerGetSeqnsA(t *testing.T) {
-	m, st, ops := selfRefNewManager("a", 5)
-	go fw(st.Ops, ops)
+	m, st := selfRefNewManager("a", 5)
 	play(st)
 
 	assert.Equal(t, uint64(7), <-m.seqns)
@@ -223,8 +233,7 @@ func TestManagerGetSeqnsA(t *testing.T) {
 }
 
 func TestManagerGetSeqnsB(t *testing.T) {
-	m, st, ops := selfRefNewManager("b", 5)
-	go fw(st.Ops, ops)
+	m, st := selfRefNewManager("b", 5)
 	play(st)
 
 	assert.Equal(t, uint64(9), <-m.seqns)
@@ -234,8 +243,7 @@ func TestManagerGetSeqnsB(t *testing.T) {
 }
 
 func TestManagerGetSeqns1(t *testing.T) {
-	m, st, ops := selfRefNewManager("1", 5)
-	go fw(st.Ops, ops)
+	m, st := selfRefNewManager("1", 5)
 	play(st)
 
 	assert.Equal(t, uint64(12), <-m.seqns)
@@ -244,16 +252,14 @@ func TestManagerGetSeqns1(t *testing.T) {
 }
 
 func TestManagerGetSeqnsC(t *testing.T) {
-	m, st, ops := selfRefNewManager("c", 5)
-	go fw(st.Ops, ops)
+	m, st := selfRefNewManager("c", 5)
 	play(st)
 
 	assert.Equal(t, uint64(22), <-m.seqns)
 }
 
 func TestManagerGetSeqns0(t *testing.T) {
-	m, st, ops := selfRefNewManager("0", 5)
-	go fw(st.Ops, ops)
+	m, st := selfRefNewManager("0", 5)
 	play(st)
 
 	assert.Equal(t, uint64(15), <-m.seqns)
@@ -261,8 +267,7 @@ func TestManagerGetSeqns0(t *testing.T) {
 }
 
 func TestManagerGetSeqnsD(t *testing.T) {
-	m, st, ops := selfRefNewManager("d", 5)
-	go fw(st.Ops, ops)
+	m, st := selfRefNewManager("d", 5)
 	play(st)
 
 	assert.Equal(t, uint64(17), <-m.seqns)
@@ -273,7 +278,7 @@ func TestManagerAppliedShutdown(t *testing.T) {
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
-	mg := NewManager("a", 2, 1, st, st.Ops, nil)
+	mg := NewManager("a", 1, st, nil)
 
 	assert.NotEqual(t, instance(nil), mg.getInstance(3))
 
@@ -287,7 +292,7 @@ func TestManagerAppliedNeverStarted(t *testing.T) {
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
-	mg := NewManager("a", 2, 1, st, st.Ops, nil)
+	mg := NewManager("a", 1, st, nil)
 
 	st.Ops <- store.Op{3, store.Nop}
 	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
@@ -300,7 +305,7 @@ func TestManagerReply(t *testing.T) {
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
 	ch := make(ChanPutCloserTo)
-	mg := NewManager("a", 2, 1, st, st.Ops, ch)
+	mg := NewManager("a", 1, st, ch)
 
 	mut := store.MustEncodeSet("/foo", "bar", store.Clobber)
 	st.Ops <- store.Op{3, mut}
@@ -319,7 +324,7 @@ func TestManagerClosesInstance(t *testing.T) {
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
-	mg := NewManager("a", 2, 1, st, st.Ops, nil)
+	mg := NewManager("a", 1, st, nil)
 
 	it := mg.getInstance(3)
 	st.Ops <- store.Op{3, store.Nop}

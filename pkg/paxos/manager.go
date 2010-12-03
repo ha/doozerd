@@ -33,10 +33,11 @@ type Manager struct {
 
 // start is the seqn at which this member was defined.
 // start+alpha is the first seqn this manager is expected to participate in.
-func NewManager(self string, start uint64, alpha int, st *store.Store, ops chan<- store.Op, outs PutterTo) *Manager {
+func NewManager(self string, alpha int, st *store.Store, outs PutterTo) *Manager {
+	start := <-st.Seqns
 	m := &Manager{
 		st:        st,
-		ops:       ops,
+		ops:       st.Ops,
 		rg:        NewRegistrar(st, start, alpha),
 		seqns:     make(chan uint64),
 		fillUntil: make(chan uint64),

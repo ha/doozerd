@@ -90,7 +90,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		// gaps in its sequence
 	}
 
-	mg := paxos.NewManager(self, seqn, alpha, st, st.Ops, outs)
+	mg := paxos.NewManager(self, alpha, st, outs)
 
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
