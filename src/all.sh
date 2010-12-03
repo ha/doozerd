@@ -11,7 +11,7 @@ fi
 xcd() {
     echo
     cd $1
-    echo --- cd $(pwd)
+    echo --- cd $1
 }
 
 mk() {
