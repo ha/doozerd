@@ -35,4 +35,8 @@ done
 
 (mk pkg)
 
+echo
+echo "# TESTING"
+echo
+
 sh test.sh
