@@ -36,14 +36,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	var cl *client.Client
 	self := util.RandId()
 	st := store.New()
-	seqn := uint64(0)
 	if attachAddr == "" { // we are the only node in a new cluster
-		seqn = addPublicAddr(st, seqn+1, self, listenAddr)
-		seqn = addHostname(st, seqn+1, self, os.Getenv("HOSTNAME"))
-		seqn = addMember(st, seqn+1, self, listenAddr)
-		seqn = claimSlot(st, seqn+1, "1", self)
-		seqn = claimLeader(st, seqn+1, self)
-		seqn = addPing(st, seqn+1, "pong")
+		set(st, "/doozer/info/" + self + "/public-addr", listenAddr, store.Missing)
+		set(st, "/doozer/info/" + self + "/hostname", os.Getenv("HOSTNAME"), store.Missing)
+		set(st, "/doozer/members/"+self, listenAddr, store.Missing)
+		set(st, "/doozer/slot/"+"1", self, store.Missing)
+		set(st, "/doozer/leader", self, store.Missing)
+		set(st, "/ping", "pong", store.Missing)
 
 		close(cal)
 
@@ -69,8 +68,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			panic(err)
 		}
 
-		var snap string
-		seqn, snap, err = cl.Join(self, listenAddr)
+		joinSeqn, snap, err := cl.Join(self, listenAddr)
 		if err != nil {
 			panic(err)
 		}
@@ -81,7 +79,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go advanceUntil(cl, done)
 
 		go func() {
-			st.Sync(seqn + alpha)
+			st.Sync(joinSeqn + alpha)
 			close(done)
 			activate(st, self, cl, cal)
 		}()
@@ -95,7 +93,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
-		for i := seqn + 1; i < seqn+alpha; i++ {
+		n := <-st.Seqns
+		for i := n+1; i < n+alpha; i++ {
 			st.Ops <- store.Op{i, store.Nop}
 		}
 	}
@@ -161,65 +160,7 @@ func advanceUntil(cl *client.Client, done chan int) {
 	}
 }
 
-
-func addPublicAddr(st *store.Store, seqn uint64, self, addr string) uint64 {
-	// TODO pull out path as a const
-	path := "/doozer/info/" + self + "/public-addr"
-	mx, err := store.EncodeSet(path, addr, store.Missing)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{seqn, mx}
-	return seqn
-}
-
-func addHostname(st *store.Store, seqn uint64, self, addr string) uint64 {
-	// TODO pull out path as a const
-	path := "/doozer/info/" + self + "/hostname"
-	mx, err := store.EncodeSet(path, addr, store.Missing)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{seqn, mx}
-	return seqn
-}
-
-func addMember(st *store.Store, seqn uint64, self, addr string) uint64 {
-	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/doozer/members/"+self, addr, store.Missing)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{seqn, mx}
-	return seqn
-}
-
-func claimSlot(st *store.Store, seqn uint64, slot, self string) uint64 {
-	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/doozer/slot/"+slot, self, store.Missing)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{seqn, mx}
-	return seqn
-}
-
-func claimLeader(st *store.Store, seqn uint64, self string) uint64 {
-	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/doozer/leader", self, store.Missing)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{seqn, mx}
-	return seqn
-}
-
-func addPing(st *store.Store, seqn uint64, v string) uint64 {
-	// TODO pull out path as a const
-	mx, err := store.EncodeSet("/ping", v, store.Missing)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{seqn, mx}
-	return seqn
+func set(st *store.Store, path, body, cas string) {
+	mut := store.MustEncodeSet(path, body, cas)
+	st.Ops <- store.Op{1 + <-st.Seqns, mut}
 }
