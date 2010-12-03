@@ -111,12 +111,8 @@ func (m *Manager) process() {
 				return
 			}
 
-			if ver >= req.seqn {
-				req.ch <- nil
-				continue
-			}
 			inst, ok := instances[req.seqn]
-			if !ok {
+			if !ok && req.seqn > ver {
 				inst = make(instance)
 				instances[req.seqn] = inst
 				go inst.process(req.seqn, m, m.ops)
