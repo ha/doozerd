@@ -58,6 +58,7 @@ func (it instance) process(seqn uint64, cf clusterer, res chan<- store.Op) {
 }
 
 func (it instance) PutFrom(addr string, m Msg) {
+	// TODO try eliminating the goroutine
 	go func() {
 		it <- Packet{m, addr}
 	}()
