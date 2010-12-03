@@ -13,11 +13,11 @@ args="$@"
 mtest() {
     echo
     echo --- test $1
-    cd pkg/$1
+    cd $1
     gotest $args
 }
 
-(mtest)
+(mtest pkg)
 for pkg in $PKGS
-do (mtest $pkg)
+do (mtest pkg/$pkg)
 done
