@@ -20,3 +20,7 @@ PKGS="
     member
     gc
 "
+
+CMDS="
+    doozerd
+"

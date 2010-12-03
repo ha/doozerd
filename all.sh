@@ -32,8 +32,11 @@ done
 for pkg in $PKGS
 do (mk pkg/$pkg)
 done
-
 (mk pkg)
+
+for cmd in $CMDS
+do (mk cmd/$cmd)
+done
 
 echo
 echo "# TESTING"
