@@ -15,21 +15,11 @@ else
     exit 1
 fi
 
-args="$@"
-
-mtest() {
-    name=$(echo $1 | sed 's/\//_/' | tr -d .)
-    cat <<TEST
-it_passes_$name() {
-    cd $1
-    gotest $args
-}
-TEST
-}
-
 {
     for pkg in $PKGS
-    do mtest pkg/$pkg
+    do
+        name=$(echo $pkg | sed 's/\//_/' | tr -d .)
+        echo "it_passes_pkg_$name() { cd pkg/$name; gotest $@; }"
     done
 } > all-test.sh
 
