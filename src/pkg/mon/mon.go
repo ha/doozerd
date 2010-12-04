@@ -90,7 +90,12 @@ func Monitor(self string, st *store.Store, cl SetDeler) os.Error {
 	mon.logger.Println("reading units")
 	evs := make(chan store.Event)
 	st.GetDirAndWatch(ctlKey, evs)
-	st.WatchOn(lockKey+"/*", evs)
+	go func(c <-chan store.Event) {
+		for e := range c {
+			evs <- e
+		}
+		close(evs)
+	}(st.Watch(lockKey+"/*"))
 
 	for {
 		select {
@@ -254,3 +259,4 @@ func (mon *monitor) increfService(id string) *service {
 	}
 	return sv
 }
+

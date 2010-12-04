@@ -16,7 +16,12 @@ func TestSession(t *testing.T) {
 	go Clean(st, fp)
 
 	ch := make(chan store.Event, 100)
-	st.WatchOn("/session/*", ch)
+	go func(c <-chan store.Event) {
+		for e := range c {
+			ch <- e
+		}
+		close(ch)
+	}(st.Watch("/session/*"))
 
 	// check-in with less than a nanosecond to live
 	body := strconv.Itoa64(time.Nanoseconds() + 1)

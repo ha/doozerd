@@ -305,9 +305,9 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 	return ss.ver, w.String()
 }
 
-// Subscribes `ch` to receive notifications when mutations are applied to paths
-// in the store. One event will be sent for each mutation iff the event's path
-// matches `pattern`, a Unix-style glob pattern.
+// Returns a channel that will receive notifications when mutations are applied
+// to paths in the store. One event will be sent for each mutation iff the
+// event's path matches `pattern`, a Unix-style glob pattern.
 //
 // Glob notation:
 //  - "?" matches a single char in a single path component
@@ -317,15 +317,15 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
-func (st *Store) WatchOn(pattern string, ch chan Event) {
-	re, _ := compileGlob(pattern)
-	st.watchCh <- watch{out: ch, re: re}
-}
-
 func (st *Store) Watch(pattern string) <-chan Event {
 	ch := make(chan Event)
-	st.WatchOn(pattern, ch)
+	st.watchOn(pattern, ch)
 	return ch
+}
+
+func (st *Store) watchOn(pattern string, ch chan Event) {
+	re, _ := compileGlob(pattern)
+	st.watchCh <- watch{out: ch, re: re}
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -397,7 +397,7 @@ func (st *Store) SyncPath(path string) Getter {
 // guarantees no entry will be missed, but one or more of the dummy events may
 // duplicate a true event.
 func (st *Store) GetDirAndWatch(path string, ch chan Event) {
-	st.WatchOn(path+"/*", ch)
+	st.watchOn(path+"/*", ch)
 	go func() {
 		for _, ent := range GetDir(st, path) {
 			p := path + "/" + ent
