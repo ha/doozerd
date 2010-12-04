@@ -19,6 +19,7 @@ PKGS="
     session
     member
     gc
+    .
 "
 
 CMDS="

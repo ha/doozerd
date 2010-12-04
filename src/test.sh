@@ -11,7 +11,7 @@ fi
 args="$@"
 
 mtest() {
-    name=$(echo $1 | sed 's/\//_/')
+    name=$(echo $1 | sed 's/\//_/' | tr -d .)
     cat <<TEST
 it_passes_$name() {
     cd $1
@@ -21,7 +21,6 @@ TEST
 }
 
 {
-    mtest pkg
     for pkg in $PKGS
     do mtest pkg/$pkg
     done
