@@ -11,3 +11,4 @@ src/cmd/doozerd/doozerd
 *.html.go
 *.pem
 *.agree
+*-test.sh

@@ -11,13 +11,20 @@ fi
 args="$@"
 
 mtest() {
-    echo
-    echo --- test $1
+    name=$(echo $1 | sed 's/\//_/')
+    cat <<TEST
+it_passes_$name() {
     cd $1
     gotest $args
 }
+TEST
+}
 
-(mtest pkg)
-for pkg in $PKGS
-do (mtest pkg/$pkg)
-done
+{
+    mtest pkg
+    for pkg in $PKGS
+    do mtest pkg/$pkg
+    done
+} > all-test.sh
+
+roundup
