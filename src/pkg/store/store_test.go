@@ -192,6 +192,7 @@ func TestSnap(t *testing.T) {
 	st := New()
 	mut := MustEncodeSet("/x", "a", Clobber)
 	st.Ops <- Op{1, mut}
+	<-st.Seqns // ensure it has been applied before grabbing the snapshot
 
 	snap := st.Snap()
 
