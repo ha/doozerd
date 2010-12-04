@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+// Upper bound on number of leaked goroutines.
+// Our goal is to reduce this to zero.
+const leaked = 23
+
 func mustListen() net.Listener {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -25,9 +29,6 @@ func mustListenPacket(addr string) net.PacketConn {
 }
 
 func TestDoozerSimple(t *testing.T) {
-	gs := runtime.Goroutines()
-	gs = 27 // TODO delete this line
-
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -38,6 +39,23 @@ func TestDoozerSimple(t *testing.T) {
 	cl, err := client.Dial(l.Addr().String())
 	assert.Equal(t, nil, err)
 	assert.Equal(t, nil, cl.Noop())
+}
 
-	assert.Equal(t, gs, runtime.Goroutines())
+func TestGoroutines(t *testing.T) {
+	gs := runtime.Goroutines()
+
+	func() {
+		l := mustListen()
+		defer l.Close()
+		u := mustListenPacket(l.Addr().String())
+		defer u.Close()
+
+		go Main("a", "", u, l, nil)
+
+		cl, err := client.Dial(l.Addr().String())
+		assert.Equal(t, nil, err)
+		cl.Noop()
+	}()
+
+	assert.T(t, gs + leaked >= runtime.Goroutines())
 }
