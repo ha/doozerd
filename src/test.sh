@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-if ! which roundup
+if ! which roundup > /dev/null
 then
     echo "You need to install roundup to run this script."
     echo "See: http://bmizerany.github.com/roundup"
