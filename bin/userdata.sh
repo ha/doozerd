@@ -22,6 +22,16 @@ export GOBIN
 
 ./all.bash
 
+cd /opt
+## Roundup
+[ ! -d roundup ] && {
+    git clone http://github.com/bmizerany/roundup.git
+}
+cd roundup
+./configure
+make install
+
+cd /opt
 ## Doozer
 [ ! -d doozer ] && {
     git clone http://github.com/bmizerany/doozer.git
