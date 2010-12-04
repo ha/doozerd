@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+if ! which roundup
+then
+    echo "You need to install roundup to run this script."
+    echo "See: http://bmizerany.github.com/roundup"
+    exit 1
+fi
+
 if [ -f env.sh ]
 then . ./env.sh
 else
