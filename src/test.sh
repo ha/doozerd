@@ -23,6 +23,5 @@ fi
     done
 } > all-test.sh
 
+trap 'rm all-test.sh' EXIT
 roundup
-
-rm all-test.sh
