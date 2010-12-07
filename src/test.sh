@@ -24,3 +24,5 @@ fi
 } > all-test.sh
 
 roundup
+
+rm all-test.sh
