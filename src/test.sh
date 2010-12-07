@@ -21,7 +21,7 @@ fi
         name=$(echo $pkg | sed 's/\//_/' | tr -d .)
         echo "it_passes_pkg_$name() { cd pkg/$name; gotest $@; }"
     done
-} > all-test.sh
+} > doozer-test.sh
 
-trap 'rm all-test.sh' EXIT
+trap 'rm doozer-test.sh' EXIT
 roundup
