@@ -1081,3 +1081,10 @@ func TestStoreSeqn(t *testing.T) {
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	assert.Equal(t, uint64(1), <-st.Seqns)
 }
+
+func TestStoreNoDeadlock(t *testing.T) {
+	st := New()
+	st.Watch("**")
+	st.Ops <- Op{1, Nop}
+	<-st.Seqns
+}

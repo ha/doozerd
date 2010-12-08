@@ -51,6 +51,7 @@ type Store struct {
 	state   *state
 	log     map[uint64]Event
 	cleanCh chan uint64
+	notices []notice
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -73,6 +74,11 @@ type watch struct {
 	re  *regexp.Regexp
 }
 
+type notice struct {
+	ch chan Event
+	ev Event
+}
+
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
@@ -89,6 +95,7 @@ func New() *Store {
 		state:   &state{0, emptyDir},
 		log:     make(map[uint64]Event),
 		cleanCh: make(chan uint64),
+		notices: make([]notice, 1),
 	}
 
 	go st.process(ops, seqns)
@@ -195,7 +202,11 @@ func (st *Store) notify(e Event) {
 		i++
 
 		if w.re.MatchString(e.Path) {
-			w.out <- e
+			st.notices = append(st.notices, notice{w.out, e})
+
+			if st.notices[0].ch == nil {
+				st.notices = st.notices[1:]
+			}
 		}
 	}
 
@@ -235,6 +246,12 @@ func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
 			}
 		case seqns <- ver:
 			// nothing to do here
+		case st.notices[0].ch <- st.notices[0].ev:
+			st.notices = st.notices[1:]
+
+			if len(st.notices) < 1 {
+				st.notices = make([]notice, 1)
+			}
 		}
 
 		// If we have any mutations that can be applied, do them.
