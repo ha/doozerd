@@ -12,7 +12,7 @@ type coordinator struct {
 	vr     uint64
 	vv     string
 
-	seen   uint64
+	seen uint64
 }
 
 func (co *coordinator) Put(in Msg) {

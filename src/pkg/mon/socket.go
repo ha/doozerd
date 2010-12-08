@@ -9,7 +9,7 @@ import (
 )
 
 type socket struct {
-	id, name     string
+	id, name  string
 	sv        *service
 	st        *store.Store
 	self      string

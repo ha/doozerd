@@ -22,7 +22,7 @@ const lease = 3e9 // ns == 3s
 
 var (
 	ErrNoWrite = os.NewError("no known writeable address")
-	responded = os.NewError("already responded")
+	responded  = os.NewError("already responded")
 )
 
 const (

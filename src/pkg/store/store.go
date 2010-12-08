@@ -84,7 +84,7 @@ type notice struct {
 // starting at number 1 (number 0 can be thought of as the creation of the
 // store).
 func New() *Store {
-	ops   := make(chan Op)
+	ops := make(chan Op)
 	seqns := make(chan uint64)
 	watches := make(chan int)
 
@@ -222,7 +222,7 @@ func (st *Store) closeWatches() {
 	}
 }
 
-func (st *Store) process(ops <-chan Op, seqns chan<-uint64, watches chan<-int) {
+func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int) {
 	logger := util.NewLogger("store")
 	defer st.closeWatches()
 

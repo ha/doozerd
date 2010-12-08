@@ -17,10 +17,10 @@ func TestMemberSimple(t *testing.T) {
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing))
 
 	keys := map[string]string{
-		"/doozer/slot/0": "a",
+		"/doozer/slot/0":    "a",
 		"/doozer/members/a": "addr",
-		"/doozer/info/a/x": "a",
-		"/doozer/info/a/y": "b",
+		"/doozer/info/a/x":  "a",
+		"/doozer/info/a/y":  "b",
 	}
 
 	// join the cluster

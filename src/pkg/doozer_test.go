@@ -57,5 +57,5 @@ func TestGoroutines(t *testing.T) {
 		cl.Noop()
 	}()
 
-	assert.T(t, gs + leaked >= runtime.Goroutines())
+	assert.T(t, gs+leaked >= runtime.Goroutines())
 }

@@ -8,7 +8,7 @@ import (
 func TestCluster(t *testing.T) {
 	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a", "b", "c"}
-	addrs := map[string]bool{"x":true, "y":true, "z":true}
+	addrs := map[string]bool{"x": true, "y": true, "z": true}
 	outs := make(ChanPutCloserTo)
 	cx := newCluster("c", membership, active, outs)
 	assert.Equal(t, 3, cx.Len(), "Len")

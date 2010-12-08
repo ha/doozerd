@@ -95,7 +95,7 @@ func Monitor(self string, st *store.Store, cl SetDeler) os.Error {
 			evs <- e
 		}
 		close(evs)
-	}(st.Watch(lockKey+"/*"))
+	}(st.Watch(lockKey + "/*"))
 
 	for {
 		select {
@@ -259,4 +259,3 @@ func (mon *monitor) increfService(id string) *service {
 	}
 	return sv
 }
-

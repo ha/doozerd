@@ -24,9 +24,9 @@ var restart = map[string]int{
 }
 
 type service struct {
-	id, name     string
-	pid          int
-	st           *store.Store
+	id, name  string
+	pid       int
+	st        *store.Store
 	self      string
 	cl        SetDeler
 	logger    *log.Logger

@@ -45,9 +45,9 @@ func TestGetDirString(t *testing.T) {
 
 func TestWalk(t *testing.T) {
 	exp := map[string]string{
-		"/d/x":  "1",
-		"/d/y":  "2",
-		"/d/z/a":"3",
+		"/d/x":   "1",
+		"/d/y":   "2",
+		"/d/z/a": "3",
 	}
 
 	st := New()

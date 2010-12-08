@@ -98,7 +98,8 @@ var fitErrors = []fitTest{
 
 	{[]interface{}{hi, hi}, new(interface {
 		a()
-	}), nil},
+	}),
+		nil},
 
 	{[]interface{}{int64(1), hi, hi}, *new(*T), nil},
 

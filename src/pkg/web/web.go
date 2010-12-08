@@ -70,7 +70,7 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path[len(evPrefix):]
 	logger.Println("new", path)
 
-	evs := Store.Watch(path+"**")
+	evs := Store.Watch(path + "**")
 
 	// TODO convert store.Snapshot to json and use that
 	go func() {

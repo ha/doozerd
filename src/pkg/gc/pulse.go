@@ -24,7 +24,7 @@ func Pulse(node string, seqns <-chan uint64, s Setter, sleep int64) {
 			break
 		}
 
-		cas, err = s.Set("/doozer/info/" + node + "/applied", seqn, cas)
+		cas, err = s.Set("/doozer/info/"+node+"/applied", seqn, cas)
 		if err != nil {
 			logger.Println(err)
 		}
@@ -32,4 +32,3 @@ func Pulse(node string, seqns <-chan uint64, s Setter, sleep int64) {
 		time.Sleep(sleep)
 	}
 }
-

@@ -37,8 +37,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	self := util.RandId()
 	st := store.New()
 	if attachAddr == "" { // we are the only node in a new cluster
-		set(st, "/doozer/info/" + self + "/public-addr", listenAddr, store.Missing)
-		set(st, "/doozer/info/" + self + "/hostname", os.Getenv("HOSTNAME"), store.Missing)
+		set(st, "/doozer/info/"+self+"/public-addr", listenAddr, store.Missing)
+		set(st, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/doozer/members/"+self, listenAddr, store.Missing)
 		set(st, "/doozer/slot/"+"1", self, store.Missing)
 		set(st, "/doozer/leader", self, store.Missing)
@@ -94,7 +94,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
 		n := <-st.Seqns
-		for i := n+1; i < n+alpha; i++ {
+		for i := n + 1; i < n+alpha; i++ {
 			st.Ops <- store.Op{i, store.Nop}
 		}
 	}
