@@ -38,6 +38,6 @@ do (mk cmd/$cmd)
 done
 
 echo
-echo "# TESTING"
+echo "--- TESTING"
 
 sh test.sh
