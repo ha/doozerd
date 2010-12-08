@@ -651,7 +651,7 @@ func TestWatchClose(t *testing.T) {
 
 	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
 	<-ch // Read the first event
-	assert.Equal(t, 1, len(st.watches))
+	assert.Equal(t, 1, <-st.Watches)
 
 	close(ch)
 	<-ch // Read zero value
@@ -661,7 +661,7 @@ func TestWatchClose(t *testing.T) {
 	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
 	<-st.Seqns // just for synchronization
 
-	assert.Equal(t, 0, len(st.watches))
+	assert.Equal(t, 0, <-st.Watches)
 }
 
 func TestWaitClose(t *testing.T) {
@@ -671,14 +671,14 @@ func TestWaitClose(t *testing.T) {
 
 	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 1, len(st.watches))
+	assert.Equal(t, 1, <-st.Watches)
 
 	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 0, len(st.watches))
+	assert.Equal(t, 0, <-st.Watches)
 }
 
 func TestSyncPathClose(t *testing.T) {
@@ -706,7 +706,7 @@ func TestSyncPathClose(t *testing.T) {
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	st.Ops <- Op{0, ""} // just for synchronization
 
-	assert.Equal(t, 0, len(st.watches))
+	assert.Equal(t, 0, <-st.Watches)
 }
 
 func TestSnapshotApply(t *testing.T) {

@@ -45,6 +45,7 @@ func (e *BadPathError) String() string {
 type Store struct {
 	Ops     chan<- Op
 	Seqns   <-chan uint64
+	Watches <-chan int
 	watchCh chan watch
 	watches []watch
 	todo    map[uint64]Op
@@ -85,10 +86,12 @@ type notice struct {
 func New() *Store {
 	ops   := make(chan Op)
 	seqns := make(chan uint64)
+	watches := make(chan int)
 
 	st := &Store{
 		Ops:     ops,
 		Seqns:   seqns,
+		Watches: watches,
 		watchCh: make(chan watch),
 		todo:    make(map[uint64]Op),
 		watches: []watch{},
@@ -98,7 +101,7 @@ func New() *Store {
 		notices: make([]notice, 1),
 	}
 
-	go st.process(ops, seqns)
+	go st.process(ops, seqns, watches)
 	return st
 }
 
@@ -219,7 +222,7 @@ func (st *Store) closeWatches() {
 	}
 }
 
-func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
+func (st *Store) process(ops <-chan Op, seqns chan<-uint64, watches chan<-int) {
 	logger := util.NewLogger("store")
 	defer st.closeWatches()
 
@@ -245,6 +248,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<-uint64) {
 				st.log[head] = Event{}, false
 			}
 		case seqns <- ver:
+			// nothing to do here
+		case watches <- len(st.watches):
 			// nothing to do here
 		case st.notices[0].ch <- st.notices[0].ev:
 			st.notices = st.notices[1:]
