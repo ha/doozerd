@@ -359,7 +359,7 @@ func (st *Store) Wait(seqn uint64) <-chan Event {
 	ch, all := make(chan Event, 1), st.Watch("**")
 
 	// Reading shared state. This must happen after the call to st.Watch.
-	if st.state.ver >= seqn {
+	if <-st.Seqns >= seqn {
 		close(all)
 		if ev, ok := st.log[seqn]; ok {
 			ch <- ev
