@@ -23,5 +23,8 @@ fi
     done
 } > all-test.sh
 
+: ${GOMAXPROCS:=10}
+export GOMAXPROCS
+
 trap 'rm all-test.sh' EXIT
 roundup
