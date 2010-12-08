@@ -678,6 +678,13 @@ func TestWaitClose(t *testing.T) {
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	st.Ops <- Op{0, ""} // just for synchronization
 
+
+	// TODO: FIX RACE
+	// --- FAIL: store.TestWaitClose
+	//     /Users/blake/src/doozer/src/pkg/store/store_test.go:681
+	//     !  Expected: int 0
+	//     !  Got:      int 1
+
 	assert.Equal(t, 0, <-st.Watches)
 }
 
@@ -1012,6 +1019,13 @@ func TestSyncPathFuture(t *testing.T) {
 
 	g := st.SyncPath("/y")
 	got := GetString(g, "/y")
+
+	// TODO: FIX RACE
+	//   --- FAIL: store.TestSyncPathFuture
+	//       /Users/blake/src/doozer/src/pkg/store/store_test.go:1015
+	//       !  Expected: string "b"
+	//       !  Got:      string "c"
+
 	assert.Equal(t, "b", got)
 }
 
