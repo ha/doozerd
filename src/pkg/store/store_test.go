@@ -248,7 +248,7 @@ func TestGetSyncSeveral(t *testing.T) {
 	chCas := make(chan string)
 	st := New()
 	go func() {
-		st.Sync(0)
+		st.Sync(1)
 		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
@@ -263,11 +263,13 @@ func TestGetSyncSeveral(t *testing.T) {
 		chV <- v
 		chCas <- cas
 	}()
+
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
+
 	v := <-chV
 	assert.Equal(t, 1, len(v))
 	assert.T(t, "a" == v[0] || "b" == v[0])
