@@ -75,7 +75,7 @@ func NewLogger(format string, a ...interface{}) *log.Logger {
 		return log.New(NullWriter{}, "", log.Lshortfile)
 	}
 
-	return log.New(LogWriter, "doozerd: "+prefix+" ", log.Lshortfile)
+	return log.New(LogWriter, "doozerd: "+prefix+" ", log.Lshortfile | log.Lmicroseconds)
 }
 
 func RandHexString(bits int) string {
