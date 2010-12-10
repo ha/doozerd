@@ -12,3 +12,5 @@ src/cmd/doozerd/doozerd
 *.pem
 *.agree
 *-test.sh
+*.log
+*.png
