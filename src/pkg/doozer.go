@@ -139,8 +139,24 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 func activate(st *store.Store, self string, c *client.Client) {
 	logger := util.NewLogger("activate")
-	ch := make(chan store.Event)
-	st.GetDirAndWatch("/doozer/slot", ch)
+	path := "/doozer/slot"
+	ch := st.Watch(path)
+
+	for _, base := range store.GetDir(st, path) {
+		p := path + "/" + base
+		v, cas := st.Get(p)
+		if cas != store.Dir && v[0] == "" {
+			_, err := c.Set(p, self, cas)
+			if err != nil {
+				logger.Println(err)
+				continue
+			}
+
+			close(ch)
+			break
+		}
+	}
+
 	for ev := range ch {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
