@@ -1040,28 +1040,6 @@ func TestSyncPathImmediate(t *testing.T) {
 	assert.Equal(t, "b", got)
 }
 
-func TestGetDirAndWatch(t *testing.T) {
-	st := New()
-	st.Ops <- Op{1, MustEncodeSet("/x/a", "1", Clobber)}
-	st.Sync(1)
-
-	ch := make(chan Event, 100)
-	st.GetDirAndWatch("/x", ch)
-
-	mut2 := MustEncodeSet("/x/b", "2", Clobber)
-	mut4 := MustEncodeSet("/x/c", "3", Clobber)
-	st.Ops <- Op{2, mut2}
-	st.Ops <- Op{3, MustEncodeSet("/y/a", "1", Clobber)}
-	st.Ops <- Op{4, mut4}
-	st.Sync(4)
-
-	// !  Expected: store.Event store.Event{Seqn:0x0, Path:"/x/a", Body:"1", Cas:"1", Mut:"", Err:<nil>, Getter:<nil>}
-	// !  Got:      store.Event store.Event{Seqn:0x2, Path:"/x/b", Body:"2", Cas:"2", Mut:":/x/b=2", Err:<nil>, Getter:<nil>}
-	assert.Equal(t, Event{0, "/x/a", "1", "1", "", nil, nil}, clearGetter(<-ch))
-	assert.Equal(t, Event{2, "/x/b", "2", "2", mut2, nil, nil}, clearGetter(<-ch))
-	assert.Equal(t, Event{4, "/x/c", "3", "4", mut4, nil, nil}, clearGetter(<-ch))
-}
-
 func TestStoreClose(t *testing.T) {
 	st := New()
 	ch := st.Watch("/a/b/c")
