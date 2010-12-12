@@ -94,7 +94,7 @@ func TestNodeSnapshotBad(t *testing.T) {
 	m := seqnPart + valPart
 	n, e := emptyDir.apply(1, m)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{2, "", "", "", m, io.ErrUnexpectedEOF, n}, e)
+	assert.Equal(t, Event{1, "", "", "", m, io.ErrUnexpectedEOF, n}, e)
 }
 
 func TestNodeNotADirectory(t *testing.T) {

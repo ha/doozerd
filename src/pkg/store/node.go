@@ -99,7 +99,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
 			ev.Cas = ""
 			ev.Err = d.Decode(&rep)
 			if ev.Err != nil {
-				ev.Seqn = seqn + 1
+				ev.Seqn = seqn
 				rep = n
 			}
 			ev.Getter = rep
