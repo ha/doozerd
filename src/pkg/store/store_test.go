@@ -223,7 +223,7 @@ func BenchmarkApply(b *testing.B) {
 	}
 }
 
-func TestGetSync(t *testing.T) {
+func TestGetSyncOne(t *testing.T) {
 	chV := make(chan []string)
 	chCas := make(chan string)
 	st := New()
@@ -668,23 +668,10 @@ func TestWaitClose(t *testing.T) {
 	st := New()
 
 	st.Wait(1)
-
-	st.Ops <- Op{0, ""} // just for synchronization
-
 	assert.Equal(t, 1, <-st.Watches)
 
 	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
-	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
-	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
-	st.Ops <- Op{0, ""} // just for synchronization
-
-
-	// TODO: FIX RACE
-	// --- FAIL: store.TestWaitClose
-	//     /Users/blake/src/doozer/src/pkg/store/store_test.go:681
-	//     !  Expected: int 0
-	//     !  Got:      int 1
-
+	st.Ops <- Op{2, Nop}
 	assert.Equal(t, 0, <-st.Watches)
 }
 

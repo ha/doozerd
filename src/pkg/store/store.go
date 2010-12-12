@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"gob"
 	"doozer/util"
+	"math"
 	"os"
 	"regexp"
 	"strings"
@@ -73,6 +74,7 @@ type state struct {
 type watch struct {
 	out chan Event
 	re  *regexp.Regexp
+	to  uint64
 }
 
 type notice struct {
@@ -198,6 +200,10 @@ func (st *Store) notify(e Event) {
 	i := 0
 	for _, w := range st.watches {
 		if closed(w.out) {
+			continue
+		}
+
+		if e.Seqn > w.to {
 			continue
 		}
 
@@ -341,13 +347,13 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 // snapshot.
 func (st *Store) Watch(pattern string) <-chan Event {
 	ch := make(chan Event)
-	st.watchOn(pattern, ch)
+	st.watchOn(pattern, ch, math.MaxUint64)
 	return ch
 }
 
-func (st *Store) watchOn(pattern string, ch chan Event) {
+func (st *Store) watchOn(pattern string, ch chan Event, to uint64) {
 	re, _ := compileGlob(pattern)
-	st.watchCh <- watch{out: ch, re: re}
+	st.watchCh <- watch{out: ch, re: re, to: to}
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -356,7 +362,8 @@ func (st *Store) watchOn(pattern string, ch chan Event) {
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
 func (st *Store) Wait(seqn uint64) <-chan Event {
-	ch, all := make(chan Event, 1), st.Watch("**")
+	ch, all := make(chan Event, 1), make(chan Event)
+	st.watchOn("**", all, seqn)
 
 	// Reading shared state. This must happen after the call to st.Watch.
 	if <-st.Seqns >= seqn {
