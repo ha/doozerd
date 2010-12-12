@@ -958,6 +958,7 @@ func TestSyncPathFuture(t *testing.T) {
 	st := New()
 
 	go func() {
+		for <-st.Watches < 1 {} // make sure SyncPath gets in there first
 		st.Ops <- Op{1, MustEncodeSet("/x", "a", "")}
 		st.Ops <- Op{2, MustEncodeSet("/y", "b", "")}
 		st.Ops <- Op{3, MustEncodeSet("/y", "c", "")}
@@ -966,13 +967,6 @@ func TestSyncPathFuture(t *testing.T) {
 
 	g := st.SyncPath("/y")
 	got := GetString(g, "/y")
-
-	// TODO: FIX RACE
-	//   --- FAIL: store.TestSyncPathFuture
-	//       /Users/blake/src/doozer/src/pkg/store/store_test.go:1015
-	//       !  Expected: string "b"
-	//       !  Got:      string "c"
-
 	assert.Equal(t, "b", got)
 }
 
