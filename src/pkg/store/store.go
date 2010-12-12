@@ -72,9 +72,9 @@ type state struct {
 }
 
 type watch struct {
-	out chan Event
-	re  *regexp.Regexp
-	to  uint64
+	out      chan Event
+	re       *regexp.Regexp
+	from, to uint64
 }
 
 type notice struct {
@@ -209,6 +209,10 @@ func (st *Store) notify(e Event, ws []watch) []watch {
 
 		nwatches[i] = w
 		i++
+
+		if e.Seqn < w.from {
+			continue
+		}
 
 		if w.re.MatchString(e.Path) {
 			st.notices = append(st.notices, notice{w.out, e})
@@ -347,13 +351,13 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 // snapshot.
 func (st *Store) Watch(pattern string) <-chan Event {
 	ch := make(chan Event)
-	st.watchOn(pattern, ch, math.MaxUint64)
+	st.watchOn(pattern, ch, 0, math.MaxUint64)
 	return ch
 }
 
-func (st *Store) watchOn(pattern string, ch chan Event, to uint64) {
+func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) {
 	re, _ := compileGlob(pattern)
-	st.watchCh <- watch{out: ch, re: re, to: to}
+	st.watchCh <- watch{out: ch, re: re, from: from, to: to}
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -363,7 +367,7 @@ func (st *Store) watchOn(pattern string, ch chan Event, to uint64) {
 // sent with its `Err` set to `ErrTooLate`.
 func (st *Store) Wait(seqn uint64) <-chan Event {
 	ch, all := make(chan Event, 1), make(chan Event)
-	st.watchOn("**", all, seqn)
+	st.watchOn("**", all, seqn, seqn)
 
 	// Reading shared state. This must happen after the call to st.Watch.
 	if <-st.Seqns >= seqn {
@@ -376,12 +380,9 @@ func (st *Store) Wait(seqn uint64) <-chan Event {
 	}
 
 	go func() {
-		for e := range all {
-			if e.Seqn == seqn {
-				close(all)
-				ch <- e
-			}
-		}
+		e := <-all
+		close(all)
+		_ = ch <- e
 	}()
 	return ch
 }
