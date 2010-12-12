@@ -81,7 +81,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go func() {
 			st.Sync(joinSeqn + alpha)
 			close(done)
-			activate(st, self, cl, cal)
+			activate(st, self, cl)
+			close(cal)
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -136,7 +137,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	sv.ServeUdp(outs)
 }
 
-func activate(st *store.Store, self string, c *client.Client, cal chan int) {
+func activate(st *store.Store, self string, c *client.Client) {
 	logger := util.NewLogger("activate")
 	ch := make(chan store.Event)
 	st.GetDirAndWatch("/doozer/slot", ch)
@@ -148,7 +149,6 @@ func activate(st *store.Store, self string, c *client.Client, cal chan int) {
 				logger.Println(err)
 				continue
 			}
-			close(cal)
 			close(ch)
 		}
 	}
