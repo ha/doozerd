@@ -4,7 +4,6 @@ REQS="
 
 PKGS="
     util
-    exec
     store
     paxos
     net
@@ -13,7 +12,6 @@ PKGS="
     server
     web
     client
-    mon
     test
     timer
     session
