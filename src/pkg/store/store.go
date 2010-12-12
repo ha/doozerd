@@ -194,11 +194,11 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	panic("unreachable")
 }
 
-func (st *Store) notify(e Event) {
-	nwatches := make([]watch, len(st.watches))
+func (st *Store) notify(e Event, ws []watch) []watch {
+	nwatches := make([]watch, len(ws))
 
 	i := 0
-	for _, w := range st.watches {
+	for _, w := range ws {
 		if closed(w.out) {
 			continue
 		}
@@ -219,7 +219,7 @@ func (st *Store) notify(e Event) {
 		}
 	}
 
-	st.watches = nwatches[0:i]
+	return nwatches[0:i]
 }
 
 func (st *Store) closeWatches() {
@@ -272,7 +272,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			st.state = &state{ev.Seqn, values}
 			st.log[t.Seqn] = ev
-			st.notify(ev)
+			st.watches = st.notify(ev, st.watches)
 			for ver < ev.Seqn {
 				ver++
 				st.todo[ver] = Op{}, false
