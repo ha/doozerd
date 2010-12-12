@@ -1023,3 +1023,94 @@ func TestStoreNoDeadlock(t *testing.T) {
 	st.Ops <- Op{1, Nop}
 	<-st.Seqns
 }
+
+func TestStoreWatchIntervalLog(t *testing.T) {
+	st := New()
+	ch := make(chan Event)
+
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{4, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{5, Nop}
+
+	st.watchOn("**", ch, 3, 5)
+	assert.Equal(t, 0, <-st.Watches)
+	ev := <-ch
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	ev = <-ch
+	assert.Equal(t, uint64(4), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	assert.Equal(t, 0, <-st.Watches)
+}
+
+func TestStoreWatchIntervalFuture(t *testing.T) {
+	st := New()
+	ch := make(chan Event)
+
+	go func() {
+		for <-st.Watches < 1 {}
+		st.Ops <- Op{1, Nop}
+		st.Ops <- Op{2, Nop}
+		st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+		st.Ops <- Op{4, MustEncodeSet("/x", "", Clobber)}
+		st.Ops <- Op{5, Nop}
+	}()
+
+	st.watchOn("**", ch, 3, 5)
+	ev := <-ch
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	ev = <-ch
+	assert.Equal(t, uint64(4), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	assert.Equal(t, 0, <-st.Watches)
+}
+
+func TestStoreWatchIntervalTrans(t *testing.T) {
+	st := New()
+	ch := make(chan Event)
+
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	go func() {
+		for <-st.Watches < 1 {}
+		st.Ops <- Op{4, MustEncodeSet("/x", "", Clobber)}
+		st.Ops <- Op{5, Nop}
+	}()
+
+	st.watchOn("**", ch, 3, 5)
+	ev := <-ch
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	ev = <-ch
+	assert.Equal(t, uint64(4), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	assert.Equal(t, 0, <-st.Watches)
+}
+
+func TestStoreWatchIntervalTooLate(t *testing.T) {
+	st := New()
+	ch := make(chan Event)
+
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	st.Ops <- Op{3, Nop}
+	st.Ops <- Op{4, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{5, Nop}
+	st.Clean(3)
+
+	st.watchOn("**", ch, 2, 5)
+	ev := <-ch
+	assert.Equal(t, uint64(2), ev.Seqn)
+	assert.Equal(t, ErrTooLate, ev.Err)
+	ev = <-ch
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, ErrTooLate, ev.Err)
+	ev = <-ch
+	assert.Equal(t, uint64(4), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	assert.Equal(t, 0, <-st.Watches)
+}

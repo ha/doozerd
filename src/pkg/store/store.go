@@ -203,12 +203,12 @@ func (st *Store) notify(e Event, ws []watch) []watch {
 			continue
 		}
 
-		if e.Seqn > w.to {
+		if e.Seqn >= w.to {
 			continue
+		} else if e.Seqn < w.to - 1 {
+			nwatches[i] = w
+			i++
 		}
-
-		nwatches[i] = w
-		i++
 
 		if e.Seqn < w.from {
 			continue
@@ -252,7 +252,19 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 				st.todo[a.Seqn] = a
 			}
 		case w := <-st.watchCh:
-			st.watches = append(st.watches, w)
+			if w.from == 0 {
+				w.from = ver
+			}
+
+			n, ws := w.from, []watch{w}
+			for ; len(ws) > 0 && n < head; n++ {
+				ws = st.notify(Event{Seqn: n, Err: ErrTooLate}, ws)
+			}
+			for ; len(ws) > 0 && n <= ver; n++ {
+				ws = st.notify(st.log[n], ws)
+			}
+
+			st.watches = append(st.watches, ws...)
 		case seqn := <-st.cleanCh:
 			for ; head <= seqn; head++ {
 				st.log[head] = Event{}, false
@@ -367,7 +379,7 @@ func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) {
 // sent with its `Err` set to `ErrTooLate`.
 func (st *Store) Wait(seqn uint64) <-chan Event {
 	ch, all := make(chan Event, 1), make(chan Event)
-	st.watchOn("**", all, seqn, seqn)
+	st.watchOn("**", all, seqn, seqn+1)
 
 	// Reading shared state. This must happen after the call to st.Watch.
 	if <-st.Seqns >= seqn {
