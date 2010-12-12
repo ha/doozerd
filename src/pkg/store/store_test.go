@@ -1104,3 +1104,33 @@ func TestStoreWatchIntervalTooLate(t *testing.T) {
 	assert.Equal(t, "/x", ev.Path)
 	assert.Equal(t, 0, <-st.Watches)
 }
+
+func TestStoreWatchIntervalWaitFuture(t *testing.T) {
+	st := New()
+	ch := make(chan Event, 1)
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+
+	st.watchOn("**", ch, 3, 4)
+	ev := <-ch
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, "/x", ev.Path)
+	assert.Equal(t, 0, <-st.Watches)
+}
+
+func TestStoreWatchIntervalWaitTooLate(t *testing.T) {
+	st := New()
+	ch := make(chan Event, 1)
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{4, Nop}
+	st.Clean(4)
+
+	st.watchOn("**", ch, 3, 4)
+	ev := <-ch
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, ErrTooLate, ev.Err)
+	assert.Equal(t, 0, <-st.Watches)
+}
