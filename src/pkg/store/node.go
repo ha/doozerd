@@ -91,11 +91,12 @@ func (n node) setp(k, v, cas string, keep bool) node {
 	return n
 }
 
-func (n node) apply(seqn uint64, mut string) (rep node, ev Event) {
+func (n node) apply(seqn uint64, mut string) (rep node, ev Event, snap bool) {
 	ev.Seqn, ev.Cas, ev.Mut = seqn, strconv.Uitoa64(seqn), mut
 	if seqn == 1 {
 		d := gob.NewDecoder(strings.NewReader(mut))
 		if d.Decode(&ev.Seqn) == nil {
+			snap = true
 			ev.Cas = ""
 			ev.Err = d.Decode(&rep)
 			if ev.Err != nil {

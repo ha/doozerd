@@ -284,7 +284,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 		// If we have any mutations that can be applied, do them.
 		for t, ok := st.todo[ver+1]; ok; t, ok = st.todo[ver+1] {
 			var ev Event
-			values, ev = values.apply(t.Seqn, t.Mut)
+			var snap bool
+			values, ev, snap = values.apply(t.Seqn, t.Mut)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			st.state = &state{ev.Seqn, values}
 			st.log[t.Seqn] = ev
@@ -292,6 +293,9 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 			for ver < ev.Seqn {
 				ver++
 				st.todo[ver] = Op{}, false
+			}
+			if snap {
+				head = ev.Seqn + 1
 			}
 		}
 	}
@@ -378,24 +382,12 @@ func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) {
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
 func (st *Store) Wait(seqn uint64) <-chan Event {
-	ch, all := make(chan Event, 1), make(chan Event)
-	st.watchOn("**", all, seqn, seqn+1)
-
-	// Reading shared state. This must happen after the call to st.Watch.
-	if <-st.Seqns >= seqn {
-		close(all)
-		if ev, ok := st.log[seqn]; ok {
-			ch <- ev
-		} else {
-			ch <- Event{Seqn: seqn, Err: ErrTooLate}
-		}
+	ch := make(chan Event, 1)
+	if seqn == 0 {
+		ch <- Event{Err: ErrTooLate}
+	} else {
+		st.watchOn("**", ch, seqn, seqn+1)
 	}
-
-	go func() {
-		e := <-all
-		close(all)
-		_ = ch <- e
-	}()
 	return ch
 }
 
