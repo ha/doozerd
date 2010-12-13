@@ -12,6 +12,7 @@ func TestLockSimple(t *testing.T) {
 	defer close(st.Ops)
 	fp := &test.FakeProposer{Store: st}
 	go Clean(fp.Store, fp)
+	for <-st.Watches < 1 {} // Wait for Clean's watch to take
 
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "1.2.3.4:55", store.Clobber))
