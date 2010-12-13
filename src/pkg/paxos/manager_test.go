@@ -166,6 +166,7 @@ func TestReadFromStore(t *testing.T) {
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+self, addr)}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", self)}
+	<-st.Seqns
 
 	ch := make(chan store.Event, 100)
 	go func(c <-chan store.Event) {
