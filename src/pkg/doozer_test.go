@@ -41,6 +41,36 @@ func TestDoozerSimple(t *testing.T) {
 	assert.Equal(t, nil, cl.Noop())
 }
 
+func TestDoozerWatchSimple(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl, err := client.Dial(l.Addr().String())
+	assert.Equal(t, nil, err)
+
+	ch, err := cl.Watch("/test/**")
+	assert.Equal(t, nil, err, err)
+	defer close(ch)
+
+	// TODO: Remove need to execute in goroutine
+	// (i.e. Set/Watch should behave closer to using them natively
+	go cl.Set("/test/foo", "bar", "")
+	ev := <-ch
+	assert.Equal(t, "/test/foo", ev.Path)
+	assert.Equal(t, "bar", ev.Body)
+	assert.NotEqual(t, "", ev.Cas)
+
+	go cl.Set("/test/fun", "house", "")
+	ev = <-ch
+	assert.Equal(t, "/test/fun", ev.Path)
+	assert.Equal(t, "house", ev.Body)
+	assert.NotEqual(t, "", ev.Cas)
+}
+
 func TestDoozerGoroutines(t *testing.T) {
 	gs := runtime.Goroutines()
 

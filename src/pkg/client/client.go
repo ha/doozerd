@@ -132,3 +132,31 @@ func (cl *Client) Sett(path string, n int64, cas string) (int64, string, os.Erro
 
 	return res.Exp, res.Cas, nil
 }
+
+type Event proto.ResWatch
+
+func (cl *Client) Watch(glob string) (<-chan Event, os.Error) {
+	pr, err := cl.proto()
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := pr.SendRequest("WATCH", glob)
+	if err != nil {
+		return nil, err
+	}
+
+	ch := make(chan Event)
+	go func() {
+		for {
+			var fitted proto.ResWatch
+			res.Get(&fitted)
+			if closed(res) {
+				return
+			}
+			ch <- Event(fitted)
+		}
+	}()
+
+	return ch, nil
+}
