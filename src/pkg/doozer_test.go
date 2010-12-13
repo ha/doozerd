@@ -41,7 +41,7 @@ func TestDoozerSimple(t *testing.T) {
 	assert.Equal(t, nil, cl.Noop())
 }
 
-func TestGoroutines(t *testing.T) {
+func TestDoozerGoroutines(t *testing.T) {
 	gs := runtime.Goroutines()
 
 	func() {
