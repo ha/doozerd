@@ -2,10 +2,13 @@ package doozer
 
 import (
 	"doozer/client"
+	"exec"
 	"github.com/bmizerany/assert"
 	"net"
 	"runtime"
+	"syscall"
 	"testing"
+	"time"
 )
 
 // Upper bound on number of leaked goroutines.
@@ -67,6 +70,70 @@ func TestDoozerWatchSimple(t *testing.T) {
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, "house", ev.Body)
 	assert.NotEqual(t, "", ev.Cas)
+}
+
+func mustRunDoozer(listen, web, attach string) *exec.Cmd {
+	exe, err := exec.LookPath("doozerd")
+	if err != nil {
+		panic(err)
+	}
+
+	args := []string{
+		"doozerd",
+		"-l=127.0.0.1:"+listen,
+		"-w=127.0.0.1:"+web,
+	}
+
+	if attach != "" {
+		args = append(args, "-a", "127.0.0.1:"+attach)
+	}
+
+	cmd, err := exec.Run(
+		exe,
+		args,
+		nil,
+		".",
+		exec.PassThrough,
+		exec.PassThrough,
+		exec.PassThrough,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return cmd
+}
+
+func TestDoozerNodeFailure(t *testing.T) {
+	d1 := mustRunDoozer("8046", "8080", "")
+	_ = d1
+
+	time.Sleep(1e9)
+
+	d2 := mustRunDoozer("8047", "8081", "8046")
+	d3 := mustRunDoozer("8048", "8082", "8046")
+	_ = d3
+
+	cl, err := client.Dial("127.0.0.1:8046")
+	assert.Equal(t, nil, err)
+
+	ch, err := cl.Watch("/doozer/slot/*")
+	assert.Equal(t, nil, err)
+
+	cl.Set("/doozer/slot/2", "", "")
+	<-ch; <-ch
+	cl.Set("/doozer/slot/3", "", "")
+	<-ch; <-ch
+
+	// Give doozer time to get through initial Nops
+	time.Sleep(1e9*5)
+
+	// Kill an attached doozer
+	syscall.Kill(d2.Pid, 9)
+
+	// We should get something here
+	ev := <-ch
+	assert.Equal(t, nil, ev)
 }
 
 func TestDoozerGoroutines(t *testing.T) {
