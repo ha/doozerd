@@ -288,7 +288,8 @@ func TestManagerAppliedShutdown(t *testing.T) {
 	assert.NotEqual(t, instance(nil), mg.getInstance(3))
 
 	st.Ops <- store.Op{3, store.Nop}
-	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
+	st.Ops <- store.Op{4, store.Nop}
+	<-st.Wait(4) // ensure mg has received the store.Event for seqn 3
 
 	assert.Equal(t, instance(nil), mg.getInstance(3))
 }
@@ -300,7 +301,8 @@ func TestManagerAppliedNeverStarted(t *testing.T) {
 	mg := NewManager("a", 1, st, nil)
 
 	st.Ops <- store.Op{3, store.Nop}
-	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
+	st.Ops <- store.Op{4, store.Nop}
+	<-st.Wait(4) // ensure mg has received the store.Event for seqn 3
 
 	assert.Equal(t, instance(nil), mg.getInstance(3))
 }
@@ -314,7 +316,8 @@ func TestManagerReply(t *testing.T) {
 
 	mut := store.MustEncodeSet("/foo", "bar", store.Clobber)
 	st.Ops <- store.Op{3, mut}
-	<-st.Seqns // give mg a chance to get the store.Event for seqn 3
+	st.Ops <- store.Op{4, store.Nop}
+	<-st.Wait(4) // ensure mg has received the store.Event for seqn 3
 	msg := newInvite(1)
 	msg.SetSeqn(3)
 	it := mg.getInstance(3)
