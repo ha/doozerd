@@ -252,10 +252,6 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 				st.todo[a.Seqn] = a
 			}
 		case w := <-st.watchCh:
-			if w.from == 0 {
-				w.from = ver
-			}
-
 			n, ws := w.from, []watch{w}
 			for ; len(ws) > 0 && n < head; n++ {
 				ws = st.notify(Event{Seqn: n, Err: ErrTooLate}, ws)
@@ -367,7 +363,8 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 // snapshot.
 func (st *Store) Watch(pattern string) <-chan Event {
 	ch := make(chan Event)
-	st.watchOn(pattern, ch, 0, math.MaxUint64)
+	p := st.state
+	st.watchOn(pattern, ch, p.ver+1, math.MaxUint64)
 	return ch
 }
 

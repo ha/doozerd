@@ -1134,3 +1134,15 @@ func TestStoreWatchIntervalWaitTooLate(t *testing.T) {
 	assert.Equal(t, ErrTooLate, ev.Err)
 	assert.Equal(t, 0, <-st.Watches)
 }
+
+func TestStoreWatchFrom(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+
+	ch := st.Watch("**")
+	assert.Equal(t, uint64(3), (<-ch).Seqn)
+}
