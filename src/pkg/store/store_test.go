@@ -687,6 +687,7 @@ func TestSyncPathClose(t *testing.T) {
 
 func TestSnapshotApply(t *testing.T) {
 	s1 := New()
+	defer close(s1.Ops)
 	mut1 := MustEncodeSet("/x", "a", Clobber)
 	mut2 := MustEncodeSet("/x", "b", Clobber)
 	s1.Ops <- Op{1, mut1}
@@ -696,6 +697,7 @@ func TestSnapshotApply(t *testing.T) {
 	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
+	defer close(s2.Ops)
 	s2.Ops <- Op{1, snap}
 	s2.Sync(1)
 
@@ -725,6 +727,7 @@ func TestSnapshotBad(t *testing.T) {
 
 func TestSnapshotSeqn(t *testing.T) {
 	s1 := New()
+	defer close(s1.Ops)
 	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	s1.Sync(2)
@@ -732,6 +735,7 @@ func TestSnapshotSeqn(t *testing.T) {
 	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
+	defer close(s2.Ops)
 	s2.Ops <- Op{1, snap}
 	s2.Sync(1)
 	v, cas := s2.Get("/x")
@@ -759,6 +763,7 @@ func TestSnapshotSeqn(t *testing.T) {
 
 func TestSnapshotLeak(t *testing.T) {
 	s1 := New()
+	defer close(s1.Ops)
 	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	s1.Sync(2)
@@ -766,6 +771,7 @@ func TestSnapshotLeak(t *testing.T) {
 	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
+	defer close(s2.Ops)
 
 	s2.Ops <- Op{2, MustEncodeSet("/x", "c", Clobber)}
 	s2.Ops <- Op{1, snap}
@@ -777,6 +783,7 @@ func TestSnapshotLeak(t *testing.T) {
 
 func TestSnapshotOutOfOrder(t *testing.T) {
 	s1 := New()
+	defer close(s1.Ops)
 	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	s1.Sync(2)
@@ -784,6 +791,7 @@ func TestSnapshotOutOfOrder(t *testing.T) {
 	assert.Equal(t, uint64(2), seqn)
 
 	s2 := New()
+	defer close(s2.Ops)
 
 	s2.Ops <- Op{2, MustEncodeSet("/x", "c", Clobber)}
 	s2.Ops <- Op{3, MustEncodeSet("/x", "c", Clobber)}
@@ -802,6 +810,7 @@ func TestSnapshotSync(t *testing.T) {
 	seqnCh := make(chan uint64)
 	snapCh := make(chan string)
 	s1 := New()
+	defer close(s1.Ops)
 	go func() {
 		s1.Sync(2)
 		seqn, snap := s1.Snapshot()
@@ -816,6 +825,7 @@ func TestSnapshotSync(t *testing.T) {
 	snap := <-snapCh
 
 	s2 := New()
+	defer close(s2.Ops)
 	s2.Ops <- Op{1, snap}
 	s2.Sync(1)
 
