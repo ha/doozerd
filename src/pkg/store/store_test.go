@@ -1141,8 +1141,9 @@ func TestStoreWatchFrom(t *testing.T) {
 
 	st.Ops <- Op{1, Nop}
 	st.Ops <- Op{2, Nop}
-	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	<-st.Seqns
 
 	ch := st.Watch("**")
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	assert.Equal(t, uint64(3), (<-ch).Seqn)
 }
