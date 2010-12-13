@@ -265,8 +265,6 @@ func (c *conn) serve() {
 		rlogger := util.NewLogger("%v - req [%d]", c.c.RemoteAddr(), rid)
 
 		if o, ok := ops[verb]; ok {
-			rlogger.Printf("%s %v", verb, data)
-
 			err := proto.Fit(data, o.p)
 			if err != nil {
 				c.SendResponse(rid, proto.Last, err)
