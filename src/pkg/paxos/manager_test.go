@@ -168,13 +168,7 @@ func TestReadFromStore(t *testing.T) {
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", self)}
 	<-st.Seqns
 
-	ch := make(chan store.Event, 100)
-	go func(c <-chan store.Event) {
-		for e := range c {
-			ch <- e
-		}
-		close(ch)
-	}(st.Watch("**"))
+	ch := st.Watch("**")
 
 	m := NewManager(self, 1, st, p)
 
