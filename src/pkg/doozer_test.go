@@ -106,13 +106,14 @@ func mustRunDoozer(listen, web, attach string) *exec.Cmd {
 
 func TestDoozerNodeFailure(t *testing.T) {
 	d1 := mustRunDoozer("8046", "8080", "")
-	_ = d1
+	defer syscall.Kill(d1.Pid, 9)
 
 	time.Sleep(1e9)
 
 	d2 := mustRunDoozer("8047", "8081", "8046")
+	defer syscall.Kill(d2.Pid, 9)
 	d3 := mustRunDoozer("8048", "8082", "8046")
-	_ = d3
+	defer syscall.Kill(d3.Pid, 9)
 
 	cl, err := client.Dial("127.0.0.1:8046")
 	assert.Equal(t, nil, err)
@@ -131,9 +132,14 @@ func TestDoozerNodeFailure(t *testing.T) {
 	// Kill an attached doozer
 	syscall.Kill(d2.Pid, 9)
 
+
 	// We should get something here
 	ev := <-ch
-	assert.Equal(t, nil, ev)
+	assert.NotEqual(t, nil, ev)
+
+	for i := 0; i < 1000; i++ {
+		cl.Noop()
+	}
 }
 
 func TestDoozerGoroutines(t *testing.T) {
