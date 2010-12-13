@@ -56,15 +56,13 @@ func TestDoozerWatchSimple(t *testing.T) {
 	assert.Equal(t, nil, err, err)
 	defer close(ch)
 
-	// TODO: Remove need to execute in goroutine
-	// (i.e. Set/Watch should behave closer to using them natively
-	go cl.Set("/test/foo", "bar", "")
+	cl.Set("/test/foo", "bar", "")
 	ev := <-ch
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, "bar", ev.Body)
 	assert.NotEqual(t, "", ev.Cas)
 
-	go cl.Set("/test/fun", "house", "")
+	cl.Set("/test/fun", "house", "")
 	ev = <-ch
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, "house", ev.Body)
