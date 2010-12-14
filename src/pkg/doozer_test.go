@@ -127,7 +127,7 @@ func TestDoozerNodeFailure(t *testing.T) {
 	<-ch; <-ch
 
 	// Give doozer time to get through initial Nops
-	time.Sleep(1e9*5)
+	time.Sleep(1e9*60)
 
 	// Kill an attached doozer
 	syscall.Kill(d2.Pid, 9)
