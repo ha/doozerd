@@ -1,5 +1,6 @@
 package main
 
+
 import (
 	"doozer"
 	"doozer/util"
@@ -9,7 +10,7 @@ import (
 	"os"
 )
 
-// Flags
+
 var (
 	listenAddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
 	attachAddr  = flag.String("a", "", "The address of another node to attach to.")
@@ -17,11 +18,14 @@ var (
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 )
 
+
 func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\nOptions:\n")
 	flag.PrintDefaults()
 }
+
+
 func main() {
 	util.LogWriter = os.Stderr
 	flag.Usage = Usage
