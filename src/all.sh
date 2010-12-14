@@ -10,7 +10,7 @@ fi
 
 xcd() {
     echo
-    cd $1
+    pushd $1 > /dev/null
     echo --- cd $1
 }
 
@@ -19,6 +19,7 @@ mk() {
     gomake clean
     gomake
     gomake install
+    popd > /dev/null
 }
 
 rm -rf $GOROOT/pkg/${GOOS}_${GOARCH}/doozer
@@ -30,11 +31,11 @@ do goinstall $req
 done
 
 for pkg in $PKGS
-do (mk pkg/$pkg)
+do mk pkg/$pkg
 done
 
 for cmd in $CMDS
-do (mk cmd/$cmd)
+do mk cmd/$cmd
 done
 
 echo
