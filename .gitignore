@@ -15,3 +15,4 @@ src/cmd/doozerd/doozerd
 *.log
 *.png
 *.DS_Store
+.roundup.*
