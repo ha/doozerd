@@ -205,7 +205,10 @@ func (st *Store) notify(e Event, ws []watch) []watch {
 
 		if e.Seqn >= w.to {
 			continue
-		} else if e.Seqn < w.to - 1 {
+		}
+
+		last := w.to - 1
+		if e.Seqn != last {
 			nwatches[i] = w
 			i++
 		}
