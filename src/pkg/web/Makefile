@@ -4,6 +4,7 @@ TARG=doozer/web
 GOFILES=\
 	main.css.go\
 	main.html.go\
+	stats.html.go\
 	main.js.go\
 	web.go\
 

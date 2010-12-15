@@ -1,13 +1,14 @@
 package web
 
 import (
-	"http"
-	"io"
 	"doozer/store"
 	"doozer/util"
+	"http"
+	"io"
 	"json"
 	"log"
 	"net"
+	"runtime"
 	"strings"
 	"template"
 	"websocket"
@@ -15,7 +16,11 @@ import (
 
 var Store *store.Store
 var ClusterName, evPrefix string
-var mainTpl = template.MustParse(main_html, nil)
+
+var (
+	mainTpl = template.MustParse(main_html, nil)
+	statsTpl = template.MustParse(stats_html, nil)
+)
 
 type info struct {
 	Path string
@@ -36,6 +41,7 @@ func Serve(listener net.Listener) {
 	evPrefix = "/events" + prefix
 
 	http.Handle("/", http.RedirectHandler("/view/d/"+ClusterName+"/", 307))
+	http.HandleFunc("/stats.html", statsHtml)
 	http.HandleFunc("/view/", viewHtml)
 	http.Handle("/main.js", stringHandler{"application/javascript", main_js})
 	http.Handle("/main.css", stringHandler{"text/css", main_css})
@@ -94,6 +100,11 @@ func viewHtml(w http.ResponseWriter, r *http.Request) {
 	x.Path = r.URL.Path[len("/view"):]
 	w.SetHeader("content-type", "text/html")
 	mainTpl.Execute(x, w)
+}
+
+func statsHtml(w http.ResponseWriter, r *http.Request) {
+	w.SetHeader("content-type", "text/html")
+	statsTpl.Execute(runtime.MemStats, w)
 }
 
 func walk(path string, st *store.Store, ch chan store.Event) {
