@@ -18,9 +18,11 @@ func Clean(st *store.Store, p paxos.Proposer) {
 		name := parts[2]
 		logger.Printf("lost session %s", name)
 
-		go clearSlot(p, ev, name)
-		go removeMember(p, ev, name)
-		go removeInfo(p, ev, name)
+		go func() {
+			clearSlot(p, ev, name)
+			removeMember(p, ev, name)
+			removeInfo(p, ev, name)
+		}()
 	}
 }
 
