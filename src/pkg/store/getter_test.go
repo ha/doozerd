@@ -56,11 +56,12 @@ func TestWalk(t *testing.T) {
 	st.Ops <- Op{3, MustEncodeSet("/d/z/a", "3", Clobber)}
 	st.Ops <- Op{4, MustEncodeSet("/m/y", "", Clobber)}
 	st.Ops <- Op{5, MustEncodeSet("/n", "", Clobber)}
-	for e := range MustWalk(st, "/d/**") {
-		expBody, ok := exp[e.Path]
+	err := Walk(st, "/d/**", func(path, body, cas string) {
+		expBody, ok := exp[path]
 		assert.T(t, ok)
-		exp[e.Path] = "", false
-		assert.Equal(t, expBody, e.Body)
-	}
+		exp[path] = "", false
+		assert.Equal(t, expBody, body)
+	})
+	assert.Equal(t, nil, err)
 	assert.Equal(t, 0, len(exp))
 }

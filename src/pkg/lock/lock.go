@@ -18,15 +18,13 @@ func Clean(st *store.Store, pp paxos.Proposer) {
 		name := parts[2]
 		logger.Printf("lost session %s", name)
 
-		ch, err := store.Walk(ev, "/lock/**")
-		if err != nil {
-			continue
-		}
-
-		for ev := range ch {
-			if ev.Body == name {
-				paxos.Del(pp, ev.Path, ev.Cas)
+		err := store.Walk(ev, "/lock/**", func(path, body, cas string) {
+			if body == name {
+				paxos.Del(pp, path, cas)
 			}
+		})
+		if err != nil {
+			logger.Println(err)
 		}
 	}
 }

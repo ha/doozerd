@@ -40,10 +40,12 @@ func GetDir(g Getter, path string) (entries []string) {
 	return v
 }
 
-func walk(g Getter, path string, re *regexp.Regexp, ch chan Event) {
+type Visitor func(path, body, cas string)
+
+func walk(g Getter, path string, re *regexp.Regexp, f Visitor) {
 	v, cas := g.Get(path)
 	if cas != Dir && re.MatchString(path) {
-		ch <- Event{0, path, v[0], cas, "", nil, nil}
+		f(path, v[0], cas)
 		return
 	}
 
@@ -56,32 +58,17 @@ func walk(g Getter, path string, re *regexp.Regexp, ch chan Event) {
 	}
 
 	for _, ent := range v {
-		walk(g, path+"/"+ent, re, ch)
+		walk(g, path+"/"+ent, re, f)
 	}
 }
 
-func Walk(g Getter, pattern string) (chan Event, os.Error) {
-	ch := make(chan Event)
-
+func Walk(g Getter, pattern string, f Visitor) os.Error {
 	// TODO find the longest non-glob prefix of pattern and start there
 	re, err := compileGlob(pattern)
 	if err != nil {
-		close(ch)
-		return nil, err
+		return err
 	}
 
-	go func() {
-		walk(g, "/", re, ch)
-		close(ch)
-	}()
-
-	return ch, nil
-}
-
-func MustWalk(g Getter, pattern string) chan Event {
-	ch, err := Walk(g, pattern)
-	if err != nil {
-		panic(err)
-	}
-	return ch
+	walk(g, "/", re, f)
+	return nil
 }
