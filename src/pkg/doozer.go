@@ -41,7 +41,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		set(st, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/doozer/members/"+self, listenAddr, store.Missing)
 		set(st, "/doozer/slot/"+"1", self, store.Missing)
-		set(st, "/doozer/leader", self, store.Missing)
 		set(st, "/ping", "pong", store.Missing)
 
 		close(cal)
