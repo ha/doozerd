@@ -78,3 +78,45 @@ func TestDoozerNodeFailure(t *testing.T) {
 		cl.Noop()
 	}
 }
+
+func TestDoozerFiveNodeFailure(t *testing.T) {
+	d0 := mustRunDoozer("8040", "8080", "")
+	defer syscall.Kill(d0.Pid, 9)
+
+	time.Sleep(1e9)
+
+	d1 := mustRunDoozer("8041", "8081", "8040")
+	defer syscall.Kill(d1.Pid, 9)
+	d2 := mustRunDoozer("8042", "8082", "8040")
+	defer syscall.Kill(d2.Pid, 9)
+	d3 := mustRunDoozer("8043", "8083", "8040")
+	defer syscall.Kill(d3.Pid, 9)
+	d4 := mustRunDoozer("8044", "8084", "8040")
+	defer syscall.Kill(d4.Pid, 9)
+
+	cl, err := client.Dial("127.0.0.1:8040")
+	assert.Equal(t, nil, err)
+
+	ch, err := cl.Watch("/doozer/slot/*")
+	assert.Equal(t, nil, err)
+
+	cl.Set("/doozer/slot/2", "", "")
+	<-ch; <-ch
+	cl.Set("/doozer/slot/3", "", "")
+	<-ch; <-ch
+
+	// Give doozer time to get through initial Nops
+	time.Sleep(1e9*60)
+
+	// Kill an attached doozer
+	syscall.Kill(d1.Pid, 9)
+
+
+	// We should get something here
+	ev := <-ch
+	assert.NotEqual(t, nil, ev)
+
+	for i := 0; i < 1000; i++ {
+		cl.Noop()
+	}
+}
