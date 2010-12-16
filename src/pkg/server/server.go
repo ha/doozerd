@@ -79,11 +79,13 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 }
 
 func (sv *Server) cals() []string {
-	parts, cas := sv.St.Get("/doozer/leader")
-	if cas == store.Dir && cas == store.Missing {
-		return nil
-	}
-	return parts
+	cals := make([]string, 0)
+	store.Walk(sv.St.Snap(), "/doozer/slot/*", func(_, body, _ string) {
+		if len(body) > 0 {
+			cals = append(cals, body)
+		}
+	})
+	return cals
 }
 
 // Repeatedly propose nop values until a successful read from `done`.
