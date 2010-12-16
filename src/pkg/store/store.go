@@ -47,8 +47,8 @@ type Store struct {
 	Ops     chan<- Op
 	Seqns   <-chan uint64
 	Watches <-chan int
-	watchCh chan watch
-	watches []watch
+	watchCh chan *Watch
+	watches []*Watch
 	todo    map[uint64]Op
 	state   *state
 	log     map[uint64]Event
@@ -71,14 +71,20 @@ type state struct {
 	root node
 }
 
-type watch struct {
-	out      chan Event
-	re       *regexp.Regexp
+type Watch struct {
+	C      <-chan Event
+	c      chan<- Event
+	re     *regexp.Regexp
 	from, to uint64
+	shutdown chan bool
+}
+
+func (wt *Watch) Stop() {
+	_ = wt.shutdown <- true
 }
 
 type notice struct {
-	ch chan Event
+	ch chan<- Event
 	ev Event
 }
 
@@ -94,9 +100,9 @@ func New() *Store {
 		Ops:     ops,
 		Seqns:   seqns,
 		Watches: watches,
-		watchCh: make(chan watch),
+		watchCh: make(chan *Watch),
 		todo:    make(map[uint64]Op),
-		watches: []watch{},
+		watches: []*Watch{},
 		state:   &state{0, emptyDir},
 		log:     make(map[uint64]Event),
 		cleanCh: make(chan uint64),
@@ -194,12 +200,12 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 	panic("unreachable")
 }
 
-func (st *Store) notify(e Event, ws []watch) []watch {
-	nwatches := make([]watch, len(ws))
+func (st *Store) notify(e Event, ws []*Watch) []*Watch {
+	nwatches := make([]*Watch, len(ws))
 
 	i := 0
 	for _, w := range ws {
-		if closed(w.out) {
+		if _, ok := <-w.shutdown; ok {
 			continue
 		}
 
@@ -218,7 +224,7 @@ func (st *Store) notify(e Event, ws []watch) []watch {
 		}
 
 		if w.re.MatchString(e.Path) {
-			st.notices = append(st.notices, notice{w.out, e})
+			st.notices = append(st.notices, notice{w.c, e})
 
 			if st.notices[0].ch == nil {
 				st.notices = st.notices[1:]
@@ -231,7 +237,7 @@ func (st *Store) notify(e Event, ws []watch) []watch {
 
 func (st *Store) closeWatches() {
 	for _, w := range st.watches {
-		close(w.out)
+		close(w.c)
 	}
 }
 
@@ -255,7 +261,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 				st.todo[a.Seqn] = a
 			}
 		case w := <-st.watchCh:
-			n, ws := w.from, []watch{w}
+			n, ws := w.from, []*Watch{w}
 			for ; len(ws) > 0 && n < head; n++ {
 				ws = st.notify(Event{Seqn: n, Err: ErrTooLate}, ws)
 			}
@@ -365,15 +371,27 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
 func (st *Store) Watch(pattern string) <-chan Event {
-	ch := make(chan Event)
-	p := st.state
-	st.watchOn(pattern, ch, p.ver+1, math.MaxUint64)
-	return ch
+	return NewWatch(st, pattern).C
 }
 
-func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) {
+func NewWatch(st *Store, pattern string) *Watch {
+	ch := make(chan Event)
+	p := st.state
+	return st.watchOn(pattern, ch, p.ver+1, math.MaxUint64)
+}
+
+func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) *Watch {
 	re, _ := compileGlob(pattern)
-	st.watchCh <- watch{out: ch, re: re, from: from, to: to}
+	wt := &Watch{
+		C: ch,
+		c: ch,
+		re: re,
+		from: from,
+		to: to,
+		shutdown: make(chan bool, 1),
+	}
+	st.watchCh <- wt
+	return wt
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -403,11 +421,8 @@ func (st *Store) Sync(seqn uint64) {
 // Returns an immutable copy of `st` in which `path` exists as a regular file
 // (not a dir). Waits for `path` to be set, if necessary.
 func (st *Store) SyncPath(path string) Getter {
-	evs := st.Watch(path)
-	defer func() {
-		close(evs)
-		<-evs
-	}()
+	wt := NewWatch(st, path)
+	defer wt.Stop()
 
 	g := st.state.root // TODO make this use a public method
 	_, cas := g.Get(path)
@@ -415,7 +430,7 @@ func (st *Store) SyncPath(path string) Getter {
 		return g
 	}
 
-	for ev := range evs {
+	for ev := range wt.C {
 		if ev.IsSet() {
 			return ev
 		}

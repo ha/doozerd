@@ -81,3 +81,15 @@ func TestUpdate(t *testing.T) {
 	assert.Equal(t, "/timer/x", (<-timer.C).Path) // From seqn 3
 	assert.Equal(t, "/timer/y", (<-timer.C).Path) // From seqn 1
 }
+
+func TestTimerStop(t *testing.T) {
+	st := store.New()
+	timer := New(testPattern, OneMillisecond, st)
+	timer.Close()
+
+	st.Ops <- store.Op{1, encodeTimer("/timer/y", 90*OneMillisecond)}
+	st.Ops <- store.Op{2, encodeTimer("/timer/x", 30*OneMillisecond)}
+	st.Wait(1)
+
+	assert.Equal(t, 0, <-st.Watches) // From seqn 1
+}

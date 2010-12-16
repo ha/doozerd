@@ -32,7 +32,7 @@ type Timer struct {
 	// Ticks are sent here
 	C <-chan Tick
 
-	events <-chan store.Event
+	wt *store.Watch
 
 	ticks  *vector.Vector
 	ticker *time.Ticker
@@ -43,7 +43,7 @@ func New(pattern string, interval int64, st *store.Store) *Timer {
 	t := &Timer{
 		Pattern: pattern,
 		C:       c,
-		events:  st.Watch(pattern),
+		wt:      store.NewWatch(st, pattern),
 		ticks:   new(vector.Vector),
 		ticker:  time.NewTicker(interval),
 	}
@@ -69,8 +69,8 @@ func (t *Timer) process(c chan Tick) {
 
 	for {
 		select {
-		case e := <-t.events:
-			if closed(t.events) {
+		case e := <-t.wt.C:
+			if closed(t.wt.C) {
 				return
 			}
 
@@ -118,5 +118,6 @@ func (t *Timer) process(c chan Tick) {
 }
 
 func (t *Timer) Close() {
-	close(t.events)
+	t.wt.Stop()
+	close(t.wt.C)
 }

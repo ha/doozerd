@@ -623,27 +623,6 @@ func TestWatchApply(t *testing.T) {
 	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil, nil}, clearGetter(<-ch))
 }
 
-func TestWatchClose(t *testing.T) {
-	st := New()
-	defer close(st.Ops)
-
-	ch := st.Watch("/x")
-
-	st.Ops <- Op{1, MustEncodeSet("/x", "", Clobber)}
-	<-ch // Read the first event
-	assert.Equal(t, 1, <-st.Watches)
-
-	close(ch)
-	<-ch // Read zero value
-
-	// Send an operation to trigger the removal of
-	// the watch.
-	st.Ops <- Op{2, MustEncodeSet("/x", "", Clobber)}
-	<-st.Seqns // just for synchronization
-
-	assert.Equal(t, 0, <-st.Watches)
-}
-
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
@@ -1206,4 +1185,28 @@ func TestStoreWatchFrom(t *testing.T) {
 	ch := st.Watch("**")
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	assert.Equal(t, uint64(3), (<-ch).Seqn)
+}
+
+func TestStoreStopWatch(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+	
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	<-st.Seqns
+
+	wt := NewWatch(st, "**")
+	ch := make(chan Event, 2)
+	wt.C, wt.c = ch, ch
+
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	<-st.Seqns
+	wt.Stop()
+
+	st.Ops <- Op{4, MustEncodeSet("/y", "", Clobber)}
+	st.Ops <- Op{5, MustEncodeSet("/y", "", Clobber)}
+
+	st.Wait(5)
+	assert.Equal(t, 1, len(wt.C))
+	assert.Equal(t, 0, <-st.Watches)
 }
