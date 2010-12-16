@@ -4,6 +4,7 @@ import (
 	"github.com/bmizerany/assert"
 	"doozer/store"
 	"doozer/test"
+	"sort"
 	"testing"
 )
 
@@ -25,8 +26,7 @@ func TestMemberSimple(t *testing.T) {
 
 	slotCh := fp.Watch("/doozer/slot/0")
 	membCh := fp.Watch("/doozer/members/a")
-	infoxCh := fp.Watch("/doozer/info/a/x")
-	infoyCh := fp.Watch("/doozer/info/a/y")
+	infoCh := fp.Watch("/doozer/info/a/?")
 
 	// end the session
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))
@@ -38,11 +38,16 @@ func TestMemberSimple(t *testing.T) {
 	ev = <-membCh
 	assert.T(t, ev.IsDel())
 
-	ev = <-infoxCh
-	assert.T(t, ev.IsDel())
-	assert.Equal(t, "", ev.Body)
+	cs := []int{}
 
-	ev = <-infoyCh
+	ev = <-infoCh
 	assert.T(t, ev.IsDel())
-	assert.Equal(t, "", ev.Body)
+	cs = append(cs, int(ev.Path[len(ev.Path)-1]))
+
+	ev = <-infoCh
+	assert.T(t, ev.IsDel())
+	cs = append(cs, int(ev.Path[len(ev.Path)-1]))
+
+	sort.SortInts(cs)
+	assert.Equal(t, []int{'x', 'y'}, cs)
 }
