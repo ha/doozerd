@@ -24,7 +24,7 @@ func encodeTimer(path string, offset int64) string {
 
 func TestManyOneshotTimers(t *testing.T) {
 	st := store.New()
-	timer := New(testPattern, 10*OneMillisecond, st)
+	timer := New(testPattern, OneMillisecond, st)
 	defer timer.Close()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/longest", 40*OneMillisecond)}
