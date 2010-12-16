@@ -13,33 +13,36 @@ func TestMemberSimple(t *testing.T) {
 	fp := &test.FakeProposer{Store: st}
 	go Clean(fp.Store, fp)
 
+	for <-st.Watches < 1 {}
+
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing))
 
-	keys := map[string]string{
-		"/doozer/slot/0":    "a",
-		"/doozer/members/a": "addr",
-		"/doozer/info/a/x":  "a",
-		"/doozer/info/a/y":  "b",
-	}
+	fp.Propose(store.MustEncodeSet("/doozer/info/a/x",  "a",    store.Missing))
+	fp.Propose(store.MustEncodeSet("/doozer/info/a/y",  "b",    store.Missing))
+	fp.Propose(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing))
+	fp.Propose(store.MustEncodeSet("/doozer/slot/0",    "a",    store.Missing))
 
-	// join the cluster
-	for k, p := range keys {
-		fp.Propose(store.MustEncodeSet(k, p, store.Missing))
-	}
-
-	// watch the keys to be deleted
-	ch := fp.Watch("/doozer/**")
+	slotCh := fp.Watch("/doozer/slot/0")
+	membCh := fp.Watch("/doozer/members/a")
+	infoxCh := fp.Watch("/doozer/info/a/x")
+	infoyCh := fp.Watch("/doozer/info/a/y")
 
 	// end the session
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))
 
-	// now that the session has ended, check its membership is cleaned up
-	for i := 0; i < len(keys); i++ {
-		ev := <-ch
-		_, ok := keys[ev.Path]
-		keys[ev.Path] = "", false
-		assert.T(t, ok)
-		assert.Equal(t, "", ev.Body)
-	}
+	ev := <-slotCh
+	assert.T(t, ev.IsSet())
+	assert.Equal(t, "", ev.Body)
+
+	ev = <-membCh
+	assert.T(t, ev.IsDel())
+
+	ev = <-infoxCh
+	assert.T(t, ev.IsDel())
+	assert.Equal(t, "", ev.Body)
+
+	ev = <-infoyCh
+	assert.T(t, ev.IsDel())
+	assert.Equal(t, "", ev.Body)
 }
