@@ -975,7 +975,8 @@ func TestSyncPathFuture(t *testing.T) {
 	defer close(st.Ops)
 
 	go func() {
-		for <-st.Watches < 1 {} // make sure SyncPath gets in there first
+		for <-st.Watches < 1 {
+		} // make sure SyncPath gets in there first
 		st.Ops <- Op{1, MustEncodeSet("/x", "a", "")}
 		st.Ops <- Op{2, MustEncodeSet("/y", "b", "")}
 		st.Ops <- Op{3, MustEncodeSet("/y", "c", "")}
@@ -1075,7 +1076,8 @@ func TestStoreWatchIntervalFuture(t *testing.T) {
 	ch := make(chan Event)
 
 	go func() {
-		for <-st.Watches < 1 {}
+		for <-st.Watches < 1 {
+		}
 		st.Ops <- Op{1, Nop}
 		st.Ops <- Op{2, Nop}
 		st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
@@ -1102,7 +1104,8 @@ func TestStoreWatchIntervalTrans(t *testing.T) {
 	st.Ops <- Op{2, Nop}
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	go func() {
-		for <-st.Watches < 1 {}
+		for <-st.Watches < 1 {
+		}
 		st.Ops <- Op{4, MustEncodeSet("/x", "", Clobber)}
 		st.Ops <- Op{5, Nop}
 	}()
@@ -1190,7 +1193,7 @@ func TestStoreWatchFrom(t *testing.T) {
 func TestStoreStopWatch(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
-	
+
 	st.Ops <- Op{1, Nop}
 	st.Ops <- Op{2, Nop}
 	<-st.Seqns

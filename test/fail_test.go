@@ -17,8 +17,8 @@ func mustRunDoozer(listen, web, attach string) *exec.Cmd {
 
 	args := []string{
 		"doozerd",
-		"-l=127.0.0.1:"+listen,
-		"-w=127.0.0.1:"+web,
+		"-l=127.0.0.1:" + listen,
+		"-w=127.0.0.1:" + web,
 	}
 
 	if attach != "" {
@@ -59,16 +59,17 @@ func TestDoozerNodeFailure(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	cl.Set("/doozer/slot/2", "", "")
-	<-ch; <-ch
+	<-ch
+	<-ch
 	cl.Set("/doozer/slot/3", "", "")
-	<-ch; <-ch
+	<-ch
+	<-ch
 
 	// Give doozer time to get through initial Nops
-	time.Sleep(1e9*60)
+	time.Sleep(1e9 * 60)
 
 	// Kill an attached doozer
 	syscall.Kill(d2.Pid, 9)
-
 
 	// We should get something here
 	ev := <-ch
@@ -101,16 +102,17 @@ func TestDoozerFiveNodeFailure(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	cl.Set("/doozer/slot/2", "", "")
-	<-ch; <-ch
+	<-ch
+	<-ch
 	cl.Set("/doozer/slot/3", "", "")
-	<-ch; <-ch
+	<-ch
+	<-ch
 
 	// Give doozer time to get through initial Nops
-	time.Sleep(1e9*60)
+	time.Sleep(1e9 * 60)
 
 	// Kill an attached doozer
 	syscall.Kill(d1.Pid, 9)
-
 
 	// We should get something here
 	ev := <-ch

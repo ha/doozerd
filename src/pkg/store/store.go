@@ -72,9 +72,9 @@ type state struct {
 }
 
 type Watch struct {
-	C      <-chan Event
-	c      chan<- Event
-	re     *regexp.Regexp
+	C        <-chan Event
+	c        chan<- Event
+	re       *regexp.Regexp
 	from, to uint64
 	shutdown chan bool
 }
@@ -383,11 +383,11 @@ func NewWatch(st *Store, pattern string) *Watch {
 func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) *Watch {
 	re, _ := compileGlob(pattern)
 	wt := &Watch{
-		C: ch,
-		c: ch,
-		re: re,
-		from: from,
-		to: to,
+		C:        ch,
+		c:        ch,
+		re:       re,
+		from:     from,
+		to:       to,
 		shutdown: make(chan bool, 1),
 	}
 	st.watchCh <- wt

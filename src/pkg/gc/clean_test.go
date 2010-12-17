@@ -11,7 +11,8 @@ func TestGcClean(t *testing.T) {
 	defer close(st.Ops)
 
 	go Clean(st)
-	for <-st.Watches < 1 {} // Wait for Clean()'s Watch to take
+	for <-st.Watches < 1 {
+	} // Wait for Clean()'s Watch to take
 
 	st.Ops <- store.Op{1, store.Nop}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", "a", store.Missing)}

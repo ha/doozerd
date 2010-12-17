@@ -14,15 +14,16 @@ func TestMemberSimple(t *testing.T) {
 	fp := &test.FakeProposer{Store: st}
 	go Clean(fp.Store, fp)
 
-	for <-st.Watches < 1 {}
+	for <-st.Watches < 1 {
+	}
 
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing))
 
-	fp.Propose(store.MustEncodeSet("/doozer/info/a/x",  "a",    store.Missing))
-	fp.Propose(store.MustEncodeSet("/doozer/info/a/y",  "b",    store.Missing))
+	fp.Propose(store.MustEncodeSet("/doozer/info/a/x", "a", store.Missing))
+	fp.Propose(store.MustEncodeSet("/doozer/info/a/y", "b", store.Missing))
 	fp.Propose(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing))
-	fp.Propose(store.MustEncodeSet("/doozer/slot/0",    "a",    store.Missing))
+	fp.Propose(store.MustEncodeSet("/doozer/slot/0", "a", store.Missing))
 
 	slotCh := fp.Watch("/doozer/slot/0")
 	membCh := fp.Watch("/doozer/members/a")

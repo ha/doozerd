@@ -18,7 +18,7 @@ var Store *store.Store
 var ClusterName, evPrefix string
 
 var (
-	mainTpl = template.MustParse(main_html, nil)
+	mainTpl  = template.MustParse(main_html, nil)
 	statsTpl = template.MustParse(stats_html, nil)
 )
 
