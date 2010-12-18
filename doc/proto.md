@@ -1,8 +1,21 @@
 # Client Protocol
 
-Every request is formatted in three parts: verb, opid, data.
+We use (a generalized version of) the redis protocol format. See
+<http://code.google.com/p/redis/wiki/ProtocolSpecification> for more info.
 
-Every response is formatted in three parts: opid, flags, data.
+In our version, elements of a multi-bulk response are not just bulk string
+responses, they can be any response type, including integers, "+" lines, "-"
+errors, and other multi-bulk responses recursively.
+
+Also, both responses and requests use this generalized format.
+
+Every request is formatted in three parts: verb, opid, data. The verb is a
+string, the opid is an integer, and the data varies depending on the verb as
+given below.
+
+Every response is formatted in three parts: opid, flags, data. The opid is an
+integer, the flags is an integer, and the data varies depending on the
+associated request as given below.
 
     The protocol as of: Mon Nov  8 20:32:21 PST 2010
 
@@ -38,11 +51,15 @@ Every response is formatted in three parts: opid, flags, data.
 
 ## Response Flags:
 
-    Closed = 1 << iota
+    Closed = 1
       The opid in given in the response is closed.
 
       The trailing arguments are to be ignored. This indicates to clients that
       they should clean-up any listeners for that opid.
 
-    Last
+    Last = 2
       Same as above except the trailing arguments are valid.
+
+    (Note: instead of Closed and Last, I'd rather have flags Valid and Done,
+    where Valid == (not Closed) and Done == (Closed or Last). That way the
+    flags are independent and not redundant. -kr)
