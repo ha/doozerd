@@ -2,8 +2,15 @@
 
 set -e
 
+# Members
 n=$1
+[ -z "$n" ] || shift
 [ -z "$n" ] && n=3
+
+# CALs
+c=$1
+[ -z "$c" ] || shift
+[ -z "$c" ] && c=0
 
 which seq  && seq=seq
 which gseq && seq=gseq
@@ -36,6 +43,11 @@ do
     running=$(expr $running + 1)
 
     sleep 1
+done
+
+for i in $($seq $c)
+do
+    bin/dcmd SET /doozer/slot/$i '' 0
 done
 
 waitall
