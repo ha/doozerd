@@ -12,6 +12,6 @@ See <http://golang.org/doc/install.html>.
 
 ## Try It Out
 
-    $ doozerd
+    $ bin/strap
 
-Point your browser at <http://127.0.0.1:8080>
+This will start up three doozer processes and open a web view on one of them.
