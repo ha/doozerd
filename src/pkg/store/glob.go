@@ -18,8 +18,8 @@ func translateGlob(pattern string) (regexp string) {
 		default:
 			outs[i] = string(c)
 			double = false
-		case '.':
-			outs[i] = `\.`
+		case '.', '+', '-', '^', '$', '[', ']', '(', ')':
+			outs[i] = `\` + string(c)
 			double = false
 		case '?':
 			outs[i] = `[^/]`
