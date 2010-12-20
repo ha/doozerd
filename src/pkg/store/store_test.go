@@ -199,7 +199,7 @@ func TestSnap(t *testing.T) {
 	st.Ops <- Op{1, mut}
 	<-st.Seqns // ensure it has been applied before grabbing the snapshot
 
-	snap := st.Snap()
+	_, snap := st.Snap()
 
 	root, ok := snap.(node)
 	assert.Equal(t, true, ok)

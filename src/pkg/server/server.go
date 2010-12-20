@@ -82,7 +82,8 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 
 func (sv *Server) cals() []string {
 	cals := make([]string, 0)
-	store.Walk(sv.St.Snap(), slots, func(_, body, _ string) {
+	_, g := sv.St.Snap()
+	store.Walk(g, slots, func(_, body, _ string) {
 		if len(body) > 0 {
 			cals = append(cals, body)
 		}

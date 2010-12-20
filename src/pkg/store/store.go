@@ -309,12 +309,12 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 }
 
 // Returns a point-in-time snapshot of the contents of the store.
-func (st *Store) Snap() Getter {
+func (st *Store) Snap() (ver uint64, g Getter) {
 	// WARNING: Be sure to read the pointer value of st.state only once. If you
 	// need multiple accesses, copy the pointer first.
 	p := st.state
 
-	return p.root
+	return p.ver, p.root
 }
 
 // Gets the value stored at `path`, if any.
@@ -327,7 +327,8 @@ func (st *Store) Snap() Getter {
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
 func (st *Store) Get(path string) (value []string, cas string) {
-	return st.Snap().Get(path)
+	_, g := st.Snap()
+	return g.Get(path)
 }
 
 // Encodes the entire storage state, including the current sequence number, as
@@ -342,22 +343,19 @@ func (st *Store) Get(path string) (value []string, cas string) {
 // Note that applying a snapshot does not send notifications.
 func (st *Store) Snapshot() (seqn uint64, mutation string) {
 	w := new(bytes.Buffer)
+	ver, g := st.Snap()
 
-	// WARNING: Be sure to read the pointer value of st.state only once. If you
-	// need multiple accesses, copy the pointer first.
-	ss := st.state
-
-	err := gob.NewEncoder(w).Encode(ss.ver)
+	err := gob.NewEncoder(w).Encode(ver)
 	if err != nil {
 		panic(err)
 	}
 
-	err = gob.NewEncoder(w).Encode(ss.root)
+	err = gob.NewEncoder(w).Encode(g)
 	if err != nil {
 		panic(err)
 	}
 
-	return ss.ver, w.String()
+	return ver, w.String()
 }
 
 // Returns a channel that will receive notifications when mutations are applied
@@ -378,8 +376,8 @@ func (st *Store) Watch(glob *Glob) <-chan Event {
 
 func NewWatch(st *Store, glob *Glob) *Watch {
 	ch := make(chan Event)
-	p := st.state
-	return st.watchOn(glob, ch, p.ver+1, math.MaxUint64)
+	ver, _ := st.Snap()
+	return st.watchOn(glob, ch, ver+1, math.MaxUint64)
 }
 
 func (st *Store) watchOn(glob *Glob, ch chan Event, from, to uint64) *Watch {
@@ -430,7 +428,7 @@ func (st *Store) SyncPath(path string) (Getter, os.Error) {
 	wt := NewWatch(st, glob)
 	defer wt.Stop()
 
-	g := st.state.root // TODO make this use a public method
+	_, g := st.Snap()
 	_, cas := g.Get(path)
 	if cas != Dir && cas != Missing {
 		return g, nil
