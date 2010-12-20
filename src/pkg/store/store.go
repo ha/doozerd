@@ -400,11 +400,7 @@ func (st *Store) watchOn(glob *Glob, ch chan Event, from, to uint64) *Watch {
 // sent with its `Err` set to `ErrTooLate`.
 func (st *Store) Wait(seqn uint64) <-chan Event {
 	ch := make(chan Event, 1)
-	if seqn == 0 {
-		ch <- Event{Err: ErrTooLate}
-	} else {
-		st.watchOn(Any, ch, seqn, seqn+1)
-	}
+	st.watchOn(Any, ch, seqn, seqn+1)
 	return ch
 }
 
