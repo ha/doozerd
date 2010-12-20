@@ -8,9 +8,7 @@ import (
 	"strconv"
 )
 
-const (
-	testPattern = "/timer/**"
-)
+var testGlob = store.MustCompileGlob("/timer/**")
 
 func encodeTimer(path string, offset int64) string {
 	future := time.Nanoseconds() + offset
@@ -24,7 +22,7 @@ func encodeTimer(path string, offset int64) string {
 
 func TestManyOneshotTimers(t *testing.T) {
 	st := store.New()
-	timer := New(testPattern, OneMillisecond, st)
+	timer := New(testGlob, OneMillisecond, st)
 	defer timer.Close()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/longest", 40*OneMillisecond)}
@@ -48,7 +46,7 @@ func TestManyOneshotTimers(t *testing.T) {
 
 func TestDeleteTimer(t *testing.T) {
 	st := store.New()
-	timer := New(testPattern, OneMillisecond, st)
+	timer := New(testGlob, OneMillisecond, st)
 	defer timer.Close()
 
 	never := "/timer/never/ticks"
@@ -68,7 +66,7 @@ func TestDeleteTimer(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	st := store.New()
-	timer := New(testPattern, OneMillisecond, st)
+	timer := New(testGlob, OneMillisecond, st)
 	defer timer.Close()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/y", 90*OneMillisecond)}
@@ -84,7 +82,7 @@ func TestUpdate(t *testing.T) {
 
 func TestTimerStop(t *testing.T) {
 	st := store.New()
-	timer := New(testPattern, OneMillisecond, st)
+	timer := New(testGlob, OneMillisecond, st)
 	timer.Close()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/y", 90*OneMillisecond)}

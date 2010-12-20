@@ -27,7 +27,7 @@ func (t Tick) Less(y interface{}) bool {
 }
 
 type Timer struct {
-	Pattern string
+	Glob *store.Glob
 
 	// Ticks are sent here
 	C <-chan Tick
@@ -38,12 +38,12 @@ type Timer struct {
 	ticker *time.Ticker
 }
 
-func New(pattern string, interval int64, st *store.Store) *Timer {
+func New(glob *store.Glob, interval int64, st *store.Store) *Timer {
 	c := make(chan Tick)
 	t := &Timer{
-		Pattern: pattern,
+		Glob:    glob,
 		C:       c,
-		wt:      store.NewWatch(st, pattern),
+		wt:      store.NewWatch(st, glob),
 		ticks:   new(vector.Vector),
 		ticker:  time.NewTicker(interval),
 	}
@@ -58,7 +58,7 @@ func (t *Timer) process(c chan Tick) {
 
 	defer t.ticker.Stop()
 
-	logger := util.NewLogger("timer (%s)", t.Pattern)
+	logger := util.NewLogger("timer (%s)", t.Glob.String())
 
 	peek := func() Tick {
 		if t.ticks.Len() == 0 {

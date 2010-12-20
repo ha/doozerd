@@ -25,7 +25,7 @@ func selfRefNewManager(self string, alpha int) (*Manager, *store.Store) {
 func TestProposeAndLearn(t *testing.T) {
 	exp := "foo"
 	m, st := selfRefNewManager("a", 1)
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	seqn := <-m.seqns
 	ix := m.getInstance(seqn)
@@ -40,7 +40,7 @@ func TestProposeAndLearnMultiple(t *testing.T) {
 	exp := []string{"/foo", "/bar"}
 	seqnexp := []uint64{3, 4}
 	m, st := selfRefNewManager("a", 1)
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp[0])
@@ -73,7 +73,7 @@ func TestManagerFill(t *testing.T) {
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	exp := "foo"
 	m, st := selfRefNewManager("a", 1)
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	msg := newVote(3, exp)
 	msg.SetSeqn(3)
@@ -87,7 +87,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	exp := "bar"
 	m, st := selfRefNewManager("a", 1)
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	msg := newVote(3, exp)
 	msg.SetSeqn(3)
@@ -101,7 +101,7 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 func TestUnusedSeqn(t *testing.T) {
 	exp := "bar"
 	m, st := selfRefNewManager("a", 1)
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose(exp)
@@ -113,7 +113,7 @@ func TestUnusedSeqn(t *testing.T) {
 
 func TestIgnoreMalformedMsg(t *testing.T) {
 	m, st := selfRefNewManager("a", 1)
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	m.PutFrom(m.Self+"addr", resize(newVote(1, ""), -1))
 
@@ -168,7 +168,7 @@ func TestReadFromStore(t *testing.T) {
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", self)}
 	<-st.Seqns
 
-	ch := st.Watch("**")
+	ch := st.Watch(store.Any)
 
 	m := NewManager(self, 1, st, p)
 

@@ -21,7 +21,7 @@ func TestSession(t *testing.T) {
 			ch <- e
 		}
 		close(ch)
-	}(st.Watch("/session/*"))
+	}(st.Watch(store.MustCompileGlob("/session/*")))
 
 	// check-in with less than a nanosecond to live
 	body := strconv.Itoa64(time.Nanoseconds() + 1)

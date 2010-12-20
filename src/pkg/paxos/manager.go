@@ -92,7 +92,7 @@ func (mg *Manager) fill(seqn uint64) {
 func (m *Manager) process() {
 	instances := make(map[uint64]instance)
 	var ver uint64
-	seqns := m.st.Watch("**")
+	seqns := m.st.Watch(store.Any)
 	for {
 		select {
 		case ev := <-seqns:

@@ -8,6 +8,8 @@ import (
 	"strconv"
 )
 
+var applied = store.MustCompileGlob("/doozer/info/*/applied")
+
 type cleaner struct {
 	st     *store.Store
 	table  map[string]uint64
@@ -21,7 +23,7 @@ func Clean(st *store.Store) {
 		logger: util.NewLogger("clean"),
 	}
 
-	for ev := range st.Watch("/doozer/info/*/applied") {
+	for ev := range st.Watch(applied) {
 		cl.update(ev)
 		cl.check()
 	}

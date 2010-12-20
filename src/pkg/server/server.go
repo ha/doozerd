@@ -29,6 +29,8 @@ const (
 	Ok = proto.Line("OK")
 )
 
+var slots = store.MustCompileGlob("/doozer/slot/*")
+
 type conn struct {
 	*proto.Conn
 	c   net.Conn
@@ -80,7 +82,7 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 
 func (sv *Server) cals() []string {
 	cals := make([]string, 0)
-	store.Walk(sv.St.Snap(), "/doozer/slot/*", func(_, body, _ string) {
+	store.Walk(sv.St.Snap(), slots, func(_, body, _ string) {
 		if len(body) > 0 {
 			cals = append(cals, body)
 		}
@@ -118,7 +120,11 @@ func get(c *conn, _ uint, data interface{}) interface{} {
 
 func sget(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqGet)
-	return store.GetString(c.s.St.SyncPath(r.Path), r.Path)
+	g, err := c.s.St.SyncPath(r.Path)
+	if err != nil {
+		return err
+	}
+	return store.GetString(g, r.Path)
 }
 
 func set(c *conn, _ uint, data interface{}) interface{} {
@@ -190,8 +196,11 @@ func closeOp(c *conn, _ uint, data interface{}) interface{} {
 }
 
 func watch(c *conn, id uint, data interface{}) interface{} {
-	glob := data.(string)
-	// TODO check glob pattern for errors
+	glob, err := store.CompileGlob(data.(string))
+	if err != nil {
+		return err
+	}
+
 	ch := c.s.St.Watch(glob)
 	// TODO buffer (and possibly discard) events
 	for ev := range ch {

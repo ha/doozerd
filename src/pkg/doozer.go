@@ -22,6 +22,10 @@ const (
 	pulseInterval   = 1e9
 )
 
+const slot = "/doozer/slot"
+
+var slots = store.MustCompileGlob("/doozer/slot/*")
+
 func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener) {
 	logger := util.NewLogger("main")
 
@@ -138,11 +142,10 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 func activate(st *store.Store, self string, c *client.Client) {
 	logger := util.NewLogger("activate")
-	path := "/doozer/slot"
-	ch := st.Watch(path + "/*")
+	ch := st.Watch(slots)
 
-	for _, base := range store.GetDir(st, path) {
-		p := path + "/" + base
+	for _, base := range store.GetDir(st, slot) {
+		p := slot + "/" + base
 		v, cas := st.Get(p)
 		if cas != store.Dir && v[0] == "" {
 			_, err := c.Set(p, self, cas)

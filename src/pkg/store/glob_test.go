@@ -58,10 +58,10 @@ func TestGlobTranslate(t *testing.T) {
 func TestGlobMatches(t *testing.T) {
 	for _, parts := range matches {
 		pat, paths := parts[0], parts[1:]
-		re, err := compileGlob(pat)
+		glob, err := CompileGlob(pat)
 		assert.Equal(t, nil, err)
 		for _, path := range paths {
-			if !re.MatchString(path) {
+			if !glob.r.MatchString(path) {
 				t.Errorf("pat %q should match %q", pat, path)
 			}
 		}
@@ -71,10 +71,10 @@ func TestGlobMatches(t *testing.T) {
 func TestGlobNonMatches(t *testing.T) {
 	for _, parts := range nonMatches {
 		pat, paths := parts[0], parts[1:]
-		re, err := compileGlob(pat)
+		glob, err := CompileGlob(pat)
 		assert.Equal(t, nil, err)
 		for _, path := range paths {
-			if re.MatchString(path) {
+			if glob.r.MatchString(path) {
 				t.Errorf("pat %q should not match %q", pat, path)
 			}
 		}

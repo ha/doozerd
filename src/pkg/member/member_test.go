@@ -25,9 +25,9 @@ func TestMemberSimple(t *testing.T) {
 	fp.Propose(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing))
 	fp.Propose(store.MustEncodeSet("/doozer/slot/0", "a", store.Missing))
 
-	slotCh := fp.Watch("/doozer/slot/0")
-	membCh := fp.Watch("/doozer/members/a")
-	infoCh := fp.Watch("/doozer/info/a/?")
+	slotCh := fp.Watch(store.MustCompileGlob("/doozer/slot/0"))
+	membCh := fp.Watch(store.MustCompileGlob("/doozer/members/a"))
+	infoCh := fp.Watch(store.MustCompileGlob("/doozer/info/a/?"))
 
 	// end the session
 	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber))

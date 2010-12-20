@@ -7,9 +7,14 @@ import (
 	"strings"
 )
 
+var (
+	sessions = store.MustCompileGlob("/session/*")
+	locks    = store.MustCompileGlob("/lock/**")
+)
+
 func Clean(st *store.Store, pp paxos.Proposer) {
 	logger := util.NewLogger("lock")
-	for ev := range st.Watch("/session/*") {
+	for ev := range st.Watch(sessions) {
 		if !ev.IsDel() {
 			continue
 		}
@@ -18,13 +23,10 @@ func Clean(st *store.Store, pp paxos.Proposer) {
 		name := parts[2]
 		logger.Printf("lost session %s", name)
 
-		err := store.Walk(ev, "/lock/**", func(path, body, cas string) {
+		store.Walk(ev, locks, func(path, body, cas string) {
 			if body == name {
 				paxos.Del(pp, path, cas)
 			}
 		})
-		if err != nil {
-			logger.Println(err)
-		}
 	}
 }

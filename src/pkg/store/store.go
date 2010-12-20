@@ -25,6 +25,8 @@ const (
 
 var pathRe = regexp.MustCompile(pathPat)
 
+var Any = MustCompileGlob("**")
+
 var (
 	ErrBadMutation = os.NewError("bad mutation")
 	ErrBadSnapshot = os.NewError("bad snapshot")
@@ -74,7 +76,7 @@ type state struct {
 type Watch struct {
 	C        <-chan Event
 	c        chan<- Event
-	re       *regexp.Regexp
+	glob     *Glob
 	from, to uint64
 	shutdown chan bool
 }
@@ -223,7 +225,7 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 			continue
 		}
 
-		if w.re.MatchString(e.Path) {
+		if w.glob.r.MatchString(e.Path) {
 			st.notices = append(st.notices, notice{w.c, e})
 
 			if st.notices[0].ch == nil {
@@ -370,22 +372,21 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
-func (st *Store) Watch(pattern string) <-chan Event {
-	return NewWatch(st, pattern).C
+func (st *Store) Watch(glob *Glob) <-chan Event {
+	return NewWatch(st, glob).C
 }
 
-func NewWatch(st *Store, pattern string) *Watch {
+func NewWatch(st *Store, glob *Glob) *Watch {
 	ch := make(chan Event)
 	p := st.state
-	return st.watchOn(pattern, ch, p.ver+1, math.MaxUint64)
+	return st.watchOn(glob, ch, p.ver+1, math.MaxUint64)
 }
 
-func (st *Store) watchOn(pattern string, ch chan Event, from, to uint64) *Watch {
-	re, _ := compileGlob(pattern)
+func (st *Store) watchOn(glob *Glob, ch chan Event, from, to uint64) *Watch {
 	wt := &Watch{
 		C:        ch,
 		c:        ch,
-		re:       re,
+		glob:     glob,
 		from:     from,
 		to:       to,
 		shutdown: make(chan bool, 1),
@@ -404,7 +405,7 @@ func (st *Store) Wait(seqn uint64) <-chan Event {
 	if seqn == 0 {
 		ch <- Event{Err: ErrTooLate}
 	} else {
-		st.watchOn("**", ch, seqn, seqn+1)
+		st.watchOn(Any, ch, seqn, seqn+1)
 	}
 	return ch
 }
@@ -420,19 +421,24 @@ func (st *Store) Sync(seqn uint64) {
 
 // Returns an immutable copy of `st` in which `path` exists as a regular file
 // (not a dir). Waits for `path` to be set, if necessary.
-func (st *Store) SyncPath(path string) Getter {
-	wt := NewWatch(st, path)
+func (st *Store) SyncPath(path string) (Getter, os.Error) {
+	glob, err := CompileGlob(path)
+	if err != nil {
+		return nil, err
+	}
+
+	wt := NewWatch(st, glob)
 	defer wt.Stop()
 
 	g := st.state.root // TODO make this use a public method
 	_, cas := g.Get(path)
 	if cas != Dir && cas != Missing {
-		return g
+		return g, nil
 	}
 
 	for ev := range wt.C {
 		if ev.IsSet() {
-			return ev
+			return ev, nil
 		}
 	}
 

@@ -46,7 +46,7 @@ func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
 	rg := &Registrar{
 		alpha:    alpha,
 		st:       st,
-		evs:      st.Watch("**"), // watch absolutely everything
+		evs:      st.Watch(store.Any), // watch absolutely everything
 		lookupCh: make(chan *lookup),
 		lookups:  new(lookupQueue),
 	}

@@ -9,8 +9,13 @@ import (
 
 var logger = util.NewLogger("member")
 
+var (
+	sessions = store.MustCompileGlob("/session/*")
+	slots    = store.MustCompileGlob("/doozer/slot/*")
+)
+
 func Clean(st *store.Store, p paxos.Proposer) {
-	for ev := range st.Watch("/session/*") {
+	for ev := range st.Watch(sessions) {
 		if !ev.IsDel() {
 			continue
 		}
@@ -28,14 +33,11 @@ func Clean(st *store.Store, p paxos.Proposer) {
 }
 
 func clearSlot(p paxos.Proposer, g store.Getter, name string) {
-	err := store.Walk(g, "/doozer/slot/*", func(path, body, cas string) {
+	store.Walk(g, slots, func(path, body, cas string) {
 		if body == name {
 			paxos.Set(p, path, "", cas)
 		}
 	})
-	if err != nil {
-		logger.Println(err)
-	}
 }
 
 func removeMember(p paxos.Proposer, g store.Getter, name string) {
@@ -47,10 +49,12 @@ func removeMember(p paxos.Proposer, g store.Getter, name string) {
 }
 
 func removeInfo(p paxos.Proposer, g store.Getter, name string) {
-	err := store.Walk(g, "/doozer/info/"+name+"/**", func(path, _, cas string) {
-		paxos.Del(p, path, cas)
-	})
+	glob, err := store.CompileGlob("/doozer/info/"+name+"/**")
 	if err != nil {
 		logger.Println(err)
+		return
 	}
+	store.Walk(g, glob, func(path, _, cas string) {
+		paxos.Del(p, path, cas)
+	})
 }
