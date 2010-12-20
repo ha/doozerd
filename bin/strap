@@ -12,17 +12,8 @@ c=$1
 [ -z "$c" ] || shift
 [ -z "$c" ] && c=0
 
-which seq  && seq=seq
-which gseq && seq=gseq
-
 open=open
 which xdg-open >/dev/null && open=xdg-open
-
-if [ -z "$seq" ]
-then
-    printf 'Could not find `seq` or `gseq`\n'
-    exit 1
-fi
 
 waitall() {
     while test $running -ge 1
@@ -40,17 +31,21 @@ quit() {
 trap quit INT
 
 running=0
-for i in $($seq $n)
+i=1
+while test $i -le $n
 do
     bin/fr $i &
     running=$(expr $running + 1)
 
     sleep 1
+    i=$(expr $i + 1)
 done
 
-for i in $($seq $c)
+i=1
+while test $i -le $c
 do
     bin/dcmd SET /doozer/slot/$i '' 0
+    i=$(expr $i + 1)
 done
 
 $open http://127.0.0.1:8081
