@@ -19,7 +19,7 @@ const (
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)
 var pathRe = mustBuildRe(`[a-zA-Z0-9.\-]`)
 
-var Any = MustCompileGlob("**")
+var Any = MustCompileGlob("/**")
 
 var (
 	ErrBadMutation = os.NewError("bad mutation")
@@ -222,7 +222,7 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 			continue
 		}
 
-		if w.glob.Match(e.Path) {
+		if w.glob.Match(e.Path) || e.Err == ErrTooLate {
 			st.notices = append(st.notices, notice{w.c, e})
 		}
 	}
