@@ -202,16 +202,18 @@ func watch(c *conn, id uint, data interface{}) interface{} {
 		return err
 	}
 
-	ch := c.s.St.Watch(glob)
+	w := store.NewWatch(c.s.St, glob)
+
 	// TODO buffer (and possibly discard) events
-	for ev := range ch {
+	for ev := range w.C {
 		var r proto.ResWatch
 		r.Path = ev.Path
 		r.Body = ev.Body
 		r.Cas = ev.Cas
 		err := c.SendResponse(id, 0, r)
 		if err == proto.ErrClosed {
-			close(ch)
+			w.Stop()
+			close(w.C)
 			err = nil
 		}
 		if err != nil {

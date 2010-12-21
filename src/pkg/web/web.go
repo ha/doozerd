@@ -82,7 +82,7 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	evs := Store.Watch(glob)
+	wt := store.NewWatch(Store, glob)
 
 	// TODO convert store.Snapshot to json and use that
 	go func() {
@@ -92,7 +92,8 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 
 	websocket.Handler(func(ws *websocket.Conn) {
 		send(ws, path, wevs, logger)
-		send(ws, path, evs, logger)
+		send(ws, path, wt.C, logger)
+		wt.Stop()
 		ws.Close()
 	}).ServeHTTP(w, r)
 }

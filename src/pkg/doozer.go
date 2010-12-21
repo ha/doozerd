@@ -142,7 +142,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 func activate(st *store.Store, self string, c *client.Client) {
 	logger := util.NewLogger("activate")
-	ch := st.Watch(slots)
+	w := store.NewWatch(st, slots)
 
 	for _, base := range store.GetDir(st, slot) {
 		p := slot + "/" + base
@@ -154,12 +154,13 @@ func activate(st *store.Store, self string, c *client.Client) {
 				continue
 			}
 
-			close(ch)
+			w.Stop()
+			close(w.C)
 			break
 		}
 	}
 
-	for ev := range ch {
+	for ev := range w.C {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
 			_, err := c.Set(ev.Path, self, ev.Cas)
@@ -167,7 +168,8 @@ func activate(st *store.Store, self string, c *client.Client) {
 				logger.Println(err)
 				continue
 			}
-			close(ch)
+			w.Stop()
+			close(w.C)
 		}
 	}
 }
