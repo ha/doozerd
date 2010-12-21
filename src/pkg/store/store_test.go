@@ -630,6 +630,22 @@ func TestStoreWaitZero(t *testing.T) {
 	assert.Equal(t, Event{Err: ErrTooLate}, ev)
 }
 
+func TestStoreNopEvent(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+
+	c := make(chan Event, 100)
+	w := st.watchOn(Any, c, 1, 100)
+
+	st.Ops <- Op{1, Nop}
+
+	ev := <-w.C
+	assert.Equal(t, uint64(1), ev.Seqn)
+	assert.Equal(t, "/", ev.Path)
+	assert.Equal(t, "nop", ev.Desc())
+	assert.T(t, ev.IsDummy())
+}
+
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)

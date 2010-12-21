@@ -109,6 +109,7 @@ func (n node) apply(seqn uint64, mut string) (rep node, ev Event, snap bool) {
 	}
 
 	if mut == Nop {
+		ev.Path = "/"
 		ev.Cas = ""
 		rep = n
 		ev.Getter = rep

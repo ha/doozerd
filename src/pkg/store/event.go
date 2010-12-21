@@ -58,5 +58,5 @@ func (e Event) IsDel() bool {
 //
 // Mutually exclusive with `IsSet` and `IsDel`.
 func (e Event) IsDummy() bool {
-	return e.Path == ""
+	return e.Cas == ""
 }
