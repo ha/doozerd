@@ -622,6 +622,14 @@ func TestWatchApply(t *testing.T) {
 	assert.Equal(t, Event{6, "/x", "", Missing, mut6, nil, nil}, clearGetter(<-ch))
 }
 
+func TestStoreWaitZero(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+
+	ev := <-st.Wait(0)
+	assert.Equal(t, Event{Err: ErrTooLate}, ev)
+}
+
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)

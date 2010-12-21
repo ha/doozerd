@@ -104,7 +104,7 @@ func New() *Store {
 		todo:    make(map[uint64]Op),
 		watches: []*Watch{},
 		state:   &state{0, emptyDir},
-		log:     make(map[uint64]Event),
+		log:     map[uint64]Event{0: {Err: ErrTooLate}},
 		cleanCh: make(chan uint64),
 	}
 
