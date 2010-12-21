@@ -247,6 +247,10 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 	for {
 		ver, values := st.state.ver, st.state.root
 
+		for len(st.notices) > 0 && closed(st.notices[0].ch) {
+			st.notices = st.notices[1:]
+		}
+
 		var n notice
 		if len(st.notices) > 0 {
 			n = st.notices[0]

@@ -1215,3 +1215,16 @@ func TestStoreStopWatch(t *testing.T) {
 	assert.Equal(t, 1, len(wt.C))
 	assert.Equal(t, 0, <-st.Watches)
 }
+
+func TestStoreClosedWatch(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+	w := NewWatch(st, Any)
+
+	close(w.C)
+	<-w.C
+
+	for i := uint64(0); i < 1000; i++ {
+		st.Ops <- Op{i, MustEncodeSet("/x", "", Clobber)}
+	}
+}
