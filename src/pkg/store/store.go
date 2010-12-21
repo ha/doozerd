@@ -17,7 +17,9 @@ const (
 )
 
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)
-var pathRe = mustBuildRe(`[a-zA-Z0-9.\-]`)
+const charPat = `[a-zA-Z0-9.\-]`
+
+var pathRe = mustBuildRe(charPat)
 
 var Any = MustCompileGlob("/**")
 

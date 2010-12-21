@@ -9,17 +9,8 @@ var globs = [][]string{
 	{"/", `^/$`},
 	{"/a", `^/a$`},
 	{"/a.b", `^/a\.b$`},
-	{"/a+b", `^/a\+b$`},
 	{"/a-b", `^/a\-b$`},
-	{"/a^b", `^/a\^b$`},
-	{"/a$b", `^/a\$b$`},
-	{"/a[b", `^/a\[b$`},
-	{"/a]b", `^/a\]b$`},
-	{"/a(b", `^/a\(b$`},
-	{"/a)b", `^/a\)b$`},
-	{"/a世界", `^/a世界$`},
 	{"/a?", `^/a[^/]$`},
-	{"/a/", `^/a/$`},
 	{"/a/b", `^/a/b$`},
 	{"/*", `^/[^/]*$`},
 	{"/*/a", `^/[^/]*/a$`},
@@ -45,12 +36,48 @@ var nonMatches = [][]string{
 	{"/a**", "/", "/ba"},
 }
 
-func TestGlobTranslate(t *testing.T) {
+var dontCompile = []string{
+	"",
+	"a",
+	"a/",
+	"/ ",
+	"/:",
+	"//",
+	"/a/",
+	"/a+b",
+	"/a^b",
+	"/a$b",
+	"/a[b",
+	"/a]b",
+	"/a(b",
+	"/a)b",
+	"/a世界",
+}
+
+func TestGlobTranslateOk(t *testing.T) {
 	for _, parts := range globs {
 		pat, exp := parts[0], parts[1]
-		got := translateGlob(pat)
+		got, err := translateGlob(pat)
 		if got != exp {
 			t.Errorf("expected %q, but got %q from %q", exp, got, pat)
+		}
+		if err != nil {
+			t.Errorf("in %q, unexpected err %v", pat, err)
+		}
+	}
+}
+
+func TestGlobTranslateError(t *testing.T) {
+	for _, pat := range dontCompile {
+		re, err := translateGlob(pat)
+		if err == nil {
+			t.Errorf("pat %q shouldn't translate, but got %q", pat, re)
+			continue
+		}
+
+		glob, err := CompileGlob(pat)
+		if err == nil {
+			t.Errorf("pat %q shouldn't compile, but got %#v", pat, glob)
 		}
 	}
 }
