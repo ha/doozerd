@@ -108,7 +108,6 @@ func New() *Store {
 		state:   &state{0, emptyDir},
 		log:     make(map[uint64]Event),
 		cleanCh: make(chan uint64),
-		notices: make([]notice, 1),
 	}
 
 	go st.process(ops, seqns, watches)
@@ -227,10 +226,6 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 
 		if w.glob.r.MatchString(e.Path) {
 			st.notices = append(st.notices, notice{w.c, e})
-
-			if st.notices[0].ch == nil {
-				st.notices = st.notices[1:]
-			}
 		}
 	}
 
@@ -251,6 +246,11 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 
 	for {
 		ver, values := st.state.ver, st.state.root
+
+		var n notice
+		if len(st.notices) > 0 {
+			n = st.notices[0]
+		}
 
 		// Take any incoming requests and queue them up.
 		select {
@@ -280,12 +280,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 			// nothing to do here
 		case watches <- len(st.watches):
 			// nothing to do here
-		case st.notices[0].ch <- st.notices[0].ev:
+		case n.ch <- n.ev:
 			st.notices = st.notices[1:]
-
-			if len(st.notices) < 1 {
-				st.notices = make([]notice, 1)
-			}
 		}
 
 		// If we have any mutations that can be applied, do them.
