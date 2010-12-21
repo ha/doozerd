@@ -10,9 +10,9 @@ import (
 // matching against paths.
 //
 // Glob notation:
-//  - "?" matches a single char in a single path component
-//  - "*" matches zero or more chars in a single path component
-//  - "**" matches zero or more chars in zero or more components
+//  - `?` matches a single char in a single path component
+//  - `*` matches zero or more chars in a single path component
+//  - `**` matches zero or more chars in zero or more components
 //  - any other sequence matches itself
 type Glob struct {
 	Pattern string
