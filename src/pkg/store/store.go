@@ -17,13 +17,7 @@ const (
 )
 
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)
-const (
-	charPat = `([a-zA-Z0-9.]|-)`
-	partPat = "/" + charPat + "+"
-	pathPat = "^/$|^(" + partPat + ")+$"
-)
-
-var pathRe = regexp.MustCompile(pathPat)
+var pathRe = mustBuildRe(`[a-zA-Z0-9.\-]`)
 
 var Any = MustCompileGlob("**")
 
@@ -40,6 +34,10 @@ type BadPathError struct {
 
 func (e *BadPathError) String() string {
 	return "bad path: " + e.Path
+}
+
+func mustBuildRe(p string) *regexp.Regexp {
+	return regexp.MustCompile(`^/$|^(/` + p + `+)+$`)
 }
 
 // Applies mutations sent on Ops in sequence according to field Seqn. Any
