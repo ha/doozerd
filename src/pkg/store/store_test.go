@@ -646,6 +646,30 @@ func TestStoreNopEvent(t *testing.T) {
 	assert.T(t, ev.IsDummy())
 }
 
+func TestStoreSnapshotNoEvent(t *testing.T) {
+	s := New()
+	mut1 := MustEncodeSet("/x", "a", Clobber)
+	mut2 := MustEncodeSet("/x", "b", Clobber)
+	s.Ops <- Op{1, mut1}
+	s.Ops <- Op{2, mut2}
+	s.Sync(2)
+	_, snap := s.Snapshot()
+	close(s.Ops)
+
+	s = New()
+	defer close(s.Ops)
+
+	c := make(chan Event, 100)
+	w := s.watchOn(Any, c, 1, 100)
+
+	s.Ops <- Op{1, snap}
+	s.Ops <- Op{3, MustEncodeSet("/y", "c", Clobber)}
+
+	ev := <-w.C
+	assert.Equal(t, uint64(3), ev.Seqn)
+	assert.Equal(t, "/y", ev.Path)
+}
+
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
