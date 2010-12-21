@@ -58,7 +58,7 @@ func (t *Timer) process(c chan Tick) {
 
 	defer t.ticker.Stop()
 
-	logger := util.NewLogger("timer (%s)", t.Glob.String())
+	logger := util.NewLogger("timer (%s)", t.Glob.Pattern)
 
 	peek := func() Tick {
 		if t.ticks.Len() == 0 {

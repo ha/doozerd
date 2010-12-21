@@ -224,7 +224,7 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 			continue
 		}
 
-		if w.glob.r.MatchString(e.Path) {
+		if w.glob.Match(e.Path) {
 			st.notices = append(st.notices, notice{w.c, e})
 		}
 	}
@@ -358,23 +358,19 @@ func (st *Store) Snapshot() (seqn uint64, mutation string) {
 	return ver, w.String()
 }
 
-// Returns a channel that will receive notifications when mutations are applied
-// to paths in the store. One event will be sent for each mutation iff the
-// event's path matches `pattern`, a Unix-style glob pattern.
-//
-// Glob notation:
-//  - "?" matches a single char in a single path component
-//  - "*" matches zero or more chars in a single path component
-//  - "**" matches zero or more chars in zero or more components
-//  - any other sequence matches itself
-//
-// Notifications will not be sent for changes made as the result of applying a
-// snapshot.
+// A convenience wrapper for NewWatch that returns only the channel. Useful for
+// code that never needs to stop the Watch.
 func (st *Store) Watch(glob *Glob) <-chan Event {
 	return NewWatch(st, glob).C
 }
 
-func NewWatch(st *Store, glob *Glob) *Watch {
+// Arranges for w to receive notifications when mutations are applied to st.
+// One event e will be received from w.C for each mutation iff
+// glob.Match(e.Path).
+//
+// Notifications will not be sent for changes made as the result of applying a
+// snapshot.
+func NewWatch(st *Store, glob *Glob) (w *Watch) {
 	ch := make(chan Event)
 	ver, _ := st.Snap()
 	return st.watchOn(glob, ch, ver+1, math.MaxUint64)

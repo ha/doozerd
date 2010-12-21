@@ -6,14 +6,17 @@ import (
 	"strings"
 )
 
+// Glob holds a Unix-style glob pattern in a compiled form for efficient
+// matching against paths.
+//
+// Glob notation:
+//  - "?" matches a single char in a single path component
+//  - "*" matches zero or more chars in a single path component
+//  - "**" matches zero or more chars in zero or more components
+//  - any other sequence matches itself
 type Glob struct {
-	s string
-	r *regexp.Regexp
-}
-
-// Method String returns the original pattern used to create g.
-func (g *Glob) String() string {
-	return g.s
+	Pattern string
+	r       *regexp.Regexp
 }
 
 // Supports unix/ruby-style glob patterns:
@@ -67,4 +70,8 @@ func MustCompileGlob(pat string) *Glob {
 		panic(err)
 	}
 	return g
+}
+
+func (g *Glob) Match(path string) bool {
+	return g.r.MatchString(path)
 }

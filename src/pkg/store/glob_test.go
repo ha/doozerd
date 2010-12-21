@@ -61,7 +61,7 @@ func TestGlobMatches(t *testing.T) {
 		glob, err := CompileGlob(pat)
 		assert.Equal(t, nil, err)
 		for _, path := range paths {
-			if !glob.r.MatchString(path) {
+			if !glob.Match(path) {
 				t.Errorf("pat %q should match %q", pat, path)
 			}
 		}
@@ -74,7 +74,7 @@ func TestGlobNonMatches(t *testing.T) {
 		glob, err := CompileGlob(pat)
 		assert.Equal(t, nil, err)
 		for _, path := range paths {
-			if glob.r.MatchString(path) {
+			if glob.Match(path) {
 				t.Errorf("pat %q should not match %q", pat, path)
 			}
 		}

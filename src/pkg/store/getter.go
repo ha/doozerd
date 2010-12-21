@@ -39,7 +39,7 @@ type Visitor func(path, body, cas string)
 
 func walk(g Getter, path string, glob *Glob, f Visitor) {
 	v, cas := g.Get(path)
-	if cas != Dir && glob.r.MatchString(path) {
+	if cas != Dir && glob.Match(path) {
 		f(path, v[0], cas)
 		return
 	}
@@ -58,6 +58,6 @@ func walk(g Getter, path string, glob *Glob, f Visitor) {
 }
 
 func Walk(g Getter, glob *Glob, f Visitor) {
-	// TODO find the longest non-glob prefix of glob.s and start there
+	// TODO find the longest non-glob prefix of glob.Pattern and start there
 	walk(g, "/", glob, f)
 }
