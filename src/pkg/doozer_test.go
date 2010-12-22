@@ -2,6 +2,7 @@ package doozer
 
 import (
 	"doozer/client"
+	"doozer/store"
 	"github.com/bmizerany/assert"
 	"net"
 	"runtime"
@@ -92,4 +93,30 @@ func TestDoozerGoroutines(t *testing.T) {
 	}()
 
 	assert.T(t, gs+leaked >= runtime.Goroutines(), gs+leaked)
+}
+
+
+func BenchmarkDoozerClientSet(b *testing.B) {
+	b.StopTimer()
+	l := mustListen()
+	defer l.Close()
+	a := l.Addr().String()
+	u := mustListenPacket(a)
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+
+	cl, err := client.Dial(l.Addr().String())
+	if err != nil {
+		panic(err)
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		cl.Set("/test", "", store.Clobber)
+	}
 }
