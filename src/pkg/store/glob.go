@@ -92,5 +92,5 @@ func (g *Glob) Match(path string) bool {
 type GlobError string
 
 func (e GlobError) String() string {
-	return "glob pattern cannot match any path: " + string(e)
+	return "invalid glob pattern: " + string(e)
 }
