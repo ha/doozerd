@@ -53,7 +53,7 @@ var encTests = []encTest{
 	{"*2\r\n$3\r\nGET\r\n$3\r\nFOO\r\n", []string{"GET", "FOO"}},
 	{"*2\r\n:1\r\n*1\r\n:1\r\n", []interface{}{1, []interface{}{1}}},
 
-	{"*3\r\n+hi\r\n:1\r\n$2\r\nhi\r\n", request{"hi", 1, []byte{'h', 'i'}}},
+	{"*3\r\n:1\r\n+hi\r\n$2\r\nhi\r\n", request{1, "hi", []byte{'h', 'i'}}},
 }
 
 var decTests = []encTest{
