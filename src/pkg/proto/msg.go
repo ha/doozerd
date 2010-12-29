@@ -3,7 +3,8 @@ package proto
 // GET
 
 type ReqGet struct {
-	Path string
+	Path   string
+	SnapId int
 }
 
 type ResGet struct {

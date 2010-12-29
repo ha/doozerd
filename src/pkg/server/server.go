@@ -242,12 +242,12 @@ var ops = map[string]op{
 	"CLOSE": {p: new(uint), f: closeOp},
 	"DEL":   {p: new(*proto.ReqDel), f: del, redirect: true},
 	"NOOP":  {p: new(interface{}), f: noop, redirect: true},
+	"GET":   {p: new(*proto.ReqGet), f: get},
 	"SET":   {p: new(*proto.ReqSet), f: set, redirect: true},
 	"SETT":  {p: new(*proto.ReqSett), f: sett, redirect: true},
 	"WATCH": {p: new(string), f: watch},
 
 	// former stuff
-	"get":     {p: new(*proto.ReqGet), f: get},
 	"sget":    {p: new(*proto.ReqGet), f: sget},
 	"join":    {p: new(*proto.ReqJoin), f: join, redirect: true},
 	"checkin": {p: new(*proto.ReqCheckin), f: checkin, redirect: true},

@@ -6,6 +6,7 @@ import (
 	"github.com/bmizerany/assert"
 	"net"
 	"runtime"
+	"sort"
 	"testing"
 )
 
@@ -33,7 +34,7 @@ func mustListenPacket(addr string) net.PacketConn {
 }
 
 
-func TestDoozerSimple(t *testing.T) {
+func TestDoozerNoop(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -44,6 +45,34 @@ func TestDoozerSimple(t *testing.T) {
 	cl, err := client.Dial(l.Addr().String())
 	assert.Equal(t, nil, err)
 	assert.Equal(t, nil, cl.Noop())
+}
+
+
+func TestDoozerGet(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl, err := client.Dial(l.Addr().String())
+	assert.Equal(t, nil, err)
+
+	ents, cas, err := cl.Get("/ping", 0)
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, store.Dir, cas)
+	assert.Equal(t, []string{"pong"}, ents)
+
+	cl.Set("/test/a", "1", store.Missing)
+	cl.Set("/test/b", "2", store.Missing)
+	cl.Set("/test/c", "3", store.Missing)
+
+	ents, cas, err = cl.Get("/test", 0)
+	sort.SortStrings(ents)
+	assert.Equal(t, store.Dir, cas)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, []string{"a", "b", "c"}, ents)
 }
 
 

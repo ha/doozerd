@@ -9,7 +9,10 @@ import (
 	"sync"
 )
 
-var ErrInvalidResponse = os.NewError("invalid response")
+var (
+	ErrInvalidResponse = os.NewError("invalid response")
+	ErrIsDir = os.NewError("is a directory")
+)
 
 type Client struct {
 	pr *proto.Conn
@@ -103,6 +106,18 @@ func (cl *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
 	err = cl.call("SET", proto.ReqSet{path, body, oldCas}, &newCas)
 	return
 }
+
+
+func (cl *Client) Get(path string, snapId int) ([]string, string, os.Error) {
+	var res proto.ResGet
+	err := cl.call("GET", proto.ReqGet{path, snapId}, &res)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return res.V, res.Cas, nil
+}
+
 
 func (cl *Client) Del(path, cas string) os.Error {
 	return cl.call("DEL", proto.ReqDel{path, cas}, nil)
