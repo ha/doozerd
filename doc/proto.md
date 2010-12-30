@@ -13,13 +13,19 @@ Every request is formatted in three parts: opid, verb, data. The verb is a
 string, the opid is an integer, and the data varies depending on the verb as
 given below.
 
-Example (pre-encoded - Ruby syntax):
+Example Request (pre-encoded - Ruby syntax):
 
     [123, "SET", ["/foo" "bar" "0"]]
 
 Every response is formatted in three parts: opid, flags, data. The opid is an
 integer, the flags is an integer, and the data varies depending on the
 associated request as given below.
+
+Example Response (to the above request)
+
+    [123, 2, "63"]
+
+COMMANDS:
 
     The protocol as of: Thu Dec 30 15:38:52 PST 2010
 
