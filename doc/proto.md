@@ -9,21 +9,25 @@ errors, and other multi-bulk responses recursively.
 
 Also, both responses and requests use this generalized format.
 
-Every request is formatted in three parts: verb, opid, data. The verb is a
+Every request is formatted in three parts: opid, verb, data. The verb is a
 string, the opid is an integer, and the data varies depending on the verb as
 given below.
+
+Example (pre-encoded - Ruby syntax):
+
+    [123, "SET", ["/foo" "bar" "0"]]
 
 Every response is formatted in three parts: opid, flags, data. The opid is an
 integer, the flags is an integer, and the data varies depending on the
 associated request as given below.
 
-    The protocol as of: Mon Nov  8 20:32:21 PST 2010
+    The protocol as of: Thu Dec 30 15:38:52 PST 2010
 
     VERB    DATA                 RETURN DATA
     ----    ----                 -----------------------
 
     # Close the response opid so that it will never be used again.
-    CLOSE   opid                 +OK
+    CLOSE                        +OK
 
     # Save a point-in-time snapshot for future reference.
     SNAP                         sid
