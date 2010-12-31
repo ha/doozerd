@@ -11,6 +11,7 @@ import (
 	"rand"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -31,9 +32,11 @@ var slots = store.MustCompileGlob("/doozer/slot/*")
 
 type conn struct {
 	*proto.Conn
-	c   net.Conn
-	s   *Server
-	cal bool
+	c     net.Conn
+	s     *Server
+	cal   bool
+	snaps map[uint64]store.Getter
+	slk   sync.RWMutex
 }
 
 type Manager interface {
@@ -70,7 +73,13 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 			}
 			return err
 		}
-		c := &conn{proto.NewConn(rw), rw, s, closed(cal)}
+		c := &conn{
+			Conn:  proto.NewConn(rw),
+			c:     rw,
+			s:     s,
+			cal:   closed(cal),
+			snaps: make(map[uint64]store.Getter),
+		}
 		go c.serve()
 	}
 
@@ -112,7 +121,21 @@ func (c *conn) redirect(rid uint) {
 
 func get(c *conn, _ uint, data interface{}) interface{} {
 	r := data.(*proto.ReqGet)
-	v, cas := c.s.St.Get(r.Path)
+
+	var g store.Getter
+	if r.SnapId == 0 {
+		g = c.s.St
+	} else {
+		var ok bool
+		c.slk.RLock()
+		g, ok = c.snaps[r.SnapId]
+		c.slk.RUnlock()
+		if !ok {
+			return proto.ErrNoSnapshot
+		}
+	}
+
+	v, cas := g.Get(r.Path)
 	return proto.ResGet{v, cas}
 }
 
@@ -221,6 +244,25 @@ func watch(c *conn, id uint, data interface{}) interface{} {
 	return responded
 }
 
+
+func snap(c *conn, id uint, data interface{}) interface{} {
+	n, g := c.s.St.Snap()
+	c.slk.Lock()
+	c.snaps[n] = g
+	c.slk.Unlock()
+	return n
+}
+
+
+func delSnap(c *conn, id uint, data interface{}) interface{} {
+	n := data.(uint64)
+	c.slk.Lock()
+	c.snaps[n] = nil, false
+	c.slk.Unlock()
+	return Ok
+}
+
+
 func indirect(x interface{}) interface{} {
 	return reflect.Indirect(reflect.NewValue(x)).Interface()
 }
@@ -236,13 +278,15 @@ type op struct {
 
 var ops = map[string]op{
 	// new stuff, see doc/proto.md
-	"CLOSE": {p: new(uint), f: closeOp},
-	"DEL":   {p: new(*proto.ReqDel), f: del, redirect: true},
-	"NOOP":  {p: new(interface{}), f: noop, redirect: true},
-	"GET":   {p: new(*proto.ReqGet), f: get},
-	"SET":   {p: new(*proto.ReqSet), f: set, redirect: true},
-	"SETT":  {p: new(*proto.ReqSett), f: sett, redirect: true},
-	"WATCH": {p: new(string), f: watch},
+	"CLOSE":   {p: new(uint), f: closeOp},
+	"DEL":     {p: new(*proto.ReqDel), f: del, redirect: true},
+	"DELSNAP": {p: new(uint64), f: delSnap},
+	"NOOP":    {p: new(interface{}), f: noop, redirect: true},
+	"GET":     {p: new(*proto.ReqGet), f: get},
+	"SET":     {p: new(*proto.ReqSet), f: set, redirect: true},
+	"SETT":    {p: new(*proto.ReqSett), f: sett, redirect: true},
+	"SNAP":    {p: new(interface{}), f: snap},
+	"WATCH":   {p: new(string), f: watch},
 
 	// former stuff
 	"sget":    {p: new(*proto.ReqGet), f: sget},

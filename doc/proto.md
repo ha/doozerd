@@ -36,6 +36,11 @@ COMMANDS:
     # Save a point-in-time snapshot for future reference.
     SNAP                         sid
 
+    # Ensure that snapshot sid is deleted.
+    # It is ok to delete a snapshot that does not exist
+    # (either because it has been deleted or it never existed).
+    DELSNAP sid                  +OK
+
     # I'll give you 1 guess.
     SET     [path body cas]      cas
 

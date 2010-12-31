@@ -4,7 +4,7 @@ package proto
 
 type ReqGet struct {
 	Path   string
-	SnapId int
+	SnapId uint64
 }
 
 type ResGet struct {

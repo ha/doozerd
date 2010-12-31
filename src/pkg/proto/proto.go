@@ -24,11 +24,12 @@ const (
 const (
 	InvalidCommand = "invalid command"
 	redirectPrefix = "REDIRECT:"
-	errPrefix      = "ERR:"
+	errPrefix      = "ERR "
 )
 
 var (
-	ErrClosed = os.NewError("response was closed")
+	ErrClosed     = os.NewError("response was closed")
+	ErrNoSnapshot = ResponseError("no such snapshot")
 )
 
 // Response flags
@@ -342,7 +343,7 @@ func encode(w io.Writer, data interface{}) (err os.Error) {
 			return
 		}
 	case os.Error:
-		if err = printfLine(w, "-%s %s", errPrefix, t.String()); err != nil {
+		if err = printfLine(w, "-%s%s", errPrefix, t.String()); err != nil {
 			return
 		}
 	case nil:

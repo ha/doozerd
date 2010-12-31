@@ -2,11 +2,13 @@ package doozer
 
 import (
 	"doozer/client"
+	"doozer/proto"
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"net"
 	"runtime"
 	"sort"
+	"strconv"
 	"testing"
 )
 
@@ -73,6 +75,54 @@ func TestDoozerGet(t *testing.T) {
 	assert.Equal(t, store.Dir, cas)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, []string{"a", "b", "c"}, ents)
+}
+
+
+func TestDoozerSnap(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl, err := client.Dial(l.Addr().String())
+	assert.Equal(t, nil, err)
+
+	cas1, err := cl.Set("/x", "a", store.Missing)
+	assert.Equal(t, nil, err)
+	ver1, err := strconv.Atoui64(cas1)
+	assert.Equal(t, nil, err)
+
+	sid, err := cl.Snap()
+	assert.Equal(t, nil, err)
+	assert.T(t, sid >= ver1)
+
+	v, cas, err := cl.Get("/x", sid) // Use the snapshot.
+	assert.Equal(t, nil, err)
+	assert.Equal(t, cas1, cas)
+	assert.Equal(t, []string{"a"}, v)
+
+	cas2, err := cl.Set("/x", "b", cas)
+	assert.Equal(t, nil, err)
+
+	v, cas, err = cl.Get("/x", 0) // Read the new value.
+	assert.Equal(t, nil, err)
+	assert.Equal(t, cas2, cas)
+	assert.Equal(t, []string{"b"}, v)
+
+	v, cas, err = cl.Get("/x", sid) // Read the saved value again.
+	assert.Equal(t, nil, err)
+	assert.Equal(t, cas1, cas)
+	assert.Equal(t, []string{"a"}, v)
+
+	err = cl.DelSnap(sid)
+	assert.Equal(t, nil, err)
+
+	v, cas, err = cl.Get("/x", sid) // Use the missing snapshot.
+	assert.Equal(t, proto.ErrNoSnapshot, err)
+	assert.Equal(t, "", cas)
+	assert.Equal(t, []string{}, v)
 }
 
 
