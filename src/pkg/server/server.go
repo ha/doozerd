@@ -101,16 +101,16 @@ func (sv *Server) AdvanceUntil(done chan int) {
 func (c *conn) redirect(rid uint) {
 	cals := c.s.cals()
 	if len(cals) < 1 {
-		c.SendResponse(rid, proto.Last, ErrNoWrite)
+		c.SendResponse(rid, proto.Valid|proto.Done, ErrNoWrite)
 		return
 	}
 	cal := cals[rand.Intn(len(cals))]
 	parts, cas := c.s.St.Get("/doozer/info/" + cal + "/public-addr")
 	if cas == store.Dir && cas == store.Missing {
-		c.SendResponse(rid, proto.Last, ErrNoWrite)
+		c.SendResponse(rid, proto.Valid|proto.Done, ErrNoWrite)
 		return
 	}
-	c.SendResponse(rid, proto.Last, proto.Redirect(parts[0]))
+	c.SendResponse(rid, proto.Valid|proto.Done, proto.Redirect(parts[0]))
 }
 
 func get(c *conn, _ uint, data interface{}) interface{} {
@@ -210,7 +210,7 @@ func watch(c *conn, id uint, data interface{}) interface{} {
 		r.Path = ev.Path
 		r.Body = ev.Body
 		r.Cas = ev.Cas
-		err := c.SendResponse(id, 0, r)
+		err := c.SendResponse(id, proto.Valid, r)
 		if err == proto.ErrClosed {
 			w.Stop()
 			close(w.C)
@@ -259,7 +259,7 @@ func (c *conn) handle(rid uint, f handler, data interface{}) {
 		return
 	}
 
-	c.SendResponse(rid, proto.Last, res)
+	c.SendResponse(rid, proto.Valid|proto.Done, res)
 }
 
 func (c *conn) serve() {
@@ -281,7 +281,7 @@ func (c *conn) serve() {
 		if o, ok := ops[verb]; ok {
 			err := proto.Fit(data, o.p)
 			if err != nil {
-				c.SendResponse(rid, proto.Last, err)
+				c.SendResponse(rid, proto.Valid|proto.Done, err)
 				continue
 			}
 
@@ -295,6 +295,6 @@ func (c *conn) serve() {
 		}
 
 		rlogger.Printf("unknown command <%s>", verb)
-		c.SendResponse(rid, proto.Last, os.ErrorString(proto.InvalidCommand+" "+verb))
+		c.SendResponse(rid, proto.Valid|proto.Done, os.ErrorString(proto.InvalidCommand+" "+verb))
 	}
 }

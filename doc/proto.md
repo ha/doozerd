@@ -59,15 +59,14 @@ COMMANDS:
 
 ## Response Flags:
 
-    Closed = 1
-      The opid in given in the response is closed.
+    Valid = 1
+      This response contains valid data and should be delivered to the caller.
 
-      The trailing arguments are to be ignored. This indicates to clients that
-      they should clean-up any listeners for that opid.
+      Usually set, but can be unset, for example, in response to WATCH, as a
+      side effect of the CLOSE command, to indicate that the watch has been
+      closed, in the absence of a valid watch event.
 
-    Last = 2
-      Same as above except the trailing arguments are valid.
-
-    (Note: instead of Closed and Last, I'd rather have flags Valid and Done,
-    where Valid == (not Closed) and Done == (Closed or Last). That way the
-    flags are independent and not redundant. -kr)
+    Done = 2
+      This is the last response for the given opid. No more responses will
+      be sent. The client is free to release resources associated with this
+      opid.

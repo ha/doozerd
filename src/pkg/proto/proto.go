@@ -33,8 +33,8 @@ var (
 
 // Response flags
 const (
-	Closed = 1 << iota
-	Last
+	Valid = 1 << iota
+	Done
 )
 
 var crnl = []byte{'\r', '\n'}
@@ -78,11 +78,11 @@ type response struct {
 }
 
 func (r *response) IsDone() bool {
-	return r.Flag&(Closed|Last) != 0
+	return r.Flag&Done != 0
 }
 
 func (r *response) IsValid() bool {
-	return r.Flag&Closed == 0
+	return r.Flag&Valid != 0
 }
 
 type ProtoError struct {
@@ -121,7 +121,7 @@ func (c *Conn) CloseResponse(id uint) os.Error {
 	}
 	c.closed[id] = false // create an entry
 	c.wl.Unlock()
-	return c.SendResponse(id, Closed, nil)
+	return c.SendResponse(id, Done, nil) // not Valid
 }
 
 func (c *Conn) SendResponse(id, flag uint, data interface{}) os.Error {
@@ -129,7 +129,7 @@ func (c *Conn) SendResponse(id, flag uint, data interface{}) os.Error {
 	defer c.wl.Unlock()
 
 	if fullyClosed, wantClosed := c.closed[id]; wantClosed {
-		if fullyClosed || flag&(Closed|Last) == 0 {
+		if fullyClosed || flag&Done == 0 {
 			return ErrClosed
 		}
 		c.closed[id] = true
