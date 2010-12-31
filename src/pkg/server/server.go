@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-import "log"
-
 const packetSize = 3000
 
 const lease = 3e9 // ns == 3s
@@ -67,7 +65,6 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 	for {
 		rw, err := l.Accept()
 		if err != nil {
-			log.Printf("%#v", err)
 			if e, ok := err.(*net.OpError); ok && e.Error == os.EINVAL {
 				return nil
 			}
