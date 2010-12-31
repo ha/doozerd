@@ -27,8 +27,6 @@ Example Response (to the above request)
 
 COMMANDS:
 
-    The protocol as of: Thu Dec 30 15:38:52 PST 2010
-
     VERB    DATA                 RETURN DATA
     ----    ----                 -----------------------
 
