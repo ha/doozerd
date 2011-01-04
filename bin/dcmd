@@ -16,7 +16,7 @@ verb=$1; shift
 
 (
     printf '*3\r\n'
-    encstr "$verb"
     printf ':0\r\n'
+    encstr "$verb"
     encstrs "$@"
 ) | nc localhost 8041
