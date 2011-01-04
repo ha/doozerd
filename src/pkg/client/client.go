@@ -108,7 +108,7 @@ func (cl *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
 }
 
 
-func (cl *Client) Get(path string, snapId uint64) ([]string, string, os.Error) {
+func (cl *Client) Get(path string, snapId int) ([]string, string, os.Error) {
 	var res proto.ResGet
 	err := cl.call("GET", proto.ReqGet{path, snapId}, &res)
 	if err != nil {
@@ -177,12 +177,13 @@ func (cl *Client) Watch(glob string) (<-chan Event, os.Error) {
 }
 
 
-func (cl *Client) Snap() (id uint64, err os.Error) {
-	err = cl.call("SNAP", nil, &id)
-	return
+func (cl *Client) Snap() (id int, ver uint64, err os.Error) {
+	var r proto.ResSnap
+	err = cl.call("SNAP", nil, &r)
+	return r.Id, r.Ver, err
 }
 
 
-func (cl *Client) DelSnap(id uint64) os.Error {
+func (cl *Client) DelSnap(id int) os.Error {
 	return cl.call("DELSNAP", id, new(string))
 }

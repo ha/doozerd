@@ -4,12 +4,19 @@ package proto
 
 type ReqGet struct {
 	Path   string
-	SnapId uint64
+	SnapId int
 }
 
 type ResGet struct {
 	V   []string
 	Cas string
+}
+
+// SNAP
+
+type ResSnap struct {
+	Id  int
+	Ver uint64
 }
 
 // SET

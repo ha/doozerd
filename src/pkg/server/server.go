@@ -35,7 +35,8 @@ type conn struct {
 	c     net.Conn
 	s     *Server
 	cal   bool
-	snaps map[uint64]store.Getter
+	sid   int
+	snaps map[int]store.Getter
 	slk   sync.RWMutex
 }
 
@@ -78,7 +79,7 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 			c:     rw,
 			s:     s,
 			cal:   closed(cal),
-			snaps: make(map[uint64]store.Getter),
+			snaps: make(map[int]store.Getter),
 		}
 		go c.serve()
 	}
@@ -246,18 +247,22 @@ func watch(c *conn, id uint, data interface{}) interface{} {
 
 
 func snap(c *conn, id uint, data interface{}) interface{} {
-	n, g := c.s.St.Snap()
+	var r proto.ResSnap
+	var g store.Getter
+	r.Ver, g = c.s.St.Snap()
 	c.slk.Lock()
-	c.snaps[n] = g
+	c.sid++
+	r.Id = c.sid
+	c.snaps[r.Id] = g
 	c.slk.Unlock()
-	return n
+	return r
 }
 
 
-func delSnap(c *conn, id uint, data interface{}) interface{} {
-	n := data.(uint64)
+func delSnap(c *conn, _ uint, data interface{}) interface{} {
+	id := data.(int)
 	c.slk.Lock()
-	c.snaps[n] = nil, false
+	c.snaps[id] = nil, false
 	c.slk.Unlock()
 	return Ok
 }
@@ -280,7 +285,7 @@ var ops = map[string]op{
 	// new stuff, see doc/proto.md
 	"CLOSE":   {p: new(uint), f: closeOp},
 	"DEL":     {p: new(*proto.ReqDel), f: del, redirect: true},
-	"DELSNAP": {p: new(uint64), f: delSnap},
+	"DELSNAP": {p: new(int), f: delSnap},
 	"NOOP":    {p: new(interface{}), f: noop, redirect: true},
 	"GET":     {p: new(*proto.ReqGet), f: get},
 	"SET":     {p: new(*proto.ReqSet), f: set, redirect: true},

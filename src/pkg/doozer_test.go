@@ -94,9 +94,10 @@ func TestDoozerSnap(t *testing.T) {
 	ver1, err := strconv.Atoui64(cas1)
 	assert.Equal(t, nil, err)
 
-	sid, err := cl.Snap()
+	sid, ver, err := cl.Snap()
 	assert.Equal(t, nil, err)
-	assert.T(t, sid >= ver1)
+	assert.Equal(t, 1, sid)
+	assert.T(t, ver >= ver1)
 
 	v, cas, err := cl.Get("/x", sid) // Use the snapshot.
 	assert.Equal(t, nil, err)

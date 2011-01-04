@@ -34,7 +34,9 @@ COMMANDS:
     CLOSE                        +OK
 
     # Save a point-in-time snapshot for future reference.
-    SNAP                         sid
+    # sid int - snapshot id
+    # ver int - store version (sequence number) of the snapshot
+    SNAP                         [sid, ver]
 
     # Ensure that snapshot sid is deleted.
     # It is ok to delete a snapshot that does not exist
