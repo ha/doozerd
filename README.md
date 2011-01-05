@@ -22,7 +22,7 @@ If you want to run doozer's tests, install
 
 ## Installing Doozer
 
-    $ git clone git@github.com:bmizerany/doozer.git
+    $ git clone https://github.com/bmizerany/doozer.git
     $ cd doozer/src
     $ ./all.sh
 
