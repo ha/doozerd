@@ -2,7 +2,18 @@
 
 ## Installing Go
 
-See <http://golang.org/doc/install.html>.
+I recommend not using apt, homebrew, or any other packaging system to install
+Go. It's better to install straight from source.
+
+Abridged version:
+
+    $ GOROOT=$HOME/src/go # adjust this as you wish
+    $ hg clone -r release https://go.googlecode.com/hg/ $GOROOT
+    $ cd $GOROOT/src
+    $ ./all.bash
+    # put $GOROOT/bin in your path
+
+For full details, see <http://golang.org/doc/install.html>.
 
 ## Installing Dependencies
 
