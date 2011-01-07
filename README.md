@@ -28,6 +28,6 @@ If you want to run doozer's tests, install
 
 ## Try It Out
 
-    $ bin/strap
+    $ bin/test-cluster
 
 This will start up three doozer processes and open a web view on one of them.
