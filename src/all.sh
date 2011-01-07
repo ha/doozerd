@@ -40,4 +40,4 @@ done
 echo
 echo "--- TESTING"
 
-sh test.sh
+/bin/sh test.sh
