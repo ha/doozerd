@@ -12,9 +12,6 @@ c=$1
 [ -z "$c" ] || shift
 [ -z "$c" ] && c=0
 
-open=open
-which xdg-open >/dev/null && open=xdg-open
-
 waitall() {
     while test $running -ge 1
     do
@@ -47,7 +44,5 @@ do
     bin/dcmd SET /doozer/slot/$i '' 0
     i=$(expr $i + 1)
 done
-
-$open http://127.0.0.1:8081
 
 waitall
