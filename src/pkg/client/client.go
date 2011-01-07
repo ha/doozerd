@@ -3,32 +3,280 @@ package client
 import (
 	"doozer/proto"
 	"doozer/util"
+	"encoding/binary"
 	"log"
 	"net"
+	"io"
 	"os"
+	pb "goprotobuf.googlecode.com/hg/proto"
 	"sync"
 )
 
-var (
-	ErrInvalidResponse = os.NewError("invalid response")
-	ErrIsDir = os.NewError("is a directory")
+const (
+	Valid = 1 << iota
+	Done
 )
 
-type Client struct {
-	pr *proto.Conn
-	lg *log.Logger
-	lk sync.Mutex
+var lg = util.NewLogger("client")
+
+var (
+	ErrNoAddrs = os.NewError("no known address")
+)
+
+// Response errors
+var (
+	ErrIsDir       = os.NewError("is a directory")
+	ErrInvalidSnap = os.NewError("is a directory")
+)
+
+type OtherError string
+
+
+func (o OtherError) String() string {
+	return "Other error: " + string(o)
 }
 
-func Dial(addr string) (*Client, os.Error) {
-	c, err := net.Dial("tcp", "", addr)
+
+type T proto.Request
+
+type R proto.Response
+
+
+func (r *R) err() os.Error {
+	if r.ErrCode != nil {
+		switch ec := int32(*r.ErrCode); ec {
+		case proto.Response_OTHER:
+			return OtherError(pb.GetString(r.ErrDetail))
+		case proto.Response_ISDIR:
+			return ErrIsDir
+		case proto.Response_INVALID_SNAP:
+			return ErrInvalidSnap
+		case proto.Response_REDIRECT:
+			return os.EAGAIN
+
+		// These cases should never happen.
+		case proto.Response_TAG_IN_USE:
+			fallthrough
+		case proto.Response_UNKNOWN_VERB:
+			fallthrough
+		default:
+			return OtherError(proto.Response_Err_name[ec])
+		}
+	}
+	return nil
+}
+
+
+type conn struct {
+	c   net.Conn
+	clk sync.Mutex // write lock
+	err os.Error   // unrecoverable error
+
+	// callback management
+	n    int32             // next tag
+	cb   map[int32]chan *R // callback channels
+	cblk sync.Mutex
+
+	lg *log.Logger
+
+	// redirect handling
+	redirectAddr string
+	redirected   bool
+}
+
+
+func (c *conn) writeT(t *T) os.Error {
+	if c.err != nil {
+		return c.err
+	}
+
+	buf, err := pb.Marshal(t)
+	if err != nil {
+		return err
+	}
+
+	c.err = binary.Write(c.c, binary.BigEndian, int32(len(buf)))
+	if c.err != nil {
+		return c.err
+	}
+
+	for len(buf) > 0 {
+		n, err := c.c.Write(buf)
+		if err != nil {
+			c.err = err
+			return err
+		}
+
+		buf = buf[n:]
+	}
+
+	return nil
+}
+
+
+func (c *conn) send(t *T) (chan *R, os.Error) {
+	if c.err != nil {
+		return nil, c.err
+	}
+
+	ch := make(chan *R)
+
+	// Find an unused tag and
+	// put the reply chan in the table.
+	c.cblk.Lock()
+	for _, ok := c.cb[c.n]; ok; _, ok = c.cb[c.n] {
+		c.n++
+	}
+	tag := c.n
+	c.cb[tag] = ch
+	c.cblk.Unlock()
+
+	t.Tag = &tag
+
+	c.clk.Lock()
+	err := c.writeT(t)
+	c.clk.Unlock()
+
+	if err != nil {
+		c.cblk.Lock()
+		c.cb[tag] = nil, false
+		c.cblk.Unlock()
+		return nil, err
+	}
+
+	return ch, nil
+}
+
+
+func (c *conn) call(t *T) (*R, os.Error) {
+	ch, err := c.send(t)
 	if err != nil {
 		return nil, err
 	}
-	pr := proto.NewConn(c)
-	go pr.ReadResponses()
-	return &Client{pr: pr, lg: util.NewLogger(addr)}, nil
+
+	r := <-ch
+	if err := r.err(); err != nil {
+		return nil, err
+	}
+
+	return r, nil
 }
+
+
+func (c *conn) readR() (*R, os.Error) {
+	var size int32
+	err := binary.Read(c.c, binary.BigEndian, &size)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := make([]byte, size)
+	_, err = io.ReadFull(c.c, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	var r R
+	err = pb.Unmarshal(buf, &r)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+
+func (c *conn) readResponses() {
+	for {
+		r, err := c.readR()
+		if err != nil {
+			c.lg.Println(err)
+			return
+		}
+
+		if r.ErrCode != nil && *r.ErrCode == proto.Response_REDIRECT {
+			c.redirectAddr = pb.GetString(r.ErrDetail)
+			c.redirected = true
+		}
+
+		tag := pb.GetInt32(r.Tag)
+		flags := pb.GetInt32(r.Flags)
+
+		c.cblk.Lock()
+		ch, ok := c.cb[tag]
+		if ok && flags&Done != 0 {
+			c.cb[tag] = nil, false
+		}
+		c.cblk.Unlock()
+
+		if ok {
+			if flags&Valid != 0 {
+				ch <- r
+			}
+
+			if flags&Done != 0 {
+				close(ch)
+			}
+		}
+	}
+}
+
+
+type Client struct {
+	Name string
+	c    *conn     // current connection
+	ra    []string // known readable addresses
+	wa    []string // known writable address
+	lg   *log.Logger
+	lk   sync.Mutex
+}
+
+
+// Name is the name of this cluster.
+// Addr is an initial readable address to connect to.
+func New(name, raddr string) *Client {
+	return &Client{Name: name, ra: []string{raddr}}
+}
+
+
+func (c *Client) AddRaddr(a string) {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	for _, s := range c.ra {
+		if s == a {
+			return
+		}
+	}
+	c.ra = append(c.ra, a)
+}
+
+
+func (c *Client) AddWaddr(a string) {
+	c.lk.Lock()
+	defer c.lk.Unlock()
+	for _, s := range c.wa {
+		if s == a {
+			return
+		}
+	}
+	c.wa = append(c.wa, a)
+}
+
+
+func (cl *Client) dial(addr string) (*conn, os.Error) {
+	var c conn
+	var err os.Error
+
+	c.c, err = net.Dial("tcp", "", addr)
+	if err != nil {
+		return nil, err
+	}
+
+	c.cb = make(map[int32]chan *R)
+	c.lg = util.NewLogger(addr)
+	go c.readResponses()
+	return &c, nil
+}
+
 
 // This is a little subtle. We want to follow redirects while still pipelining
 // requests, and we want to allow as many requests as possible to succeed
@@ -38,7 +286,7 @@ func Dial(addr string) (*Client, os.Error) {
 // the leader. So we want that read requests never retry, and write requests
 // retry if and only if necessary. Here's how it works:
 //
-// In the proto.Conn, when we get a redirect response, we raise a flag noting
+// In the conn, when we get a redirect response, we raise a flag noting
 // the new address. This flag only goes up, never down. This flag effectively
 // means the connection is deprecated. Any pending requests can go ahead, but
 // new requests should use the new address.
@@ -49,141 +297,171 @@ func Dial(addr string) (*Client, os.Error) {
 // continue functioning as it was. Any writes on the old connection will retry,
 // and then they are guaranteed to pick up the new connection. Any reads on the
 // old connection will just succeed directly.
-func (cl *Client) proto() (*proto.Conn, os.Error) {
+func (cl *Client) conn() (c *conn, err os.Error) {
 	cl.lk.Lock()
 	defer cl.lk.Unlock()
 
-	if cl.pr.RedirectAddr != "" {
-		conn, err := net.Dial("tcp", "", cl.pr.RedirectAddr)
-		if err != nil {
-			return nil, err
+	if cl.c == nil {
+		if len(cl.ra) < 1 {
+			return nil, ErrNoAddrs
 		}
-		cl.lg = util.NewLogger(cl.pr.RedirectAddr)
-		cl.pr = proto.NewConn(conn)
-		go cl.pr.ReadResponses()
+
+		cl.c, err = cl.dial(cl.ra[0])
+		if err != nil {
+			cl.ra = cl.ra[1:]
+		}
+
+		return cl.c, err
 	}
 
-	return cl.pr, nil
+	if cl.c.redirected {
+		cl.AddWaddr(cl.c.redirectAddr)
+		if len(cl.wa) < 1 {
+			return nil, ErrNoAddrs
+		}
+
+		cl.c, err = cl.dial(cl.wa[0])
+		if err != nil {
+			cl.wa = cl.wa[1:]
+		}
+
+		return cl.c, err
+	}
+
+	return cl.c, nil
 }
 
-func (cl *Client) callWithoutRedirect(verb string, args, slot interface{}) os.Error {
-	pr, err := cl.proto()
-	if err != nil {
-		return err
-	}
 
-	req, err := pr.SendRequest(verb, args)
-	if err != nil {
-		return err
-	}
+func (cl *Client) call(verb int32, t *T) (r *R, err os.Error) {
+	t.Verb = proto.NewRequest_Verb(verb)
 
-	return req.Get(slot)
-}
-
-func (cl *Client) call(verb string, data, slot interface{}) (err os.Error) {
 	for err = os.EAGAIN; err == os.EAGAIN; {
-		err = cl.callWithoutRedirect(verb, data, slot)
+		var c *conn
+		c, err = cl.conn()
+		if err != nil {
+			continue
+		}
+
+		r, err = c.call(t)
 	}
 
 	if err != nil {
-		cl.lg.Println(err)
+		lg.Println(err)
 	}
 
-	return err
-}
-
-func (cl *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
-	var res proto.ResJoin
-	err = cl.call("join", proto.ReqJoin{id, addr}, &res)
-	if err != nil {
-		return
-	}
-
-	return res.Seqn, res.Snapshot, nil
-}
-
-func (cl *Client) Set(path, body, oldCas string) (newCas string, err os.Error) {
-	err = cl.call("SET", proto.ReqSet{path, body, oldCas}, &newCas)
 	return
 }
 
 
-func (cl *Client) Get(path string, snapId int) ([]string, string, os.Error) {
-	var res proto.ResGet
-	err := cl.call("GET", proto.ReqGet{path, snapId}, &res)
+func (cl *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
+	r, err := cl.call(proto.Request_JOIN, &T{Path: &id, Value: []byte(addr)})
+	if err != nil {
+		return 0, "", err
+	}
+
+	return uint64(pb.GetInt64(r.Seqn)), string(r.Value), nil
+}
+
+
+func (cl *Client) Set(path, oldCas string, body []byte) (newCas string, err os.Error) {
+	r, err := cl.call(proto.Request_SET, &T{Path: &path, Value: body, Cas: &oldCas})
+	if err != nil {
+		return "", err
+	}
+
+	return pb.GetString(r.Cas), nil
+}
+
+
+// Returns the body and CAS token of the file at path.
+// If snapId is 0, uses the current state, otherwise,
+// snapId must be a value previously returned from Snap.
+// If path does not denote a file, returns an error.
+func (cl *Client) Get(path string, snapId int32) (body []byte, cas string, err os.Error) {
+	r, err := cl.call(proto.Request_GET, &T{Path: &path, Id: &snapId})
 	if err != nil {
 		return nil, "", err
 	}
 
-	return res.V, res.Cas, nil
+	return r.Value, pb.GetString(r.Cas), nil
 }
 
 
 func (cl *Client) Del(path, cas string) os.Error {
-	return cl.call("DEL", proto.ReqDel{path, cas}, nil)
+	_, err := cl.call(proto.Request_DEL, &T{Path: &path, Cas: &cas})
+	return err
 }
+
 
 func (cl *Client) Noop() os.Error {
-	var res string
-	return cl.call("NOOP", nil, &res)
+	_, err := cl.call(proto.Request_NOOP, &T{})
+	return err
 }
 
-func (cl *Client) Checkin(id, cas string) (int64, string, os.Error) {
-	var res proto.ResCheckin
-	err := cl.call("checkin", proto.ReqCheckin{id, cas}, &res)
+
+func (cl *Client) Checkin(id, cas string) (string, os.Error) {
+	r, err := cl.call(proto.Request_CHECKIN, &T{Path: &id, Cas: &cas})
 	if err != nil {
-		return 0, "", err
+		return "", err
 	}
 
-	return res.Exp, res.Cas, nil
+	return pb.GetString(r.Cas), nil
 }
 
-func (cl *Client) Sett(path string, n int64, cas string) (int64, string, os.Error) {
-	var res proto.ResSett
-	err := cl.call("SETT", proto.ReqSett{path, n, cas}, &res)
+
+func (cl *Client) Snap() (id int32, ver uint64, err os.Error) {
+	r, err := cl.call(proto.Request_SNAP, &T{})
 	if err != nil {
-		return 0, "", err
+		return 0, 0, err
 	}
 
-	return res.Exp, res.Cas, nil
+	return pb.GetInt32(r.Id), uint64(pb.GetInt64(r.Seqn)), nil
 }
 
-type Event proto.ResWatch
 
-func (cl *Client) Watch(glob string) (<-chan Event, os.Error) {
-	pr, err := cl.proto()
+func (cl *Client) DelSnap(id int32) os.Error {
+	_, err := cl.call(proto.Request_DELSNAP, &T{Id: &id})
+	return err
+}
+
+
+type Event struct {
+	Cas  string
+	Path string
+	Body []byte
+	Err  os.Error
+}
+
+
+func (cl *Client) Watch(glob string) (<-chan *Event, os.Error) {
+	c, err := cl.conn()
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := pr.SendRequest("WATCH", glob)
+	var t T
+	t.Verb = proto.NewRequest_Verb(proto.Request_WATCH)
+	t.Path = &glob
+	ch, err := c.send(&t)
 	if err != nil {
 		return nil, err
 	}
 
-	ch := make(chan Event)
+	evs := make(chan *Event)
 	go func() {
-		for {
-			var fitted proto.ResWatch
-			res.Get(&fitted)
-			if closed(res) {
-				return
+		for r := range ch {
+			var ev Event
+			if err := r.err(); err != nil {
+				ev.Err = err
+			} else {
+				ev.Cas = pb.GetString(r.Cas)
+				ev.Path = pb.GetString(r.Path)
+				ev.Body = r.Value
 			}
-			ch <- Event(fitted)
+			evs <- &ev
 		}
+		close(evs)
 	}()
 
-	return ch, nil
-}
-
-
-func (cl *Client) Snap() (id int, ver uint64, err os.Error) {
-	var r proto.ResSnap
-	err = cl.call("SNAP", nil, &r)
-	return r.Id, r.Ver, err
-}
-
-
-func (cl *Client) DelSnap(id int) os.Error {
-	return cl.call("DELSNAP", id, new(string))
+	return evs, nil
 }

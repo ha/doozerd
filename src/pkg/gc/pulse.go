@@ -9,7 +9,7 @@ import (
 )
 
 type Setter interface {
-	Set(path, body, oldCas string) (newCas string, err os.Error)
+	Set(path, oldCas string, body []byte) (newCas string, err os.Error)
 }
 
 func Pulse(node string, seqns <-chan uint64, s Setter, sleep int64) {
@@ -24,7 +24,7 @@ func Pulse(node string, seqns <-chan uint64, s Setter, sleep int64) {
 			break
 		}
 
-		cas, err = s.Set("/doozer/info/"+node+"/applied", seqn, cas)
+		cas, err = s.Set("/doozer/info/"+node+"/applied", cas, []byte(seqn))
 		if err != nil {
 			logger.Println(err)
 		}

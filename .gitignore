@@ -9,6 +9,7 @@ src/cmd/doozerd/doozerd
 *.css.go
 *.js.go
 *.html.go
+*.pb.go
 *.pem
 *.agree
 *-test.sh

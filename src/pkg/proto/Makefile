@@ -2,8 +2,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=doozer/proto
 GOFILES=\
-	fit.go\
-	msg.go\
-	proto.go\
+	msg.pb.go\
 
 include $(GOROOT)/src/Make.pkg
+include $(GOROOT)/src/pkg/goprotobuf.googlecode.com/hg/Make.protobuf

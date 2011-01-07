@@ -13,7 +13,6 @@ import (
 	"doozer/web"
 	"net"
 	"os"
-	"time"
 )
 
 const (
@@ -49,24 +48,18 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 		close(cal)
 
-		cl, err = client.Dial(listenAddr)
-		if err != nil {
-			panic(err)
-		}
+		cl = client.New("local", listenAddr) // TODO use real cluster name
 	} else {
-		cl, err = client.Dial(attachAddr)
-		if err != nil {
-			panic(err)
-		}
+		cl = client.New("local", attachAddr) // TODO use real cluster name
 
 		path := "/doozer/info/" + self + "/public-addr"
-		_, err = cl.Set(path, listenAddr, store.Clobber)
+		_, err = cl.Set(path, store.Clobber, []byte(listenAddr))
 		if err != nil {
 			panic(err)
 		}
 
 		path = "/doozer/info/" + self + "/hostname"
-		_, err = cl.Set(path, os.Getenv("HOSTNAME"), store.Clobber)
+		_, err = cl.Set(path, store.Clobber, []byte(os.Getenv("HOSTNAME")))
 		if err != nil {
 			panic(err)
 		}
@@ -116,8 +109,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	go func() {
 		cas := store.Missing
-		for _ = range time.Tick(checkinInterval) {
-			_, cas, err = cl.Checkin(self, cas)
+		for {
+			cas, err = cl.Checkin(self, cas)
 			if err != nil {
 				logger.Println(err)
 			}
@@ -148,7 +141,7 @@ func activate(st *store.Store, self string, c *client.Client) {
 		p := slot + "/" + base
 		v, cas := st.Get(p)
 		if cas != store.Dir && v[0] == "" {
-			_, err := c.Set(p, self, cas)
+			_, err := c.Set(p, cas, []byte(self))
 			if err != nil {
 				logger.Println(err)
 				continue
@@ -163,7 +156,7 @@ func activate(st *store.Store, self string, c *client.Client) {
 	for ev := range w.C {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			_, err := c.Set(ev.Path, self, ev.Cas)
+			_, err := c.Set(ev.Path, ev.Cas, []byte(self))
 			if err != nil {
 				logger.Println(err)
 				continue
