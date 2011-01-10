@@ -117,7 +117,7 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 			s:       s,
 			cal:     closed(cal),
 			snaps:   make(map[int32]store.Getter),
-			cancels: make(map[int32]chan int),
+			cancels: make(map[int32]chan bool),
 		}
 		go c.serve()
 	}
@@ -153,7 +153,7 @@ type conn struct {
 	sid      int32
 	snaps    map[int32]store.Getter
 	slk      sync.RWMutex
-	cancels  map[int32]chan int
+	cancels  map[int32]chan bool
 	wl       sync.Mutex // write lock
 	poisoned bool
 }
@@ -181,7 +181,7 @@ func (c *conn) readBuf() (*T, os.Error) {
 }
 
 
-func (c *conn) makeCancel(t *T) chan int {
+func (c *conn) makeCancel(t *T) chan bool {
 	tag := pb.GetInt32(t.Tag)
 
 	c.wl.Lock()
@@ -191,7 +191,7 @@ func (c *conn) makeCancel(t *T) chan int {
 		return nil
 	}
 
-	ch := make(chan int)
+	ch := make(chan bool)
 	c.cancels[tag] = ch
 	return ch
 }
@@ -401,7 +401,7 @@ func (c *conn) cancel(t *T) *R {
 	c.wl.Unlock()
 
 	if ch != nil {
-		ch <- 1
+		ch <- true
 		close(ch)
 	}
 
