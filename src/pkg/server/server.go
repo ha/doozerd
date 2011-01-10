@@ -17,7 +17,7 @@ import (
 
 const packetSize = 3000
 
-const lease = 3e9 // ns == 3s
+const lease = 60e9 // ns == 60s
 
 var (
 	ErrNoWrite = os.NewError("no known writeable address")
