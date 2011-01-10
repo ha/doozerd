@@ -11,7 +11,7 @@ type ReadFromer interface {
 }
 
 type Proposer interface {
-	Propose(v string) (seqn uint64, cas string, err os.Error)
+	Propose(v string, cancel chan bool) (seqn uint64, cas string, err os.Error)
 }
 
 func Set(p Proposer, path, body, cas string) (uint64, string, os.Error) {
@@ -20,7 +20,7 @@ func Set(p Proposer, path, body, cas string) (uint64, string, os.Error) {
 		return 0, "", err
 	}
 
-	return p.Propose(mut)
+	return p.Propose(mut, nil)
 }
 
 func Del(p Proposer, path, cas string) os.Error {
@@ -29,6 +29,6 @@ func Del(p Proposer, path, cas string) os.Error {
 		return err
 	}
 
-	_, _, err = p.Propose(mut)
+	_, _, err = p.Propose(mut, nil)
 	return err
 }

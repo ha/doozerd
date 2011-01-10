@@ -76,7 +76,7 @@ type OpError struct {
 
 type Manager interface {
 	paxos.Proposer
-	ProposeOnce(v string) store.Event
+	ProposeOnce(v string, c chan bool) store.Event
 	PutFrom(string, paxos.Msg)
 	Alpha() int
 }
@@ -141,7 +141,7 @@ func (sv *Server) cals() []string {
 // Repeatedly propose nop values until a successful read from `done`.
 func (sv *Server) AdvanceUntil(done chan int) {
 	for _, ok := <-done; !ok; _, ok = <-done {
-		sv.Mg.Propose(store.Nop)
+		sv.Mg.Propose(store.Nop, nil)
 	}
 }
 
@@ -344,7 +344,7 @@ func (c *conn) noop(t *T) *R {
 	}
 
 	return c.cancellable(t, func() *R {
-		c.s.Mg.ProposeOnce(store.Nop)
+		c.s.Mg.ProposeOnce(store.Nop, nil)
 		return &R{}
 	})
 }

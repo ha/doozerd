@@ -25,7 +25,7 @@ func TestSession(t *testing.T) {
 
 	// check-in with less than a nanosecond to live
 	body := strconv.Itoa64(time.Nanoseconds() + 1)
-	fp.Propose(store.MustEncodeSet("/session/a", body, store.Clobber))
+	fp.Propose(store.MustEncodeSet("/session/a", body, store.Clobber), nil)
 
 	// Throw away the set
 	assert.T(t, (<-ch).IsSet())

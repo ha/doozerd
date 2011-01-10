@@ -13,6 +13,8 @@ const (
 	fillDelay = 5e8 // 500ms
 )
 
+var ErrCancel = os.NewError("received cancel")
+
 type instReq struct {
 	seqn uint64
 	ch   chan instance
@@ -150,20 +152,35 @@ func (m *Manager) proposeAt(seqn uint64, v string) {
 	}
 }
 
-func (m *Manager) ProposeOnce(v string) store.Event {
-	seqn := <-m.seqns
-	ch := m.st.Wait(seqn)
-	m.proposeAt(seqn, v)
-	m.fillUntil <- seqn
-	return <-ch
+func (m *Manager) ProposeOnce(v string, cancel chan bool) store.Event {
+	select {
+	case seqn := <-m.seqns:
+		ch := m.st.Wait(seqn)
+		m.proposeAt(seqn, v)
+		m.fillUntil <- seqn
+		select {
+		case e := <-ch:
+			return e
+		case <-cancel:
+			return store.Event{Err: ErrCancel}
+		}
+	case <-cancel:
+		return store.Event{Err: ErrCancel}
+	}
+	panic("not reached")
 }
 
-func (m *Manager) Propose(v string) (seqn uint64, cas string, err os.Error) {
+func (m *Manager) Propose(v string, cancel chan bool) (seqn uint64, cas string, err os.Error) {
 	var ev store.Event
 
 	// If a competing proposal succeeded in the same seqn, we should try again.
 	for v != ev.Mut {
-		ev = m.ProposeOnce(v)
+		if cancel != nil {
+			if _, ok := <-cancel; ok {
+				return 0, "", ErrCancel
+			}
+		}
+		ev = m.ProposeOnce(v, cancel)
 	}
 	return ev.Seqn, ev.Cas, ev.Err
 }

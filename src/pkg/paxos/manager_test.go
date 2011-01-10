@@ -130,7 +130,7 @@ func TestProposeAndStore(t *testing.T) {
 	mg, st := selfRefNewManager("a", 1)
 
 	ch := st.Wait(3)
-	mg.Propose(exp)
+	mg.Propose(exp, nil)
 	assert.Equal(t, exp, (<-ch).Mut)
 }
 
@@ -138,14 +138,14 @@ func BenchmarkPropose(b *testing.B) {
 	mg, _ := selfRefNewManager("a", 1)
 
 	for i := 0; i < b.N; i++ {
-		mg.Propose("foo")
+		mg.Propose("foo", nil)
 	}
 }
 
 func TestProposeBadMutation(t *testing.T) {
 	mg, _ := selfRefNewManager("a", 1)
 
-	_, _, err := mg.Propose("foo")
+	_, _, err := mg.Propose("foo", nil)
 	assert.Equal(t, store.ErrBadMutation, err)
 }
 
