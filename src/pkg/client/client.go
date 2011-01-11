@@ -312,7 +312,7 @@ func (cl *Client) dial(addr string) (*conn, os.Error) {
 // without retrying unnecessarily.
 //
 // In particular, reads never need to redirect, and writes must always go to
-// the leader. So we want that read requests never retry, and write requests
+// a CAL node. So we want that read requests never retry, and write requests
 // retry if and only if necessary. Here's how it works:
 //
 // In the conn, when we get a redirect response, we raise a flag noting
