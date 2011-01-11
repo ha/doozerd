@@ -81,7 +81,7 @@ func TestDoozerSnap(t *testing.T) {
 
 	cas1, err := cl.Set("/x", store.Missing, []byte{'a'})
 	assert.Equal(t, nil, err)
-	ver1, err := strconv.Atoui64(cas1)
+	ver1, err := strconv.Atoi64(cas1)
 	assert.Equal(t, nil, err)
 
 	sid, ver, err := cl.Snap()

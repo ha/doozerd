@@ -31,7 +31,7 @@ func (w putFromWrapperTo) PutTo(m Msg, _ string) {
 
 type clusterK cluster
 
-func (ck *clusterK) cluster(seqn uint64) *cluster {
+func (ck *clusterK) cluster(seqn int64) *cluster {
 	return (*cluster)(ck)
 }
 

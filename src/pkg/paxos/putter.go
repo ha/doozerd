@@ -44,7 +44,7 @@ func (cp ChanPutCloserTo) Close() {
 }
 
 type putToWrapper struct {
-	seqn uint64
+	seqn int64
 	pt   PutterTo
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 func TestPutToWrapper(t *testing.T) {
-	seqn := uint64(1)
+	seqn := int64(1)
 	p := make(ChanPutCloserTo)
 	w := putToWrapper{seqn, p}
 	m := newInvite(1)

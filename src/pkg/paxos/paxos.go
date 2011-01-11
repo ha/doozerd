@@ -11,10 +11,10 @@ type ReadFromer interface {
 }
 
 type Proposer interface {
-	Propose(v string, cancel chan bool) (seqn uint64, cas string, err os.Error)
+	Propose(v string, cancel chan bool) (seqn int64, cas string, err os.Error)
 }
 
-func Set(p Proposer, path, body, cas string, cancel chan bool) (uint64, string, os.Error) {
+func Set(p Proposer, path, body, cas string, cancel chan bool) (int64, string, os.Error) {
 	mut, err := store.EncodeSet(path, body, cas)
 	if err != nil {
 		return 0, "", err

@@ -382,13 +382,13 @@ func (cl *Client) call(verb int32, t *T) (r *R, err os.Error) {
 }
 
 
-func (cl *Client) Join(id, addr string) (seqn uint64, snapshot string, err os.Error) {
+func (cl *Client) Join(id, addr string) (seqn int64, snapshot string, err os.Error) {
 	r, err := cl.call(proto.Request_JOIN, &T{Path: &id, Value: []byte(addr)})
 	if err != nil {
 		return 0, "", err
 	}
 
-	return uint64(pb.GetInt64(r.Seqn)), string(r.Value), nil
+	return pb.GetInt64(r.Seqn), string(r.Value), nil
 }
 
 
@@ -438,13 +438,13 @@ func (cl *Client) Checkin(id, cas string) (string, os.Error) {
 }
 
 
-func (cl *Client) Snap() (id int32, ver uint64, err os.Error) {
+func (cl *Client) Snap() (id int32, ver int64, err os.Error) {
 	r, err := cl.call(proto.Request_SNAP, &T{})
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return pb.GetInt32(r.Id), uint64(pb.GetInt64(r.Seqn)), nil
+	return pb.GetInt32(r.Id), pb.GetInt64(r.Seqn), nil
 }
 
 

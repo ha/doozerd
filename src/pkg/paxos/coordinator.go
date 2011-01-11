@@ -6,18 +6,18 @@ type coordinator struct {
 
 	begun  bool
 	target string
-	crnd   uint64
+	crnd   int64
 	cval   string
 	rsvps  map[int]bool
-	vr     uint64
+	vr     int64
 	vv     string
 
-	seen uint64
+	seen int64
 }
 
 func (co *coordinator) Put(in Msg) {
 	if co.crnd == 0 {
-		co.crnd += uint64(co.cx.Len())
+		co.crnd += int64(co.cx.Len())
 	}
 
 	switch in.Cmd() {
@@ -72,7 +72,7 @@ func (co *coordinator) Put(in Msg) {
 			co.outs.Put(chosen)
 		}
 	case tick:
-		co.crnd += uint64(co.cx.Len())
+		co.crnd += int64(co.cx.Len())
 		co.outs.Put(newInvite(co.crnd))
 		co.vr = 0
 		co.vv = ""

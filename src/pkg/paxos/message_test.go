@@ -10,7 +10,7 @@ import (
 )
 
 // For testing convenience
-func newVoteFrom(from int, i uint64, vval string) Msg {
+func newVoteFrom(from int, i int64, vval string) Msg {
 	m := newVote(i, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -18,7 +18,7 @@ func newVoteFrom(from int, i uint64, vval string) Msg {
 }
 
 // For testing convenience
-func newNominateFrom(from int, crnd uint64, v string) Msg {
+func newNominateFrom(from int, crnd int64, v string) Msg {
 	m := newNominate(crnd, v)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -26,7 +26,7 @@ func newNominateFrom(from int, crnd uint64, v string) Msg {
 }
 
 // For testing convenience
-func newRsvpFrom(from int, i, vrnd uint64, vval string) Msg {
+func newRsvpFrom(from int, i, vrnd int64, vval string) Msg {
 	m := newRsvp(i, vrnd, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -34,7 +34,7 @@ func newRsvpFrom(from int, i, vrnd uint64, vval string) Msg {
 }
 
 // For testing convenience
-func newInviteFrom(from int, rnd uint64) Msg {
+func newInviteFrom(from int, rnd int64) Msg {
 	m := newInvite(rnd)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -45,21 +45,21 @@ func TestMessageNewInvite(t *testing.T) {
 	m := newInvite(1)
 	assert.Equal(t, invite, m.Cmd(), "")
 	crnd := inviteParts(m)
-	assert.Equal(t, uint64(1), crnd, "")
+	assert.Equal(t, int64(1), crnd, "")
 }
 
 func TestMessageNewInviteAlt(t *testing.T) {
 	m := newInvite(2)
 	assert.Equal(t, invite, m.Cmd(), "")
 	crnd := inviteParts(m)
-	assert.Equal(t, uint64(2), crnd, "")
+	assert.Equal(t, int64(2), crnd, "")
 }
 
 func TestMessageNewNominate(t *testing.T) {
 	m := newNominate(1, "foo")
 	assert.Equal(t, nominate, m.Cmd(), "")
 	crnd, v := nominateParts(m)
-	assert.Equal(t, uint64(1), crnd, "")
+	assert.Equal(t, int64(1), crnd, "")
 	assert.Equal(t, "foo", v, "")
 }
 
@@ -67,7 +67,7 @@ func TestMessageNewNominateAlt(t *testing.T) {
 	m := newNominate(2, "bar")
 	assert.Equal(t, nominate, m.Cmd(), "")
 	crnd, v := nominateParts(m)
-	assert.Equal(t, uint64(2), crnd, "")
+	assert.Equal(t, int64(2), crnd, "")
 	assert.Equal(t, "bar", v, "")
 }
 
@@ -75,8 +75,8 @@ func TestMessageNewRsvp(t *testing.T) {
 	m := newRsvp(1, 0, "")
 	assert.Equal(t, rsvp, m.Cmd(), "")
 	i, vrnd, vval := rsvpParts(m)
-	assert.Equal(t, uint64(1), i, "")
-	assert.Equal(t, uint64(0), vrnd, "")
+	assert.Equal(t, int64(1), i, "")
+	assert.Equal(t, int64(0), vrnd, "")
 	assert.Equal(t, "", vval, "")
 }
 
@@ -84,8 +84,8 @@ func TestMessageNewRsvpAlt(t *testing.T) {
 	m := newRsvp(2, 1, "foo")
 	assert.Equal(t, rsvp, m.Cmd(), "")
 	i, vrnd, vval := rsvpParts(m)
-	assert.Equal(t, uint64(2), i, "")
-	assert.Equal(t, uint64(1), vrnd, "")
+	assert.Equal(t, int64(2), i, "")
+	assert.Equal(t, int64(1), vrnd, "")
 	assert.Equal(t, "foo", vval, "")
 }
 
@@ -93,7 +93,7 @@ func TestMessageNewVote(t *testing.T) {
 	m := newVote(1, "foo")
 	assert.Equal(t, vote, m.Cmd(), "")
 	i, vval := voteParts(m)
-	assert.Equal(t, uint64(1), i, "")
+	assert.Equal(t, int64(1), i, "")
 	assert.Equal(t, "foo", vval, "")
 }
 
@@ -101,7 +101,7 @@ func TestMessageNewVoteAlt(t *testing.T) {
 	m := newVote(2, "bar")
 	assert.Equal(t, vote, m.Cmd(), "")
 	i, vval := voteParts(m)
-	assert.Equal(t, uint64(2), i, "")
+	assert.Equal(t, int64(2), i, "")
 	assert.Equal(t, "bar", vval, "")
 }
 
@@ -139,9 +139,9 @@ func TestMessageSetFrom(t *testing.T) {
 func TestMessageSetSeqn(t *testing.T) {
 	m := newInvite(1)
 	m.SetSeqn(1)
-	assert.Equal(t, uint64(1), m.Seqn(), "")
+	assert.Equal(t, int64(1), m.Seqn(), "")
 	m.SetSeqn(2)
-	assert.Equal(t, uint64(2), m.Seqn(), "")
+	assert.Equal(t, int64(2), m.Seqn(), "")
 }
 
 func resize(m Msg, n int) Msg {

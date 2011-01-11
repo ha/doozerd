@@ -5,7 +5,7 @@ import (
 )
 
 type Event struct {
-	Seqn uint64
+	Seqn int64
 	Path string
 	Body string
 

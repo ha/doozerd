@@ -47,14 +47,14 @@ func mustBuildRe(p string) *regexp.Regexp {
 // given position are sliently ignored.
 type Store struct {
 	Ops     chan<- Op
-	Seqns   <-chan uint64
+	Seqns   <-chan int64
 	Watches <-chan int
 	watchCh chan *Watch
 	watches []*Watch
-	todo    map[uint64]Op
+	todo    map[int64]Op
 	state   *state
-	log     map[uint64]Event
-	cleanCh chan uint64
+	log     map[int64]Event
+	cleanCh chan int64
 	notices []notice
 }
 
@@ -64,12 +64,12 @@ type Store struct {
 //
 // If Mut is Nop, no change will be made, but a dummy event will still be sent.
 type Op struct {
-	Seqn uint64
+	Seqn int64
 	Mut  string
 }
 
 type state struct {
-	ver  uint64
+	ver  int64
 	root node
 }
 
@@ -77,7 +77,7 @@ type Watch struct {
 	C        <-chan Event
 	c        chan<- Event
 	glob     *Glob
-	from, to uint64
+	from, to int64
 	shutdown chan bool
 }
 
@@ -95,7 +95,7 @@ type notice struct {
 // store).
 func New() *Store {
 	ops := make(chan Op)
-	seqns := make(chan uint64)
+	seqns := make(chan int64)
 	watches := make(chan int)
 
 	st := &Store{
@@ -103,11 +103,11 @@ func New() *Store {
 		Seqns:   seqns,
 		Watches: watches,
 		watchCh: make(chan *Watch),
-		todo:    make(map[uint64]Op),
+		todo:    make(map[int64]Op),
 		watches: []*Watch{},
 		state:   &state{0, emptyDir},
-		log:     map[uint64]Event{0: {Err: ErrTooLate}},
-		cleanCh: make(chan uint64),
+		log:     map[int64]Event{0: {Err: ErrTooLate}},
+		cleanCh: make(chan int64),
 	}
 
 	go st.process(ops, seqns, watches)
@@ -238,11 +238,11 @@ func (st *Store) closeWatches() {
 	}
 }
 
-func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int) {
+func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) {
 	logger := util.NewLogger("store")
 	defer st.closeWatches()
 
-	var head uint64
+	var head int64
 
 	for {
 		ver, values := st.state.ver, st.state.root
@@ -311,7 +311,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- uint64, watches chan<- int)
 }
 
 // Returns a point-in-time snapshot of the contents of the store.
-func (st *Store) Snap() (ver uint64, g Getter) {
+func (st *Store) Snap() (ver int64, g Getter) {
 	// WARNING: Be sure to read the pointer value of st.state only once. If you
 	// need multiple accesses, copy the pointer first.
 	p := st.state
@@ -343,7 +343,7 @@ func (st *Store) Get(path string) (value []string, cas string) {
 // applied, the store's sequence number will be set to `seqn`.
 //
 // Note that applying a snapshot does not send notifications.
-func (st *Store) Snapshot() (seqn uint64, mutation string) {
+func (st *Store) Snapshot() (seqn int64, mutation string) {
 	w := new(bytes.Buffer)
 	ver, g := st.Snap()
 
@@ -375,10 +375,10 @@ func (st *Store) Watch(glob *Glob) <-chan Event {
 func NewWatch(st *Store, glob *Glob) (w *Watch) {
 	ch := make(chan Event)
 	ver, _ := st.Snap()
-	return st.watchOn(glob, ch, ver+1, math.MaxUint64)
+	return st.watchOn(glob, ch, ver+1, math.MaxInt64)
 }
 
-func (st *Store) watchOn(glob *Glob, ch chan Event, from, to uint64) *Watch {
+func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) *Watch {
 	wt := &Watch{
 		C:        ch,
 		c:        ch,
@@ -396,7 +396,7 @@ func (st *Store) watchOn(glob *Glob, ch chan Event, from, to uint64) *Watch {
 //
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
-func (st *Store) Wait(seqn uint64) <-chan Event {
+func (st *Store) Wait(seqn int64) <-chan Event {
 	ch := make(chan Event, 1)
 	st.watchOn(Any, ch, seqn, seqn+1)
 	return ch
@@ -407,7 +407,7 @@ func (st *Store) Wait(seqn uint64) <-chan Event {
 //
 // See http://golang.org/doc/go_mem.html for the meaning of "happens before" in
 // Go.
-func (st *Store) Sync(seqn uint64) {
+func (st *Store) Sync(seqn int64) {
 	<-st.Wait(seqn)
 }
 
@@ -437,6 +437,6 @@ func (st *Store) SyncPath(path string) (Getter, os.Error) {
 	panic("unreachable")
 }
 
-func (st *Store) Clean(seqn uint64) {
+func (st *Store) Clean(seqn int64) {
 	st.cleanCh <- seqn
 }

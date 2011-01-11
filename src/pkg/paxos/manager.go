@@ -16,7 +16,7 @@ const (
 var ErrCancel = os.NewError("received cancel")
 
 type instReq struct {
-	seqn uint64
+	seqn int64
 	ch   chan instance
 }
 
@@ -24,8 +24,8 @@ type Manager struct {
 	st        *store.Store
 	ops       chan<- store.Op
 	rg        *Registrar
-	seqns     chan uint64
-	fillUntil chan uint64
+	seqns     chan int64
+	fillUntil chan int64
 	reqs      chan instReq
 	logger    *log.Logger
 	Self      string
@@ -41,8 +41,8 @@ func NewManager(self string, alpha int, st *store.Store, outs PutterTo) *Manager
 		st:        st,
 		ops:       st.Ops,
 		rg:        NewRegistrar(st, start, alpha),
-		seqns:     make(chan uint64),
-		fillUntil: make(chan uint64),
+		seqns:     make(chan int64),
+		fillUntil: make(chan int64),
 		reqs:      make(chan instReq),
 		logger:    util.NewLogger("manager"),
 		Self:      self,
@@ -50,8 +50,8 @@ func NewManager(self string, alpha int, st *store.Store, outs PutterTo) *Manager
 		outs:      outs,
 	}
 
-	go m.gen(start + uint64(alpha))
-	go m.fill(start + uint64(alpha))
+	go m.gen(start + int64(alpha))
+	go m.fill(start + int64(alpha))
 	go m.process()
 
 	// Wait until process is ready
@@ -65,15 +65,15 @@ func (m *Manager) Alpha() int {
 	return m.alpha
 }
 
-func (m *Manager) cluster(seqn uint64) *cluster {
+func (m *Manager) cluster(seqn int64) *cluster {
 	members, cals := m.rg.setsForSeqn(seqn)
 	return newCluster(m.Self, members, cals, putToWrapper{seqn, m.outs})
 }
 
-func (mg *Manager) gen(next uint64) {
+func (mg *Manager) gen(next int64) {
 	for {
 		cx := mg.cluster(next)
-		leader := int(next % uint64(cx.Len()))
+		leader := int(next % int64(cx.Len()))
 		if leader == cx.SelfIndex() {
 			mg.seqns <- next
 		}
@@ -81,7 +81,7 @@ func (mg *Manager) gen(next uint64) {
 	}
 }
 
-func (mg *Manager) fill(seqn uint64) {
+func (mg *Manager) fill(seqn int64) {
 	for next := range mg.fillUntil {
 		for seqn < next {
 			go mg.fillOne(seqn)
@@ -92,8 +92,8 @@ func (mg *Manager) fill(seqn uint64) {
 }
 
 func (m *Manager) process() {
-	instances := make(map[uint64]instance)
-	var ver uint64
+	instances := make(map[int64]instance)
+	var ver int64
 	seqns := m.st.Watch(store.Any)
 	for {
 		select {
@@ -124,7 +124,7 @@ func (m *Manager) process() {
 	}
 }
 
-func (m *Manager) getInstance(seqn uint64) instance {
+func (m *Manager) getInstance(seqn int64) instance {
 	ch := make(chan instance)
 	m.reqs <- instReq{seqn, ch}
 	return <-ch
@@ -144,7 +144,7 @@ func (m *Manager) PutFrom(addr string, msg Msg) {
 	}
 }
 
-func (m *Manager) proposeAt(seqn uint64, v string) {
+func (m *Manager) proposeAt(seqn int64, v string) {
 	it := m.getInstance(seqn)
 	if it != nil {
 		it.Propose(v)
@@ -170,7 +170,7 @@ func (m *Manager) ProposeOnce(v string, cancel chan bool) store.Event {
 	panic("not reached")
 }
 
-func (m *Manager) Propose(v string, cancel chan bool) (seqn uint64, cas string, err os.Error) {
+func (m *Manager) Propose(v string, cancel chan bool) (seqn int64, cas string, err os.Error) {
 	var ev store.Event
 
 	// If a competing proposal succeeded in the same seqn, we should try again.
@@ -185,7 +185,7 @@ func (m *Manager) Propose(v string, cancel chan bool) (seqn uint64, cas string, 
 	return ev.Seqn, ev.Cas, ev.Err
 }
 
-func (m *Manager) fillOne(seqn uint64) {
+func (m *Manager) fillOne(seqn int64) {
 	time.Sleep(fillDelay)
 	// yes, we'll act as coordinator for a seqn we don't "own"
 	// this is intentional, since we want to exersize this code all the time,

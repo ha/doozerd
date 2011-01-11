@@ -18,7 +18,7 @@ type Registrar struct {
 }
 
 type lookup struct {
-	cver      uint64
+	cver      int64
 	done      chan int
 	memberSet map[string]string
 	calSet    []string
@@ -34,7 +34,7 @@ type lookupQueue struct {
 
 func (q *lookupQueue) peek() *lookup {
 	if q.Len() == 0 {
-		return &lookup{cver: math.MaxUint64} // ~infinity
+		return &lookup{cver: math.MaxInt64} // ~infinity
 	}
 	return q.At(0).(*lookup)
 }
@@ -42,7 +42,7 @@ func (q *lookupQueue) peek() *lookup {
 // This thing keeps track of who is supposed to be in the cluster for every
 // seqn. It also remembers the network address of every member.
 // TODO remove the `start` param when store.Get provides a version
-func NewRegistrar(st *store.Store, start uint64, alpha int) *Registrar {
+func NewRegistrar(st *store.Store, start int64, alpha int) *Registrar {
 	rg := &Registrar{
 		alpha:    alpha,
 		st:       st,
@@ -63,11 +63,11 @@ func findString(v []string, s string) (i int) {
 	return -1
 }
 
-func (rg *Registrar) process(seqn uint64, memberSet, calSet map[string]string) {
-	memberSets := make(map[uint64]map[string]string)
+func (rg *Registrar) process(seqn int64, memberSet, calSet map[string]string) {
+	memberSets := make(map[int64]map[string]string)
 	memberSets[seqn] = dup(memberSet)
 
-	calSets := make(map[uint64][]string)
+	calSets := make(map[int64][]string)
 	calSets[seqn] = nonEmpty(values(calSet))
 	sort.SortStrings(calSets[seqn])
 
@@ -142,17 +142,17 @@ func readdirMap(st *store.Store, path string) map[string]string {
 	return m
 }
 
-func (rg *Registrar) setsForVersion(cver uint64) (map[string]string, []string) {
+func (rg *Registrar) setsForVersion(cver int64) (map[string]string, []string) {
 	lk := lookup{cver: cver, done: make(chan int)}
 	rg.lookupCh <- &lk
 	<-lk.done
 	return lk.memberSet, lk.calSet
 }
 
-func (rg *Registrar) setsForSeqn(seqn uint64) (map[string]string, []string) {
-	cver := uint64(1)
-	if seqn > uint64(rg.alpha) {
-		cver = seqn - uint64(rg.alpha)
+func (rg *Registrar) setsForSeqn(seqn int64) (map[string]string, []string) {
+	cver := int64(1)
+	if seqn > int64(rg.alpha) {
+		cver = seqn - int64(rg.alpha)
 	}
 	return rg.setsForVersion(cver)
 }

@@ -12,14 +12,14 @@ var applied = store.MustCompileGlob("/doozer/info/*/applied")
 
 type cleaner struct {
 	st     *store.Store
-	table  map[string]uint64
+	table  map[string]int64
 	logger *log.Logger
 }
 
 func Clean(st *store.Store) {
 	cl := &cleaner{
 		st:     st,
-		table:  make(map[string]uint64),
+		table:  make(map[string]int64),
 		logger: util.NewLogger("clean"),
 	}
 
@@ -32,7 +32,7 @@ func Clean(st *store.Store) {
 func (cl *cleaner) update(ev store.Event) {
 	parts := strings.Split(ev.Path, "/", -1)
 	id := parts[3]
-	seqn, err := strconv.Atoui64(ev.Body)
+	seqn, err := strconv.Atoi64(ev.Body)
 	if err != nil {
 		cl.logger.Println(err)
 		return
@@ -48,7 +48,7 @@ func (cl *cleaner) check() {
 	}
 }
 
-func (cl *cleaner) isOk(seqn uint64) bool {
+func (cl *cleaner) isOk(seqn int64) bool {
 	for _, c := range cl.getCals(seqn) {
 		if cl.table[c] < seqn {
 			return false
@@ -57,7 +57,7 @@ func (cl *cleaner) isOk(seqn uint64) bool {
 	return true
 }
 
-func (cl *cleaner) getCals(seqn uint64) []string {
+func (cl *cleaner) getCals(seqn int64) []string {
 	slots := store.GetDir(cl.st, "/doozer/slot")
 	cals := make([]string, len(slots))
 	for i, slot := range slots {

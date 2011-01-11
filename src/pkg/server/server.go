@@ -383,7 +383,7 @@ func (c *conn) join(t *T) *R {
 
 		done := make(chan int)
 		go c.s.AdvanceUntil(done)
-		c.s.St.Sync(seqn + uint64(c.s.Mg.Alpha()))
+		c.s.St.Sync(seqn + int64(c.s.Mg.Alpha()))
 		close(done)
 		seqn, snap := c.s.St.Snapshot()
 		seqn1 := int64(seqn)

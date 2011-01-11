@@ -20,7 +20,7 @@ func (fs *FakeSetter) Set(path, oldCas string, body []byte) (string, os.Error) {
 }
 
 func TestGcPulse(t *testing.T) {
-	seqns := make(chan uint64)
+	seqns := make(chan int64)
 	defer close(seqns)
 	fs := &FakeSetter{make(chan string), make(chan []byte)}
 

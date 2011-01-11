@@ -11,17 +11,17 @@ const initialBound = 1e6 // ns == 1ms
 type instance chan Packet
 
 type clusterer interface {
-	cluster(seqn uint64) *cluster
+	cluster(seqn int64) *cluster
 }
 
-func (it instance) process(seqn uint64, cf clusterer, res chan<- store.Op) {
+func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
 	var sched bool
 	var waitBound int64 = initialBound
 	cx := cf.cluster(seqn)
 
-	co := coordinator{cx: cx, crnd: uint64(cx.SelfIndex()), outs: cx}
+	co := coordinator{cx: cx, crnd: int64(cx.SelfIndex()), outs: cx}
 	ac := acceptor{outs: cx}
-	ln := *newLearner(uint64(cx.Quorum()))
+	ln := *newLearner(int64(cx.Quorum()))
 	var sk sink
 
 	for p := range it {

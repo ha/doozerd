@@ -2,7 +2,7 @@ package paxos
 
 type acceptor struct {
 	outs      Putter
-	rnd, vrnd uint64
+	rnd, vrnd int64
 	vval      string
 }
 

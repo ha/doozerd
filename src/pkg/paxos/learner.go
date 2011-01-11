@@ -1,19 +1,19 @@
 package paxos
 
 type learner struct {
-	round  uint64
-	quorum uint64
-	votes  map[string]uint64 // maps values to number of votes
-	voted  map[int]bool      // maps nodes to vote status
+	round  int64
+	quorum int64
+	votes  map[string]int64 // maps values to number of votes
+	voted  map[int]bool     // maps nodes to vote status
 
 	v    string
 	done bool
 }
 
-func newLearner(quorum uint64) *learner {
+func newLearner(quorum int64) *learner {
 	return &learner{
 		round:  1,
-		votes:  make(map[string]uint64),
+		votes:  make(map[string]int64),
 		voted:  make(map[int]bool),
 		quorum: quorum,
 	}
@@ -31,7 +31,7 @@ func (ln *learner) Put(in Msg) {
 		return
 	case mRound > ln.round:
 		ln.round = mRound
-		ln.votes = make(map[string]uint64)
+		ln.votes = make(map[string]int64)
 		ln.voted = make(map[int]bool)
 		fallthrough
 	case mRound == ln.round:

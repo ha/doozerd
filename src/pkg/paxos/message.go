@@ -79,61 +79,61 @@ var (
 	msgTick = newTick()
 )
 
-func newInvite(crnd uint64) Msg {
+func newInvite(crnd int64) Msg {
 	m := make(Msg, baseLen+inviteLen)
 	m[mCmd] = invite
-	util.Packui64(m.Body()[0:8], crnd)
+	util.Packi64(m.Body()[0:8], crnd)
 	return m
 }
 
 // Returns the info for `m`. If `m` is not an invite, the result is undefined.
-func inviteParts(m Msg) (crnd uint64) {
-	return util.Unpackui64(m.Body())
+func inviteParts(m Msg) (crnd int64) {
+	return util.Unpacki64(m.Body())
 }
 
-func newNominate(crnd uint64, v string) Msg {
+func newNominate(crnd int64, v string) Msg {
 	m := make(Msg, baseLen+nominateLen+len(v))
 	m[mCmd] = nominate
-	util.Packui64(m.Body()[0:8], crnd)
+	util.Packi64(m.Body()[0:8], crnd)
 	copy(m.Body()[nominateLen:], []byte(v))
 	return m
 }
 
 // Returns the info for `m`. If `m` is not a nominate, the result is undefined.
-func nominateParts(m Msg) (crnd uint64, v string) {
-	crnd = util.Unpackui64(m.Body()[0:8])
+func nominateParts(m Msg) (crnd int64, v string) {
+	crnd = util.Unpacki64(m.Body()[0:8])
 	v = string(m.Body()[8:])
 	return
 }
 
-func newRsvp(i, vrnd uint64, vval string) Msg {
+func newRsvp(i, vrnd int64, vval string) Msg {
 	m := make(Msg, baseLen+rsvpLen+len(vval))
 	m[mCmd] = rsvp
-	util.Packui64(m.Body()[0:8], i)
-	util.Packui64(m.Body()[8:16], vrnd)
+	util.Packi64(m.Body()[0:8], i)
+	util.Packi64(m.Body()[8:16], vrnd)
 	copy(m.Body()[rsvpLen:], []byte(vval))
 	return m
 }
 
 // Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
-func rsvpParts(m Msg) (i, vrnd uint64, vval string) {
-	i = util.Unpackui64(m.Body()[0:8])
-	vrnd = util.Unpackui64(m.Body()[8:16])
+func rsvpParts(m Msg) (i, vrnd int64, vval string) {
+	i = util.Unpacki64(m.Body()[0:8])
+	vrnd = util.Unpacki64(m.Body()[8:16])
 	vval = string(m.Body()[16:])
 	return
 }
 
-func newVote(i uint64, vval string) Msg {
+func newVote(i int64, vval string) Msg {
 	m := make(Msg, baseLen+voteLen+len(vval))
 	m[mCmd] = vote
-	util.Packui64(m.Body()[0:8], i)
+	util.Packi64(m.Body()[0:8], i)
 	copy(m.Body()[voteLen:], []byte(vval))
 	return m
 }
 
 // Returns the info for `m`. If `m` is not a vote, the result is undefined.
-func voteParts(m Msg) (i uint64, vval string) {
-	i = util.Unpackui64(m.Body()[0:8])
+func voteParts(m Msg) (i int64, vval string) {
+	i = util.Unpacki64(m.Body()[0:8])
 	vval = string(m.Body()[8:])
 	return
 }
@@ -177,8 +177,8 @@ func (m Msg) Cmd() int {
 	return int(m[mCmd])
 }
 
-func (m Msg) Seqn() uint64 {
-	return util.Unpackui64(m[mSeqn : mSeqn+8])
+func (m Msg) Seqn() int64 {
+	return util.Unpacki64(m[mSeqn : mSeqn+8])
 }
 
 func (m Msg) Body() []byte {
@@ -194,8 +194,8 @@ func (m Msg) SetFrom(from int) {
 }
 
 // Typically used just before writing `m` to the network.
-func (m Msg) SetSeqn(seqn uint64) {
-	util.Packui64(m[mSeqn:mSeqn+8], seqn)
+func (m Msg) SetSeqn(seqn int64) {
+	util.Packi64(m[mSeqn:mSeqn+8], seqn)
 }
 
 // Check that `m` is well-formed. Does not guarantee that it will be valid or

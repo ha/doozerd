@@ -10,7 +10,7 @@ import (
 )
 
 func TestNodeApplySet(t *testing.T) {
-	k, v, seqn, cas := "x", "a", uint64(1), "1"
+	k, v, seqn, cas := "x", "a", int64(1), "1"
 	p := "/" + k
 	m := MustEncodeSet(p, v, Clobber)
 	n, e, b := emptyDir.apply(seqn, m)
@@ -21,7 +21,7 @@ func TestNodeApplySet(t *testing.T) {
 }
 
 func TestNodeApplyDel(t *testing.T) {
-	k, seqn, cas := "x", uint64(1), "1"
+	k, seqn, cas := "x", int64(1), "1"
 	r := node{"", Dir, map[string]node{k: {"a", cas, nil}}}
 	p := "/" + k
 	m := MustEncodeDel(p, cas)
@@ -32,7 +32,7 @@ func TestNodeApplyDel(t *testing.T) {
 }
 
 func TestNodeApplyNop(t *testing.T) {
-	seqn := uint64(1)
+	seqn := int64(1)
 	m := Nop
 	n, e, b := emptyDir.apply(seqn, m)
 	assert.Equal(t, false, b)
@@ -41,7 +41,7 @@ func TestNodeApplyNop(t *testing.T) {
 }
 
 func TestNodeApplyBadMutation(t *testing.T) {
-	seqn, cas := uint64(1), "1"
+	seqn, cas := int64(1), "1"
 	m := BadMutations[0]
 	n, e, b := emptyDir.apply(seqn, m)
 	assert.Equal(t, false, b)
@@ -51,7 +51,7 @@ func TestNodeApplyBadMutation(t *testing.T) {
 }
 
 func TestNodeApplyBadInstruction(t *testing.T) {
-	seqn, cas := uint64(1), "1"
+	seqn, cas := int64(1), "1"
 	m := BadInstructions[0]
 	n, e, b := emptyDir.apply(seqn, m)
 	assert.Equal(t, false, b)
@@ -62,7 +62,7 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {
-	k, v, seqn, cas := "x", "a", uint64(1), "1"
+	k, v, seqn, cas := "x", "a", int64(1), "1"
 	p := "/" + k
 	m := MustEncodeSet(p, v, "123")
 	n, e, _ := emptyDir.apply(seqn, m)
@@ -89,7 +89,7 @@ func TestNodeSnapshotApply(t *testing.T) {
 
 func TestNodeSnapshotBad(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
-	gob.NewEncoder(buf).Encode(uint64(1))
+	gob.NewEncoder(buf).Encode(int64(1))
 	seqnPart := buf.String()
 
 	buf = bytes.NewBuffer([]byte{})

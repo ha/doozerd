@@ -32,13 +32,13 @@ func TestProposeAndLearn(t *testing.T) {
 	ix.Propose(exp)
 
 	got := <-ch
-	assert.Equal(t, uint64(3), got.Seqn)
+	assert.Equal(t, int64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
 func TestProposeAndLearnMultiple(t *testing.T) {
 	exp := []string{"/foo", "/bar"}
-	seqnexp := []uint64{3, 4}
+	seqnexp := []int64{3, 4}
 	m, st := selfRefNewManager("a", 1)
 	ch := st.Watch(store.Any)
 
@@ -67,7 +67,7 @@ func TestManagerFill(t *testing.T) {
 	mg := NewManager("a", 1, st, p)
 
 	mg.fillUntil <- 4
-	assert.Equal(t, uint64(3), (<-p).Msg.Seqn())
+	assert.Equal(t, int64(3), (<-p).Msg.Seqn())
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
@@ -80,7 +80,7 @@ func TestNewInstanceBecauseOfMessage(t *testing.T) {
 	m.PutFrom(m.Self+"addr", msg)
 
 	got := <-ch
-	assert.Equal(t, uint64(3), got.Seqn)
+	assert.Equal(t, int64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
@@ -94,7 +94,7 @@ func TestNewInstanceBecauseOfMessageTriangulate(t *testing.T) {
 	m.PutFrom(m.Self+"addr", msg)
 
 	got := <-ch
-	assert.Equal(t, uint64(3), got.Seqn)
+	assert.Equal(t, int64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
@@ -107,7 +107,7 @@ func TestUnusedSeqn(t *testing.T) {
 	ix.Propose(exp)
 
 	got := <-ch
-	assert.Equal(t, uint64(3), got.Seqn)
+	assert.Equal(t, int64(3), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
@@ -121,7 +121,7 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 	ix.Propose("y")
 
 	got := <-ch
-	assert.Equal(t, uint64(3), got.Seqn)
+	assert.Equal(t, int64(3), got.Seqn)
 	assert.Equal(t, "y", got.Mut)
 }
 
@@ -198,7 +198,7 @@ func TestReadFromStore(t *testing.T) {
 	<-ch
 	<-ch
 	got := <-ch
-	assert.Equal(t, uint64(5), got.Seqn)
+	assert.Equal(t, int64(5), got.Seqn)
 	assert.Equal(t, exp, got.Mut)
 }
 
@@ -225,53 +225,53 @@ func TestManagerGetSeqnsA(t *testing.T) {
 	m, st := selfRefNewManager("a", 5)
 	play(st)
 
-	assert.Equal(t, uint64(7), <-m.seqns)
-	assert.Equal(t, uint64(8), <-m.seqns)
-	assert.Equal(t, uint64(10), <-m.seqns)
-	assert.Equal(t, uint64(13), <-m.seqns)
-	assert.Equal(t, uint64(20), <-m.seqns)
+	assert.Equal(t, int64(7), <-m.seqns)
+	assert.Equal(t, int64(8), <-m.seqns)
+	assert.Equal(t, int64(10), <-m.seqns)
+	assert.Equal(t, int64(13), <-m.seqns)
+	assert.Equal(t, int64(20), <-m.seqns)
 }
 
 func TestManagerGetSeqnsB(t *testing.T) {
 	m, st := selfRefNewManager("b", 5)
 	play(st)
 
-	assert.Equal(t, uint64(9), <-m.seqns)
-	assert.Equal(t, uint64(11), <-m.seqns)
-	assert.Equal(t, uint64(14), <-m.seqns)
-	assert.Equal(t, uint64(21), <-m.seqns)
+	assert.Equal(t, int64(9), <-m.seqns)
+	assert.Equal(t, int64(11), <-m.seqns)
+	assert.Equal(t, int64(14), <-m.seqns)
+	assert.Equal(t, int64(21), <-m.seqns)
 }
 
 func TestManagerGetSeqns1(t *testing.T) {
 	m, st := selfRefNewManager("1", 5)
 	play(st)
 
-	assert.Equal(t, uint64(12), <-m.seqns)
-	assert.Equal(t, uint64(16), <-m.seqns)
-	assert.Equal(t, uint64(19), <-m.seqns)
+	assert.Equal(t, int64(12), <-m.seqns)
+	assert.Equal(t, int64(16), <-m.seqns)
+	assert.Equal(t, int64(19), <-m.seqns)
 }
 
 func TestManagerGetSeqnsC(t *testing.T) {
 	m, st := selfRefNewManager("c", 5)
 	play(st)
 
-	assert.Equal(t, uint64(22), <-m.seqns)
+	assert.Equal(t, int64(22), <-m.seqns)
 }
 
 func TestManagerGetSeqns0(t *testing.T) {
 	m, st := selfRefNewManager("0", 5)
 	play(st)
 
-	assert.Equal(t, uint64(15), <-m.seqns)
-	assert.Equal(t, uint64(18), <-m.seqns)
+	assert.Equal(t, int64(15), <-m.seqns)
+	assert.Equal(t, int64(18), <-m.seqns)
 }
 
 func TestManagerGetSeqnsD(t *testing.T) {
 	m, st := selfRefNewManager("d", 5)
 	play(st)
 
-	assert.Equal(t, uint64(17), <-m.seqns)
-	assert.Equal(t, uint64(23), <-m.seqns)
+	assert.Equal(t, int64(17), <-m.seqns)
+	assert.Equal(t, int64(23), <-m.seqns)
 }
 
 func TestManagerAppliedShutdown(t *testing.T) {
