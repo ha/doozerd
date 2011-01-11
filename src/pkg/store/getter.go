@@ -5,7 +5,7 @@ import (
 )
 
 type Getter interface {
-	Get(path string) (values []string, cas string)
+	Get(path string) (values []string, cas int64)
 }
 
 // Retrieves the body stored in `g` at `path` and returns it. If `path` is a
@@ -39,7 +39,7 @@ func GetDir(g Getter, path string) (entries []string) {
 	return v
 }
 
-type Visitor func(path, body, cas string) (stop bool)
+type Visitor func(path, body string, cas int64) (stop bool)
 
 func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
 	v, cas := g.Get(path)

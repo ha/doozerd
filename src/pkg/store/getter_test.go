@@ -65,7 +65,7 @@ func TestWalk(t *testing.T) {
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
 	var c int
-	b := Walk(st, glob, func(path, body, cas string) bool {
+	b := Walk(st, glob, func(path, body string, cas int64) bool {
 		assert.Equal(t, expPaths[0], path)
 		assert.Equal(t, exp[path], body)
 		c++
@@ -97,7 +97,7 @@ func TestWalkStop(t *testing.T) {
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
 	var c int
-	b := Walk(st, glob, func(path, body, cas string) bool {
+	b := Walk(st, glob, func(path, body string, cas int64) bool {
 		assert.Equal(t, expPaths[0], path)
 		assert.Equal(t, exp[path], body)
 		c++

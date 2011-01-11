@@ -13,10 +13,10 @@ type FakeSetter struct {
 	body chan []byte
 }
 
-func (fs *FakeSetter) Set(path, oldCas string, body []byte) (string, os.Error) {
+func (fs *FakeSetter) Set(path string, oldCas int64, body []byte) (int64, os.Error) {
 	fs.path <- path
 	fs.body <- body
-	return "123", nil
+	return 123, nil
 }
 
 func TestGcPulse(t *testing.T) {

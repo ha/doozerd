@@ -10,7 +10,7 @@ type FakeProposer struct {
 	seqn int64
 }
 
-func (fp *FakeProposer) Propose(v string, cancel chan bool) (int64, string, os.Error) {
+func (fp *FakeProposer) Propose(v string, cancel chan bool) (int64, int64, os.Error) {
 	fp.seqn++
 	ch := fp.Wait(fp.seqn)
 	fp.Ops <- store.Op{fp.seqn, v}

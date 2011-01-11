@@ -26,7 +26,7 @@ message Request {
   }
   required Verb verb = 2;
 
-  optional string cas = 3;
+  optional int64 cas = 3;
   optional string path = 4;
   optional bytes value = 5;
   optional int32 id = 6;
@@ -40,7 +40,7 @@ message Response {
   required int32 flags = 2;
 
   optional int64 seqn = 3;
-  optional string cas = 4;
+  optional int64 cas = 4;
   optional string path = 5;
   optional bytes value = 6;
   optional int32 id = 7;

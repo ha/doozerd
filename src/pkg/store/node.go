@@ -3,7 +3,6 @@ package store
 import (
 	"gob"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -16,7 +15,7 @@ const Nop = "nop:"
 // This structure should be kept immutable.
 type node struct {
 	v   string
-	cas string
+	cas int64
 	ds  map[string]node
 }
 
@@ -34,7 +33,7 @@ func (n node) readdir() []string {
 	return names
 }
 
-func (n node) get(parts []string) ([]string, string) {
+func (n node) get(parts []string) ([]string, int64) {
 	switch len(parts) {
 	case 0:
 		if len(n.ds) > 0 {
@@ -53,7 +52,7 @@ func (n node) get(parts []string) ([]string, string) {
 	panic("unreachable")
 }
 
-func (n node) Get(path string) ([]string, string) {
+func (n node) Get(path string) ([]string, int64) {
 	if err := checkPath(path); err != nil {
 		return []string{""}, Missing
 	}
@@ -70,7 +69,7 @@ func copyMap(a map[string]node) map[string]node {
 }
 
 // Return value is replacement node
-func (n node) set(parts []string, v, cas string, keep bool) (node, bool) {
+func (n node) set(parts []string, v string, cas int64, keep bool) (node, bool) {
 	if len(parts) == 0 {
 		return node{v, cas, n.ds}, keep
 	}
@@ -82,7 +81,7 @@ func (n node) set(parts []string, v, cas string, keep bool) (node, bool) {
 	return n, len(n.ds) > 0
 }
 
-func (n node) setp(k, v, cas string, keep bool) node {
+func (n node) setp(k, v string, cas int64, keep bool) node {
 	if err := checkPath(k); err != nil {
 		return n
 	}
@@ -92,12 +91,12 @@ func (n node) setp(k, v, cas string, keep bool) node {
 }
 
 func (n node) apply(seqn int64, mut string) (rep node, ev Event, snap bool) {
-	ev.Seqn, ev.Cas, ev.Mut = seqn, strconv.Itoa64(seqn), mut
+	ev.Seqn, ev.Cas, ev.Mut = seqn, seqn, mut
 	if seqn == 1 {
 		d := gob.NewDecoder(strings.NewReader(mut))
 		if d.Decode(&ev.Seqn) == nil {
 			snap = true
-			ev.Cas = ""
+			ev.Cas = dummy
 			ev.Err = d.Decode(&rep)
 			if ev.Err != nil {
 				ev.Seqn = seqn
@@ -110,13 +109,14 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event, snap bool) {
 
 	if mut == Nop {
 		ev.Path = "/"
-		ev.Cas = ""
+		ev.Cas = dummy
 		rep = n
 		ev.Getter = rep
 		return
 	}
 
-	cas, keep := "", false
+	var cas int64
+	var keep bool
 	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
 
 	if ev.Err == nil && keep {

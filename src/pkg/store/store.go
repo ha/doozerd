@@ -7,13 +7,16 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
+// Special values of the CAS token.
 const (
-	Clobber = ""
-	Missing = "0"
-	Dir     = "dir"
+	Missing = int64(-iota)
+	Clobber
+	Dir
+	dummy
 )
 
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)
@@ -137,11 +140,11 @@ func checkPath(k string) os.Error {
 // matches `cas` at the time of application.
 //
 // If `path` is not valid, returns a `BadPathError`.
-func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
+func EncodeSet(path, body string, cas int64) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
-	return cas + ":" + path + "=" + body, nil
+	return strconv.Itoa64(cas) + ":" + path + "=" + body, nil
 }
 
 // Returns a mutation that can be applied to a `Store`. The mutation will cause
@@ -149,17 +152,17 @@ func EncodeSet(path, body string, cas string) (mutation string, err os.Error) {
 // `cas` at the time of application.
 //
 // If `path` is not valid, returns a `BadPathError`.
-func EncodeDel(path string, cas string) (mutation string, err os.Error) {
+func EncodeDel(path string, cas int64) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
 	}
-	return cas + ":" + path, nil
+	return strconv.Itoa64(cas) + ":" + path, nil
 }
 
 // MustEncodeSet is like EncodeSet but panics if the mutation cannot be
 // encoded. It simplifies safe initialization of global variables holding
 // mutations.
-func MustEncodeSet(path, body, cas string) (mutation string) {
+func MustEncodeSet(path, body string, cas int64) (mutation string) {
 	m, err := EncodeSet(path, body, cas)
 	if err != nil {
 		panic(err)
@@ -170,7 +173,7 @@ func MustEncodeSet(path, body, cas string) (mutation string) {
 // MustEncodeDel is like EncodeDel but panics if the mutation cannot be
 // encoded. It simplifies safe initialization of global variables holding
 // mutations.
-func MustEncodeDel(path, cas string) (mutation string) {
+func MustEncodeDel(path string, cas int64) (mutation string) {
 	m, err := EncodeDel(path, cas)
 	if err != nil {
 		panic(err)
@@ -178,11 +181,16 @@ func MustEncodeDel(path, cas string) (mutation string) {
 	return m
 }
 
-func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
+func decode(mutation string) (path, v string, cas int64, keep bool, err os.Error) {
 	cm := strings.Split(mutation, ":", 2)
 
 	if len(cm) != 2 {
 		err = ErrBadMutation
+		return
+	}
+
+	cas, err = strconv.Atoi64(cm[0])
+	if err != nil {
 		return
 	}
 
@@ -194,9 +202,9 @@ func decode(mutation string) (path, v, cas string, keep bool, err os.Error) {
 
 	switch len(kv) {
 	case 1:
-		return kv[0], "", cm[0], false, nil
+		return kv[0], "", cas, false, nil
 	case 2:
-		return kv[0], kv[1], cm[0], true, nil
+		return kv[0], kv[1], cas, true, nil
 	}
 	panic("unreachable")
 }
@@ -328,7 +336,7 @@ func (st *Store) Snap() (ver int64, g Getter) {
 // entries.
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
-func (st *Store) Get(path string) (value []string, cas string) {
+func (st *Store) Get(path string) (value []string, cas int64) {
 	_, g := st.Snap()
 	return g.Get(path)
 }

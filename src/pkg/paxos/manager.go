@@ -170,14 +170,14 @@ func (m *Manager) ProposeOnce(v string, cancel chan bool) store.Event {
 	panic("not reached")
 }
 
-func (m *Manager) Propose(v string, cancel chan bool) (seqn int64, cas string, err os.Error) {
+func (m *Manager) Propose(v string, cancel chan bool) (seqn, cas int64, err os.Error) {
 	var ev store.Event
 
 	// If a competing proposal succeeded in the same seqn, we should try again.
 	for v != ev.Mut {
 		if cancel != nil {
 			if _, ok := <-cancel; ok {
-				return 0, "", ErrCancel
+				return 0, 0, ErrCancel
 			}
 		}
 		ev = m.ProposeOnce(v, cancel)

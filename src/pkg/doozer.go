@@ -172,7 +172,7 @@ func advanceUntil(cl *client.Client, done chan int) {
 	}
 }
 
-func set(st *store.Store, path, body, cas string) {
+func set(st *store.Store, path, body string, cas int64) {
 	mut := store.MustEncodeSet(path, body, cas)
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
 }

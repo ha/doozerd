@@ -38,7 +38,7 @@ func (o OtherError) String() string {
 
 
 type Event struct {
-	Cas  string
+	Cas  int64
 	Path string
 	Body []byte
 	Err  os.Error
@@ -392,13 +392,13 @@ func (cl *Client) Join(id, addr string) (seqn int64, snapshot string, err os.Err
 }
 
 
-func (cl *Client) Set(path, oldCas string, body []byte) (newCas string, err os.Error) {
+func (cl *Client) Set(path string, oldCas int64, body []byte) (newCas int64, err os.Error) {
 	r, err := cl.call(proto.Request_SET, &T{Path: &path, Value: body, Cas: &oldCas})
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	return pb.GetString(r.Cas), nil
+	return pb.GetInt64(r.Cas), nil
 }
 
 
@@ -406,17 +406,17 @@ func (cl *Client) Set(path, oldCas string, body []byte) (newCas string, err os.E
 // If snapId is 0, uses the current state, otherwise,
 // snapId must be a value previously returned from Snap.
 // If path does not denote a file, returns an error.
-func (cl *Client) Get(path string, snapId int32) (body []byte, cas string, err os.Error) {
+func (cl *Client) Get(path string, snapId int32) (body []byte, cas int64, err os.Error) {
 	r, err := cl.call(proto.Request_GET, &T{Path: &path, Id: &snapId})
 	if err != nil {
-		return nil, "", err
+		return nil, 0, err
 	}
 
-	return r.Value, pb.GetString(r.Cas), nil
+	return r.Value, pb.GetInt64(r.Cas), nil
 }
 
 
-func (cl *Client) Del(path, cas string) os.Error {
+func (cl *Client) Del(path string, cas int64) os.Error {
 	_, err := cl.call(proto.Request_DEL, &T{Path: &path, Cas: &cas})
 	return err
 }
@@ -428,13 +428,13 @@ func (cl *Client) Noop() os.Error {
 }
 
 
-func (cl *Client) Checkin(id, cas string) (string, os.Error) {
+func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
 	r, err := cl.call(proto.Request_CHECKIN, &T{Path: &id, Cas: &cas})
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
-	return pb.GetString(r.Cas), nil
+	return pb.GetInt64(r.Cas), nil
 }
 
 
@@ -476,7 +476,7 @@ func (cl *Client) events(verb int32, glob string) (*Watch, os.Error) {
 			if err := r.err(); err != nil {
 				ev.Err = err
 			} else {
-				ev.Cas = pb.GetString(r.Cas)
+				ev.Cas = pb.GetInt64(r.Cas)
 				ev.Path = pb.GetString(r.Path)
 				ev.Body = r.Value
 			}

@@ -9,7 +9,7 @@ import (
 )
 
 type Setter interface {
-	Set(path, oldCas string, body []byte) (newCas string, err os.Error)
+	Set(path string, oldCas int64, body []byte) (newCas int64, err os.Error)
 }
 
 func Pulse(node string, seqns <-chan int64, s Setter, sleep int64) {

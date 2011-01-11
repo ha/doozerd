@@ -10,7 +10,7 @@ import (
 )
 
 func TestNodeApplySet(t *testing.T) {
-	k, v, seqn, cas := "x", "a", int64(1), "1"
+	k, v, seqn, cas := "x", "a", int64(1), int64(1)
 	p := "/" + k
 	m := MustEncodeSet(p, v, Clobber)
 	n, e, b := emptyDir.apply(seqn, m)
@@ -21,7 +21,7 @@ func TestNodeApplySet(t *testing.T) {
 }
 
 func TestNodeApplyDel(t *testing.T) {
-	k, seqn, cas := "x", int64(1), "1"
+	k, seqn, cas := "x", int64(1), int64(1)
 	r := node{"", Dir, map[string]node{k: {"a", cas, nil}}}
 	p := "/" + k
 	m := MustEncodeDel(p, cas)
@@ -37,11 +37,11 @@ func TestNodeApplyNop(t *testing.T) {
 	n, e, b := emptyDir.apply(seqn, m)
 	assert.Equal(t, false, b)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{seqn, "/", "", "", m, nil, n}, e)
+	assert.Equal(t, Event{seqn, "/", "", dummy, m, nil, n}, e)
 }
 
 func TestNodeApplyBadMutation(t *testing.T) {
-	seqn, cas := int64(1), "1"
+	seqn, cas := int64(1), int64(1)
 	m := BadMutations[0]
 	n, e, b := emptyDir.apply(seqn, m)
 	assert.Equal(t, false, b)
@@ -51,7 +51,7 @@ func TestNodeApplyBadMutation(t *testing.T) {
 }
 
 func TestNodeApplyBadInstruction(t *testing.T) {
-	seqn, cas := int64(1), "1"
+	seqn, cas := int64(1), int64(1)
 	m := BadInstructions[0]
 	n, e, b := emptyDir.apply(seqn, m)
 	assert.Equal(t, false, b)
@@ -62,9 +62,9 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 }
 
 func TestNodeApplyCasMismatch(t *testing.T) {
-	k, v, seqn, cas := "x", "a", int64(1), "1"
+	k, v, seqn, cas := "x", "a", int64(1), int64(1)
 	p := "/" + k
-	m := MustEncodeSet(p, v, "123")
+	m := MustEncodeSet(p, v, 123)
 	n, e, _ := emptyDir.apply(seqn, m)
 	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrCasMismatch.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
@@ -82,9 +82,9 @@ func TestNodeSnapshotApply(t *testing.T) {
 
 	n, e, b := emptyDir.apply(1, m)
 	assert.Equal(t, true, b)
-	exp := node{"", Dir, map[string]node{"x": {"b", "2", nil}}}
+	exp := node{"", Dir, map[string]node{"x": {"b", 2, nil}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, "", "", "", m, nil, n}, e)
+	assert.Equal(t, Event{2, "", "", dummy, m, nil, n}, e)
 }
 
 func TestNodeSnapshotBad(t *testing.T) {
@@ -101,7 +101,7 @@ func TestNodeSnapshotBad(t *testing.T) {
 	n, e, b := emptyDir.apply(1, m)
 	assert.Equal(t, true, b)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{1, "", "", "", m, io.ErrUnexpectedEOF, n}, e)
+	assert.Equal(t, Event{1, "", "", dummy, m, io.ErrUnexpectedEOF, n}, e)
 }
 
 func TestNodeNotADirectory(t *testing.T) {
@@ -110,7 +110,7 @@ func TestNodeNotADirectory(t *testing.T) {
 	n, e, _ := r.apply(2, m)
 	exp, _, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR, n}, e)
+	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), 2, m, os.ENOTDIR, n}, e)
 }
 
 func TestNodeNotADirectoryDeeper(t *testing.T) {
@@ -119,7 +119,7 @@ func TestNodeNotADirectoryDeeper(t *testing.T) {
 	n, e, _ := r.apply(2, m)
 	exp, _, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), "2", m, os.ENOTDIR, n}, e)
+	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), 2, m, os.ENOTDIR, n}, e)
 }
 
 func TestNodeIsADirectory(t *testing.T) {
@@ -128,5 +128,5 @@ func TestNodeIsADirectory(t *testing.T) {
 	n, e, _ := r.apply(2, m)
 	exp, _, _ := r.apply(2, MustEncodeSet("/store/error", os.EISDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, ErrorPath, os.EISDIR.String(), "2", m, os.EISDIR, n}, e)
+	assert.Equal(t, Event{2, ErrorPath, os.EISDIR.String(), 2, m, os.EISDIR, n}, e)
 }

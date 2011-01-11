@@ -5,7 +5,6 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"net"
-	"strconv"
 	"testing"
 )
 
@@ -81,13 +80,11 @@ func TestDoozerSnap(t *testing.T) {
 
 	cas1, err := cl.Set("/x", store.Missing, []byte{'a'})
 	assert.Equal(t, nil, err)
-	ver1, err := strconv.Atoi64(cas1)
-	assert.Equal(t, nil, err)
 
 	sid, ver, err := cl.Snap()
 	assert.Equal(t, nil, err)
 	assert.Equal(t, int32(1), sid)
-	assert.T(t, ver >= ver1)
+	assert.T(t, ver >= cas1)
 
 	v, cas, err := cl.Get("/x", sid) // Use the snapshot.
 	assert.Equal(t, nil, err)
@@ -112,7 +109,7 @@ func TestDoozerSnap(t *testing.T) {
 
 	v, cas, err = cl.Get("/x", sid) // Use the missing snapshot.
 	assert.Equal(t, client.ErrInvalidSnap, err)
-	assert.Equal(t, "", cas)
+	assert.Equal(t, int64(0), cas)
 	assert.Equal(t, []byte{}, v)
 }
 
@@ -131,13 +128,13 @@ func TestDoozerWatchSimple(t *testing.T) {
 	assert.Equal(t, nil, err, err)
 	defer w.Cancel()
 
-	cl.Set("/test/foo", "", []byte("bar"))
+	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	ev := <-w.C
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
 	assert.NotEqual(t, "", ev.Cas)
 
-	cl.Set("/test/fun", "", []byte("house"))
+	cl.Set("/test/fun", store.Clobber, []byte("house"))
 	ev = <-w.C
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
@@ -159,8 +156,8 @@ func TestDoozerWalk(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	cl.Set("/test/foo", "", []byte("bar"))
-	cl.Set("/test/fun", "", []byte("house"))
+	cl.Set("/test/foo", store.Clobber, []byte("bar"))
+	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
 	w, err := cl.Walk("/test/**")
 	assert.Equal(t, nil, err, err)

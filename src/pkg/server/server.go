@@ -129,7 +129,7 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 func (sv *Server) cals() []string {
 	cals := make([]string, 0)
 	_, g := sv.St.Snap()
-	store.Walk(g, slots, func(_, body, _ string) bool {
+	store.Walk(g, slots, func(_, body string, _ int64) bool {
 		if len(body) > 0 {
 			cals = append(cals, body)
 		}
@@ -401,7 +401,7 @@ func (c *conn) checkin(t *T) *R {
 		deadline := time.Nanoseconds() + sessionLease
 		body := strconv.Itoa64(deadline)
 		sess := pb.GetString(t.Path)
-		cas := pb.GetString(t.Cas)
+		cas := pb.GetInt64(t.Cas)
 		_, cas, err := paxos.Set(c.s.Mg, "/session/"+sess, body, cas, cancel)
 		if err == paxos.ErrCancel {
 			return nil
@@ -498,7 +498,7 @@ func (c *conn) walk(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		stop := store.Walk(c.s.St, glob, func(path, body, cas string) (b bool) {
+		stop := store.Walk(c.s.St, glob, func(path, body string, cas int64) (b bool) {
 			if cancel != nil {
 				if _, b = <-cancel; b {
 					return
