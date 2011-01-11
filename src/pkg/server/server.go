@@ -311,7 +311,10 @@ func (c *conn) set(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas)
+		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas, cancel)
+		if err == paxos.ErrCancel {
+			return nil
+		}
 		if err != nil {
 			return errResponse(err)
 		}
@@ -327,7 +330,10 @@ func (c *conn) del(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		err := paxos.Del(c.s.Mg, *t.Path, *t.Cas)
+		err := paxos.Del(c.s.Mg, *t.Path, *t.Cas, cancel)
+		if err == paxos.ErrCancel {
+			return nil
+		}
 		if err != nil {
 			return errResponse(err)
 		}
@@ -359,7 +365,10 @@ func (c *conn) join(t *T) *R {
 
 	return c.cancellable(t, func(cancel chan bool) *R {
 		key := "/doozer/members/" + pb.GetString(t.Path)
-		seqn, _, err := paxos.Set(c.s.Mg, key, string(t.Value), store.Missing)
+		seqn, _, err := paxos.Set(c.s.Mg, key, string(t.Value), store.Missing, cancel)
+		if err == paxos.ErrCancel {
+			return nil
+		}
 		if err != nil {
 			return errResponse(err)
 		}
@@ -384,12 +393,19 @@ func (c *conn) checkin(t *T) *R {
 		body := strconv.Itoa64(time.Nanoseconds() + sessionLease)
 		sess := pb.GetString(t.Path)
 		cas := pb.GetString(t.Cas)
-		_, cas, err := paxos.Set(c.s.Mg, "/session/"+sess, body, cas)
+		_, cas, err := paxos.Set(c.s.Mg, "/session/"+sess, body, cas, cancel)
+		if err == paxos.ErrCancel {
+			return nil
+		}
 		if err != nil {
 			return errResponse(err)
 		}
 
-		time.Sleep(sessionLease - sessionPad)
+		select {
+		case <-time.After(sessionLease - sessionPad):
+		case <-cancel:
+			return nil
+		}
 		return &R{Cas: &cas}
 	})
 }

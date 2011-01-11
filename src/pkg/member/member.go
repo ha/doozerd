@@ -35,7 +35,7 @@ func Clean(st *store.Store, p paxos.Proposer) {
 func clearSlot(p paxos.Proposer, g store.Getter, name string) {
 	store.Walk(g, slots, func(path, body, cas string) {
 		if body == name {
-			paxos.Set(p, path, "", cas)
+			paxos.Set(p, path, "", cas, nil)
 		}
 	})
 }
@@ -44,7 +44,7 @@ func removeMember(p paxos.Proposer, g store.Getter, name string) {
 	k := "/doozer/members/" + name
 	_, cas := g.Get(k)
 	if cas != store.Missing {
-		paxos.Del(p, k, cas)
+		paxos.Del(p, k, cas, nil)
 	}
 }
 
@@ -55,6 +55,6 @@ func removeInfo(p paxos.Proposer, g store.Getter, name string) {
 		return
 	}
 	store.Walk(g, glob, func(path, _, cas string) {
-		paxos.Del(p, path, cas)
+		paxos.Del(p, path, cas, nil)
 	})
 }

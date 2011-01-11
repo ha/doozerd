@@ -25,7 +25,7 @@ func Clean(st *store.Store, pp paxos.Proposer) {
 
 		store.Walk(ev, locks, func(path, body, cas string) {
 			if body == name {
-				paxos.Del(pp, path, cas)
+				paxos.Del(pp, path, cas, nil)
 			}
 		})
 	}
