@@ -243,7 +243,9 @@ func (c *conn) cancel(tag int32) os.Error {
 	}
 	c.cblk.Unlock()
 
-	close(ch)
+	if ok {
+		close(ch)
+	}
 	return nil
 }
 

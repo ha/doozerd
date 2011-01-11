@@ -143,6 +143,10 @@ func TestDoozerWatchSimple(t *testing.T) {
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
 	assert.NotEqual(t, "", ev.Cas)
+
+	w.Cancel()
+	ev = <-w.C
+	assert.Tf(t, closed(w.C), "got %v", ev)
 }
 
 
