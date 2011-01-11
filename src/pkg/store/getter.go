@@ -1,5 +1,9 @@
 package store
 
+import (
+	"sort"
+)
+
 type Getter interface {
 	Get(path string) (values []string, cas string)
 }
@@ -51,6 +55,7 @@ func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
 		path = ""
 	}
 
+	sort.SortStrings(v)
 	for _, ent := range v {
 		stopped = walk(g, path+"/"+ent, glob, f)
 		if stopped {
@@ -60,7 +65,11 @@ func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
 	return
 }
 
-// If f returns true, Walk will stop and return true.
+// Walk walks the entries in g, calling f for each file that matches glob.
+// Entries are visited in sorted order.
+// If f returns true, Walk will stop visiting entries and return immediately;
+// Walk won't call f again.
+// Walk returns true if f returned true.
 func Walk(g Getter, glob *Glob, f Visitor) (stopped bool) {
 	// TODO find the longest non-glob prefix of glob.Pattern and start there
 	return walk(g, "/", glob, f)

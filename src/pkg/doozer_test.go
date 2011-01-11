@@ -5,7 +5,6 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"net"
-	"sort"
 	"strconv"
 	"testing"
 )
@@ -166,22 +165,19 @@ func TestDoozerWalk(t *testing.T) {
 	w, err := cl.Walk("/test/**")
 	assert.Equal(t, nil, err, err)
 
-	var paths []string
-	var bodys []string
-	for i := 0; i < 2; i++ {
-		ev := <-w.C
-		assert.NotEqual(t, (*client.Event)(nil), ev)
-		assert.NotEqual(t, "", ev.Cas)
-		paths = append(paths, ev.Path)
-		bodys = append(bodys, string(ev.Body))
-	}
-	sort.SortStrings(paths)
-	sort.SortStrings(bodys)
-
-	assert.Equal(t, []string{"/test/foo", "/test/fun"}, paths)
-	assert.Equal(t, []string{"bar", "house"}, bodys)
-
 	ev := <-w.C
+	assert.NotEqual(t, (*client.Event)(nil), ev)
+	assert.Equal(t, "/test/foo", ev.Path)
+	assert.Equal(t, "bar", string(ev.Body))
+	assert.NotEqual(t, "", ev.Cas)
+
+	ev = <-w.C
+	assert.NotEqual(t, (*client.Event)(nil), ev)
+	assert.Equal(t, "/test/fun", ev.Path)
+	assert.Equal(t, "house", string(ev.Body))
+	assert.NotEqual(t, "", ev.Cas)
+
+	ev = <-w.C
 	assert.Tf(t, closed(w.C), "got %v", ev)
 }
 

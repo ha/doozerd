@@ -2,6 +2,7 @@ package store
 
 import (
 	"github.com/bmizerany/assert"
+	"sort"
 	"testing"
 )
 
@@ -49,6 +50,11 @@ func TestWalk(t *testing.T) {
 		"/d/y":   "2",
 		"/d/z/a": "3",
 	}
+	var expPaths []string
+	for p, _ := range exp {
+		expPaths = append(expPaths, p)
+	}
+	sort.SortStrings(expPaths)
 
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/d/x", "1", Clobber)}
@@ -58,14 +64,16 @@ func TestWalk(t *testing.T) {
 	st.Ops <- Op{5, MustEncodeSet("/n", "", Clobber)}
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
-	Walk(st, glob, func(path, body, cas string) bool {
-		expBody, ok := exp[path]
-		assert.T(t, ok)
-		exp[path] = "", false
-		assert.Equal(t, expBody, body)
+	var c int
+	b := Walk(st, glob, func(path, body, cas string) bool {
+		assert.Equal(t, expPaths[0], path)
+		assert.Equal(t, exp[path], body)
+		c++
+		expPaths = expPaths[1:]
 		return false
 	})
-	assert.Equal(t, 0, len(exp))
+	assert.Equal(t, false, b)
+	assert.Equal(t, 3, c)
 }
 
 func TestWalkStop(t *testing.T) {
@@ -74,6 +82,11 @@ func TestWalkStop(t *testing.T) {
 		"/d/y":   "2",
 		"/d/z/a": "3",
 	}
+	var expPaths []string
+	for p, _ := range exp {
+		expPaths = append(expPaths, p)
+	}
+	sort.SortStrings(expPaths)
 
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/d/x", "1", Clobber)}
@@ -83,12 +96,14 @@ func TestWalkStop(t *testing.T) {
 	st.Ops <- Op{5, MustEncodeSet("/n", "", Clobber)}
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
-	Walk(st, glob, func(path, body, cas string) bool {
-		expBody, ok := exp[path]
-		assert.T(t, ok)
-		exp[path] = "", false
-		assert.Equal(t, expBody, body)
+	var c int
+	b := Walk(st, glob, func(path, body, cas string) bool {
+		assert.Equal(t, expPaths[0], path)
+		assert.Equal(t, exp[path], body)
+		c++
+		expPaths = expPaths[1:]
 		return true
 	})
-	assert.Equal(t, 2, len(exp))
+	assert.Equal(t, true, b)
+	assert.Equal(t, 1, c)
 }
