@@ -33,10 +33,11 @@ func Clean(st *store.Store, p paxos.Proposer) {
 }
 
 func clearSlot(p paxos.Proposer, g store.Getter, name string) {
-	store.Walk(g, slots, func(path, body, cas string) {
+	store.Walk(g, slots, func(path, body, cas string) bool {
 		if body == name {
 			paxos.Set(p, path, "", cas, nil)
 		}
+		return false
 	})
 }
 
@@ -54,7 +55,8 @@ func removeInfo(p paxos.Proposer, g store.Getter, name string) {
 		logger.Println(err)
 		return
 	}
-	store.Walk(g, glob, func(path, _, cas string) {
+	store.Walk(g, glob, func(path, _, cas string) bool {
 		paxos.Del(p, path, cas, nil)
+		return false
 	})
 }

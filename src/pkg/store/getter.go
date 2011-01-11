@@ -35,13 +35,12 @@ func GetDir(g Getter, path string) (entries []string) {
 	return v
 }
 
-type Visitor func(path, body, cas string)
+type Visitor func(path, body, cas string) (stop bool)
 
-func walk(g Getter, path string, glob *Glob, f Visitor) {
+func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
 	v, cas := g.Get(path)
 	if cas != Dir && glob.Match(path) {
-		f(path, v[0], cas)
-		return
+		return f(path, v[0], cas)
 	}
 
 	if cas == Missing {
@@ -53,11 +52,16 @@ func walk(g Getter, path string, glob *Glob, f Visitor) {
 	}
 
 	for _, ent := range v {
-		walk(g, path+"/"+ent, glob, f)
+		stopped = walk(g, path+"/"+ent, glob, f)
+		if stopped {
+			return
+		}
 	}
+	return
 }
 
-func Walk(g Getter, glob *Glob, f Visitor) {
+// If f returns true, Walk will stop and return true.
+func Walk(g Getter, glob *Glob, f Visitor) (stopped bool) {
 	// TODO find the longest non-glob prefix of glob.Pattern and start there
-	walk(g, "/", glob, f)
+	return walk(g, "/", glob, f)
 }

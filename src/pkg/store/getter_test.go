@@ -58,11 +58,37 @@ func TestWalk(t *testing.T) {
 	st.Ops <- Op{5, MustEncodeSet("/n", "", Clobber)}
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
-	Walk(st, glob, func(path, body, cas string) {
+	Walk(st, glob, func(path, body, cas string) bool {
 		expBody, ok := exp[path]
 		assert.T(t, ok)
 		exp[path] = "", false
 		assert.Equal(t, expBody, body)
+		return false
 	})
 	assert.Equal(t, 0, len(exp))
+}
+
+func TestWalkStop(t *testing.T) {
+	exp := map[string]string{
+		"/d/x":   "1",
+		"/d/y":   "2",
+		"/d/z/a": "3",
+	}
+
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/d/x", "1", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/d/y", "2", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/d/z/a", "3", Clobber)}
+	st.Ops <- Op{4, MustEncodeSet("/m/y", "", Clobber)}
+	st.Ops <- Op{5, MustEncodeSet("/n", "", Clobber)}
+	glob, err := CompileGlob("/d/**")
+	assert.Equal(t, nil, err)
+	Walk(st, glob, func(path, body, cas string) bool {
+		expBody, ok := exp[path]
+		assert.T(t, ok)
+		exp[path] = "", false
+		assert.Equal(t, expBody, body)
+		return true
+	})
+	assert.Equal(t, 2, len(exp))
 }

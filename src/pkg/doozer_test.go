@@ -5,7 +5,7 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"net"
-	//"sort"
+	"sort"
 	"strconv"
 	"testing"
 )
@@ -146,6 +146,42 @@ func TestDoozerWatchSimple(t *testing.T) {
 
 	w.Cancel()
 	ev = <-w.C
+	assert.Tf(t, closed(w.C), "got %v", ev)
+}
+
+
+func TestDoozerWalk(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl := client.New("foo", l.Addr().String())
+
+	cl.Set("/test/foo", "", []byte("bar"))
+	cl.Set("/test/fun", "", []byte("house"))
+
+	w, err := cl.Walk("/test/**")
+	assert.Equal(t, nil, err, err)
+
+	var paths []string
+	var bodys []string
+	for i := 0; i < 2; i++ {
+		ev := <-w.C
+		assert.NotEqual(t, (*client.Event)(nil), ev)
+		assert.NotEqual(t, "", ev.Cas)
+		paths = append(paths, ev.Path)
+		bodys = append(bodys, string(ev.Body))
+	}
+	sort.SortStrings(paths)
+	sort.SortStrings(bodys)
+
+	assert.Equal(t, []string{"/test/foo", "/test/fun"}, paths)
+	assert.Equal(t, []string{"bar", "house"}, bodys)
+
+	ev := <-w.C
 	assert.Tf(t, closed(w.C), "got %v", ev)
 }
 

@@ -454,14 +454,14 @@ func (cl *Client) DelSnap(id int32) os.Error {
 }
 
 
-func (cl *Client) Watch(glob string) (*Watch, os.Error) {
+func (cl *Client) events(verb int32, glob string) (*Watch, os.Error) {
 	c, err := cl.conn()
 	if err != nil {
 		return nil, err
 	}
 
 	var t T
-	t.Verb = proto.NewRequest_Verb(proto.Request_WATCH)
+	t.Verb = proto.NewRequest_Verb(verb)
 	t.Path = &glob
 	ch, err := c.send(&t)
 	if err != nil {
@@ -486,6 +486,16 @@ func (cl *Client) Watch(glob string) (*Watch, os.Error) {
 	}()
 
 	return w, nil
+}
+
+
+func (cl *Client) Watch(glob string) (*Watch, os.Error) {
+	return cl.events(proto.Request_WATCH, glob)
+}
+
+
+func (cl *Client) Walk(glob string) (*Watch, os.Error) {
+	return cl.events(proto.Request_WALK, glob)
 }
 
 

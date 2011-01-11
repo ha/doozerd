@@ -129,10 +129,11 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 func (sv *Server) cals() []string {
 	cals := make([]string, 0)
 	_, g := sv.St.Snap()
-	store.Walk(g, slots, func(_, body, _ string) {
+	store.Walk(g, slots, func(_, body, _ string) bool {
 		if len(body) > 0 {
 			cals = append(cals, body)
 		}
+		return false
 	})
 	return cals
 }
@@ -276,19 +277,26 @@ func (c *conn) redirect() *R {
 }
 
 
-func (c *conn) get(t *T) *R {
-	var g store.Getter
-	id := pb.GetInt32(t.Id)
+func (c *conn) getSnap(id int32) (g store.Getter) {
 	if id == 0 {
-		g = c.s.St
-	} else {
-		var ok bool
-		c.slk.RLock()
-		g, ok = c.snaps[id]
-		c.slk.RUnlock()
-		if !ok {
-			return badSnap
-		}
+		return c.s.St
+	}
+
+	var ok bool
+	c.slk.RLock()
+	g, ok = c.snaps[id]
+	c.slk.RUnlock()
+	if !ok {
+		return nil
+	}
+	return g
+}
+
+
+func (c *conn) get(t *T) *R {
+	g := c.getSnap(pb.GetInt32(t.Id))
+	if g == nil {
+		return badSnap
 	}
 
 	v, cas := g.Get(pb.GetString(t.Path))
@@ -477,6 +485,48 @@ func (c *conn) watch(t *T) *R {
 }
 
 
+func (c *conn) walk(t *T) *R {
+	pat := pb.GetString(t.Path)
+	glob, err := store.CompileGlob(pat)
+	if err != nil {
+		return errResponse(err)
+	}
+
+	g := c.getSnap(pb.GetInt32(t.Id))
+	if g == nil {
+		return badSnap
+	}
+
+	return c.cancellable(t, func(cancel chan bool) *R {
+		stop := store.Walk(c.s.St, glob, func(path, body, cas string) (b bool) {
+			if cancel != nil {
+				if _, b = <-cancel; b {
+					return
+				}
+			}
+			var r R
+			r.Path = &path
+			r.Value = []byte(body)
+			r.Cas = &cas
+			err := c.respond(t, Valid, &r)
+			if err != nil {
+				// TODO log error
+				b = true
+			}
+			return
+		})
+
+		if !stop {
+			err = c.respond(t, Done, &R{})
+			if err != nil {
+				// TODO log error
+			}
+		}
+		return nil
+	})
+}
+
+
 func (c *conn) snap(t *T) *R {
 	ver, g := c.s.St.Snap()
 
@@ -512,6 +562,7 @@ var ops = map[int32] func(*conn, *T) *R {
 	proto.Request_SET:     (*conn).set,
 	proto.Request_SNAP:    (*conn).snap,
 	proto.Request_WATCH:   (*conn).watch,
+	proto.Request_WALK:    (*conn).walk,
 	proto.Request_JOIN:    (*conn).join,
 	proto.Request_CHECKIN: (*conn).checkin,
 }

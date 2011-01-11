@@ -23,10 +23,11 @@ func Clean(st *store.Store, pp paxos.Proposer) {
 		name := parts[2]
 		logger.Printf("lost session %s", name)
 
-		store.Walk(ev, locks, func(path, body, cas string) {
+		store.Walk(ev, locks, func(path, body, cas string) bool {
 			if body == name {
 				paxos.Del(pp, path, cas, nil)
 			}
+			return false
 		})
 	}
 }
