@@ -390,7 +390,8 @@ func (c *conn) checkin(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		body := strconv.Itoa64(time.Nanoseconds() + sessionLease)
+		deadline := time.Nanoseconds() + sessionLease
+		body := strconv.Itoa64(deadline)
 		sess := pb.GetString(t.Path)
 		cas := pb.GetString(t.Cas)
 		_, cas, err := paxos.Set(c.s.Mg, "/session/"+sess, body, cas, cancel)
@@ -402,7 +403,7 @@ func (c *conn) checkin(t *T) *R {
 		}
 
 		select {
-		case <-time.After(sessionLease - sessionPad):
+		case <-time.After(deadline - sessionPad - time.Nanoseconds()):
 		case <-cancel:
 			return nil
 		}
