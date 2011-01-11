@@ -37,6 +37,14 @@ func (o OtherError) String() string {
 }
 
 
+type Event struct {
+	Cas  string
+	Path string
+	Body []byte
+	Err  os.Error
+}
+
+
 type T proto.Request
 
 type R proto.Response
@@ -218,6 +226,25 @@ func (c *conn) readResponses() {
 			}
 		}
 	}
+}
+
+
+func (c *conn) cancel(tag int32) os.Error {
+	verb := proto.NewRequest_Verb(proto.Request_CANCEL)
+	_, err := c.call(&T{Verb: verb, Id: &tag})
+	if err != nil {
+		return err
+	}
+
+	c.cblk.Lock()
+	ch, ok := c.cb[tag]
+	if ok {
+		c.cb[tag] = nil, false
+	}
+	c.cblk.Unlock()
+
+	close(ch)
+	return nil
 }
 
 
@@ -425,15 +452,7 @@ func (cl *Client) DelSnap(id int32) os.Error {
 }
 
 
-type Event struct {
-	Cas  string
-	Path string
-	Body []byte
-	Err  os.Error
-}
-
-
-func (cl *Client) Watch(glob string) (<-chan *Event, os.Error) {
+func (cl *Client) Watch(glob string) (*Watch, os.Error) {
 	c, err := cl.conn()
 	if err != nil {
 		return nil, err
@@ -448,6 +467,7 @@ func (cl *Client) Watch(glob string) (<-chan *Event, os.Error) {
 	}
 
 	evs := make(chan *Event)
+	w := &Watch{evs, c, *t.Tag}
 	go func() {
 		for r := range ch {
 			var ev Event
@@ -463,5 +483,17 @@ func (cl *Client) Watch(glob string) (<-chan *Event, os.Error) {
 		close(evs)
 	}()
 
-	return evs, nil
+	return w, nil
+}
+
+
+type Watch struct {
+	C   <-chan *Event // to caller
+	c   *conn
+	tag int32
+}
+
+
+func (w *Watch) Cancel() os.Error {
+	return w.c.cancel(w.tag)
 }

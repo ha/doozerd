@@ -128,18 +128,18 @@ func TestDoozerWatchSimple(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ch, err := cl.Watch("/test/**")
+	w, err := cl.Watch("/test/**")
 	assert.Equal(t, nil, err, err)
-	defer close(ch)
+	defer w.Cancel()
 
 	cl.Set("/test/foo", "", []byte("bar"))
-	ev := <-ch
+	ev := <-w.C
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
 	assert.NotEqual(t, "", ev.Cas)
 
 	cl.Set("/test/fun", "", []byte("house"))
-	ev = <-ch
+	ev = <-w.C
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
 	assert.NotEqual(t, "", ev.Cas)
