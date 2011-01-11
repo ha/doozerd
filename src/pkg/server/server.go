@@ -197,20 +197,19 @@ func (c *conn) makeCancel(t *T) chan bool {
 }
 
 
-func (c *conn) cancellable(t *T, f func() *R) *R {
+func (c *conn) cancellable(t *T, f func(chan bool) *R) *R {
 	ch := make(chan *R, 1)
 	cancel := c.makeCancel(t)
 	if cancel == nil {
 		return tagInUse
 	}
 
-	go func() { ch <- f() }()
+	go func() { ch <- f(cancel) }()
 
 	go func() {
-		select {
-		case r := <-ch:
+		r := <-ch
+		if r != nil {
 			c.respond(t, Valid|Done, r)
-		case <-cancel:
 		}
 	}()
 
@@ -311,7 +310,7 @@ func (c *conn) set(t *T) *R {
 		return c.redirect()
 	}
 
-	return c.cancellable(t, func() *R {
+	return c.cancellable(t, func(cancel chan bool) *R {
 		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas)
 		if err != nil {
 			return errResponse(err)
@@ -327,7 +326,7 @@ func (c *conn) del(t *T) *R {
 		return c.redirect()
 	}
 
-	return c.cancellable(t, func() *R {
+	return c.cancellable(t, func(cancel chan bool) *R {
 		err := paxos.Del(c.s.Mg, *t.Path, *t.Cas)
 		if err != nil {
 			return errResponse(err)
@@ -343,8 +342,11 @@ func (c *conn) noop(t *T) *R {
 		return c.redirect()
 	}
 
-	return c.cancellable(t, func() *R {
-		c.s.Mg.ProposeOnce(store.Nop, nil)
+	return c.cancellable(t, func(cancel chan bool) *R {
+		ev := c.s.Mg.ProposeOnce(store.Nop, cancel)
+		if ev.Err == paxos.ErrCancel {
+			return nil
+		}
 		return &R{}
 	})
 }
@@ -355,7 +357,7 @@ func (c *conn) join(t *T) *R {
 		return c.redirect()
 	}
 
-	return c.cancellable(t, func() *R {
+	return c.cancellable(t, func(cancel chan bool) *R {
 		key := "/doozer/members/" + pb.GetString(t.Path)
 		seqn, _, err := paxos.Set(c.s.Mg, key, string(t.Value), store.Missing)
 		if err != nil {
@@ -378,7 +380,7 @@ func (c *conn) checkin(t *T) *R {
 		return c.redirect()
 	}
 
-	return c.cancellable(t, func() *R {
+	return c.cancellable(t, func(cancel chan bool) *R {
 		body := strconv.Itoa64(time.Nanoseconds() + sessionLease)
 		sess := pb.GetString(t.Path)
 		cas := pb.GetString(t.Cas)
