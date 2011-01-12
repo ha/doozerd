@@ -47,7 +47,7 @@ message Response {
 
   enum Err {
     // don't use value 0
-    OTHER        = 255;
+    OTHER        = 127;
     TAG_IN_USE   = 1;
     UNKNOWN_VERB = 2;
     REDIRECT     = 3;
