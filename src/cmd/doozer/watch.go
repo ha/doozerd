@@ -11,6 +11,12 @@ func init() {
 	cmds["watch"] = cmd{watch, "<glob>", "get notified of changes"}
 	cmdHelp["watch"] = `Prints changes to each file matching <glob>.
 
+Rules for <glob> pattern-matching:
+ - '?' matches a single char in a single path component
+ - '*' matches zero or more chars in a single path component
+ - '**' matches zero or more chars in zero or more components
+ - any other sequence matches itself
+
 Output is a sequence of records, one for each change. Format of each record:
 
   <path> <cas> <len> LF <body> LF
