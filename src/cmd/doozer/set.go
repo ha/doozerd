@@ -9,10 +9,8 @@ import (
 
 
 func init() {
-	cmds["set"] = cmd{set, "write a file"}
-	cmdHelp["set"] = `set [options] <path> <cas>
-
-Sets the body of the file at <path>.
+	cmds["set"] = cmd{set, "<path> <cas>", "write a file"}
+	cmdHelp["set"] = `Sets the body of the file at <path>.
 
 The body is read from stdin. If <cas> does not match the existing CAS token of
 the file, no change will be made.

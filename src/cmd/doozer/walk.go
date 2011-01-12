@@ -8,10 +8,8 @@ import (
 
 
 func init() {
-	cmds["walk"] = cmd{walk, "read many files"}
-	cmdHelp["walk"] = `walk [options] <glob>
-
-Prints the path, CAS token, and body of each file matching <glob>.
+	cmds["walk"] = cmd{walk, "<glob>", "read many files"}
+	cmdHelp["walk"] = `Prints the path, CAS token, and body of each file matching <glob>.
 
 Prints a sequence of records, one for each file. Format of each record:
 

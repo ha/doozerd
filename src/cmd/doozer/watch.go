@@ -8,13 +8,10 @@ import (
 
 
 func init() {
-	cmds["watch"] = cmd{watch, "get notified of changes"}
-	cmdHelp["watch"] = `watch [options] <glob>
+	cmds["watch"] = cmd{watch, "<glob>", "get notified of changes"}
+	cmdHelp["watch"] = `Prints changes to each file matching <glob>.
 
-Prints the path, CAS token, and body of each change to each file matching
-<glob>.
-
-Prints a sequence of records, one for each change. Format of each record:
+Output is a sequence of records, one for each change. Format of each record:
 
   <path> <cas> <len> LF <body> LF
 

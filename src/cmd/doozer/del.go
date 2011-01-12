@@ -6,10 +6,8 @@ import (
 
 
 func init() {
-	cmds["del"] = cmd{del, "delete a file"}
-	cmdHelp["del"] = `del [options] <path> <cas>
-
-Deletes the file at <path>.
+	cmds["del"] = cmd{del, "<path> <cas>", "delete a file"}
+	cmdHelp["del"] = `Deletes the file at <path>.
 
 If <cas> does not match the existing CAS token of the file,
 no change will be made.

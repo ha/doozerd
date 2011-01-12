@@ -4,13 +4,12 @@ import "fmt"
 
 
 func init() {
-	cmds["help"] = cmd{help, "provide detailed help on a command"}
-	cmdHelp["help"] = `help [options] <command>
-`
+	cmds["help"] = cmd{help, "<command>", "provide detailed help on a command"}
 }
 
 
 func help(command string) {
-	fmt.Printf("Use: %s [options] ", self)
+	c := cmds[command]
+	fmt.Printf("Use: %s [options] %s [options] %s\n\n", self, command, c.a)
 	fmt.Print(cmdHelp[command])
 }

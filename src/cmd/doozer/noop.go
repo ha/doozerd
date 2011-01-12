@@ -6,10 +6,8 @@ import (
 
 
 func init() {
-	cmds["noop"] = cmd{noop, "consensus"}
-	cmdHelp["noop"] = `noop [options]
-
-Performs a consensus operation.
+	cmds["noop"] = cmd{noop, "", "consensus"}
+	cmdHelp["noop"] = `Performs a consensus operation.
 
 No change will be made to the data store.
 `

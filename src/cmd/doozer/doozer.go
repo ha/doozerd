@@ -1,8 +1,6 @@
 package main
 
 import (
-	"debug/elf"
-	"debug/gosym"
 	"doozer/client"
 	"doozer/proto"
 	"flag"
@@ -21,7 +19,8 @@ var (
 
 type cmd struct {
 	f interface{}
-	d string
+	a string // args
+	d string // short description
 }
 
 var (
@@ -75,12 +74,11 @@ func Usage() {
 	}
 
 	fmt.Fprint(os.Stderr, usage2)
-	tab := getSymtab()
 	var max int
 	var names []string
 	us := make(map[string]string)
 	for k := range cmds {
-		u := k + " " + getUsage(tab, k)
+		u := k + " " + cmds[k].a
 		if len(u) > max {
 			max = len(u)
 		}
@@ -92,45 +90,6 @@ func Usage() {
 		fmt.Fprintf(os.Stderr, "  %-*s - %s\n", max, us[k], cmds[k].d)
 	}
 
-}
-
-
-func getUsage(tab *gosym.Table, k string) string {
-	if tab == nil {
-		return ""
-	}
-	var a []string
-	h := tab.LookupFunc("main." + k)
-	for _, p := range h.Params {
-		a = append(a, "<"+p.BaseName()+">")
-	}
-	return strings.Join(a, " ")
-}
-
-
-func getSymtab() *gosym.Table {
-	f, err := elf.Open("/proc/self/exe")
-	if err != nil {
-		return nil
-	}
-
-	symdat, err := f.Section(".gosymtab").Data()
-	if err != nil {
-		return nil
-	}
-
-	pclndat, err := f.Section(".gopclntab").Data()
-	if err != nil {
-		return nil
-	}
-
-	pcln := gosym.NewLineTable(pclndat, f.Section(".text").Addr)
-	tab, err := gosym.NewTable(symdat, pcln)
-	if err != nil {
-		return nil
-	}
-
-	return tab
 }
 
 

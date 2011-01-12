@@ -8,10 +8,8 @@ import (
 
 
 func init() {
-	cmds["get"] = cmd{get, "read a file"}
-	cmdHelp["get"] = `get [options] <path>
-
-Prints the CAS token and body of the file at <path>.
+	cmds["get"] = cmd{get, "<path>", "read a file"}
+	cmdHelp["get"] = `Prints the CAS token and body of the file at <path>.
 
 Output format:
 
