@@ -6,6 +6,7 @@ _testmain.go
 *.out
 *.[568]
 src/cmd/doozerd/doozerd
+src/cmd/doozer/doozer
 *.css.go
 *.js.go
 *.html.go

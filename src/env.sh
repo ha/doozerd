@@ -22,4 +22,5 @@ PKGS="
 
 CMDS="
     doozerd
+    doozer
 "
