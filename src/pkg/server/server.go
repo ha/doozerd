@@ -33,25 +33,26 @@ var (
 
 
 var (
-	other       = proto.NewResponse_Err(proto.Response_OTHER)
-	redirect    = proto.NewResponse_Err(proto.Response_REDIRECT)
-	newErrCode  = proto.NewResponse_Err
-	tagInUse    = &R{ErrCode: newErrCode(proto.Response_TAG_IN_USE)}
-	isDir       = &R{ErrCode: newErrCode(proto.Response_ISDIR)}
-	badSnap     = &R{ErrCode: newErrCode(proto.Response_INVALID_SNAP)}
+	tagInUse    = &R{ErrCode: proto.NewResponse_Err(proto.Response_TAG_IN_USE)}
+	isDir       = &R{ErrCode: proto.NewResponse_Err(proto.Response_ISDIR)}
+	badSnap     = &R{ErrCode: proto.NewResponse_Err(proto.Response_INVALID_SNAP)}
+	casMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_CAS_MISMATCH)}
 	readonly    = &R{
-		ErrCode: newErrCode(proto.Response_OTHER),
+		ErrCode: proto.NewResponse_Err(proto.Response_OTHER),
 		ErrDetail: pb.String("no known writeable addresses"),
 	}
 	badTag      = &R{
-		ErrCode: newErrCode(proto.Response_OTHER),
+		ErrCode: proto.NewResponse_Err(proto.Response_OTHER),
 		ErrDetail: pb.String("unknown tag"),
 	}
 )
 
 
 func errResponse(e os.Error) *R {
-	return &R{ErrCode: other, ErrDetail: pb.String(e.String())}
+	return &R{
+		ErrCode: proto.NewResponse_Err(proto.Response_OTHER),
+		ErrDetail: pb.String(e.String()),
+	}
 }
 
 
@@ -273,7 +274,10 @@ func (c *conn) redirect() *R {
 		return readonly
 	}
 
-	return &R{ErrCode: redirect, ErrDetail: &parts[0]}
+	return &R{
+		ErrCode: proto.NewResponse_Err(proto.Response_REDIRECT),
+		ErrDetail: &parts[0],
+	}
 }
 
 
@@ -320,14 +324,18 @@ func (c *conn) set(t *T) *R {
 
 	return c.cancellable(t, func(cancel chan bool) *R {
 		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas, cancel)
-		if err == paxos.ErrCancel {
-			return nil
-		}
-		if err != nil {
+		switch err {
+		default:
 			return errResponse(err)
+		case store.ErrCasMismatch:
+			return casMismatch
+		case paxos.ErrCancel:
+			return nil
+		case nil:
+			return &R{Cas: &cas}
 		}
+		panic("not reached")
 
-		return &R{Cas: &cas}
 	})
 }
 

@@ -23,18 +23,31 @@ var (
 	ErrNoAddrs = os.NewError("no known address")
 )
 
+
+type ResponseError struct {
+	Code   int32
+	Detail string
+}
+
+
+func (r *ResponseError) String() string {
+	return "response: " + r.Detail
+}
+
+
 // Response errors
 var (
-	ErrIsDir       = os.NewError("is a directory")
-	ErrInvalidSnap = os.NewError("is a directory")
+	ErrNotDir      = &ResponseError{proto.Response_NOTDIR, "not a directory"}
+	ErrIsDir       = &ResponseError{proto.Response_ISDIR, "is a directory"}
+	ErrCasMismatch = &ResponseError{proto.Response_CAS_MISMATCH, "cas mismatch"}
+	ErrInvalidSnap = &ResponseError{proto.Response_INVALID_SNAP, "invalid snapshot id"}
+	respErrors = map[int32]*ResponseError{
+		proto.Response_NOTDIR:       ErrNotDir,
+		proto.Response_ISDIR:        ErrIsDir,
+		proto.Response_CAS_MISMATCH: ErrCasMismatch,
+		proto.Response_INVALID_SNAP: ErrInvalidSnap,
+	}
 )
-
-type OtherError string
-
-
-func (o OtherError) String() string {
-	return "Other error: " + string(o)
-}
 
 
 type Event struct {
@@ -52,24 +65,21 @@ type R proto.Response
 
 func (r *R) err() os.Error {
 	if r.ErrCode != nil {
-		switch ec := int32(*r.ErrCode); ec {
-		case proto.Response_OTHER:
-			return OtherError(pb.GetString(r.ErrDetail))
-		case proto.Response_ISDIR:
-			return ErrIsDir
-		case proto.Response_INVALID_SNAP:
-			return ErrInvalidSnap
-		case proto.Response_REDIRECT:
-			return os.EAGAIN
+		c := int32(*r.ErrCode)
 
-		// These cases should never happen.
-		case proto.Response_TAG_IN_USE:
-			fallthrough
-		case proto.Response_UNKNOWN_VERB:
-			fallthrough
-		default:
-			return OtherError(proto.Response_Err_name[ec])
+		if c == proto.Response_REDIRECT {
+			return os.EAGAIN
 		}
+
+		if r.ErrDetail != nil {
+			return &ResponseError{c, *r.ErrDetail}
+		}
+
+		if r, ok := respErrors[c]; ok {
+			return r
+		}
+
+		return &ResponseError{c, proto.Response_Err_name[c]}
 	}
 	return nil
 }
