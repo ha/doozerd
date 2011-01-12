@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	addr = flag.String("addr", "127.0.0.1:8046", "the address to bind to")
+	addr = flag.String("a", "127.0.0.1:8046", "the address to bind to")
 	showHelp = flag.Bool("h", false, "show help")
 )
 
