@@ -28,6 +28,7 @@ If you want to run doozer's tests, install
 
 ## Try It Out
 
-    $ bin/test-cluster
+    $ doozerd
+    $ open http://localhost:8080/
 
-This will start up three doozer processes and open a web view on one of them.
+This will start up one doozer process and show a web view of its contents.
