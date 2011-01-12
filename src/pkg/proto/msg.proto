@@ -46,12 +46,17 @@ message Response {
   optional int32 id = 7;
 
   enum Err {
-    OTHER        = 0;
+    // don't use value 0
+    OTHER        = 255;
     TAG_IN_USE   = 1;
     UNKNOWN_VERB = 2;
     REDIRECT     = 3;
-    ISDIR        = 4;
-    INVALID_SNAP = 5;
+    INVALID_SNAP = 4;
+    CAS_MISMATCH = 5;
+
+    // match unix errno
+    NOTDIR       = 20;
+    ISDIR        = 21;
   }
   optional Err err_code = 100;
   optional string err_detail = 101;
