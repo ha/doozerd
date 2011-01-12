@@ -68,7 +68,7 @@ func Usage() {
 		switch name {
 		case "NOTDIR": s = "not a directory"
 		case "ISDIR": s = "is a directory"
-		default: s = strings.ToLower(name)
+		default: s = strings.Replace(strings.ToLower(name), "_", " ", -1)
 		}
 		fmt.Fprintf(os.Stderr, "  %3d: %s\n", n, s)
 	}
