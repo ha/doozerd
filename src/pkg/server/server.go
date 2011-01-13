@@ -324,6 +324,14 @@ func (c *conn) set(t *T) *R {
 
 	return c.cancellable(t, func(cancel chan bool) *R {
 		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas, cancel)
+		switch e := err.(type) {
+		case *store.BadPathError:
+			return &R{
+				ErrCode: proto.NewResponse_Err(proto.Response_BAD_PATH),
+				ErrDetail: &e.Path,
+			}
+		}
+
 		switch err {
 		default:
 			return errResponse(err)

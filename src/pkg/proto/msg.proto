@@ -53,6 +53,7 @@ message Response {
     REDIRECT     = 3;
     INVALID_SNAP = 4;
     CAS_MISMATCH = 5;
+    BAD_PATH     = 6;
 
     // match unix errno
     NOTDIR       = 20;
