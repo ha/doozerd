@@ -32,7 +32,7 @@ type ResponseError struct {
 
 
 func (r *ResponseError) String() string {
-	return "response: " + r.Detail
+	return "response: " + proto.Response_Err_name[r.Code] + ": " + r.Detail
 }
 
 
