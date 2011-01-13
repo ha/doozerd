@@ -4,6 +4,7 @@ import (
 	"doozer/proto"
 	"doozer/util"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
 	"io"
@@ -82,6 +83,11 @@ func (r *R) err() os.Error {
 		return &ResponseError{c, proto.Response_Err_name[c]}
 	}
 	return nil
+}
+
+
+func (r *R) String() string {
+	return fmt.Sprintf("%#v", r)
 }
 
 
@@ -234,6 +240,8 @@ func (c *conn) readResponses() {
 			if flags&Done != 0 {
 				close(ch)
 			}
+		} else {
+			c.lg.Println("unexpected:", r.String())
 		}
 	}
 }
