@@ -45,7 +45,6 @@ func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
 		}
 
 		if sk.done {
-			cx.Put(newLearn(sk.v))
 			res <- store.Op{seqn, sk.v}
 		}
 		if ln.done {
