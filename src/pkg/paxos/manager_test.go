@@ -37,37 +37,35 @@ func TestProposeAndLearn(t *testing.T) {
 }
 
 func TestProposeAndLearnMultiple(t *testing.T) {
-	exp := []string{"/foo", "/bar"}
-	seqnexp := []int64{3, 4}
 	m, st := selfRefNewManager("a", 1)
 	ch := st.Watch(store.Any)
 
 	ix := m.getInstance(<-m.seqns)
-	ix.Propose(exp[0])
+	ix.Propose("/foo")
 
 	got0 := <-ch
-	assert.Equal(t, seqnexp[0], got0.Seqn, "seqn 1")
-	assert.Equal(t, exp[0], got0.Mut, "")
+	assert.Equal(t, int64(3), got0.Seqn, "seqn 1")
+	assert.Equal(t, "/foo", got0.Mut, "")
 
 	st.Ops <- store.Op{got0.Seqn, got0.Mut}
 
 	ix = m.getInstance(<-m.seqns)
-	ix.Propose(exp[1])
+	ix.Propose("/bar")
 
 	got1 := <-ch
-	assert.Equal(t, seqnexp[1], got1.Seqn, "seqn 1")
-	assert.Equal(t, exp[1], got1.Mut, "")
+	assert.Equal(t, int64(4), got1.Seqn, "seqn 1")
+	assert.Equal(t, "/bar", got1.Mut, "")
 }
 
 func TestManagerFill(t *testing.T) {
 	st := store.New()
-	p := make(ChanPutCloserTo)
+	p := make(chanPutCloserTo)
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
 	mg := NewManager("a", 1, st, p)
 
 	mg.fillUntil <- 4
-	assert.Equal(t, int64(3), (<-p).Msg.Seqn())
+	assert.Equal(t, int64(3), (<-p).M.Seqn())
 }
 
 func TestNewInstanceBecauseOfMessage(t *testing.T) {
@@ -115,7 +113,7 @@ func TestIgnoreMalformedMsg(t *testing.T) {
 	m, st := selfRefNewManager("a", 1)
 	ch := st.Watch(store.Any)
 
-	m.PutFrom(m.Self+"addr", resize(newVote(1, ""), -1))
+	m.PutFrom(m.Self+"addr", badMessages[0])
 
 	ix := m.getInstance(<-m.seqns)
 	ix.Propose("y")
@@ -159,7 +157,7 @@ func mustEncodeSet(k, v string) string {
 
 func TestReadFromStore(t *testing.T) {
 	// The cluster initially has 1 node (quorum of 1).
-	p := make(ChanPutCloserTo)
+	p := make(chanPutCloserTo)
 	self := "a"
 	addr := "x"
 
@@ -306,7 +304,7 @@ func TestManagerReply(t *testing.T) {
 	st := store.New()
 	st.Ops <- store.Op{1, mustEncodeSet(membersDir+"a", "x")}
 	st.Ops <- store.Op{2, mustEncodeSet(slotDir+"0", "a")}
-	ch := make(ChanPutCloserTo)
+	ch := make(chanPutCloserTo)
 	mg := NewManager("a", 1, st, ch)
 
 	mut := store.MustEncodeSet("/foo", "bar", store.Clobber)

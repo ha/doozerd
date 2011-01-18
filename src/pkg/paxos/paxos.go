@@ -2,13 +2,11 @@ package paxos
 
 import (
 	"doozer/store"
-	"net"
+	"doozer/util"
 	"os"
 )
 
-type ReadFromer interface {
-	ReadFrom(b []byte) (n int, addr net.Addr, err os.Error)
-}
+var logger = util.NewLogger("consensus")
 
 type Proposer interface {
 	Propose(v string, cancel chan bool) (seqn, cas int64, err os.Error)

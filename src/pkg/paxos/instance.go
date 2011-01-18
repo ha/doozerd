@@ -25,15 +25,15 @@ func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
 	var sk sink
 
 	for p := range it {
-		if p.Cmd() == tick {
+		if p.Cmd() == M_TICK {
 			sched = false
 		}
 
-		p.SetFrom(cx.indexByAddr(p.Addr))
-		co.Put(p.Msg)
-		ac.Put(p.Msg)
-		ln.Put(p.Msg)
-		sk.Put(p.Msg)
+		p.SetFrom(int32(cx.indexByAddr(p.Addr)))
+		co.Put(p.M)
+		ac.Put(p.M)
+		lnOk := ln.Put(p.M)
+		skOk := sk.Put(p.M)
 
 		if co.seen > co.crnd && !sched {
 			sched = true
@@ -44,17 +44,17 @@ func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
 			}()
 		}
 
-		if sk.done {
+		if skOk {
 			res <- store.Op{seqn, sk.v}
 		}
-		if ln.done {
-			cx.Put(newLearn(ln.v))
+		if lnOk {
+			cx.Put(&M{WireCmd: learn, Value: []byte(ln.v)})
 			res <- store.Op{seqn, ln.v}
 		}
 	}
 }
 
-func (it instance) PutFrom(addr string, m Msg) {
+func (it instance) PutFrom(addr string, m *M) {
 	// TODO try eliminating the goroutine
 	go func() {
 		it <- Packet{m, addr}
@@ -63,5 +63,5 @@ func (it instance) PutFrom(addr string, m Msg) {
 
 func (ins instance) Propose(v string) {
 	// The from address doesn't matter.
-	ins.PutFrom("", newPropose(v))
+	ins.PutFrom("", &M{WireCmd: propose, Value: []byte(v)})
 }

@@ -19,12 +19,12 @@ func newLearner(quorum int64) *learner {
 	}
 }
 
-func (ln *learner) Put(in Msg) {
-	if in.Cmd() != vote {
+func (ln *learner) Put(in *M) (ok bool) {
+	if in.Cmd() != M_VOTE {
 		return
 	}
 
-	mRound, v := voteParts(in)
+	mRound, v := *in.Vrnd, in.Value
 
 	switch {
 	case mRound < ln.round:
@@ -35,14 +35,17 @@ func (ln *learner) Put(in Msg) {
 		ln.voted = make(map[int]bool)
 		fallthrough
 	case mRound == ln.round:
+		k := string(v)
+
 		if ln.voted[in.From()] {
 			return
 		}
-		ln.votes[v]++
+		ln.votes[k]++
 		ln.voted[in.From()] = true
 
-		if ln.votes[v] >= ln.quorum {
-			ln.done, ln.v = true, v // winner!
+		if ln.votes[k] >= ln.quorum {
+			ok, ln.done, ln.v = true, true, string(v) // winner!
 		}
 	}
+	return
 }

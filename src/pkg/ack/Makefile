@@ -1,7 +1,7 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=doozer/net
+TARG=doozer/ack
 GOFILES=\
-	net.go\
+	ack.go\
 
 include $(GOROOT)/src/Make.pkg

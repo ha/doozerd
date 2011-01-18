@@ -1,7 +1,6 @@
 package server
 
 import (
-	dnet "doozer/net"
 	"doozer/paxos"
 	"doozer/proto"
 	"doozer/store"
@@ -78,26 +77,15 @@ type OpError struct {
 type Manager interface {
 	paxos.Proposer
 	ProposeOnce(v string, c chan bool) store.Event
-	PutFrom(string, paxos.Msg)
 	Alpha() int
 }
 
 
 type Server struct {
-	Conn net.PacketConn
 	Addr string
 	St   *store.Store
 	Mg   Manager
 	Self string
-}
-
-
-func (sv *Server) ServeUdp(outs chan paxos.Packet) {
-	r := dnet.Ackify(sv.Conn, outs)
-
-	for p := range r {
-		sv.Mg.PutFrom(p.Addr, p.Msg)
-	}
 }
 
 

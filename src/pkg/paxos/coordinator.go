@@ -15,30 +15,30 @@ type coordinator struct {
 	seen int64
 }
 
-func (co *coordinator) Put(in Msg) {
+func (co *coordinator) Put(in *M) {
 	if co.crnd == 0 {
 		co.crnd += int64(co.cx.Len())
 	}
 
 	switch in.Cmd() {
-	case propose:
+	case M_PROPOSE:
 		if co.begun {
 			break
 		}
 
 		co.begun = true
-		co.target = proposeParts(in)
-		co.outs.Put(newInvite(co.crnd))
+		co.target = string(in.Value)
+		co.outs.Put(&M{WireCmd: invite, Crnd: &co.crnd})
 		co.vr = 0
 		co.vv = ""
 		co.rsvps = make(map[int]bool)
 		co.cval = ""
-	case rsvp:
+	case M_RSVP:
 		if !co.begun {
 			break
 		}
 
-		i, vrnd, vval := rsvpParts(in)
+		i, vrnd, vval := *in.Crnd, *in.Vrnd, in.Value
 
 		if co.cval != "" {
 			break
@@ -54,7 +54,7 @@ func (co *coordinator) Put(in Msg) {
 
 		if vrnd > co.vr {
 			co.vr = vrnd
-			co.vv = vval
+			co.vv = string(vval)
 		}
 
 		co.rsvps[in.From()] = true
@@ -68,12 +68,11 @@ func (co *coordinator) Put(in Msg) {
 			}
 			co.cval = v
 
-			chosen := newNominate(co.crnd, v)
-			co.outs.Put(chosen)
+			co.outs.Put(&M{WireCmd: nominate, Crnd: &co.crnd, Value: []byte(v)})
 		}
-	case tick:
+	case M_TICK:
 		co.crnd += int64(co.cx.Len())
-		co.outs.Put(newInvite(co.crnd))
+		co.outs.Put(&M{WireCmd: invite, Crnd: &co.crnd})
 		co.vr = 0
 		co.vv = ""
 		co.rsvps = make(map[int]bool)

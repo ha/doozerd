@@ -5,8 +5,8 @@ REQS="
 PKGS="
     util
     store
+    ack
     paxos
-    net
     proto
     lock
     server

@@ -1,21 +1,16 @@
 package paxos
 
 type Packet struct {
-	Msg
+	*M
 	Addr string
 }
 
-func (pk Packet) Id() string {
-	m := pk.Msg.Dup().ClearFlags(Ack)
-	return pk.Addr + " " + string(m.WireBytes())
-}
-
 type Putter interface {
-	Put(m Msg)
+	Put(m *M)
 }
 
 type PutterTo interface {
-	PutTo(m Msg, addr string)
+	PutTo(m *M, addr string)
 }
 
 type putCloser interface {
@@ -23,23 +18,13 @@ type putCloser interface {
 	Close()
 }
 
-type ChanPutCloser chan Msg
+type ChanPutCloser chan *M
 
-func (cp ChanPutCloser) Put(m Msg) {
+func (cp ChanPutCloser) Put(m *M) {
 	go func() { cp <- m }()
 }
 
 func (cp ChanPutCloser) Close() {
-	close(cp)
-}
-
-type ChanPutCloserTo chan Packet
-
-func (cp ChanPutCloserTo) PutTo(m Msg, addr string) {
-	go func() { cp <- Packet{m, addr} }()
-}
-
-func (cp ChanPutCloserTo) Close() {
 	close(cp)
 }
 
@@ -48,7 +33,7 @@ type putToWrapper struct {
 	pt   PutterTo
 }
 
-func (w putToWrapper) PutTo(m Msg, addr string) {
+func (w putToWrapper) PutTo(m *M, addr string) {
 	m.SetSeqn(w.seqn)
 	w.pt.PutTo(m, addr)
 }

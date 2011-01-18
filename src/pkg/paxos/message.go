@@ -1,258 +1,79 @@
 package paxos
 
 import (
-	"doozer/util"
-	"os"
-)
-
-// In-memory format:
-//
-//     0      -- index of sender
-//     1      -- cmd
-//     2      -- flags
-//     3..10   -- cluster version
-//     11..17 -- seqn
-//     18..   -- body -- format depends on command
-//
-// Wire format is same as in-memory format, but without the first byte (the
-// sender index). Here it is for clarity:
-//
-//     0     -- cmd
-//     1     -- flags
-//     2..9  -- cluster version
-//     10..16 -- seqn
-//     17..  -- body -- format depends on command
-//
-// Here's how you create a `Msg` from incoming network data. This assumes you
-// know some upper bound on the size of a message (for instance, UDP packets
-// can't ever be more than about 1,500 bytes in practice over Ethernet).
-//
-//     m, addr, err := ReadMsg(conn, 3000) // plenty for an Ethernet frame
-//
-// Of course, you'll want to do error checking and probably fill in the `From`
-// index based on the UDP sender address.
-type Msg []byte
-
-const (
-	mFrom = iota
-	mCmd
-	mFlags
-	mSeqn
-	mSeqn1
-	mSeqn2
-	mSeqn3
-	mSeqn4
-	mSeqn5
-	mSeqn6
-	mSeqn7
-	mBody
-	baseLen = mBody
-)
-
-const (
-	nop = iota
-	invite
-	rsvp
-	nominate
-	vote
-	tick
-	propose
-	learn
-)
-
-// Flags
-const (
-	Ack = 1 << iota
-)
-
-const (
-	inviteLen   = 8
-	rsvpLen     = 16 // not including v
-	nominateLen = 8  // not including v
-	voteLen     = 8  // not including v
-	tickLen     = 0
-	proposeLen  = 0 // not including v
-	learnLen    = 0 // not including v
+	pb "goprotobuf.googlecode.com/hg/proto"
 )
 
 var (
-	msgTick = newTick()
+	nop      = NewM_Cmd(M_NOP)
+	invite   = NewM_Cmd(M_INVITE)
+	rsvp     = NewM_Cmd(M_RSVP)
+	nominate = NewM_Cmd(M_NOMINATE)
+	vote     = NewM_Cmd(M_VOTE)
+	tick     = NewM_Cmd(M_TICK)
+	propose  = NewM_Cmd(M_PROPOSE)
+	learn    = NewM_Cmd(M_LEARN)
 )
 
-func newInvite(crnd int64) Msg {
-	m := make(Msg, baseLen+inviteLen)
-	m[mCmd] = invite
-	util.Packi64(m.Body()[0:8], crnd)
-	return m
+var (
+	msgTick = &M{WireCmd: tick}
+)
+
+func (m *M) From() int {
+	return int(pb.GetInt32(m.WireFrom))
 }
 
-// Returns the info for `m`. If `m` is not an invite, the result is undefined.
-func inviteParts(m Msg) (crnd int64) {
-	return util.Unpacki64(m.Body())
+func (m *M) Cmd() int {
+	return int(pb.GetInt32((*int32)(m.WireCmd)))
 }
 
-func newNominate(crnd int64, v string) Msg {
-	m := make(Msg, baseLen+nominateLen+len(v))
-	m[mCmd] = nominate
-	util.Packi64(m.Body()[0:8], crnd)
-	copy(m.Body()[nominateLen:], []byte(v))
-	return m
+func (m *M) Seqn() int64 {
+	return pb.GetInt64(m.WireSeqn)
 }
 
-// Returns the info for `m`. If `m` is not a nominate, the result is undefined.
-func nominateParts(m Msg) (crnd int64, v string) {
-	crnd = util.Unpacki64(m.Body()[0:8])
-	v = string(m.Body()[8:])
-	return
-}
-
-func newRsvp(i, vrnd int64, vval string) Msg {
-	m := make(Msg, baseLen+rsvpLen+len(vval))
-	m[mCmd] = rsvp
-	util.Packi64(m.Body()[0:8], i)
-	util.Packi64(m.Body()[8:16], vrnd)
-	copy(m.Body()[rsvpLen:], []byte(vval))
-	return m
-}
-
-// Returns the info for `m`. If `m` is not an rsvp, the result is undefined.
-func rsvpParts(m Msg) (i, vrnd int64, vval string) {
-	i = util.Unpacki64(m.Body()[0:8])
-	vrnd = util.Unpacki64(m.Body()[8:16])
-	vval = string(m.Body()[16:])
-	return
-}
-
-func newVote(i int64, vval string) Msg {
-	m := make(Msg, baseLen+voteLen+len(vval))
-	m[mCmd] = vote
-	util.Packi64(m.Body()[0:8], i)
-	copy(m.Body()[voteLen:], []byte(vval))
-	return m
-}
-
-// Returns the info for `m`. If `m` is not a vote, the result is undefined.
-func voteParts(m Msg) (i int64, vval string) {
-	i = util.Unpacki64(m.Body()[0:8])
-	vval = string(m.Body()[8:])
-	return
-}
-
-func newTick() Msg {
-	m := make(Msg, baseLen+tickLen)
-	m[mCmd] = tick
-	return m
-}
-
-func newPropose(val string) Msg {
-	m := make(Msg, baseLen+proposeLen+len(val))
-	m[mCmd] = propose
-	copy(m.Body()[proposeLen:], []byte(val))
-	return m
-}
-
-func newLearn(val string) Msg {
-	m := make(Msg, baseLen+learnLen+len(val))
-	m[mCmd] = learn
-	copy(m.Body()[learnLen:], []byte(val))
-	return m
-}
-
-func learnParts(m Msg) string {
-	return string(m.Body())
-}
-
-
-// Returns the info for `m`. If `m` is not a propose, the result is undefined.
-func proposeParts(m Msg) (val string) {
-	val = string(m.Body()[proposeLen:])
-	return
-}
-
-func (m Msg) From() int {
-	return int(m[mFrom])
-}
-
-func (m Msg) Cmd() int {
-	return int(m[mCmd])
-}
-
-func (m Msg) Seqn() int64 {
-	return util.Unpacki64(m[mSeqn : mSeqn+8])
-}
-
-func (m Msg) Body() []byte {
-	return m[mBody:]
-}
-
-// Typically used after reading from the network, when building a new `Msg`
+// Typically used after reading from the network, when building a new `*M`
 // object.
 //
 // This assumes the number of nodes fits in a byte.
-func (m Msg) SetFrom(from int) {
-	m[mFrom] = byte(from)
+func (m *M) SetFrom(from int32) {
+	m.WireFrom = &from
 }
 
 // Typically used just before writing `m` to the network.
-func (m Msg) SetSeqn(seqn int64) {
-	util.Packi64(m[mSeqn:mSeqn+8], seqn)
+func (m *M) SetSeqn(seqn int64) {
+	m.WireSeqn = &seqn
 }
 
 // Check that `m` is well-formed. Does not guarantee that it will be valid or
 // meaningful. If this method returns `true`, you can safely pass `m` into a
 // `Putter`.
-func (m Msg) Ok() bool {
-	if len(m) < 2 {
+func (m *M) Ok() bool {
+	if m.WireCmd == nil {
 		return false
 	}
+
+	if m.WireSeqn == nil {
+		return false
+	}
+
 	switch m.Cmd() {
-	case invite:
-		return len(m.Body()) == inviteLen
-	case rsvp:
-		return len(m.Body()) >= rsvpLen
-	case nominate:
-		return len(m.Body()) >= nominateLen
-	case vote:
-		return len(m.Body()) >= voteLen
+	case M_INVITE:
+		return m.Crnd != nil
+	case M_RSVP:
+		return m.Crnd != nil && m.Vrnd != nil
+	case M_NOMINATE:
+		return m.Crnd != nil
+	case M_VOTE:
+		return m.Vrnd != nil
+	case M_LEARN:
+		return true
 	}
 	return false
 }
 
-func (m Msg) WireBytes() []byte {
-	return m[mCmd:]
-}
-
-func (m *Msg) readFrom(c ReadFromer) (addr string, err os.Error) {
-	n, a, er := c.ReadFrom(m.WireBytes())
-	if er != nil {
-		return "", er
-	}
-	*m = (*m)[0 : n+1] // truncate to fit
-	return a.String(), nil
-}
-
-func ReadMsg(c ReadFromer, bound int) (m Msg, addr string, err os.Error) {
-	m = make(Msg, bound)
-	addr, err = m.readFrom(c)
-	return
-}
-
-func (m Msg) HasFlags(flags int) bool {
-	return m[mFlags]&byte(flags) != 0
-}
-
-func (m Msg) SetFlags(flags int) Msg {
-	m[mFlags] |= byte(flags)
-	return m
-}
-
-func (m Msg) ClearFlags(flags int) Msg {
-	m[mFlags] &= ^byte(flags)
-	return m
-}
-
-func (m *Msg) Dup() Msg {
-	o := make(Msg, len(*m))
-	copy(o, *m)
-	return o
+func (m *M) Dup() *M {
+	var n M
+	n = *m
+	n.Value = append([]byte{}, m.Value...)
+	return &n
 }

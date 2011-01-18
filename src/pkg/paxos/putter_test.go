@@ -5,10 +5,22 @@ import (
 	"testing"
 )
 
+type fakePutterTo struct {
+	addrs []string
+	msgs  []*M
+}
+
+
+func (f *fakePutterTo) PutTo(m *M, addr string) {
+	f.addrs = append(f.addrs, addr)
+	f.msgs = append(f.msgs, m)
+}
+
+
 func TestPutToWrapper(t *testing.T) {
 	seqn := int64(1)
-	p := make(ChanPutCloserTo)
-	w := putToWrapper{seqn, p}
+	var p fakePutterTo
+	w := putToWrapper{seqn, &p}
 	m := newInvite(1)
 	a := "a"
 
@@ -16,7 +28,9 @@ func TestPutToWrapper(t *testing.T) {
 
 	exp := m.Dup()
 	exp.SetSeqn(seqn)
-	assert.Equal(t, Packet{exp, a}, <-p)
+	assert.Equal(t, 1, len(p.addrs))
+	assert.Equal(t, a, p.addrs[0])
+	assert.Equal(t, exp, p.msgs[0])
 }
 
 func TestChanPutCloser(t *testing.T) {

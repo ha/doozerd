@@ -1,16 +1,41 @@
 package paxos
 
 import (
-	"net"
-	"os"
-	"testing"
-	"testing/quick"
-
+	"fmt"
 	"github.com/bmizerany/assert"
+	"github.com/kr/pretty.go"
+	"testing"
 )
 
+func (x M_Cmd) Format(f fmt.State, c int) {
+	if c == 'v' && f.Flag('#') {
+		fmt.Fprintf(f, "M_%s", M_Cmd_name[int32(x)])
+		return
+	}
+
+	s := "%"
+	for i := 0; i < 128; i++ {
+		if f.Flag(i) {
+			s += string(i)
+		}
+	}
+	if w, ok := f.Width(); ok {
+		s += fmt.Sprintf("%d", w)
+	}
+	if p, ok := f.Precision(); ok {
+		s += fmt.Sprintf(".%d", p)
+	}
+	s += string(c)
+	fmt.Fprintf(f, s, int32(x))
+}
+
 // For testing convenience
-func newVoteFrom(from int, i int64, vval string) Msg {
+func newVote(i int64, vval string) *M {
+	return &M{WireCmd: vote, Vrnd: &i, Value: []byte(vval)}
+}
+
+// For testing convenience
+func newVoteFrom(from int32, i int64, vval string) *M {
 	m := newVote(i, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -18,7 +43,12 @@ func newVoteFrom(from int, i int64, vval string) Msg {
 }
 
 // For testing convenience
-func newNominateFrom(from int, crnd int64, v string) Msg {
+func newNominate(crnd int64, v string) *M {
+	return &M{WireCmd: nominate, Crnd: &crnd, Value: []byte(v)}
+}
+
+// For testing convenience
+func newNominateFrom(from int32, crnd int64, v string) *M {
 	m := newNominate(crnd, v)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -26,7 +56,17 @@ func newNominateFrom(from int, crnd int64, v string) Msg {
 }
 
 // For testing convenience
-func newRsvpFrom(from int, i, vrnd int64, vval string) Msg {
+func newRsvp(i, vrnd int64, vval string) *M {
+	return &M{
+		WireCmd:  rsvp,
+		Crnd:     &i,
+		Vrnd:     &vrnd,
+		Value:    []byte(vval),
+	}
+}
+
+// For testing convenience
+func newRsvpFrom(from int32, i, vrnd int64, vval string) *M {
 	m := newRsvp(i, vrnd, vval)
 	m.SetSeqn(1)
 	m.SetFrom(from)
@@ -34,98 +74,26 @@ func newRsvpFrom(from int, i, vrnd int64, vval string) Msg {
 }
 
 // For testing convenience
-func newInviteFrom(from int, rnd int64) Msg {
+func newInvite(crnd int64) *M {
+	return &M{WireCmd: invite, Crnd: &crnd}
+}
+
+// For testing convenience
+func newInviteFrom(from int32, rnd int64) *M {
 	m := newInvite(rnd)
 	m.SetSeqn(1)
 	m.SetFrom(from)
 	return m
 }
 
-func TestMessageNewInvite(t *testing.T) {
-	m := newInvite(1)
-	assert.Equal(t, invite, m.Cmd(), "")
-	crnd := inviteParts(m)
-	assert.Equal(t, int64(1), crnd, "")
+// For testing convenience
+func newPropose(val string) *M {
+	return &M{WireCmd: propose, Value: []byte(val)}
 }
 
-func TestMessageNewInviteAlt(t *testing.T) {
-	m := newInvite(2)
-	assert.Equal(t, invite, m.Cmd(), "")
-	crnd := inviteParts(m)
-	assert.Equal(t, int64(2), crnd, "")
-}
-
-func TestMessageNewNominate(t *testing.T) {
-	m := newNominate(1, "foo")
-	assert.Equal(t, nominate, m.Cmd(), "")
-	crnd, v := nominateParts(m)
-	assert.Equal(t, int64(1), crnd, "")
-	assert.Equal(t, "foo", v, "")
-}
-
-func TestMessageNewNominateAlt(t *testing.T) {
-	m := newNominate(2, "bar")
-	assert.Equal(t, nominate, m.Cmd(), "")
-	crnd, v := nominateParts(m)
-	assert.Equal(t, int64(2), crnd, "")
-	assert.Equal(t, "bar", v, "")
-}
-
-func TestMessageNewRsvp(t *testing.T) {
-	m := newRsvp(1, 0, "")
-	assert.Equal(t, rsvp, m.Cmd(), "")
-	i, vrnd, vval := rsvpParts(m)
-	assert.Equal(t, int64(1), i, "")
-	assert.Equal(t, int64(0), vrnd, "")
-	assert.Equal(t, "", vval, "")
-}
-
-func TestMessageNewRsvpAlt(t *testing.T) {
-	m := newRsvp(2, 1, "foo")
-	assert.Equal(t, rsvp, m.Cmd(), "")
-	i, vrnd, vval := rsvpParts(m)
-	assert.Equal(t, int64(2), i, "")
-	assert.Equal(t, int64(1), vrnd, "")
-	assert.Equal(t, "foo", vval, "")
-}
-
-func TestMessageNewVote(t *testing.T) {
-	m := newVote(1, "foo")
-	assert.Equal(t, vote, m.Cmd(), "")
-	i, vval := voteParts(m)
-	assert.Equal(t, int64(1), i, "")
-	assert.Equal(t, "foo", vval, "")
-}
-
-func TestMessageNewVoteAlt(t *testing.T) {
-	m := newVote(2, "bar")
-	assert.Equal(t, vote, m.Cmd(), "")
-	i, vval := voteParts(m)
-	assert.Equal(t, int64(2), i, "")
-	assert.Equal(t, "bar", vval, "")
-}
-
-func TestMessageNewLearn(t *testing.T) {
-	f := func(exp string) bool {
-		m := newLearn(exp)
-		assert.Equal(t, learn, m.Cmd(), "")
-		val := learnParts(m)
-		assert.Equal(t, exp, val, "")
-		return true
-	}
-	quick.Check(f, nil)
-}
-
-func TestMessageNewTick(t *testing.T) {
-	m := newTick()
-	assert.Equal(t, tick, m.Cmd(), "")
-}
-
-func TestMessageNewPropose(t *testing.T) {
-	m := newPropose("foo")
-	assert.Equal(t, propose, m.Cmd(), "")
-	val := proposeParts(m)
-	assert.Equal(t, "foo", val, "")
+// For testing convenience
+func newLearn(val string) *M {
+	return &M{WireCmd: learn, Value: []byte(val)}
 }
 
 func TestMessageSetFrom(t *testing.T) {
@@ -144,24 +112,16 @@ func TestMessageSetSeqn(t *testing.T) {
 	assert.Equal(t, int64(2), m.Seqn(), "")
 }
 
-func resize(m Msg, n int) Msg {
-	x := len(m) + n
-	if x > cap(m) {
-		y := make(Msg, x)
-		copy(y, m)
-		return y
-	}
-	return m[0 : len(m)+n]
-}
+var badMessages = []*M{
+	&M{},               // no cmd
+	&M{WireCmd: learn}, // no seqn
 
-var badMessages = []Msg{
-	{0},                            // too short
-	{0, 255},                       // bad cmd
-	resize(newInvite(0), -1),       // too short for type
-	resize(newInvite(0), 1),        // too long for type
-	resize(newRsvp(0, 0, ""), -1),  // too short for type
-	resize(newNominate(0, ""), -1), // too short for type
-	resize(newVote(0, ""), -1),     // too short for type
+	&M{WireCmd: invite, WireSeqn: new(int64)}, // no crnd
+	&M{WireCmd: nominate, WireSeqn: new(int64)}, // no crnd
+	&M{WireCmd: vote, WireSeqn: new(int64)}, // no vrnd
+
+	&M{WireCmd: rsvp, WireSeqn: new(int64), Crnd: new(int64)}, // no vrnd
+	&M{WireCmd: rsvp, WireSeqn: new(int64), Vrnd: new(int64)}, // no crnd
 }
 
 func TestBadMessagesOk(t *testing.T) {
@@ -172,65 +132,18 @@ func TestBadMessagesOk(t *testing.T) {
 	}
 }
 
-var goodMessages = []Msg{
-	newInvite(1),
-	newRsvp(2, 1, "foo"),
-	newNominate(1, "foo"),
-	newVote(1, "foo"),
+var goodMessages = []*M{
+	newInviteFrom(0, 1),
+	newRsvpFrom(0, 2, 1, "foo"),
+	newNominateFrom(0, 1, "foo"),
+	newVoteFrom(0, 1, "foo"),
 }
 
 func TestGoodMessagesOk(t *testing.T) {
 	for _, m := range goodMessages {
 		if !m.Ok() {
-			t.Errorf("check failed for good msg: %#v", m)
+			t.Errorf("check failed for good msg: %# v", pretty.Formatter(m))
 		}
-	}
-}
-
-func TestWireBytes(t *testing.T) {
-	m := newInvite(1)
-	b := m.WireBytes()
-	assert.Equal(t, []byte(m[1:]), b, "")
-	b[0] = 2
-	assert.Equal(t, byte(2), m[1], "")
-}
-
-type fakePacketConn struct {
-	a net.Addr
-	b []byte
-}
-
-func (fpc *fakePacketConn) ReadFrom(b []byte) (n int, addr net.Addr, err os.Error) {
-	return copy(b, fpc.b), fpc.a, nil
-}
-
-func TestReadMsg(t *testing.T) {
-	msg := newInvite(2)
-	addr := &net.UDPAddr{net.IP{1, 2, 3, 4}, 123}
-	fpc := &fakePacketConn{addr, msg.WireBytes()}
-	gotMsg, gotAddr, err := ReadMsg(fpc, 3000)
-	assert.Equal(t, nil, err, "")
-	assert.Equal(t, msg, gotMsg, "")
-	assert.Equal(t, addr.String(), gotAddr, "")
-}
-
-func TestFlags(t *testing.T) {
-	msg := newInvite(1)
-	for i := uint(0); i < 8; i++ {
-		f := 1 << i
-		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
-	}
-	x := msg.SetFlags(Ack)
-	assert.Equal(t, x, msg)
-	for i := uint(0); i < 8; i++ {
-		f := 1 << i
-		assert.Equal(t, f == Ack, msg.HasFlags(f), "f=%d", f)
-	}
-	x = msg.ClearFlags(Ack)
-	assert.Equal(t, x, msg)
-	for i := uint(0); i < 8; i++ {
-		f := 1 << i
-		assert.Equal(t, false, msg.HasFlags(f), "f=%d", f)
 	}
 }
 
@@ -238,6 +151,6 @@ func TestDup(t *testing.T) {
 	m := newInvite(1)
 	o := m.Dup()
 	assert.Equal(t, m, o)
-	o.SetFlags(1)
+	o.SetSeqn(2)
 	assert.NotEqual(t, m, o)
 }

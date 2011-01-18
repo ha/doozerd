@@ -1,6 +1,6 @@
 package paxos
 
-type SyncPutter chan Msg
+type SyncPutter chan *M
 
 var tenNodes = map[string]string{
 	"a": "p",
@@ -25,20 +25,31 @@ func init() {
 	}
 }
 
-func (sp SyncPutter) Put(m Msg) {
+func (sp SyncPutter) Put(m *M) {
 	sp <- m
 }
 
 type msgSlot struct {
-	*Msg
+	*M
 }
 
-func (ms msgSlot) Put(m Msg) {
-	*ms.Msg = m
+func (ms msgSlot) Put(m *M) {
+	*ms.M = *m
 }
 
-type funcPutter func(m Msg)
+type funcPutter func(m *M)
 
-func (fp funcPutter) Put(m Msg) {
+func (fp funcPutter) Put(m *M) {
 	fp(m)
 }
+
+type chanPutCloserTo chan Packet
+
+func (cp chanPutCloserTo) PutTo(m *M, addr string) {
+	go func() { cp <- Packet{m, addr} }()
+}
+
+func (cp chanPutCloserTo) Close() {
+	close(cp)
+}
+

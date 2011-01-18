@@ -8,15 +8,11 @@ import (
 
 // Testing
 
-type PutterFrom interface {
-	PutFrom(addr string, m Msg)
-}
-
 type FakePutterFrom []PutterFrom
 
-func (fp FakePutterFrom) PutFrom(addr string, m Msg) {
+func (fp FakePutterFrom) PutFrom(addr string, m *M) {
 	for _, p := range fp {
-		p.PutFrom(addr, m)
+		p.PutFrom(addr, m.Dup())
 	}
 }
 
@@ -25,7 +21,7 @@ type putFromWrapperTo struct {
 	fromAddr string
 }
 
-func (w putFromWrapperTo) PutTo(m Msg, _ string) {
+func (w putFromWrapperTo) PutTo(m *M, _ string) {
 	w.PutFrom(w.fromAddr, m)
 }
 
@@ -131,7 +127,7 @@ func TestMultipleInstances(t *testing.T) {
 }
 
 func TestInstanceSendsLearn(t *testing.T) {
-	ch := make(ChanPutCloserTo)
+	ch := make(chanPutCloserTo)
 	nodes := map[string]string{"a": "x"}
 	cx := newCluster("a", nodes, []string{"a"}, ch)
 	it := make(instance)

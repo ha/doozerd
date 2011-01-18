@@ -68,6 +68,28 @@ func TestDoozerGet(t *testing.T) {
 }
 
 
+func TestDoozerSet(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl := client.New("foo", l.Addr().String())
+
+	ents, cas, err := cl.Get("/ping", 0)
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, store.Dir, cas)
+	assert.Equal(t, []byte("pong"), ents)
+
+	for i := byte(0); i < 10; i++ {
+		cl.Set("/x", store.Missing, []byte{'0'+i})
+		assert.Equal(t, nil, err)
+	}
+}
+
+
 func TestDoozerSnap(t *testing.T) {
 	l := mustListen()
 	defer l.Close()

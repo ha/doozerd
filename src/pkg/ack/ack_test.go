@@ -1,7 +1,6 @@
-package net
+package ack
 
 import (
-	"doozer/paxos"
 	"github.com/bmizerany/assert"
 	"net"
 	"os"
@@ -17,12 +16,10 @@ func (fd FakeConn) ReadFrom([]byte) (int, net.Addr, os.Error) {
 func (fd FakeConn) WriteTo([]byte, net.Addr) (int, os.Error) {
 	return 0, os.EINVAL
 }
-func (fd FakeConn) LocalAddr() (addr net.Addr) {
-	return
-}
 
 func TestNetClose(t *testing.T) {
-	r := Ackify(FakeConn(0), make(chan paxos.Packet))
-	<-r
-	assert.T(t, closed(r))
+	a := Ackify(FakeConn(0))
+	_, _, err := a.ReadFrom()
+	assert.T(t, closed(a.r))
+	assert.Equal(t, os.EINVAL, err)
 }

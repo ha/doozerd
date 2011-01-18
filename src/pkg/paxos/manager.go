@@ -130,15 +130,18 @@ func (m *Manager) getInstance(seqn int64) instance {
 	return <-ch
 }
 
-func (m *Manager) PutFrom(addr string, msg Msg) {
+func (m *Manager) PutFrom(addr string, msg *M) {
 	if !msg.Ok() {
 		return
 	}
 	n := msg.Seqn()
 	it := m.getInstance(n)
 	if it == nil {
-		ev := <-m.st.Wait(n)
-		putToWrapper{n, m.outs}.PutTo(newLearn(ev.Mut), addr)
+		if msg.Cmd() != M_LEARN {
+			ev := <-m.st.Wait(n)
+			out := &M{WireCmd: learn, Value: []byte(ev.Mut)}
+			putToWrapper{n, m.outs}.PutTo(out, addr)
+		}
 	} else {
 		it.PutFrom(addr, msg)
 	}

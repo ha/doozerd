@@ -61,7 +61,7 @@ func (cx *cluster) indexByAddr(addr string) int {
 	return cx.indexById(cx.idByAddr(addr))
 }
 
-func (cx *cluster) Put(m Msg) {
+func (cx *cluster) Put(m *M) {
 	for addr := range cx.idsByAddr {
 		cx.outs.PutTo(m, addr)
 	}

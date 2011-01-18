@@ -9,7 +9,7 @@ func TestCluster(t *testing.T) {
 	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a", "b", "c"}
 	addrs := map[string]bool{"x": true, "y": true, "z": true}
-	outs := make(ChanPutCloserTo)
+	outs := make(chanPutCloserTo)
 	cx := newCluster("c", membership, active, outs)
 	assert.Equal(t, 3, cx.Len(), "Len")
 	assert.Equal(t, 2, cx.Quorum(), "Quorum")
@@ -32,14 +32,14 @@ func TestCluster(t *testing.T) {
 		_, ok := addrs[o.Addr]
 		assert.T(t, ok)
 		addrs[o.Addr] = false, false
-		assert.Equal(t, m, o.Msg)
+		assert.Equal(t, m, o.M)
 	}
 }
 
 func TestClusterActive(t *testing.T) {
 	membership := map[string]string{"a": "x", "b": "y", "c": "z"}
 	active := []string{"a"}
-	outs := make(ChanPutCloserTo)
+	outs := make(chanPutCloserTo)
 	cx := newCluster("a", membership, active, outs)
 	assert.Equal(t, 1, cx.Len(), "Len")
 	assert.Equal(t, 1, cx.Quorum(), "Quorum")
@@ -59,7 +59,7 @@ func TestClusterActive(t *testing.T) {
 func TestClusterEmpty(t *testing.T) {
 	membership := map[string]string{}
 	active := []string{}
-	outs := make(ChanPutCloserTo)
+	outs := make(chanPutCloserTo)
 	cx := newCluster("a", membership, active, outs)
 	assert.Equal(t, 0, cx.Len(), "Len")
 	assert.Equal(t, 1, cx.Quorum(), "Quorum")

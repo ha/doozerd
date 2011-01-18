@@ -6,25 +6,35 @@ type acceptor struct {
 	vval      string
 }
 
-func (ac *acceptor) Put(m Msg) {
+func (ac *acceptor) Put(m *M) {
 	switch m.Cmd() {
-	case invite:
-		if i := inviteParts(m); i > ac.rnd {
+	case M_INVITE:
+		i := *m.Crnd
+
+		if i > ac.rnd {
 			ac.rnd = i
 
-			reply := newRsvp(i, ac.vrnd, ac.vval)
-			ac.outs.Put(reply)
+			ac.outs.Put(&M{
+				WireCmd: rsvp,
+				Crnd:    &i,
+				Vrnd:    &ac.vrnd,
+				Value:   []byte(ac.vval),
+			})
 		}
-	case nominate:
-		i, v := nominateParts(m)
+	case M_NOMINATE:
+		i, v := *m.Crnd, m.Value
 
 		// SUPER IMPT MAD PAXOS
 		if i >= ac.rnd && i != ac.vrnd {
 			ac.rnd = i
 			ac.vrnd = i
-			ac.vval = v
+			ac.vval = string(v)
 
-			broadcast := newVote(i, ac.vval)
+			broadcast := &M{
+				WireCmd: vote,
+				Vrnd:    &i,
+				Value:   []byte(ac.vval),
+			}
 			ac.outs.Put(broadcast)
 		}
 	}

@@ -8,7 +8,22 @@ import (
 func TestSinkLearnsAValue(t *testing.T) {
 	var s sink
 
-	s.Put(newLearn("foo"))
+	b := s.Put(newLearn("foo"))
+	assert.Equal(t, true, b)
+	assert.Equal(t, true, s.done)
+	assert.Equal(t, "foo", s.v)
+}
+
+func TestSinkLearnsOkSticky(t *testing.T) {
+	var s sink
+
+	b := s.Put(newLearn("foo"))
+	assert.Equal(t, true, b)
+	assert.Equal(t, true, s.done)
+	assert.Equal(t, "foo", s.v)
+
+	b = s.Put(newLearn("bar"))
+	assert.Equal(t, false, b)
 	assert.Equal(t, true, s.done)
 	assert.Equal(t, "foo", s.v)
 }
@@ -16,10 +31,12 @@ func TestSinkLearnsAValue(t *testing.T) {
 func TestSinkIgnoresOtherMessages(t *testing.T) {
 	var s sink
 
-	s.Put(newVote(1, "foo"))
+	b := s.Put(newVote(1, "foo"))
+	assert.Equal(t, false, b)
 	assert.Equal(t, false, s.done)
 
-	s.Put(newLearn("foo"))
+	b = s.Put(newLearn("foo"))
+	assert.Equal(t, true, b)
 	assert.Equal(t, true, s.done)
 	assert.Equal(t, "foo", s.v)
 }

@@ -1,6 +1,7 @@
 package doozer
 
 import (
+	"doozer/ack"
 	"doozer/client"
 	"doozer/gc"
 	"doozer/lock"
@@ -24,14 +25,13 @@ const slot = "/doozer/slot"
 
 var slots = store.MustCompileGlob("/doozer/slot/*")
 
+
 func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener) {
 	logger := util.NewLogger("main")
 
 	var err os.Error
 
 	listenAddr := listener.Addr().String()
-
-	outs := make(paxos.ChanPutCloserTo)
 
 	cal := make(chan int)
 
@@ -84,7 +84,9 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		// gaps in its sequence
 	}
 
-	mg := paxos.NewManager(self, alpha, st, outs)
+	acker := ack.Ackify(udpConn)
+
+	mg := paxos.NewManager(self, alpha, st, paxos.Encoder{acker})
 
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
@@ -104,7 +106,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go gc.Clean(st)
 	}()
 
-	sv := &server.Server{udpConn, listenAddr, st, mg, self}
+	sv := &server.Server{listenAddr, st, mg, self}
 
 	go func() {
 		cas := store.Missing
@@ -129,7 +131,18 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go web.Serve(webListener)
 	}
 
-	sv.ServeUdp(outs)
+	decoder := paxos.Decoder{mg}
+	for {
+		data, addr, err := acker.ReadFrom()
+		if err == os.EINVAL {
+			break
+		}
+		if err != nil {
+			logger.Println(err)
+			continue
+		}
+		decoder.WriteFrom(addr, data)
+	}
 }
 
 func activate(st *store.Store, self string, c *client.Client) {
