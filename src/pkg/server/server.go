@@ -108,6 +108,9 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 	for {
 		rw, err := l.Accept()
 		if err != nil {
+			if err == os.EINVAL {
+				return nil
+			}
 			if e, ok := err.(*net.OpError); ok && e.Error == os.EINVAL {
 				return nil
 			}
