@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var emptyDir = node{v: "", ds: make(map[string]node), cas: Dir}
+var emptyDir = node{V: "", Ds: make(map[string]node), Cas: Dir}
 
 const ErrorPath = "/store/error"
 
@@ -14,9 +14,9 @@ const Nop = "nop:"
 
 // This structure should be kept immutable.
 type node struct {
-	v   string
-	cas int64
-	ds  map[string]node
+	V   string
+	Cas int64
+	Ds  map[string]node
 }
 
 func (n node) String() string {
@@ -24,9 +24,9 @@ func (n node) String() string {
 }
 
 func (n node) readdir() []string {
-	names := make([]string, len(n.ds))
+	names := make([]string, len(n.Ds))
 	i := 0
-	for name, _ := range n.ds {
+	for name, _ := range n.Ds {
 		names[i] = name
 		i++
 	}
@@ -36,14 +36,14 @@ func (n node) readdir() []string {
 func (n node) get(parts []string) ([]string, int64) {
 	switch len(parts) {
 	case 0:
-		if len(n.ds) > 0 {
-			return n.readdir(), n.cas
+		if len(n.Ds) > 0 {
+			return n.readdir(), n.Cas
 		} else {
-			return []string{n.v}, n.cas
+			return []string{n.V}, n.Cas
 		}
 	default:
-		if n.ds != nil {
-			if m, ok := n.ds[parts[0]]; ok {
+		if n.Ds != nil {
+			if m, ok := n.Ds[parts[0]]; ok {
 				return m.get(parts[1:])
 			}
 		}
@@ -71,14 +71,14 @@ func copyMap(a map[string]node) map[string]node {
 // Return value is replacement node
 func (n node) set(parts []string, v string, cas int64, keep bool) (node, bool) {
 	if len(parts) == 0 {
-		return node{v, cas, n.ds}, keep
+		return node{v, cas, n.Ds}, keep
 	}
 
-	n.ds = copyMap(n.ds)
-	p, ok := n.ds[parts[0]].set(parts[1:], v, cas, keep)
-	n.ds[parts[0]] = p, ok
-	n.cas = Dir
-	return n, len(n.ds) > 0
+	n.Ds = copyMap(n.Ds)
+	p, ok := n.Ds[parts[0]].set(parts[1:], v, cas, keep)
+	n.Ds[parts[0]] = p, ok
+	n.Cas = Dir
+	return n, len(n.Ds) > 0
 }
 
 func (n node) setp(k, v string, cas int64, keep bool) node {
