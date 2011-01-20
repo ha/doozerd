@@ -25,6 +25,9 @@ rm -rf $GOROOT/pkg/${GOOS}_${GOARCH}/doozer
 rm -rf $GOROOT/pkg/${GOOS}_${GOARCH}/doozer.a
 rm -rf $GOBIN/doozerd
 
+VERSION=`git describe | sed s/^v// | tr - +`
+export VERSION
+
 for req in $REQS
 do goinstall $req
 done
