@@ -5,14 +5,14 @@ type sink struct {
 	done bool
 }
 
-func (s *sink) Put(m *M) (ok bool) {
+func (s *sink) Put(m *M) {
 	if s.done {
 		return
 	}
 
 	switch m.Cmd() {
 	case M_LEARN:
-		ok, s.done, s.v = true, true, string(m.Value)
+		s.done, s.v = true, string(m.Value)
 	}
 	return
 }

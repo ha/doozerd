@@ -15,6 +15,7 @@ type clusterer interface {
 }
 
 func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
+	var done bool
 	var sched bool
 	var waitBound int64 = initialBound
 	cx := cf.cluster(seqn)
@@ -32,8 +33,8 @@ func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
 		p.SetFrom(int32(cx.indexByAddr(p.Addr)))
 		co.Put(p.M)
 		ac.Put(p.M)
-		lnOk := ln.Put(p.M)
-		skOk := sk.Put(p.M)
+		ln.Put(p.M)
+		sk.Put(p.M)
 
 		if co.seen > co.crnd && !sched {
 			sched = true
@@ -44,12 +45,14 @@ func (it instance) process(seqn int64, cf clusterer, res chan<- store.Op) {
 			}()
 		}
 
-		if skOk {
+		if sk.done && !done {
 			res <- store.Op{seqn, sk.v}
+			done = true
 		}
-		if lnOk {
+		if ln.done && !done {
 			cx.Put(&M{WireCmd: learn, Value: []byte(ln.v)})
 			res <- store.Op{seqn, ln.v}
+			done = true
 		}
 	}
 }

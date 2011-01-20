@@ -19,7 +19,7 @@ func newLearner(quorum int64) *learner {
 	}
 }
 
-func (ln *learner) Put(in *M) (ok bool) {
+func (ln *learner) Put(in *M) {
 	if in.Cmd() != M_VOTE {
 		return
 	}
@@ -44,7 +44,7 @@ func (ln *learner) Put(in *M) (ok bool) {
 		ln.voted[in.From()] = true
 
 		if ln.votes[k] >= ln.quorum {
-			ok, ln.done, ln.v = true, true, string(v) // winner!
+			ln.done, ln.v = true, string(v) // winner!
 		}
 	}
 	return
