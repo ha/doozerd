@@ -16,6 +16,7 @@ var (
 	attachAddr  = flag.String("a", "", "The address of another node to attach to.")
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
+	showVersion = flag.Bool("v", false, "print doozerd's version string")
 )
 
 
@@ -30,6 +31,11 @@ func main() {
 	util.LogWriter = os.Stderr
 	flag.Usage = Usage
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("doozerd", doozer.Version)
+		return
+	}
 
 	if *listenAddr == "" {
 		fmt.Fprintln(os.Stderr, "require a listen address")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"doozer"
 	"doozer/client"
 	"doozer/proto"
 	"flag"
@@ -15,6 +16,7 @@ import (
 var (
 	addr = flag.String("a", "127.0.0.1:8046", "the address to bind to")
 	showHelp = flag.Bool("h", false, "show help")
+	showVersion = flag.Bool("v", false, "print doozer's version string")
 )
 
 type cmd struct {
@@ -117,6 +119,11 @@ func main() {
 
 	if *showHelp {
 		Usage()
+		return
+	}
+
+	if *showVersion {
+		fmt.Println("doozer", doozer.Version)
 		return
 	}
 
