@@ -187,6 +187,33 @@ func (c *conn) call(t *T) (*R, os.Error) {
 }
 
 
+func (c *conn) events(t *T) (*Watch, os.Error) {
+	ch, err := c.send(t)
+	if err != nil {
+		return nil, err
+	}
+
+	evs := make(chan *Event)
+	w := &Watch{evs, c, *t.Tag}
+	go func() {
+		for r := range ch {
+			var ev Event
+			if err := r.err(); err != nil {
+				ev.Err = err
+			} else {
+				ev.Cas = pb.GetInt64(r.Cas)
+				ev.Path = pb.GetString(r.Path)
+				ev.Body = r.Value
+			}
+			evs <- &ev
+		}
+		close(evs)
+	}()
+
+	return w, nil
+}
+
+
 func (c *conn) readR() (*R, os.Error) {
 	var size int32
 	err := binary.Read(c.c, binary.BigEndian, &size)
@@ -271,41 +298,28 @@ func (c *conn) cancel(tag int32) os.Error {
 type Client struct {
 	Name string
 	c    *conn     // current connection
-	ra    []string // known readable addresses
-	wa    []string // known writable address
+	a     []string // known (writable) server addresses
 	lg   *log.Logger
 	lk   sync.Mutex
 }
 
 
 // Name is the name of this cluster.
-// Addr is an initial readable address to connect to.
-func New(name, raddr string) *Client {
-	return &Client{Name: name, ra: []string{raddr}}
-}
-
-
-func (c *Client) AddRaddr(a string) {
-	c.lk.Lock()
-	defer c.lk.Unlock()
-	for _, s := range c.ra {
-		if s == a {
-			return
-		}
-	}
-	c.ra = append(c.ra, a)
+// Addr is an initial (writable) address to connect to.
+func New(name, addr string) *Client {
+	return &Client{Name: name, a: []string{addr}}
 }
 
 
 func (c *Client) AddWaddr(a string) {
 	c.lk.Lock()
 	defer c.lk.Unlock()
-	for _, s := range c.wa {
+	for _, s := range c.a {
 		if s == a {
 			return
 		}
 	}
-	c.wa = append(c.wa, a)
+	c.a = append(c.a, a)
 }
 
 
@@ -349,27 +363,13 @@ func (cl *Client) conn() (c *conn, err os.Error) {
 	defer cl.lk.Unlock()
 
 	if cl.c == nil {
-		if len(cl.ra) < 1 {
+		if len(cl.a) < 1 {
 			return nil, ErrNoAddrs
 		}
 
-		cl.c, err = cl.dial(cl.ra[0])
+		cl.c, err = cl.dial(cl.a[0])
 		if err != nil {
-			cl.ra = cl.ra[1:]
-		}
-
-		return cl.c, err
-	}
-
-	if cl.c.redirected {
-		cl.AddWaddr(cl.c.redirectAddr)
-		if len(cl.wa) < 1 {
-			return nil, ErrNoAddrs
-		}
-
-		cl.c, err = cl.dial(cl.wa[0])
-		if err != nil {
-			cl.wa = cl.wa[1:]
+			cl.a = cl.a[1:]
 		}
 
 		return cl.c, err
@@ -472,48 +472,29 @@ func (cl *Client) DelSnap(id int32) os.Error {
 }
 
 
-func (cl *Client) events(verb int32, glob string) (*Watch, os.Error) {
+func (cl *Client) Watch(glob string) (*Watch, os.Error) {
 	c, err := cl.conn()
 	if err != nil {
 		return nil, err
 	}
 
 	var t T
-	t.Verb = proto.NewRequest_Verb(verb)
+	t.Verb = proto.NewRequest_Verb(proto.Request_WATCH)
 	t.Path = &glob
-	ch, err := c.send(&t)
-	if err != nil {
-		return nil, err
-	}
-
-	evs := make(chan *Event)
-	w := &Watch{evs, c, *t.Tag}
-	go func() {
-		for r := range ch {
-			var ev Event
-			if err := r.err(); err != nil {
-				ev.Err = err
-			} else {
-				ev.Cas = pb.GetInt64(r.Cas)
-				ev.Path = pb.GetString(r.Path)
-				ev.Body = r.Value
-			}
-			evs <- &ev
-		}
-		close(evs)
-	}()
-
-	return w, nil
-}
-
-
-func (cl *Client) Watch(glob string) (*Watch, os.Error) {
-	return cl.events(proto.Request_WATCH, glob)
+	return c.events(&t)
 }
 
 
 func (cl *Client) Walk(glob string) (*Watch, os.Error) {
-	return cl.events(proto.Request_WALK, glob)
+	c, err := cl.conn()
+	if err != nil {
+		return nil, err
+	}
+
+	var t T
+	t.Verb = proto.NewRequest_Verb(proto.Request_WALK)
+	t.Path = &glob
+	return c.events(&t)
 }
 
 
