@@ -32,6 +32,7 @@ var (
 
 
 var (
+	badPath     = proto.NewResponse_Err(proto.Response_BAD_PATH)
 	tagInUse    = &R{ErrCode: proto.NewResponse_Err(proto.Response_TAG_IN_USE)}
 	isDir       = &R{ErrCode: proto.NewResponse_Err(proto.Response_ISDIR)}
 	badSnap     = &R{ErrCode: proto.NewResponse_Err(proto.Response_INVALID_SNAP)}
@@ -317,10 +318,7 @@ func (c *conn) set(t *T) *R {
 		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas, cancel)
 		switch e := err.(type) {
 		case *store.BadPathError:
-			return &R{
-				ErrCode: proto.NewResponse_Err(proto.Response_BAD_PATH),
-				ErrDetail: &e.Path,
-			}
+			return &R{ErrCode: badPath, ErrDetail: &e.Path}
 		}
 
 		switch err {
