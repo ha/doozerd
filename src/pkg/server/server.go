@@ -427,7 +427,7 @@ func (c *conn) checkin(t *T) *R {
 		case <-cancel:
 			return nil
 		}
-		return &R{Cas: &cas}
+		return &R{Cas: pb.Int64(-1)}
 	})
 }
 

@@ -598,7 +598,7 @@ func (cl *Client) Noop() os.Error {
 
 
 func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
-	r, err := cl.call(&T{Verb: checkin, Path: &id, Cas: &cas})
+	r, err := cl.retry(&T{Verb: checkin, Path: &id, Cas: &cas})
 	if err != nil {
 		return 0, err
 	}
