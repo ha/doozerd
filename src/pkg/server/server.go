@@ -556,9 +556,12 @@ func (c *conn) snap(t *T) *R {
 
 
 func (c *conn) delSnap(t *T) *R {
-	id := pb.GetInt32(t.Id)
+	if t.Id == nil {
+		return missingArg
+	}
+
 	c.slk.Lock()
-	c.snaps[id] = nil, false
+	c.snaps[*t.Id] = nil, false
 	c.slk.Unlock()
 
 	return &R{}
