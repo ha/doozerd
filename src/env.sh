@@ -1,6 +1,5 @@
 REQS="
     github.com/bmizerany/assert
-    github.com/kr/pretty.go
 "
 
 PKGS="
