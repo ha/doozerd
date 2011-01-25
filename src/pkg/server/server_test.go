@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"doozer/store"
+	"github.com/bmizerany/assert"
 	"testing"
 )
 
@@ -14,5 +15,6 @@ func TestDelNilFields(t *testing.T) {
 		snaps:   make(map[int32]store.Getter),
 		cancels: make(map[int32]chan bool),
 	}
-	c.del(&T{})
+	r := c.del(&T{})
+	assert.Equal(t, missingArg, r)
 }
