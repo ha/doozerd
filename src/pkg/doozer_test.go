@@ -3,9 +3,11 @@ package doozer
 import (
 	"doozer/client"
 	"doozer/store"
+	"exec"
 	"github.com/bmizerany/assert"
 	"net"
 	"testing"
+	"time"
 )
 
 
@@ -198,6 +200,70 @@ func TestDoozerWalk(t *testing.T) {
 
 	ev = <-w.C
 	assert.Tf(t, closed(w.C), "got %v", ev)
+}
+
+func runDoozer(a ...string) *exec.Cmd {
+	path := "/home/kr/src/go/bin/doozerd"
+	p, err := exec.Run(
+		path,
+		append([]string{path}, a...),
+		nil,
+		"/",
+		0,
+		0,
+		0,
+	)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
+
+func TestDoozerReconnect(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	a := l.Addr().String()
+	u := mustListenPacket(a)
+	defer u.Close()
+	go Main("a", "", u, l, nil)
+
+	l1 := mustListen()
+	go Main("a", a, mustListenPacket(l1.Addr().String()), l1, nil)
+
+	l2 := mustListen()
+	go Main("a", a, mustListenPacket(l2.Addr().String()), l2, nil)
+
+	c0 := client.New("foo", a)
+
+	_, err := c0.Set("/doozer/slot/2", 0, []byte{})
+	assert.Equal(t, nil, err)
+
+	_, err = c0.Set("/doozer/slot/3", 0, []byte{})
+	assert.Equal(t, nil, err)
+
+	// Wait for the other members to become CALs.
+	for <-c0.Len < 3 {
+		time.Sleep(5e8)
+	}
+
+	cas, err := c0.Set("/x", -1, []byte{'a'})
+	assert.Equal(t, nil, err, err)
+
+	cas, err = c0.Set("/x", -1, []byte{'b'})
+	assert.Equal(t, nil, err)
+
+	l1.Close()
+
+	ents, cas, err := c0.Get("/ping", 0)
+	assert.Equal(t, nil, err, err)
+	assert.NotEqual(t, store.Dir, cas)
+	assert.Equal(t, []byte("pong"), ents)
+
+	cas, err = c0.Set("/x", -1, []byte{'c'})
+	assert.Equal(t, nil, err, err)
+
+	cas, err = c0.Set("/x", -1, []byte{'d'})
+	assert.Equal(t, nil, err)
 }
 
 

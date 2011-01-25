@@ -24,6 +24,20 @@ var (
 	ErrNoAddrs = os.NewError("no known address")
 )
 
+var (
+	cancel  = proto.NewRequest_Verb(proto.Request_CANCEL)
+	checkin = proto.NewRequest_Verb(proto.Request_CHECKIN)
+	del     = proto.NewRequest_Verb(proto.Request_DEL)
+	delsnap = proto.NewRequest_Verb(proto.Request_DELSNAP)
+	get     = proto.NewRequest_Verb(proto.Request_GET)
+	join    = proto.NewRequest_Verb(proto.Request_JOIN)
+	noop    = proto.NewRequest_Verb(proto.Request_NOOP)
+	set     = proto.NewRequest_Verb(proto.Request_SET)
+	snap    = proto.NewRequest_Verb(proto.Request_SNAP)
+	walk    = proto.NewRequest_Verb(proto.Request_WALK)
+	watch   = proto.NewRequest_Verb(proto.Request_WATCH)
+)
+
 
 type ResponseError struct {
 	Code   int32
@@ -65,12 +79,12 @@ type R proto.Response
 
 
 func (r *R) err() os.Error {
+	if r == nil {
+		return os.EOF
+	}
+
 	if r.ErrCode != nil {
 		c := int32(*r.ErrCode)
-
-		if c == proto.Response_REDIRECT {
-			return os.EAGAIN
-		}
 
 		if r.ErrDetail != nil {
 			return &ResponseError{c, *r.ErrDetail}
@@ -92,9 +106,10 @@ func (r *R) String() string {
 
 
 type conn struct {
-	c   net.Conn
-	clk sync.Mutex // write lock
-	err os.Error   // unrecoverable error
+	addr string
+	c    net.Conn
+	clk  sync.Mutex // write lock
+	err  os.Error   // unrecoverable error
 
 	// callback management
 	n    int32             // next tag
@@ -106,6 +121,8 @@ type conn struct {
 	// redirect handling
 	redirectAddr string
 	redirected   bool
+
+	closed chan bool
 }
 
 
@@ -236,11 +253,28 @@ func (c *conn) readR() (*R, os.Error) {
 }
 
 
+func (c *conn) close() {
+	c.cblk.Lock()
+	for _, ch := range c.cb {
+		close(ch)
+	}
+	c.cb = nil
+	c.cblk.Unlock()
+	c.closed <- true
+}
+
+
 func (c *conn) readResponses() {
+	defer c.close()
+
 	for {
 		r, err := c.readR()
 		if err != nil {
-			c.lg.Println(err)
+			c.clk.Lock()
+			if c.err == nil {
+				c.err = err
+			}
+			c.clk.Unlock()
 			return
 		}
 
@@ -254,29 +288,29 @@ func (c *conn) readResponses() {
 
 		c.cblk.Lock()
 		ch, ok := c.cb[tag]
-		if ok && flags&Done != 0 {
+		if flags&Done != 0 {
 			c.cb[tag] = nil, false
 		}
 		c.cblk.Unlock()
 
-		if ok {
-			if flags&Valid != 0 {
-				ch <- r
-			}
-
-			if flags&Done != 0 {
-				close(ch)
-			}
-		} else {
+		if !ok {
 			c.lg.Println("unexpected:", r.String())
+			continue
+		}
+
+		if flags&Valid != 0 {
+			ch <- r
+		}
+
+		if flags&Done != 0 {
+			close(ch)
 		}
 	}
 }
 
 
 func (c *conn) cancel(tag int32) os.Error {
-	verb := proto.NewRequest_Verb(proto.Request_CANCEL)
-	_, err := c.call(&T{Verb: verb, Id: &tag})
+	_, err := c.call(&T{Verb: cancel, Id: &tag})
 	if err != nil {
 		return err
 	}
@@ -295,31 +329,175 @@ func (c *conn) cancel(tag int32) os.Error {
 }
 
 
+func (c *conn) monitorAddrs(cl *Client) {
+	addrs := make(map[string]string)
+	addAddr := func(p, a string) {
+		if len(a) > 0 {
+			addrs[p] = a
+		}
+	}
+
+	addrGlob := pb.String("/doozer/info/*/public-addr")
+	watchAddr, err := c.events(&T{Verb: watch, Path: addrGlob})
+	if err != nil {
+		c.lg.Println(err)
+		return
+	}
+
+	walkAddr, err := c.events(&T{Verb: walk, Path: addrGlob})
+	if err != nil {
+		c.lg.Println(err)
+		return
+	}
+
+	init: for {
+		select {
+		case ev := <-walkAddr.C:
+			if closed(walkAddr.C) {
+				break init
+			}
+			addAddr(ev.Path, string(ev.Body))
+		case ev := <-watchAddr.C:
+			addAddr(ev.Path, string(ev.Body))
+		}
+	}
+
+
+	glob := pb.String("/doozer/slot/*")
+
+	watch, err := c.events(&T{Verb: watch, Path: glob})
+	if err != nil {
+		c.lg.Println(err)
+		return
+	}
+
+	walk, err := c.events(&T{Verb: walk, Path: glob})
+	if err != nil {
+		c.lg.Println(err)
+		return
+	}
+
+	slots := make(map[string]string)
+
+	for {
+		if watchAddr.C == nil && walk.C == nil && watch.C == nil {
+			break
+		}
+
+		select {
+		case ev := <-watchAddr.C:
+			if closed(watchAddr.C) {
+				watchAddr.C = nil
+				break
+			}
+			addAddr(ev.Path, string(ev.Body))
+		case ev := <-walk.C:
+			if closed(walk.C) {
+				walk.C = nil
+				break
+			}
+
+			if len(ev.Body) > 0 {
+				sid := string(ev.Body)
+				path := "/doozer/info/" + sid + "/public-addr"
+				addr := addrs[path]
+				slots[ev.Path] = addr
+				cl.a <- addr
+			} else {
+				addr := slots[ev.Path]
+				slots[ev.Path] = "", false
+				cl.r <- addr
+			}
+		case ev := <-watch.C:
+			if closed(watch.C) {
+				watch.C = nil
+				break
+			}
+
+			if len(ev.Body) > 0 {
+				sid := string(ev.Body)
+				path := "/doozer/info/" + sid + "/public-addr"
+				addr := addrs[path]
+				slots[ev.Path] = addr
+				cl.a <- addr
+			} else {
+				addr := slots[ev.Path]
+				slots[ev.Path] = "", false
+				cl.r <- addr
+			}
+		}
+	}
+}
+
+
 type Client struct {
 	Name string
-	c    *conn     // current connection
-	a     []string // known (writable) server addresses
+	c    chan *conn // current connection
+	a    chan string // add address
+	r    chan string // remove address
 	lg   *log.Logger
-	lk   sync.Mutex
+	Len  chan int
 }
 
 
 // Name is the name of this cluster.
 // Addr is an initial (writable) address to connect to.
 func New(name, addr string) *Client {
-	return &Client{Name: name, a: []string{addr}}
+	c := &Client{
+		Name: name,
+		c:    make(chan *conn),
+		a:    make(chan string),
+		r:    make(chan string),
+		lg:   util.NewLogger(name),
+		Len:  make(chan int),
+	}
+	go c.run(map[string]bool{addr:true})
+	return c
 }
 
 
-func (c *Client) AddWaddr(a string) {
-	c.lk.Lock()
-	defer c.lk.Unlock()
-	for _, s := range c.a {
-		if s == a {
-			return
+func (cl *Client) connect(a map[string]bool) *conn {
+	for len(a) > 0 {
+		var addr string
+		for addr = range a {
+			break
+		}
+		c, err := cl.dial(addr)
+		if err == nil {
+			return c
+		}
+		cl.lg.Println(err)
+		a[addr] = false, false
+	}
+	close(cl.c)
+	return nil
+}
+
+
+func (cl *Client) run(a map[string]bool) {
+	c := cl.connect(a)
+	if c == nil {
+		return
+	}
+
+	for {
+		select {
+		case cl.Len <- len(a):
+			// nothing
+		case cl.c <- c:
+			// nothing
+		case add := <-cl.a:
+			a[add] = true
+		case rm := <-cl.r:
+			a[rm] = false, false
+		case <-c.closed:
+			a[c.addr] = false, false
+			c = cl.connect(a)
+			if c == nil {
+				return
+			}
 		}
 	}
-	c.a = append(c.a, a)
 }
 
 
@@ -327,6 +505,7 @@ func (cl *Client) dial(addr string) (*conn, os.Error) {
 	var c conn
 	var err os.Error
 
+	c.addr = addr
 	c.c, err = net.Dial("tcp", "", addr)
 	if err != nil {
 		return nil, err
@@ -334,74 +513,46 @@ func (cl *Client) dial(addr string) (*conn, os.Error) {
 
 	c.cb = make(map[int32]chan *R)
 	c.lg = util.NewLogger(addr)
+	c.closed = make(chan bool, 1)
 	go c.readResponses()
+	go c.monitorAddrs(cl)
 	return &c, nil
 }
 
 
-// This is a little subtle. We want to follow redirects while still pipelining
-// requests, and we want to allow as many requests as possible to succeed
-// without retrying unnecessarily.
-//
-// In particular, reads never need to redirect, and writes must always go to
-// a CAL node. So we want that read requests never retry, and write requests
-// retry if and only if necessary. Here's how it works:
-//
-// In the conn, when we get a redirect response, we raise a flag noting
-// the new address. This flag only goes up, never down. This flag effectively
-// means the connection is deprecated. Any pending requests can go ahead, but
-// new requests should use the new address.
-//
-// In the Client, when we notice that a redirect has occurred (i.e. the flag is
-// set), we establish a new connection to the new address. Calls in the future
-// will use the new connection. But we also allow the old connection to
-// continue functioning as it was. Any writes on the old connection will retry,
-// and then they are guaranteed to pick up the new connection. Any reads on the
-// old connection will just succeed directly.
-func (cl *Client) conn() (c *conn, err os.Error) {
-	cl.lk.Lock()
-	defer cl.lk.Unlock()
-
-	if cl.c == nil {
-		if len(cl.a) < 1 {
-			return nil, ErrNoAddrs
-		}
-
-		cl.c, err = cl.dial(cl.a[0])
-		if err != nil {
-			cl.a = cl.a[1:]
-		}
-
-		return cl.c, err
+func (cl *Client) call(t *T) (r *R, err os.Error) {
+	c := <-cl.c
+	if c == nil {
+		return nil, ErrNoAddrs
 	}
 
-	return cl.c, nil
+	return c.call(t)
 }
 
 
-func (cl *Client) call(verb int32, t *T) (r *R, err os.Error) {
-	t.Verb = proto.NewRequest_Verb(verb)
-
-	for err = os.EAGAIN; err == os.EAGAIN; {
-		var c *conn
-		c, err = cl.conn()
-		if err != nil {
-			continue
+func (cl *Client) retry(t *T) (r *R, err os.Error) {
+	for {
+		c := <-cl.c
+		if c == nil {
+			return nil, ErrNoAddrs
 		}
 
 		r, err = c.call(t)
+		if c.err != nil {
+			// connection error? then try again with a new conn
+			continue
+		}
+
+		// success, or some other error
+		return
 	}
 
-	if err != nil {
-		lg.Println(err)
-	}
-
-	return
+	panic("not reached")
 }
 
 
 func (cl *Client) Join(id, addr string) (seqn int64, snapshot string, err os.Error) {
-	r, err := cl.call(proto.Request_JOIN, &T{Path: &id, Value: []byte(addr)})
+	r, err := cl.call(&T{Verb: join, Path: &id, Value: []byte(addr)})
 	if err != nil {
 		return 0, "", err
 	}
@@ -411,7 +562,7 @@ func (cl *Client) Join(id, addr string) (seqn int64, snapshot string, err os.Err
 
 
 func (cl *Client) Set(path string, oldCas int64, body []byte) (newCas int64, err os.Error) {
-	r, err := cl.call(proto.Request_SET, &T{Path: &path, Value: body, Cas: &oldCas})
+	r, err := cl.call(&T{Verb: set, Path: &path, Value: body, Cas: &oldCas})
 	if err != nil {
 		return 0, err
 	}
@@ -425,7 +576,7 @@ func (cl *Client) Set(path string, oldCas int64, body []byte) (newCas int64, err
 // snapId must be a value previously returned from Snap.
 // If path does not denote a file, returns an error.
 func (cl *Client) Get(path string, snapId int32) (body []byte, cas int64, err os.Error) {
-	r, err := cl.call(proto.Request_GET, &T{Path: &path, Id: &snapId})
+	r, err := cl.retry(&T{Verb: get, Path: &path, Id: &snapId})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -435,19 +586,19 @@ func (cl *Client) Get(path string, snapId int32) (body []byte, cas int64, err os
 
 
 func (cl *Client) Del(path string, cas int64) os.Error {
-	_, err := cl.call(proto.Request_DEL, &T{Path: &path, Cas: &cas})
+	_, err := cl.call(&T{Verb: del, Path: &path, Cas: &cas})
 	return err
 }
 
 
 func (cl *Client) Noop() os.Error {
-	_, err := cl.call(proto.Request_NOOP, &T{})
+	_, err := cl.call(&T{Verb: noop})
 	return err
 }
 
 
 func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
-	r, err := cl.call(proto.Request_CHECKIN, &T{Path: &id, Cas: &cas})
+	r, err := cl.call(&T{Verb: checkin, Path: &id, Cas: &cas})
 	if err != nil {
 		return 0, err
 	}
@@ -457,7 +608,7 @@ func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
 
 
 func (cl *Client) Snap() (id int32, ver int64, err os.Error) {
-	r, err := cl.call(proto.Request_SNAP, &T{})
+	r, err := cl.call(&T{Verb: snap})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -467,34 +618,28 @@ func (cl *Client) Snap() (id int32, ver int64, err os.Error) {
 
 
 func (cl *Client) DelSnap(id int32) os.Error {
-	_, err := cl.call(proto.Request_DELSNAP, &T{Id: &id})
+	_, err := cl.call(&T{Verb: delsnap, Id: &id})
 	return err
 }
 
 
 func (cl *Client) Watch(glob string) (*Watch, os.Error) {
-	c, err := cl.conn()
-	if err != nil {
-		return nil, err
+	c := <-cl.c
+	if c == nil {
+		return nil, ErrNoAddrs
 	}
 
-	var t T
-	t.Verb = proto.NewRequest_Verb(proto.Request_WATCH)
-	t.Path = &glob
-	return c.events(&t)
+	return c.events(&T{Verb: watch, Path: &glob})
 }
 
 
 func (cl *Client) Walk(glob string) (*Watch, os.Error) {
-	c, err := cl.conn()
-	if err != nil {
-		return nil, err
+	c := <-cl.c
+	if c == nil {
+		return nil, ErrNoAddrs
 	}
 
-	var t T
-	t.Verb = proto.NewRequest_Verb(proto.Request_WALK)
-	t.Path = &glob
-	return c.events(&t)
+	return c.events(&T{Verb: walk, Path: &glob})
 }
 
 
