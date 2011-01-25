@@ -113,7 +113,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		for {
 			cas, err = cl.Checkin(self, cas)
 			if err != nil {
-				logger.Println(err)
+				panic(err) // this is fatal
 			}
 		}
 	}()
