@@ -414,19 +414,30 @@ func (c *conn) checkin(t *T) *R {
 		body := strconv.Itoa64(deadline)
 		sess := pb.GetString(t.Path)
 		cas := pb.GetInt64(t.Cas)
-		_, cas, err := paxos.Set(c.s.Mg, "/session/"+sess, body, cas, cancel)
-		if err == paxos.ErrCancel {
-			return nil
+		path := "/session/" + sess
+		if cas != 0 {
+			_, cas = c.s.St.Get(path)
+			if cas == 0 {
+				return casMismatch
+			}
 		}
-		if err != nil {
+		_, cas, err := paxos.Set(c.s.Mg, path, body, cas, cancel)
+		switch {
+		case err == paxos.ErrCancel:
+			return nil
+		case err == store.ErrCasMismatch:
+			return casMismatch
+		case err != nil:
 			return errResponse(err)
 		}
 
 		select {
 		case <-time.After(deadline - sessionPad - time.Nanoseconds()):
+			// nothing
 		case <-cancel:
 			return nil
 		}
+
 		return &R{Cas: pb.Int64(-1)}
 	})
 }
