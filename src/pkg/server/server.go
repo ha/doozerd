@@ -33,6 +33,7 @@ var (
 
 var (
 	badPath     = proto.NewResponse_Err(proto.Response_BAD_PATH)
+	missingArg  = &R{ErrCode: proto.NewResponse_Err(proto.Response_MISSING_ARG)}
 	tagInUse    = &R{ErrCode: proto.NewResponse_Err(proto.Response_TAG_IN_USE)}
 	isDir       = &R{ErrCode: proto.NewResponse_Err(proto.Response_ISDIR)}
 	badSnap     = &R{ErrCode: proto.NewResponse_Err(proto.Response_INVALID_SNAP)}
@@ -107,6 +108,7 @@ func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
 		}
 		c := &conn{
 			c:       rw,
+			addr:    rw.RemoteAddr().String(),
 			s:       s,
 			cal:     closed(cal),
 			snaps:   make(map[int32]store.Getter),
@@ -141,7 +143,8 @@ func (sv *Server) AdvanceUntil(done chan int) {
 
 
 type conn struct {
-	c        net.Conn
+	c        io.ReadWriter
+	addr     string
 	s        *Server
 	cal      bool
 	sid      int32
@@ -340,6 +343,10 @@ func (c *conn) set(t *T) *R {
 func (c *conn) del(t *T) *R {
 	if !c.cal {
 		return c.redirect()
+	}
+
+	if t.Path == nil || t.Cas == nil {
+		return missingArg
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
@@ -574,7 +581,7 @@ var ops = map[int32] func(*conn, *T) *R {
 
 
 func (c *conn) serve() {
-	logger := util.NewLogger("%v", c.c.RemoteAddr())
+	logger := util.NewLogger("%v", c.addr)
 	logger.Println("accepted connection")
 	for {
 		t, err := c.readBuf()
@@ -587,7 +594,7 @@ func (c *conn) serve() {
 			return
 		}
 
-		rlogger := util.NewLogger("%v - req [%d]", c.c.RemoteAddr(), t.Tag)
+		rlogger := util.NewLogger("%v - req [%d]", c.addr, t.Tag)
 
 		verb := pb.GetInt32((*int32)(t.Verb))
 		f, ok := ops[verb]
