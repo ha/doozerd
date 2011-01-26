@@ -31,14 +31,17 @@ func TestManyOneshotTimers(t *testing.T) {
 
 	got := <-timer.C
 	assert.Equal(t, got.Path, "/timer/short")
+	assert.Equal(t, int64(2), got.Cas)
 	assert.T(t, got.At <= time.Nanoseconds())
 
 	got = <-timer.C
 	assert.Equal(t, got.Path, "/timer/long")
+	assert.Equal(t, int64(3), got.Cas)
 	assert.T(t, got.At <= time.Nanoseconds())
 
 	got = <-timer.C
 	assert.Equal(t, got.Path, "/timer/longest")
+	assert.Equal(t, int64(1), got.Cas)
 	assert.T(t, got.At <= time.Nanoseconds())
 
 	assert.Equal(t, 0, timer.ticks.Len())
@@ -61,7 +64,9 @@ func TestDeleteTimer(t *testing.T) {
 	st.Ops <- store.Op{3, store.MustEncodeDel(never, store.Clobber)}
 
 	// If the first timer failed to delete, it would come out first.
-	assert.Equal(t, does, (<-timer.C).Path) // From seqn 2
+	got := (<-timer.C)
+	assert.Equal(t, does, got.Path)
+	assert.Equal(t, int64(2), got.Cas)
 }
 
 func TestUpdate(t *testing.T) {
@@ -76,8 +81,12 @@ func TestUpdate(t *testing.T) {
 	// The deadline scheduled from seqn 2 should never fire. It should be
 	// replaced by seqn 3.
 
-	assert.Equal(t, "/timer/x", (<-timer.C).Path) // From seqn 3
-	assert.Equal(t, "/timer/y", (<-timer.C).Path) // From seqn 1
+	got := (<-timer.C)
+	assert.Equal(t, "/timer/x", got.Path)
+	assert.Equal(t, int64(3), got.Cas)
+	got = (<-timer.C)
+	assert.Equal(t, "/timer/y", got.Path)
+	assert.Equal(t, int64(1), got.Cas)
 }
 
 func TestTimerStop(t *testing.T) {

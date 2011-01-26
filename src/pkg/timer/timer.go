@@ -18,6 +18,7 @@ const (
 
 type Tick struct {
 	Path string
+	Cas  int64
 	At   int64
 }
 
@@ -81,7 +82,7 @@ func (t *Timer) process(c chan Tick) {
 			// with the currect way the code functions.  Dunno.
 			at, _ := strconv.Atoi64(e.Body)
 
-			x := Tick{e.Path, at}
+			x := Tick{e.Path, e.Cas, at}
 			switch {
 			default:
 				break
