@@ -33,7 +33,9 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	listenAddr := listener.Addr().String()
 
+	var activateSeqn int64
 	cal := make(chan int)
+	useSelf := make(chan bool)
 
 	var cl *client.Client
 	self := util.RandId()
@@ -46,6 +48,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		set(st, "/ping", "pong", store.Missing)
 
 		close(cal)
+		close(useSelf)
 
 		cl = client.New("local", listenAddr) // TODO use real cluster name
 	} else {
@@ -76,8 +79,15 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go func() {
 			st.Sync(joinSeqn + alpha)
 			close(done)
-			activate(st, self, cl)
+
+			activateSeqn = activate(st, self, cl)
 			close(cal)
+
+			done = make(chan int)
+			go advanceUntil(cl, done)
+			st.Sync(activateSeqn + alpha)
+			close(done)
+			close(useSelf)
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -113,7 +123,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 		// slave
 		for {
-			if closed(cal) {
+			if closed(useSelf) {
 				break
 			}
 			cas, err = cl.Checkin(self, cas)
@@ -159,15 +169,16 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	}
 }
 
-func activate(st *store.Store, self string, c *client.Client) {
+func activate(st *store.Store, self string, c *client.Client) (seqn int64) {
 	logger := util.NewLogger("activate")
 	w := store.NewWatch(st, slots)
+	var err os.Error
 
 	for _, base := range store.GetDir(st, slot) {
 		p := slot + "/" + base
 		v, cas := st.Get(p)
 		if cas != store.Dir && v[0] == "" {
-			_, err := c.Set(p, cas, []byte(self))
+			seqn, err = c.Set(p, cas, []byte(self))
 			if err != nil {
 				logger.Println(err)
 				continue
@@ -182,7 +193,7 @@ func activate(st *store.Store, self string, c *client.Client) {
 	for ev := range w.C {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			_, err := c.Set(ev.Path, ev.Cas, []byte(self))
+			seqn, err = c.Set(ev.Path, ev.Cas, []byte(self))
 			if err != nil {
 				logger.Println(err)
 				continue
@@ -191,6 +202,8 @@ func activate(st *store.Store, self string, c *client.Client) {
 			close(w.C)
 		}
 	}
+
+	return seqn
 }
 
 func advanceUntil(cl *client.Client, done chan int) {
