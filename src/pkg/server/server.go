@@ -21,8 +21,8 @@ const packetSize = 3000
 
 
 const (
-	sessionLease = 60e9 // ns == 60s
-	sessionPad   = 5e8 // ns == .5s
+	sessionLease = 6e9 // ns == 6s
+	sessionPad   = 3e9 // ns == 3s
 )
 
 
