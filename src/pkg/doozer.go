@@ -110,6 +110,20 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	go func() {
 		cas := store.Missing
+
+		// slave
+		for {
+			if closed(cal) {
+				break
+			}
+			cas, err = cl.Checkin(self, cas)
+			if err != nil {
+				panic(err) // this is fatal
+			}
+		}
+
+		// CAL
+		cl = client.New("local", listenAddr)
 		for {
 			cas, err = cl.Checkin(self, cas)
 			if err != nil {
