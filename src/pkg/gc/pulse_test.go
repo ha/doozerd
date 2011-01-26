@@ -8,29 +8,23 @@ import (
 
 // Testing
 
-type FakeSetter struct {
-	path chan string
-	body chan []byte
-}
+type FakeProposer chan string
 
-func (fs *FakeSetter) Set(path string, oldCas int64, body []byte) (int64, os.Error) {
-	fs.path <- path
-	fs.body <- body
-	return 123, nil
+func (fs FakeProposer) Propose(v string, _ chan bool) (int64, int64, os.Error) {
+	fs <- v
+	return 123, 123, nil
 }
 
 func TestGcPulse(t *testing.T) {
 	seqns := make(chan int64)
 	defer close(seqns)
-	fs := &FakeSetter{make(chan string), make(chan []byte)}
+	fs := make(FakeProposer)
 
 	go Pulse("test", seqns, fs, 1)
 
 	seqns <- 0
-	assert.Equal(t, "/doozer/info/test/applied", <-fs.path)
-	assert.Equal(t, []byte{'0'}, <-fs.body)
+	assert.Equal(t, "0:/doozer/info/test/applied=0", <-fs)
 
 	seqns <- 1
-	assert.Equal(t, "/doozer/info/test/applied", <-fs.path)
-	assert.Equal(t, []byte{'1'}, <-fs.body)
+	assert.Equal(t, "123:/doozer/info/test/applied=1", <-fs)
 }

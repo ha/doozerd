@@ -1,6 +1,7 @@
 package gc
 
 import (
+	"doozer/paxos"
 	"doozer/store"
 	"doozer/util"
 	"os"
@@ -8,11 +9,7 @@ import (
 	"time"
 )
 
-type Setter interface {
-	Set(path string, oldCas int64, body []byte) (newCas int64, err os.Error)
-}
-
-func Pulse(node string, seqns <-chan int64, s Setter, sleep int64) {
+func Pulse(node string, seqns <-chan int64, p paxos.Proposer, sleep int64) {
 	logger := util.NewLogger("pulse")
 
 	var err os.Error
@@ -24,7 +21,7 @@ func Pulse(node string, seqns <-chan int64, s Setter, sleep int64) {
 			break
 		}
 
-		cas, err = s.Set("/doozer/info/"+node+"/applied", cas, []byte(seqn))
+		_, cas, err = paxos.Set(p, "/doozer/info/"+node+"/applied", seqn, cas, nil)
 		if err != nil {
 			logger.Println(err)
 		}

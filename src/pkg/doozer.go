@@ -102,7 +102,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go lock.Clean(st, mg)
 		go session.Clean(st, mg)
 		go member.Clean(st, mg)
-		go gc.Pulse(self, st.Seqns, cl, pulseInterval)
+		go gc.Pulse(self, st.Seqns, mg, pulseInterval)
 		go gc.Clean(st)
 	}()
 
