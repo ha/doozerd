@@ -34,8 +34,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	listenAddr := listener.Addr().String()
 
 	var activateSeqn int64
-	cal := make(chan int)
-	useSelf := make(chan bool)
+	cal := make(chan bool, 1)
+	useSelf := make(chan bool, 1)
 
 	var cl *client.Client
 	self := util.RandId()
@@ -47,8 +47,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		set(st, "/doozer/slot/"+"1", self, store.Missing)
 		set(st, "/ping", "pong", store.Missing)
 
-		close(cal)
-		close(useSelf)
+		cal <- true
+		useSelf <- true
 
 		cl = client.New("local", listenAddr) // TODO use real cluster name
 	} else {
@@ -81,13 +81,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			close(done)
 
 			activateSeqn = activate(st, self, cl)
-			close(cal)
+			cal <- true
 
 			done = make(chan int)
 			go advanceUntil(cl, done)
 			st.Sync(activateSeqn + alpha)
 			close(done)
-			close(useSelf)
+			useSelf <- true
 		}()
 
 		// TODO sink needs a way to pick up missing values if there are any
@@ -107,6 +107,18 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}
 
+	sw := make(chan bool, 1) // server becomes writable
+	if attachAddr == "" {
+		go checkin(self, cl, store.Missing)
+	} else {
+		go func() {
+			cas := slaveCheckin(self, cl, sw)
+			// not a slave any more
+			// TODO cl.Close()
+			checkin(self, client.New("local", listenAddr), cas)
+		}()
+	}
+
 	go func() {
 		<-cal
 		go lock.Clean(st, mg)
@@ -118,36 +130,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	sv := &server.Server{listenAddr, st, mg, self}
 
-	go func() {
-		cas := store.Missing
-
-		// slave
-		for {
-			if closed(useSelf) {
-				break
-			}
-			cas, err = cl.Checkin(self, cas)
-			if err != nil {
-				panic(err) // this is fatal
-			}
-		}
-
-		// CAL
-		cl = client.New("local", listenAddr)
-		for {
-			cas, err = cl.Checkin(self, cas)
-			if err != nil {
-				panic(err) // this is fatal
-			}
-		}
-	}()
-
-	go func() {
-		err := sv.Serve(listener, cal)
-		if err != nil {
-			panic(err)
-		}
-	}()
+	go sv.Serve(listener, useSelf, sw)
 
 	if webListener != nil {
 		web.Store = st
@@ -215,4 +198,30 @@ func advanceUntil(cl *client.Client, done chan int) {
 func set(st *store.Store, path, body string, cas int64) {
 	mut := store.MustEncodeSet(path, body, cas)
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
+}
+
+
+func checkin(self string, cl *client.Client, cas int64) {
+	var err os.Error
+	for {
+		cas, err = cl.Checkin(self, cas)
+		if err != nil {
+			panic(err) // this is fatal
+		}
+	}
+}
+
+
+func slaveCheckin(self string, cl *client.Client, sw chan bool) (cas int64) {
+	var err os.Error
+	for {
+		if _, ok := <-sw; ok {
+			break
+		}
+		cas, err = cl.Checkin(self, cas)
+		if err != nil {
+			panic(err) // this is fatal
+		}
+	}
+	return
 }

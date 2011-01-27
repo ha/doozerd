@@ -91,33 +91,52 @@ type Server struct {
 }
 
 
-var clg = util.NewLogger("cal")
+var lg = util.NewLogger("server")
 
 
-func (s *Server) Serve(l net.Listener, cal chan int) os.Error {
+func (s *Server) accept(l net.Listener, ch chan net.Conn) {
 	for {
-		rw, err := l.Accept()
+		c, err := l.Accept()
 		if err != nil {
 			if err == os.EINVAL {
-				return nil
+				break
 			}
 			if e, ok := err.(*net.OpError); ok && e.Error == os.EINVAL {
-				return nil
+				break
 			}
-			return err
+			lg.Println(err)
 		}
-		c := &conn{
-			c:       rw,
-			addr:    rw.RemoteAddr().String(),
-			s:       s,
-			cal:     closed(cal),
-			snaps:   make(map[int32]store.Getter),
-			cancels: make(map[int32]chan bool),
-		}
-		go c.serve()
+		ch <- c
 	}
+	close(ch)
+}
 
-	panic("unreachable")
+
+func (s *Server) Serve(l net.Listener, cal, wc chan bool) {
+	var w bool
+	conns := make(chan net.Conn)
+	go s.accept(l, conns)
+	for {
+		select {
+		case rw := <-conns:
+			if closed(conns) {
+				return
+			}
+			c := &conn{
+				c:       rw,
+				addr:    rw.RemoteAddr().String(),
+				s:       s,
+				cal:     w,
+				snaps:   make(map[int32]store.Getter),
+				cancels: make(map[int32]chan bool),
+			}
+			go c.serve()
+		case <-cal:
+			cal = nil
+			w = true
+			wc <- true
+		}
+	}
 }
 
 
