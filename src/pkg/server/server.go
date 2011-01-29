@@ -336,6 +336,10 @@ func (c *conn) set(t *T) *R {
 		return c.redirect()
 	}
 
+	if t.Path == nil || t.Cas == nil {
+		return missingArg
+	}
+
 	return c.cancellable(t, func(cancel chan bool) *R {
 		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas, cancel)
 		switch e := err.(type) {
@@ -428,12 +432,15 @@ func (c *conn) checkin(t *T) *R {
 		return c.redirect()
 	}
 
+	if t.Path == nil || t.Cas == nil {
+		return missingArg
+	}
+
 	return c.cancellable(t, func(cancel chan bool) *R {
 		deadline := time.Nanoseconds() + sessionLease
 		body := strconv.Itoa64(deadline)
-		sess := pb.GetString(t.Path)
-		cas := pb.GetInt64(t.Cas)
-		path := "/session/" + sess
+		cas := *t.Cas
+		path := "/session/" + *t.Path
 		if cas != 0 {
 			_, cas = c.s.St.Get(path)
 			if cas == 0 {
