@@ -32,9 +32,7 @@ Then, install the Go code generation plugin for `protoc`
     $ make install
 
 If you want to run doozer's tests, install
-<http://bmizerany.github.com/roundup/> and run:
-
-    $ goinstall github.com/bmizerany/assert
+<http://bmizerany.github.com/roundup/>.
 
 ## Building Doozer
 
