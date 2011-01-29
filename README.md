@@ -11,7 +11,7 @@ Abridged version:
     $ hg clone -r release https://go.googlecode.com/hg/ $GOROOT
     $ cd $GOROOT/src
     $ ./all.bash
-    # put the value of $GOROOT/bin in your path
+    (put the value of $GOROOT/bin in your path)
 
 For full details, see <http://golang.org/doc/install.html>.
 
@@ -21,7 +21,7 @@ You need the `protoc` command
 (from <http://code.google.com/p/protobuf/>):
 
     $ sudo apt-get install protobuf-compiler
-    # or
+    (or)
     $ brew install protobuf
 
 If you want to run doozer's tests, install
