@@ -1,4 +1,5 @@
 REQS="
+    goprotobuf.googlecode.com/hg/proto
     github.com/bmizerany/assert
 "
 
