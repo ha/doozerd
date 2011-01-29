@@ -32,8 +32,12 @@ then
     VERSION=$VERSION+mod
 fi
 
-for req in $REQS
+for req in $PKG_REQS
 do goinstall $req
+done
+
+for p in $CMD_REQS
+do (mk $p)
 done
 
 for pkg in $PKGS

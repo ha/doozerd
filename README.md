@@ -24,13 +24,6 @@ You need the `protoc` command
     # or
     $ brew install protobuf # (note: I haven't tried this -kr)
 
-Then, install the Go code generation plugin for `protoc`
-(<http://code.google.com/p/goprotobuf/>):
-
-    $ goinstall goprotobuf.googlecode.com/hg/proto
-    $ cd $GOROOT/src/pkg/goprotobuf.googlecode.com/hg/compiler
-    $ make install
-
 If you want to run doozer's tests, install
 <http://bmizerany.github.com/roundup/>.
 
@@ -40,7 +33,9 @@ If you want to run doozer's tests, install
     $ cd doozer/src
     $ ./all.sh
 
-This will build all packages and commands, copy the commands into `$GOBIN`,
+This will build dependencies and
+all doozer packages and commands,
+copy the commands into `$GOBIN`,
 and run tests.
 
 ## Try It Out
