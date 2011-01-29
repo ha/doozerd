@@ -22,7 +22,7 @@ You need the `protoc` command
 
     $ sudo apt-get install protobuf-compiler
     # or
-    $ brew install protobuf # (note: I haven't tried this -kr)
+    $ brew install protobuf
 
 If you want to run doozer's tests, install
 <http://bmizerany.github.com/roundup/>.
