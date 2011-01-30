@@ -39,9 +39,9 @@ If you want to run doozer's tests, install
     $ cd doozer/src
     $ ./all.sh
 
-This will build dependencies and
+This will build the rest of the dependencies and
 all doozer packages and commands,
-copy the commands into `$GOBIN`,
+copy the commands into `$GOROOT/bin`,
 and run tests.
 
 ## Try It Out
