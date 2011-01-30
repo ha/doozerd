@@ -1,12 +1,5 @@
 #!/bin/sh
 set -e
-
-if test -z "$GOROOT"
-then
-    GOROOT=`printf 't:\n\t@echo $(GOROOT)\n' | gomake -f -`
-    export GOROOT
-fi
-
 if [ -f env.sh ]
 then . ./env.sh
 else
