@@ -7,7 +7,52 @@ import (
 )
 
 
-func BenchmarkDoozerClientSet(b *testing.B) {
+func Benchmark1DoozerClientSet(b *testing.B) {
+	b.StopTimer()
+	l := mustListen()
+	defer l.Close()
+	a := l.Addr().String()
+	u := mustListenPacket(a)
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl := client.New("foo", l.Addr().String())
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		cl.Set("/test", store.Clobber, nil)
+	}
+}
+
+
+func Benchmark1DoozerConClientSet(b *testing.B) {
+	b.StopTimer()
+	l := mustListen()
+	defer l.Close()
+	a := l.Addr().String()
+	u := mustListenPacket(a)
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl := client.New("foo", l.Addr().String())
+
+	c := make(chan bool, b.N)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		go func() {
+			cl.Set("/test", store.Clobber, nil)
+			c <- true
+		}()
+	}
+	for i := 0; i < b.N; i++ {
+		<-c
+	}
+}
+
+
+func Benchmark5DoozerClientSet(b *testing.B) {
 	b.StopTimer()
 	l := mustListen()
 	defer l.Close()
@@ -26,5 +71,35 @@ func BenchmarkDoozerClientSet(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		cl.Set("/test", store.Clobber, nil)
+	}
+}
+
+
+func Benchmark5DoozerConClientSet(b *testing.B) {
+	b.StopTimer()
+	l := mustListen()
+	defer l.Close()
+	a := l.Addr().String()
+	u := mustListenPacket(a)
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+
+	cl := client.New("foo", l.Addr().String())
+
+	c := make(chan bool, b.N)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		go func() {
+			cl.Set("/test", store.Clobber, nil)
+			c <- true
+		}()
+	}
+	for i := 0; i < b.N; i++ {
+		<-c
 	}
 }
