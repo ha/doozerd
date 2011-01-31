@@ -15,9 +15,9 @@ Abridged version:
 
 Note: all.bash runs unit tests, and some of the tests
 try to connect to Google servers over the internet.
-Network problems can make this hang for a very long time;
-in that case, feel free to kill it. If it got that far,
-the build has finished.
+If this causes problems, you can skip the network tests
+by setting env var `DISABLE_NET_TESTS` before running
+all.bash.
 
 For full details, see <http://golang.org/doc/install.html>.
 
