@@ -422,7 +422,7 @@ func (c *conn) join(t *T) *R {
 		close(done)
 		seqn, snap := c.s.St.Snapshot()
 		seqn1 := int64(seqn)
-		return &R{Seqn: &seqn1, Value: []byte(snap)}
+		return &R{Rev: &seqn1, Value: []byte(snap)}
 	})
 }
 
@@ -580,7 +580,7 @@ func (c *conn) snap(t *T) *R {
 	ver, g := c.s.St.Snap()
 
 	var r R
-	r.Seqn = pb.Int64(int64(ver))
+	r.Rev = pb.Int64(int64(ver))
 
 	c.slk.Lock()
 	c.sid++

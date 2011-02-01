@@ -9,7 +9,7 @@ message Request {
       SET      = 2;  // cas, path, value => cas
       DEL      = 3;  // cas, path        => {}
       ESET     = 4;  // cas, path        => {}
-      SNAP     = 5;  // {}               => seqn, id
+      SNAP     = 5;  // {}               => rev, id
       DELSNAP  = 6;  // id               => {}
       NOOP     = 7;  // {}               => {}
       WATCH    = 8;  // path             => {cas, path, value}+
@@ -39,7 +39,7 @@ message Response {
   required int32 tag = 1;
   required int32 flags = 2;
 
-  optional int64 seqn = 3;
+  optional int64 rev = 3;
   optional int64 cas = 4;
   optional string path = 5;
   optional bytes value = 6;

@@ -557,7 +557,7 @@ func (cl *Client) Join(id, addr string) (seqn int64, snapshot string, err os.Err
 		return 0, "", err
 	}
 
-	return pb.GetInt64(r.Seqn), string(r.Value), nil
+	return pb.GetInt64(r.Rev), string(r.Value), nil
 }
 
 
@@ -613,7 +613,7 @@ func (cl *Client) Snap() (id int32, ver int64, err os.Error) {
 		return 0, 0, err
 	}
 
-	return pb.GetInt32(r.Id), pb.GetInt64(r.Seqn), nil
+	return pb.GetInt32(r.Id), pb.GetInt64(r.Rev), nil
 }
 
 
