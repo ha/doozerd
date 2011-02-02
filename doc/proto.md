@@ -2,16 +2,19 @@
 
 ## Overview
 
-[TODO: what is doozer]
-
-(Note: this protocol is partially based on [9P][],
-the Plan 9 file protocol. Parts of this document
-are paraphrased from the 9P man pages.)
+Doozer is a highly-available, consistent lock service.
+It also lets you store small amounts of metadata as
+files in a directory tree. See below for a complete
+description of the data model.
 
 The doozer protocol is used for messages between clients
 and servers. A client connects to doozerd by TCP and
 transmits *request* messages to a server, which
 subsequently returns *response* messages to the client.
+
+(Note: this protocol is partially based on [9P][],
+the Plan 9 file protocol. Parts of this document
+are paraphrased from the 9P man pages.)
 
 Each message consists of a sequence of bytes comprising
 two parts. First, a four-byte header field holds an
@@ -92,11 +95,15 @@ are sent after files are modified in the future.
 
 ### Data Model
 
-[store stuff: cas, rev, etc]
-
-### Ephemeral Files
-
-[not yet implemented]
+For a thorough description of Doozer's data model,
+see [Data Model][data]. Briefly, doozer's store holds
+a tree structure of files identified by paths similar
+to paths in Unix, and performs only whole-file reads
+and writes, which are atomic. The store also records a
+*Compare-and-Set* (CAS) token with each write.
+This token can be given to a subsequent write
+operation on the same file to assure that no
+intervening writes have happened.
 
 ## Verbs
 
@@ -205,8 +212,8 @@ This is indicated by a + sign after the response fields.
 
    Snap creates a consistent snapshot of the data store.
    Returns *id*, a number identifying this snapshot,
-   and *rev*, the revision of the data store contained
-   in the snapshot.
+   and *rev*, the total number of writes to the store
+   before the snapshot was taken.
 
  * `SYNCPATH` (not yet implemented)
 
@@ -215,7 +222,7 @@ This is indicated by a + sign after the response fields.
    Iterates over all existing files that match *path*, a
    glob pattern, in snapshot *id*. Sends one response
    for each matching file. If *id* is 0, uses the current
-   revision of the data store.
+   state of the data store.
 
    Glob notation:
     - `?` matches a single char in a single path component
@@ -382,3 +389,4 @@ p { max-width: 30em }
 
 [protobuf]: http://code.google.com/p/protobuf/
 [9P]: http://plan9.bell-labs.com/magic/man2html/5/intro
+[data]: data-model.md
