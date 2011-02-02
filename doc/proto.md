@@ -23,7 +23,7 @@ encoded in [Protocol Buffer][protobuf] format.
 Two Protocol Buffer structures, `Request` and
 `Response`, are used for *requests* and *responses*,
 respectively. These structures are defined as follows
-(in Protocol Buffers syntax):
+(in Protocol Buffer syntax):
 
     message Request {
       required int32 tag = 1;
@@ -71,18 +71,16 @@ following values:
 
  * *Valid* = 1
 
-   If this flag is set, the response contains valid data
-   and should be delivered to the user.
-
-   Usually set, but can be unset, for example, in
-   response to `WALK`, after the last file entry has
-   been sent to the client.
+   If this flag is set, the response contains valid data.
+   If unset, the client should ignore all fields except
+   *tag* and *flags*.
 
  * *Done* = 2
 
-   This is the last response for the given tag.
+   This is the last response for the given *tag*.
    The client is free to reuse the tag in another
-   request.
+   request (unless there is a pending cancel
+   transaction on that tag; see `CANCEL` below).
 
 A client can send multiple requests without waiting for
 the corresponding responses, but all outstanding
@@ -92,7 +90,7 @@ ones; this is sometimes necessary, for example when the
 client has issued a `WATCH` request and the responses
 are sent after files are modified in the future.
 
-### Data Store
+### Data Model
 
 [store stuff: cas, rev, etc]
 
@@ -107,7 +105,7 @@ followed by the set of response fields it provides.
 Some requests can result in more than one response.
 This is indicated by a + sign after the response fields.
 
- * `CANCEL`: *id* &rArr; &empty;
+ * `CANCEL` *id* &rArr; &empty;
 
    A request can be aborted with a cancel request. When
    a server receives a cancel, it will not reply to the
@@ -117,13 +115,13 @@ This is indicated by a + sign after the response fields.
    message arrives in the interim), at which point tag
    *id* may be reused.
 
- * `CHECKIN`: *path*, *cas* &rArr; *cas*
+ * `CHECKIN` *path*, *cas* &rArr; *cas*
 
    Used to establish and maintain a session, required if
    the client wishes to create ephemeral files or obtain
    ephemeral locks.
 
-   Writes a file named *path* in directory `/session`.
+   Writes a file named *path* in directory `/ctl/session`.
    The contents of this file will be a decimal number of
    nanoseconds since January 1, 1970. This time is the
    session's *deadline*. It is determined by the server;
@@ -180,8 +178,8 @@ This is indicated by a + sign after the response fields.
 
    Gets the contents (*value*) and CAS token (*cas*)
    of the file at *path*, in the snapshot *id*.
-   If *id* is zero, uses the current revision of the
-   data store.
+   If *id* is 0 or unset, uses the current revision
+   of the data store.
 
  * `GETDIR` (not yet implemented)
 
@@ -203,7 +201,7 @@ This is indicated by a + sign after the response fields.
    as long as the file's old CAS token matches *cas*.
    Returns the new CAS token.
 
- * `SNAP`: &empty; &rArr; *id*, *rev*
+ * `SNAP` &empty; &rArr; *id*, *rev*
 
    Snap creates a consistent snapshot of the data store.
    Returns *id*, a number identifying this snapshot,
@@ -212,12 +210,12 @@ This is indicated by a + sign after the response fields.
 
  * `SYNCPATH` (not yet implemented)
 
- * `WATCH` *path* &rArr; {*path*, *cas*, *value*}+
+ * `WALK` *path*, *id* &rArr; {*path*, *cas*, *value*}+
 
-   Arranges for the client to receive notices of changes
-   made to any file matching *path*, a glob pattern. One
-   response will be sent for each change (either set or
-   del).
+   Iterates over all existing files that match *path*, a
+   glob pattern, in snapshot *id*. Sends one response
+   for each matching file. If *id* is 0, uses the current
+   revision of the data store.
 
    Glob notation:
     - `?` matches a single char in a single path component
@@ -225,11 +223,12 @@ This is indicated by a + sign after the response fields.
     - `**` matches zero or more chars in zero or more components
     - any other sequence matches itself
 
- * `WALK` *path*, *id* &rArr; {*path*, *cas*, *value*}+
+ * `WATCH` *path* &rArr; {*path*, *cas*, *value*}+
 
-   Iterates over all existing files that match *path*, a
-   glob pattern, in snapshot *id*. Sends one response
-   for each matching file. See above for glob notation.
+   Arranges for the client to receive notices of changes
+   made to any file matching *path*, a glob pattern. One
+   response will be sent for each change (either set or
+   del). See above for glob notation.
 
 ## Errors
 
@@ -305,7 +304,7 @@ sent over the wire.)
 
 ### Get
 
-Let's say the client wants to retrieve file /a. So it
+Let's say the client wants to retrieve file `/a`. So it
 sends the following:
 
     {
