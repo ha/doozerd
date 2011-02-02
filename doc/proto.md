@@ -41,7 +41,7 @@ respectively. These structures are defined as follows
       required int32 tag = 1;
       required int32 flags = 2;
 
-      optional int64 seqn = 3;
+      optional int64 rev = 3;
       optional int64 cas = 4;
       optional string path = 5;
       optional bytes value = 6;
@@ -92,36 +92,43 @@ ones; this is sometimes necessary, for example when the
 client has issued a `WATCH` request and the responses
 are sent after files are modified in the future.
 
+### Data Store
+
+[store stuff: cas, rev, etc]
+
 ### Ephemeral Files
 
 [not yet implemented]
 
 ## Verbs
 
- * `CANCEL` = 10
+Each verb shows the set of request fields it uses,
+followed by the set of response fields it provides.
+Some requests can result in more than one response.
+This is indicated by a + sign after the response fields.
+
+ * `CANCEL`: *id* &rArr; &empty;
 
    A request can be aborted with a cancel request. When
    a server receives a cancel, it will not reply to the
-   message with tag *id*, and it will immediately reply.
-   The client must wait until it gets the reply (even if
-   the reply to the original message arrives in the
-   interim), at which point tag *id* may be reused.
+   message with tag *id*, and it will immediately reply
+   to the cancel request. The client must wait until it
+   gets the reply (even if the reply to the original
+   message arrives in the interim), at which point tag
+   *id* may be reused.
 
-   The reply will set no fields.
-
- * `CHECKIN` = 0
+ * `CHECKIN`: *path*, *cas* &rArr; *cas*
 
    Used to establish and maintain a session, required if
    the client wishes to create ephemeral files or obtain
    ephemeral locks.
 
-   Uses *cas* and *path*. Writes a file named *path* in
-   directory `/session`. The contents of this file will be
-   a decimal number of nanoseconds since January 1,
-   1970\. This time is the session's *deadline*. It is
-   determined by the server; and is typically several
-   seconds after the checkin request message was
-   received.
+   Writes a file named *path* in directory `/session`.
+   The contents of this file will be a decimal number of
+   nanoseconds since January 1, 1970. This time is the
+   session's *deadline*. It is determined by the server;
+   and is typically several seconds after the checkin
+   request message was received.
 
    If *cas* is 0, the file will be created only if it did
    not exist. Otherwise, the request *cas* is customarily
@@ -145,53 +152,84 @@ are sent after files are modified in the future.
    request, then immediately issue another checkin
    request.
 
-   A successful response contains only the *cas* field,
-   and its value is always -1.
+   The response *cas* field is always -1.
 
- * `DEL` = 3
- // cas, path        => {}
+ * `DEL` *path*, *cas* &rArr; &empty;
 
- * `DELSNAP` = 6
- // id               => {}
+   Del deletes the file at *path* if its CAS token matches *cas*.
 
- * `ELOCK`
- // future
+ * `DELSNAP` *id* &rArr; &empty;
 
- * `ESET`     = 4  // cas, path        => {}
- // future
+   Delsnap removes the snapshot *id*. It is okay to delete
+   a snapshot that does not exist (either because it was
+   deleted or it never existed).
 
- * `GET` = 1
- // path, id         => cas, value
+ * `ELOCK` (not yet implemented)
 
- * `GETDIR`   = 14 // path             => {cas, value}+
- // future
+ * `ESET` (not yet implemented)
 
- * `LOCK`
- // future
+ * `FLUSH` (not yet implemented)
 
- * `JOIN`     = 13
- // deprecated
+   Flush causes the server to initiate consensus immediately
+   with its current buffer of update proposals, rather than
+   waiting for the next frame tick.
 
- * `MONITOR`  = 11 // path             => {cas, path, value}+
- // future
+   Clients usually do not need to use this request.
 
- * `NOOP` = 7
- // {}               => {}
+ * `GET` *path*, *id* &rArr; *value*, *cas*
 
- * `SET` = 2
- // cas, path, value => cas
+   Gets the contents (*value*) and CAS token (*cas*)
+   of the file at *path*, in the snapshot *id*.
+   If *id* is zero, uses the current revision of the
+   data store.
 
- * `SNAP` = 5
- // {}               => seqn, id
+ * `GETDIR` (not yet implemented)
 
- * `SYNCPATH` = 12 // path             => cas, value
- // future
+ * `LOCK` (not yet implemented)
 
- * `WATCH` = 8
- // path             => {cas, path, value}+
+   Obtains a lock on the file at *path*, waiting
+   if necessary for the lock to be released by
+   another client.
 
- * `WALK` = 9
- // path, id         => {cas, path, value}+
+ * `JOIN` (deprecated)
+
+ * `MONITOR` (not yet implemented)
+
+ * `NOOP` (deprecated)
+
+ * `SET` *path*, *cas*, *value* &rArr; *cas*
+
+   Sets the contents of the file at *path* to *value*,
+   as long as the file's old CAS token matches *cas*.
+   Returns the new CAS token.
+
+ * `SNAP`: &empty; &rArr; *id*, *rev*
+
+   Snap creates a consistent snapshot of the data store.
+   Returns *id*, a number identifying this snapshot,
+   and *rev*, the revision of the data store contained
+   in the snapshot.
+
+ * `SYNCPATH` (not yet implemented)
+
+ * `WATCH` *path* &rArr; {*path*, *cas*, *value*}+
+
+   Arranges for the client to receive notices of changes
+   made to any file matching *path*, a glob pattern. One
+   response will be sent for each change (either set or
+   del).
+
+   Glob notation:
+    - `?` matches a single char in a single path component
+    - `*` matches zero or more chars in a single path component
+    - `**` matches zero or more chars in zero or more components
+    - any other sequence matches itself
+
+ * `WALK` *path*, *id* &rArr; {*path*, *cas*, *value*}+
+
+   Iterates over all existing files that match *path*, a
+   glob pattern, in snapshot *id*. Sends one response
+   for each matching file. See above for glob notation.
 
 ## Errors
 
@@ -204,7 +242,7 @@ defined below.
 
 Error codes are defined with the following meanings:
 
- * `TAG_IN_USE` = 1
+ * `TAG_IN_USE`
 
    The server has noticed that the client sent two
    or more requests with the same tag. This is a
@@ -213,46 +251,46 @@ Error codes are defined with the following meanings:
 
    The server is not guaranteed to send this error.
 
- * `UNKNOWN_VERB` = 2
+ * `UNKNOWN_VERB`
 
    The verb used in the request is not in the list of
    verbs defined in the server.
 
- * `REDIRECT` = 3
+ * `REDIRECT`
 
    Deprecated. Subject to change.
 
- * `INVALID_SNAP` = 4
+ * `INVALID_SNAP`
 
    The snapshot id given in the request is invalid;
    there is no snapshot with that id.
 
- * `CAS_MISMATCH` = 5
+ * `CAS_MISMATCH`
 
    A set request has failed because the CAS token given
    did not match the CAS token of the file being set.
 
- * `BAD_PATH` = 6
+ * `BAD_PATH`
 
    The given path contains invalid characters.
 
- * `MISSING_ARG` = 7
+ * `MISSING_ARG`
 
    The request's verb requires certain fields to be set
    and at least one of those fields was not set.
 
- * `NOTDIR` = 20
+ * `NOTDIR`
 
    The request operates only on a directory, but the
    given path is not a directory (either because it is a
    file or it is missing).
 
- * `ISDIR` = 21
+ * `ISDIR`
 
    The request operates only on a regular file, but the
    given path is a directory.
 
- * `OTHER` = 127
+ * `OTHER`
 
    Some other error has occurred. The `err_detail`
    string provides a description.
