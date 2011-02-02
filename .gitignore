@@ -19,3 +19,4 @@ src/cmd/doozer/doozer
 *.png
 *.DS_Store
 .roundup.*
+doc/*.html
