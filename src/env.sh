@@ -1,7 +1,7 @@
 if test -z "$GOROOT"
 then
     # figure out what GOROOT is supposed to be
-    GOROOT=`printf 't:\n\t@echo $(GOROOT)\n' | gomake -f -`
+    GOROOT=`printf 't:;@echo $(GOROOT)\n' | gomake -f -`
     export GOROOT
 fi
 
