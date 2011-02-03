@@ -69,21 +69,29 @@ Each response contains at least a tag and a flags field.
 Other response fields may or may not be present,
 depending on the verb of the request.
 
+Some requests will cause the server to send
+more than one response, depending on the verb.
+A request is considered outstanding until
+the last response has been received by the client.
+The last response will be marked with the *done* flag,
+described below.
+
 The flags field is a bitwise combination of the
 following values:
 
- * *Valid* = 1
+ * *valid* = 1
 
    If this flag is set, the response contains valid data.
    If unset, the client should ignore all fields except
    *tag* and *flags*.
 
- * *Done* = 2
+ * *done* = 2
 
    This is the last response for the given *tag*.
-   The client is free to reuse the tag in another
+   After a response with this flag has been received,
+   the client is free to reuse its tag in another
    request (unless there is a pending cancel
-   transaction on that tag; see `CANCEL` below).
+   transaction for that tag; see `CANCEL` below).
 
 A client can send multiple requests without waiting for
 the corresponding responses, but all outstanding
@@ -324,7 +332,7 @@ The server replies
 
     {
         tag:   0,
-        flags: 3, // 3 == Valid|Done
+        flags: 3, // 3 == valid|done
         cas:   5,
         value: "hello",
     }
@@ -352,7 +360,7 @@ The server replies immediately:
 
     {
         tag:   1,
-        flags: 3, // 3 == Valid|Done
+        flags: 3, // 3 == valid|done
         cas:   5,
         value: "hello",
     }
@@ -361,7 +369,7 @@ Some time later, the set operation finishes:
 
     {
         tag:   0,
-        flags: 3, // 3 == Valid|Done
+        flags: 3, // 3 == valid|done
         cas:   6,
     }
 
@@ -378,7 +386,7 @@ This time, the server replies:
 
     {
         tag:   1,
-        flags: 3, // 3 == Valid|Done
+        flags: 3, // 3 == valid|done
         cas:   6,
         value: "goodbye",
     }
