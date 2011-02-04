@@ -8,7 +8,6 @@ fi
 PKG_REQS="
     goprotobuf.googlecode.com/hg/proto
     github.com/bmizerany/assert
-    github.com/kr/pretty.go
 "
 
 CMD_REQS="
