@@ -183,7 +183,7 @@ func TestDoozerWalk(t *testing.T) {
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	w, err := cl.Walk("/test/**")
+	w, err := cl.Walk("/test/**", 0)
 	assert.Equal(t, nil, err, err)
 
 	ev := <-w.C

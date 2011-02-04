@@ -31,7 +31,7 @@ line-feed char.
 func walk(glob string) {
 	c := client.New("<test>", *addr)
 
-	w, err := c.Walk(glob)
+	w, err := c.Walk(glob, 0)
 	if err != nil {
 		bail(err)
 	}

@@ -633,13 +633,13 @@ func (cl *Client) Watch(glob string) (*Watch, os.Error) {
 }
 
 
-func (cl *Client) Walk(glob string) (*Watch, os.Error) {
+func (cl *Client) Walk(glob string, snapId int32) (*Watch, os.Error) {
 	c := <-cl.c
 	if c == nil {
 		return nil, ErrNoAddrs
 	}
 
-	return c.events(&T{Verb: walk, Path: &glob})
+	return c.events(&T{Verb: walk, Path: &glob, Id: &snapId})
 }
 
 
