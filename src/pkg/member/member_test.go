@@ -12,10 +12,8 @@ func TestMemberSimple(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 	fp := &test.FakeProposer{Store: st}
-	go Clean(fp.Store, fp)
-
-	for <-st.Watches < 1 {
-	}
+	c := make(chan string)
+	go Clean(c, fp.Store, fp)
 
 	// start our session
 	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing), nil)
@@ -30,7 +28,7 @@ func TestMemberSimple(t *testing.T) {
 	infoCh := fp.Watch(store.MustCompileGlob("/doozer/info/a/?"))
 
 	// end the session
-	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber), nil)
+	go func() { c <- "addr" }()
 
 	ev := <-slotCh
 	assert.T(t, ev.IsSet())

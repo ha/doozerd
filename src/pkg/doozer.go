@@ -19,6 +19,7 @@ import (
 const (
 	alpha           = 50
 	pulseInterval   = 1e9
+	timeout         = 2e9 // 2s
 )
 
 const slot = "/doozer/slot"
@@ -107,30 +108,22 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}
 
-	sw := make(chan bool, 1) // server becomes writable
-	if attachAddr == "" {
-		go checkin(self, cl, store.Missing)
-	} else {
-		go func() {
-			cas := slaveCheckin(self, cl, sw)
-			// not a slave any more
-			// TODO cl.Close()
-			checkin(self, client.New("local", listenAddr), cas)
-		}()
-	}
+	live := make(chan string)
+	shun := make(chan string)
 
 	go func() {
 		<-cal
 		go lock.Clean(st, mg)
 		go session.Clean(st, mg)
-		go member.Clean(st, mg)
+		go member.Clean(shun, st, mg)
+		go member.Timeout(live, shun, timeout)
 		go gc.Pulse(self, st.Seqns, mg, pulseInterval)
 		go gc.Clean(st)
 	}()
 
 	sv := &server.Server{listenAddr, st, mg, self}
 
-	go sv.Serve(listener, useSelf, sw)
+	go sv.Serve(listener, useSelf)
 
 	if webListener != nil {
 		web.Store = st
@@ -148,6 +141,14 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			logger.Println(err)
 			continue
 		}
+
+		select {
+		case live <- addr:
+			// ok
+		default:
+			// another packet in process
+		}
+
 		decoder.WriteFrom(addr, data)
 	}
 }
@@ -198,30 +199,4 @@ func advanceUntil(cl *client.Client, done chan int) {
 func set(st *store.Store, path, body string, cas int64) {
 	mut := store.MustEncodeSet(path, body, cas)
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
-}
-
-
-func checkin(self string, cl *client.Client, cas int64) {
-	var err os.Error
-	for {
-		cas, err = cl.Checkin(self, cas)
-		if err != nil {
-			panic(err) // this is fatal
-		}
-	}
-}
-
-
-func slaveCheckin(self string, cl *client.Client, sw chan bool) (cas int64) {
-	var err os.Error
-	for {
-		if _, ok := <-sw; ok {
-			break
-		}
-		cas, err = cl.Checkin(self, cas)
-		if err != nil {
-			panic(err) // this is fatal
-		}
-	}
-	return
 }

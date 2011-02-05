@@ -112,7 +112,7 @@ func (s *Server) accept(l net.Listener, ch chan net.Conn) {
 }
 
 
-func (s *Server) Serve(l net.Listener, cal, wc chan bool) {
+func (s *Server) Serve(l net.Listener, cal chan bool) {
 	var w bool
 	conns := make(chan net.Conn)
 	go s.accept(l, conns)
@@ -134,7 +134,6 @@ func (s *Server) Serve(l net.Listener, cal, wc chan bool) {
 		case <-cal:
 			cal = nil
 			w = true
-			wc <- true
 		}
 	}
 }

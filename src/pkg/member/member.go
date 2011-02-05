@@ -4,33 +4,42 @@ import (
 	"doozer/paxos"
 	"doozer/store"
 	"doozer/util"
-	"strings"
+	"time"
 )
 
 var logger = util.NewLogger("member")
 
 var (
-	sessions = store.MustCompileGlob("/session/*")
 	slots    = store.MustCompileGlob("/doozer/slot/*")
 )
 
-func Clean(st *store.Store, p paxos.Proposer) {
-	for ev := range st.Watch(sessions) {
-		if !ev.IsDel() {
-			continue
+func Clean(c chan string, st *store.Store, p paxos.Proposer) {
+	for addr := range c {
+		_, g := st.Snap()
+		name := getId(addr, g)
+
+		if name != "" {
+			logger.Printf("lost session %s", name)
+			go func() {
+				clearSlot(p, g, name)
+				removeMember(p, g, name)
+				removeInfo(p, g, name)
+			}()
 		}
-
-		parts := strings.Split(ev.Path, "/", 3)
-		name := parts[2]
-		logger.Printf("lost session %s", name)
-
-		go func() {
-			clearSlot(p, ev, name)
-			removeMember(p, ev, name)
-			removeInfo(p, ev, name)
-		}()
 	}
 }
+
+
+func getId(addr string, g store.Getter) string {
+	for _, slot := range store.GetDir(g, "/doozer/slot") {
+		id := store.GetString(g, "/doozer/slot/"+slot)
+		if store.GetString(g, "/doozer/members/"+id) == addr {
+			return id
+		}
+	}
+	return ""
+}
+
 
 func clearSlot(p paxos.Proposer, g store.Getter, name string) {
 	store.Walk(g, slots, func(path, body string, cas int64) bool {
@@ -59,4 +68,24 @@ func removeInfo(p paxos.Proposer, g store.Getter, name string) {
 		paxos.Del(p, path, cas, nil)
 		return false
 	})
+}
+
+
+func Timeout(live, shun chan string, timeout int64) {
+	ticker := time.Tick(timeout / 10)
+	times := make(map[string]int64)
+	for {
+		select {
+		case addr := <-live: // got a packet
+			times[addr] = time.Nanoseconds()
+		case t := <-ticker:
+			n := t - timeout
+			for addr, s := range times {
+				if n > s {
+					times[addr] = 0, false
+					shun <- addr
+				}
+			}
+		}
+	}
 }
