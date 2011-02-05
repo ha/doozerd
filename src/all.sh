@@ -14,10 +14,12 @@ xcd() {
 }
 
 mk() {
+    d=$PWD
     xcd $1
     gomake clean
     gomake
     gomake install
+    cd "$d"
 }
 
 rm -rf $GOROOT/pkg/${GOOS}_${GOARCH}/doozer
@@ -36,15 +38,15 @@ do goinstall $req
 done
 
 for p in $CMD_REQS
-do (mk $p)
+do mk $p
 done
 
 for pkg in $PKGS
-do (mk pkg/$pkg)
+do mk pkg/$pkg
 done
 
 for cmd in $CMDS
-do (mk cmd/$cmd)
+do mk cmd/$cmd
 done
 
 echo
