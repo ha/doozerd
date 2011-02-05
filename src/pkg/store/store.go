@@ -341,9 +341,9 @@ func (st *Store) Get(path string) ([]string, int64) {
 	return g.Get(path)
 }
 
-func (st *Store) Len(path string) (int, int64) {
+func (st *Store) Stat(path string) (int, int64) {
 	_, g := st.Snap()
-	return g.Len(path)
+	return g.Stat(path)
 }
 
 // Encodes the entire storage state, including the current sequence number, as

@@ -80,7 +80,7 @@ func (n node) getlen(parts []string) (int, int64) {
 	panic("unreachable")
 }
 
-func (n node) Len(path string) (int, int64) {
+func (n node) Stat(path string) (int, int64) {
 	if err := checkPath(path); err != nil {
 		return 0, Missing
 	}
