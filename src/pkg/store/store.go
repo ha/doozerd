@@ -336,9 +336,14 @@ func (st *Store) Snap() (ver int64, g Getter) {
 // entries.
 //
 // Otherwise, `cas` is the CAS token and `value[0]` is the body.
-func (st *Store) Get(path string) (value []string, cas int64) {
+func (st *Store) Get(path string) ([]string, int64) {
 	_, g := st.Snap()
 	return g.Get(path)
+}
+
+func (st *Store) Len(path string) (int, int64) {
+	_, g := st.Snap()
+	return g.Len(path)
 }
 
 // Encodes the entire storage state, including the current sequence number, as

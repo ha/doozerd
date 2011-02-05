@@ -60,6 +60,35 @@ func (n node) Get(path string) ([]string, int64) {
 	return n.get(split(path))
 }
 
+func (n node) getlen(parts []string) (int, int64) {
+	switch len(parts) {
+	case 0:
+		l := len(n.Ds)
+		if l > 0 {
+			return l, n.Cas
+		} else {
+			return len(n.V), n.Cas
+		}
+	default:
+		if n.Ds != nil {
+			if m, ok := n.Ds[parts[0]]; ok {
+				return m.getlen(parts[1:])
+			}
+		}
+		return 0, Missing
+	}
+	panic("unreachable")
+}
+
+func (n node) Len(path string) (int, int64) {
+	if err := checkPath(path); err != nil {
+		return 0, Missing
+	}
+
+	return n.getlen(split(path))
+}
+
+
 func copyMap(a map[string]node) map[string]node {
 	b := make(map[string]node)
 	for k, v := range a {

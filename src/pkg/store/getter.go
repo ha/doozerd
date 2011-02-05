@@ -6,6 +6,7 @@ import (
 
 type Getter interface {
 	Get(path string) (values []string, cas int64)
+	Len(path string) (length int, cas int64)
 }
 
 // Retrieves the body stored in `g` at `path` and returns it. If `path` is a

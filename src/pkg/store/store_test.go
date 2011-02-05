@@ -407,6 +407,47 @@ func TestGetWithDir(t *testing.T) {
 	assert.Equal(t, []string{"x", "y"}, dents)
 }
 
+func TestLenWithDir(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
+	st.Sync(2)
+
+	l, cas := st.Len("/")
+	assert.Equal(t, Dir, cas)
+	assert.Equal(t, 2, l)
+}
+
+func TestLenWithFile(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+	st.Ops <- Op{1, MustEncodeSet("/x", "123", Clobber)}
+	st.Sync(1)
+
+	l, cas := st.Len("/x")
+	assert.Equal(t, int64(1), cas)
+	assert.Equal(t, 3, l)
+}
+
+func TestLenForMissing(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+	l, cas := st.Len("/not/here")
+	assert.Equal(t, Missing, cas)
+	assert.Equal(t, 0, l)
+}
+
+func TestLenWithBadPath(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+	l, cas := st.Len(" #@!$# 213$!")
+	// TODO: I think Get and Len should return an error in Cas
+	// for better debuging
+	assert.Equal(t, Missing, cas)
+	assert.Equal(t, 0, l)
+}
+
 func TestDirParents(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
