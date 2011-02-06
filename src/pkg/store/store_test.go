@@ -414,9 +414,9 @@ func TestStatWithDir(t *testing.T) {
 	st.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
 	st.Sync(2)
 
-	l, cas := st.Stat("/")
+	ln, cas := st.Stat("/")
 	assert.Equal(t, Dir, cas)
-	assert.Equal(t, 2, l)
+	assert.Equal(t, int32(2), ln)
 }
 
 func TestStatWithFile(t *testing.T) {
@@ -425,27 +425,27 @@ func TestStatWithFile(t *testing.T) {
 	st.Ops <- Op{1, MustEncodeSet("/x", "123", Clobber)}
 	st.Sync(1)
 
-	l, cas := st.Stat("/x")
+	ln, cas := st.Stat("/x")
 	assert.Equal(t, int64(1), cas)
-	assert.Equal(t, 3, l)
+	assert.Equal(t, int32(3), ln)
 }
 
 func TestStatForMissing(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
-	l, cas := st.Stat("/not/here")
+	ln, cas := st.Stat("/not/here")
 	assert.Equal(t, Missing, cas)
-	assert.Equal(t, 0, l)
+	assert.Equal(t, int32(0), ln)
 }
 
 func TestStatWithBadPath(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
-	l, cas := st.Stat(" #@!$# 213$!")
+	ln, cas := st.Stat(" #@!$# 213$!")
 	// TODO: I think Get and Stat should return an error in Cas
 	// for better debuging
 	assert.Equal(t, Missing, cas)
-	assert.Equal(t, 0, l)
+	assert.Equal(t, int32(0), ln)
 }
 
 func TestDirParents(t *testing.T) {

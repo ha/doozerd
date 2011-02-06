@@ -60,14 +60,14 @@ func (n node) Get(path string) ([]string, int64) {
 	return n.get(split(path))
 }
 
-func (n node) getlen(parts []string) (int, int64) {
+func (n node) getlen(parts []string) (int32, int64) {
 	switch len(parts) {
 	case 0:
 		l := len(n.Ds)
 		if l > 0 {
-			return l, n.Cas
+			return int32(l), n.Cas
 		} else {
-			return len(n.V), n.Cas
+			return int32(len(n.V)), n.Cas
 		}
 	default:
 		if n.Ds != nil {
@@ -80,7 +80,7 @@ func (n node) getlen(parts []string) (int, int64) {
 	panic("unreachable")
 }
 
-func (n node) Stat(path string) (int, int64) {
+func (n node) Stat(path string) (int32, int64) {
 	if err := checkPath(path); err != nil {
 		return 0, Missing
 	}

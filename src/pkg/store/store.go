@@ -341,7 +341,7 @@ func (st *Store) Get(path string) ([]string, int64) {
 	return g.Get(path)
 }
 
-func (st *Store) Stat(path string) (int, int64) {
+func (st *Store) Stat(path string) (int32, int64) {
 	_, g := st.Snap()
 	return g.Stat(path)
 }
