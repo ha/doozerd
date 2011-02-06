@@ -202,6 +202,31 @@ func TestDoozerWalk(t *testing.T) {
 	assert.Tf(t, closed(w.C), "got %v", ev)
 }
 
+func TestDoozerStat(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl := client.New("foo", l.Addr().String())
+
+	cl.Set("/test/foo", store.Clobber, []byte("bar"))
+	setCas, _ := cl.Set("/test/fun", store.Clobber, []byte("house"))
+
+	ln, cas, err := cl.Stat("/test", 0)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, store.Dir, cas)
+	assert.Equal(t, int32(2), ln)
+
+	ln, cas, err = cl.Stat("/test/fun", 0)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, setCas, cas)
+	assert.Equal(t, int32(5), ln)
+}
+
+
 func runDoozer(a ...string) *exec.Cmd {
 	path := "/home/kr/src/go/bin/doozerd"
 	p, err := exec.Run(

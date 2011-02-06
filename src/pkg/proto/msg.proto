@@ -14,6 +14,7 @@ message Request {
       NOOP     = 7;  // {}               => {}
       WATCH    = 8;  // path             => {cas, path, value}+
       CANCEL   = 10; // id               => {}
+      STAT     = 16;
 
       // future
       GETDIR   = 14; // path             => {cas, value}+
@@ -44,6 +45,7 @@ message Response {
   optional string path = 5;
   optional bytes value = 6;
   optional int32 id = 7;
+  optional int32 len = 8;
 
   enum Err {
     // don't use value 0

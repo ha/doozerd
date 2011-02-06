@@ -468,6 +468,17 @@ func (c *conn) checkin(t *T) *R {
 }
 
 
+func (c *conn) stat(t *T) *R {
+	g := c.getSnap(pb.GetInt32(t.Id))
+	if g == nil {
+		return badSnap
+	}
+
+	ln, cas := g.Stat(pb.GetString(t.Path))
+	return &R{Len: &ln, Cas: &cas}
+}
+
+
 func (c *conn) cancel(t *T) *R {
 	tag := pb.GetInt32(t.Id)
 
@@ -616,6 +627,7 @@ var ops = map[int32] func(*conn, *T) *R {
 	proto.Request_WALK:    (*conn).walk,
 	proto.Request_JOIN:    (*conn).join,
 	proto.Request_CHECKIN: (*conn).checkin,
+	proto.Request_STAT:    (*conn).stat,
 }
 
 
