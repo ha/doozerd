@@ -70,7 +70,7 @@ func (n node) Get(path string) ([]string, int64) {
 	return n.get(split(path))
 }
 
-func (n node) getlen(parts []string) (int32, int64) {
+func (n node) stat(parts []string) (int32, int64) {
 	switch m, err := n.at(parts); err {
 	case os.ENOENT:
 		return 0, Missing
@@ -90,7 +90,7 @@ func (n node) Stat(path string) (int32, int64) {
 		return 0, Missing
 	}
 
-	return n.getlen(split(path))
+	return n.stat(split(path))
 }
 
 
