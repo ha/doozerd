@@ -33,21 +33,31 @@ func (n node) readdir() []string {
 	return names
 }
 
-func (n node) get(parts []string) ([]string, int64) {
+func (n node) at(parts []string) (node, os.Error) {
 	switch len(parts) {
 	case 0:
-		if len(n.Ds) > 0 {
-			return n.readdir(), n.Cas
-		} else {
-			return []string{n.V}, n.Cas
-		}
+		return n, nil
 	default:
 		if n.Ds != nil {
 			if m, ok := n.Ds[parts[0]]; ok {
-				return m.get(parts[1:])
+				return m.at(parts[1:])
 			}
 		}
+		return node{}, os.ENOENT
+	}
+	panic("unreachable")
+}
+
+func (n node) get(parts []string) ([]string, int64) {
+	switch m, err := n.at(parts); err {
+	case os.ENOENT:
 		return []string{""}, Missing
+	default:
+		if len(m.Ds) > 0 {
+			return m.readdir(), m.Cas
+		} else {
+			return []string{m.V}, m.Cas
+		}
 	}
 	panic("unreachable")
 }
@@ -61,21 +71,16 @@ func (n node) Get(path string) ([]string, int64) {
 }
 
 func (n node) getlen(parts []string) (int32, int64) {
-	switch len(parts) {
-	case 0:
-		l := len(n.Ds)
-		if l > 0 {
-			return int32(l), n.Cas
-		} else {
-			return int32(len(n.V)), n.Cas
-		}
-	default:
-		if n.Ds != nil {
-			if m, ok := n.Ds[parts[0]]; ok {
-				return m.getlen(parts[1:])
-			}
-		}
+	switch m, err := n.at(parts); err {
+	case os.ENOENT:
 		return 0, Missing
+	default:
+		l := len(m.Ds)
+		if l > 0 {
+			return int32(l), m.Cas
+		} else {
+			return int32(len(m.V)), m.Cas
+		}
 	}
 	panic("unreachable")
 }
