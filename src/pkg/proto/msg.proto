@@ -13,14 +13,15 @@ message Request {
       DELSNAP  = 6;  // id               => {}
       NOOP     = 7;  // {}               => {}
       WATCH    = 8;  // path             => {cas, path, value}+
+      WALK     = 9;  // path, id         => {cas, path, value}+
       CANCEL   = 10; // id               => {}
+      GETDIR   = 14; // path, id         => {cas, value}+
       STAT     = 16;
 
+
       // future
-      GETDIR   = 14; // path             => {cas, value}+
       MONITOR  = 11; // path             => {cas, path, value}+
       SYNCPATH = 12; // path             => cas, value
-      WALK     = 9;  // path, id         => {cas, path, value}+
 
       // deprecated
       JOIN     = 13;
@@ -57,10 +58,9 @@ message Response {
     CAS_MISMATCH = 5;
     BAD_PATH     = 6;
     MISSING_ARG  = 7;
-
-    // match unix errno
     NOTDIR       = 20;
     ISDIR        = 21;
+    NOENT        = 22;
   }
   optional Err err_code = 100;
   optional string err_detail = 101;

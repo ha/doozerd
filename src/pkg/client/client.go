@@ -37,6 +37,7 @@ var (
 	walk    = proto.NewRequest_Verb(proto.Request_WALK)
 	watch   = proto.NewRequest_Verb(proto.Request_WATCH)
 	stat    = proto.NewRequest_Verb(proto.Request_STAT)
+	getdir  = proto.NewRequest_Verb(proto.Request_GETDIR)
 )
 
 
@@ -641,6 +642,21 @@ func (cl *Client) Watch(glob string) (*Watch, os.Error) {
 	return c.events(&T{Verb: watch, Path: &glob})
 }
 
+func (cl *Client) GetDir(path string, offset, limit, snapId int32) (*Watch, os.Error) {
+	c := <-cl.c
+	if c == nil {
+		return nil, ErrNoAddrs
+	}
+
+	var t T
+	t.Verb   = getdir
+	t.Id     = &snapId
+	t.Path   = &path
+	t.Offset = &offset
+	t.Limit  = &limit
+
+	return c.events(&t)
+}
 
 func (cl *Client) Walk(glob string, snapId int32) (*Watch, os.Error) {
 	c := <-cl.c

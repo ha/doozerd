@@ -9,11 +9,11 @@ import (
 	"io"
 	"net"
 	"os"
-	pb "goprotobuf.googlecode.com/hg/proto"
 	"rand"
 	"strconv"
 	"sync"
 	"time"
+	pb "goprotobuf.googlecode.com/hg/proto"
 )
 
 
@@ -36,6 +36,8 @@ var (
 	missingArg  = &R{ErrCode: proto.NewResponse_Err(proto.Response_MISSING_ARG)}
 	tagInUse    = &R{ErrCode: proto.NewResponse_Err(proto.Response_TAG_IN_USE)}
 	isDir       = &R{ErrCode: proto.NewResponse_Err(proto.Response_ISDIR)}
+	notDir      = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOTDIR)}
+	noEnt       = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOENT)}
 	badSnap     = &R{ErrCode: proto.NewResponse_Err(proto.Response_INVALID_SNAP)}
 	casMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_CAS_MISMATCH)}
 	readonly    = &R{
@@ -213,16 +215,13 @@ func (c *conn) makeCancel(t *T) chan bool {
 
 
 func (c *conn) cancellable(t *T, f func(chan bool) *R) *R {
-	ch := make(chan *R, 1)
 	cancel := c.makeCancel(t)
 	if cancel == nil {
 		return tagInUse
 	}
 
-	go func() { ch <- f(cancel) }()
-
 	go func() {
-		r := <-ch
+		r := f(cancel)
 		if r != nil {
 			c.respond(t, Valid|Done, r)
 		}
@@ -479,6 +478,54 @@ func (c *conn) stat(t *T) *R {
 }
 
 
+func (c *conn) getdir(t *T) *R {
+	path := pb.GetString(t.Path)
+
+	g := c.getSnap(pb.GetInt32(t.Id))
+	if g == nil {
+		return badSnap
+	}
+
+	return c.cancellable(t, func(cancel chan bool) *R {
+		ents, cas := g.Get(path)
+
+		if cas == store.Missing {
+			return noEnt
+		}
+
+		if cas != store.Dir {
+			return notDir
+		}
+
+		if cancel != nil {
+			if _, b := <-cancel; b {
+				return nil
+			}
+		}
+
+		offset := int(pb.GetInt32(t.Offset))
+		limit  := int(pb.GetInt32(t.Limit))
+
+		if limit <= 0 {
+			limit = len(ents)
+		}
+
+		for i, e := range ents {
+			if offset <= i && i < offset+limit {
+				err := c.respond(t, Valid, &R{Path: &e})
+				if err != nil {
+					return nil
+				}
+			}
+		}
+
+		c.respond(t, Done, &R{})
+
+		return nil
+	})
+}
+
+
 func (c *conn) cancel(t *T) *R {
 	tag := pb.GetInt32(t.Id)
 
@@ -628,6 +675,7 @@ var ops = map[int32] func(*conn, *T) *R {
 	proto.Request_JOIN:    (*conn).join,
 	proto.Request_CHECKIN: (*conn).checkin,
 	proto.Request_STAT:    (*conn).stat,
+	proto.Request_GETDIR:  (*conn).getdir,
 }
 
 
