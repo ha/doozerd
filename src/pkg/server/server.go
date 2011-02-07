@@ -510,12 +510,10 @@ func (c *conn) getdir(t *T) *R {
 			limit = len(ents)
 		}
 
-		for i, e := range ents {
-			if offset <= i && i < offset+limit {
-				err := c.respond(t, Valid, &R{Path: &e})
-				if err != nil {
-					return nil
-				}
+		for _, e := range ents[offset:offset+limit] {
+			err := c.respond(t, Valid, &R{Path: &e})
+			if err != nil {
+				return nil
 			}
 		}
 
