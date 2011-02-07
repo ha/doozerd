@@ -19,7 +19,7 @@ import (
 const (
 	alpha           = 50
 	pulseInterval   = 1e9
-	timeout         = 2e9 // 2s
+	timeout         = 5e9 // 5s
 )
 
 const slot = "/doozer/slot"
@@ -108,15 +108,16 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}
 
-	live := make(chan string)
-	shun := make(chan string)
+	live := make(chan string, 64)
+	shun := make(chan string, 3) // sufficient for a cluster of 7
+
+	go member.Clean(shun, st, mg)
+	go member.Timeout(live, shun, listenAddr, timeout)
 
 	go func() {
 		<-cal
 		go lock.Clean(st, mg)
 		go session.Clean(st, mg)
-		go member.Clean(shun, st, mg)
-		go member.Timeout(live, shun, timeout)
 		go gc.Pulse(self, st.Seqns, mg, pulseInterval)
 		go gc.Clean(st)
 	}()
@@ -142,12 +143,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			continue
 		}
 
-		select {
-		case live <- addr:
-			// ok
-		default:
-			// another packet in process
-		}
+		// Update liveness time stamp for this addr
+		live <- addr
 
 		decoder.WriteFrom(addr, data)
 	}

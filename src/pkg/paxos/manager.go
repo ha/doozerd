@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	fillDelay = 5e7 // 50ms
+	fillDelay = 75e6 // 75ms
 )
 
 var ErrCancel = os.NewError("received cancel")

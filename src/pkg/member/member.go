@@ -71,17 +71,28 @@ func removeInfo(p paxos.Proposer, g store.Getter, name string) {
 }
 
 
-func Timeout(live, shun chan string, timeout int64) {
-	ticker := time.Tick(timeout / 10)
+func Timeout(live, shun chan string, self string, timeout int64) {
+	ticker := time.Tick(timeout / 2)
 	times := make(map[string]int64)
 	for {
+		// First read any packets
+		loop: for {
+			select {
+			case addr := <-live: // got a packet
+				times[addr] = time.Nanoseconds()
+			default:
+				break loop
+			}
+		}
+
+
 		select {
 		case addr := <-live: // got a packet
 			times[addr] = time.Nanoseconds()
 		case t := <-ticker:
 			n := t - timeout
 			for addr, s := range times {
-				if n > s {
+				if n > s && addr != self {
 					times[addr] = 0, false
 					shun <- addr
 				}
