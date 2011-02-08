@@ -5,10 +5,15 @@
 I recommend not using apt, homebrew, or any other packaging system to install
 Go. It's better to install straight from source.
 
+**Note**: Go release 2011-02-01 introduced an
+incompatible language change, and we haven't yet updated
+doozer to build under that release. You'll have to use
+release 2011-01-20.
+
 Abridged version:
 
     $ GOROOT=$HOME/src/go # adjust this as you wish
-    $ hg clone -r release https://go.googlecode.com/hg/ $GOROOT
+    $ hg clone -r release.2011-01-20 https://go.googlecode.com/hg/ $GOROOT
     $ cd $GOROOT/src
     $ ./all.bash
     (put the value of $GOROOT/bin in your path)
