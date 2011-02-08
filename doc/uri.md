@@ -17,6 +17,9 @@ There are three parameters:
 
        un=BCIRJYENEZYYYA5K65TY3C2SSZLGKW2K
 
+   [TODO specify address discovery mechanisms, such as
+   looking up addresses in another doozer cluster]
+
  * *dn* ("display name"): a human-readable description to
    be used in UIs. This parameter is not guaranteed to
    be unique, and shouldn't be used in place of un.
