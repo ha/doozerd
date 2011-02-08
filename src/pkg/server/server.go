@@ -497,12 +497,6 @@ func (c *conn) getdir(t *T) *R {
 			return notDir
 		}
 
-		if cancel != nil {
-			if _, b := <-cancel; b {
-				return nil
-			}
-		}
-
 		offset := int(pb.GetInt32(t.Offset))
 		limit  := int(pb.GetInt32(t.Limit))
 
@@ -511,6 +505,12 @@ func (c *conn) getdir(t *T) *R {
 		}
 
 		for _, e := range ents[offset:offset+limit] {
+			if cancel != nil {
+				if _, b := <-cancel; b {
+					return nil
+				}
+			}
+
 			err := c.respond(t, Valid, &R{Path: &e})
 			if err != nil {
 				return nil
