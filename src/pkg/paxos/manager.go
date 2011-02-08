@@ -9,8 +9,9 @@ import (
 	"time"
 )
 
+// We want doozer.pulseInterval < fillDelay < doozer.timeout.
 const (
-	fillDelay = 75e6 // 75ms
+	fillDelay = 15e8 // 1.5s
 )
 
 var ErrCancel = os.NewError("received cancel")
