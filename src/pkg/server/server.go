@@ -455,11 +455,13 @@ func (c *conn) checkin(t *T) *R {
 			return errResponse(err)
 		}
 
-		select {
-		case <-time.After(deadline - sessionPad - time.Nanoseconds()):
-			// nothing
-		case <-cancel:
-			return nil
+		if *t.Cas != 0 {
+			select {
+			case <-time.After(deadline - sessionPad - time.Nanoseconds()):
+				// nothing
+			case <-cancel:
+				return nil
+			}
 		}
 
 		return &R{Cas: pb.Int64(-1)}
