@@ -1,4 +1,4 @@
-include $(GOROOT)/src/Make.inc
+include ../../Make.inc
 
 TARG=doozer/gc
 GOFILES=\

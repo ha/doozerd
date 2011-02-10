@@ -1,4 +1,4 @@
-include $(GOROOT)/src/Make.inc
+include ../Make.inc
 
 VERSION ?= $(shell git describe | sed s/^v// | tr - +)
 
