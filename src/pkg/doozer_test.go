@@ -227,7 +227,7 @@ func TestDoozerStat(t *testing.T) {
 	assert.Equal(t, int32(5), ln)
 }
 
-func TestDoozerGetDirOnDir(t *testing.T) {
+func TestDoozerGetdirOnDir(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -241,7 +241,7 @@ func TestDoozerGetDirOnDir(t *testing.T) {
 	cl.Set("/test/b", store.Clobber, []byte("2"))
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 
-	w, err := cl.GetDir("/test", 0, 0, 0)
+	w, err := cl.Getdir("/test", 0, 0, 0)
 	assert.Equal(t, nil, err)
 
 	got := make([]string, 0)
@@ -253,7 +253,7 @@ func TestDoozerGetDirOnDir(t *testing.T) {
 	assert.Equal(t, []string{"a", "b", "c"}, got)
 }
 
-func TestDoozerGetDirOnFile(t *testing.T) {
+func TestDoozerGetdirOnFile(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -265,7 +265,7 @@ func TestDoozerGetDirOnFile(t *testing.T) {
 
 	cl.Set("/test/a", store.Clobber, []byte("1"))
 
-	w, err := cl.GetDir("/test/a", 0, 0, 0)
+	w, err := cl.Getdir("/test/a", 0, 0, 0)
 	assert.Equal(t, nil, err)
 
 	exp := &client.ResponseError{Code:20, Detail:"not a directory"}
@@ -273,7 +273,7 @@ func TestDoozerGetDirOnFile(t *testing.T) {
 	assert.Equal(t, exp, e.Err)
 }
 
-func TestDoozerGetDirMissing(t *testing.T) {
+func TestDoozerGetdirMissing(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -283,7 +283,7 @@ func TestDoozerGetDirMissing(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	w, err := cl.GetDir("/not/here", 0, 0, 0)
+	w, err := cl.Getdir("/not/here", 0, 0, 0)
 	assert.Equal(t, nil, err)
 
 	e   := <-w.C
@@ -291,7 +291,7 @@ func TestDoozerGetDirMissing(t *testing.T) {
 	assert.Equal(t, exp, e.Err)
 }
 
-func TestDoozerGetDirOffsetLimit(t *testing.T) {
+func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -307,13 +307,13 @@ func TestDoozerGetDirOffsetLimit(t *testing.T) {
 
 	// The order is arbitrary.  We need to collect them
 	// because it's not safe to assume the order.
-	w, _ := cl.GetDir("/test", 0, 0, 0)
+	w, _ := cl.Getdir("/test", 0, 0, 0)
 	ents := make([]string, 0)
 	for e := range w.C {
 		ents = append(ents, e.Path)
 	}
 
-	w, _ = cl.GetDir("/test", 1, 2, 0)
+	w, _ = cl.Getdir("/test", 1, 2, 0)
 	assert.Equal(t, ents[1], (<-w.C).Path)
 	assert.Equal(t, ents[2], (<-w.C).Path)
 	assert.Equal(t, (*client.Event)(nil), <-w.C)
@@ -321,7 +321,7 @@ func TestDoozerGetDirOffsetLimit(t *testing.T) {
 }
 
 
-func TestDoozerGetDirOffsetLimitBounds(t *testing.T) {
+func TestDoozerGetdirOffsetLimitBounds(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -335,7 +335,7 @@ func TestDoozerGetDirOffsetLimitBounds(t *testing.T) {
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 	cl.Set("/test/d", store.Clobber, []byte("4"))
 
-	w, _ := cl.GetDir("/test", 1, 5, 0)
+	w, _ := cl.Getdir("/test", 1, 5, 0)
 	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
 	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
 	assert.NotEqual(t, (*client.Event)(nil), <-w.C)

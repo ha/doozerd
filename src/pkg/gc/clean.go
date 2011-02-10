@@ -58,7 +58,7 @@ func (cl *cleaner) isOk(seqn int64) bool {
 }
 
 func (cl *cleaner) getCals(seqn int64) []string {
-	slots := store.GetDir(cl.st, "/doozer/slot")
+	slots := store.Getdir(cl.st, "/doozer/slot")
 	cals := make([]string, len(slots))
 	for i, slot := range slots {
 		cals[i] = store.GetString(cl.st, "/doozer/slot/"+slot)

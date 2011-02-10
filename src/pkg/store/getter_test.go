@@ -25,23 +25,23 @@ func TestGetStringDir(t *testing.T) {
 	assert.Equal(t, "", GetString(st, "/x"))
 }
 
-func TestGetDir(t *testing.T) {
+func TestGetdir(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x/y", "a", Clobber)}
 	st.Sync(1)
-	assert.Equal(t, []string{"y"}, GetDir(st, "/x"))
+	assert.Equal(t, []string{"y"}, Getdir(st, "/x"))
 }
 
-func TestGetDirMissing(t *testing.T) {
+func TestGetdirMissing(t *testing.T) {
 	st := New()
-	assert.Equal(t, []string(nil), GetDir(st, "/x"))
+	assert.Equal(t, []string(nil), Getdir(st, "/x"))
 }
 
-func TestGetDirString(t *testing.T) {
+func TestGetdirString(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Sync(1)
-	assert.Equal(t, []string(nil), GetDir(st, "/x"))
+	assert.Equal(t, []string(nil), Getdir(st, "/x"))
 }
 
 func TestWalk(t *testing.T) {

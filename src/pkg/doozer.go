@@ -155,7 +155,7 @@ func activate(st *store.Store, self string, c *client.Client) (seqn int64) {
 	w := store.NewWatch(st, slots)
 	var err os.Error
 
-	for _, base := range store.GetDir(st, slot) {
+	for _, base := range store.Getdir(st, slot) {
 		p := slot + "/" + base
 		v, cas := st.Get(p)
 		if cas != store.Dir && v[0] == "" {

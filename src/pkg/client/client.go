@@ -642,7 +642,7 @@ func (cl *Client) Watch(glob string) (*Watch, os.Error) {
 	return c.events(&T{Verb: watch, Path: &glob})
 }
 
-func (cl *Client) GetDir(path string, offset, limit, snapId int32) (*Watch, os.Error) {
+func (cl *Client) Getdir(path string, offset, limit, snapId int32) (*Watch, os.Error) {
 	c := <-cl.c
 	if c == nil {
 		return nil, ErrNoAddrs

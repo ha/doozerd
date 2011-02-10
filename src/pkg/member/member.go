@@ -31,7 +31,7 @@ func Clean(c chan string, st *store.Store, p paxos.Proposer) {
 
 
 func getId(addr string, g store.Getter) string {
-	for _, slot := range store.GetDir(g, "/doozer/slot") {
+	for _, slot := range store.Getdir(g, "/doozer/slot") {
 		id := store.GetString(g, "/doozer/slot/"+slot)
 		if store.GetString(g, "/doozer/members/"+id) == addr {
 			return id
