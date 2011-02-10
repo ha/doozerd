@@ -19,7 +19,7 @@ import (
 const (
 	alpha           = 50
 	pulseInterval   = 1e9
-	timeout         = 5e9 // 5s
+	timeout         = 60e9 // 60s
 )
 
 const slot = "/doozer/slot"
