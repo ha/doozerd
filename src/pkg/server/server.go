@@ -504,7 +504,16 @@ func (c *conn) getdir(t *T) *R {
 			limit = len(ents)
 		}
 
-		for _, e := range ents[offset:offset+limit] {
+		if offset < 0 {
+			offset = 0
+		}
+
+		end := offset + limit
+		if end > len(ents) {
+			end = len(ents)
+		}
+
+		for _, e := range ents[offset:end] {
 			if cancel != nil {
 				if _, b := <-cancel; b {
 					return nil

@@ -320,6 +320,30 @@ func TestDoozerGetDirOffsetLimit(t *testing.T) {
 	assert.T(t, closed(w.C))
 }
 
+
+func TestDoozerGetDirOffsetLimitBounds(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil)
+
+	cl := client.New("foo", l.Addr().String())
+	cl.Set("/test/a", store.Clobber, []byte("1"))
+	cl.Set("/test/b", store.Clobber, []byte("2"))
+	cl.Set("/test/c", store.Clobber, []byte("3"))
+	cl.Set("/test/d", store.Clobber, []byte("4"))
+
+	w, _ := cl.GetDir("/test", 1, 5, 0)
+	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
+	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
+	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
+	assert.Equal(t, (*client.Event)(nil), <-w.C)
+	assert.T(t, closed(w.C))
+}
+
+
 func runDoozer(a ...string) *exec.Cmd {
 	path := "/home/kr/src/go/bin/doozerd"
 	p, err := exec.Run(
