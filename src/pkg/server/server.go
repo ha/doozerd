@@ -585,6 +585,7 @@ func (c *conn) watch(t *T) *R {
 				r.Path = &ev.Path
 				r.Value = []byte(ev.Body)
 				r.Cas = &ev.Cas
+				r.Rev = &ev.Seqn
 				err := c.respond(t, Valid, &r)
 				if err != nil {
 					// TODO log error
