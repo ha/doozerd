@@ -1073,7 +1073,6 @@ func TestSyncPathImmediate(t *testing.T) {
 
 func TestStoreClose(t *testing.T) {
 	st := New()
-	defer close(st.Ops)
 	ch := st.Watch(MustCompileGlob("/a/b/c"))
 	close(st.Ops)
 	assert.Equal(t, Event{}, <-ch)
@@ -1283,17 +1282,4 @@ func TestStoreStopWatch(t *testing.T) {
 	st.Wait(5)
 	assert.Equal(t, 1, len(wt.C))
 	assert.Equal(t, 0, <-st.Watches)
-}
-
-func TestStoreClosedWatch(t *testing.T) {
-	st := New()
-	defer close(st.Ops)
-	w := NewWatch(st, Any)
-
-	close(w.C)
-	<-w.C
-
-	for i := int64(0); i < 1000; i++ {
-		st.Ops <- Op{i, MustEncodeSet("/x", "", Clobber)}
-	}
 }

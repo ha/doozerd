@@ -85,7 +85,10 @@ type Watch struct {
 }
 
 func (wt *Watch) Stop() {
-	_ = wt.shutdown <- true
+	select {
+	case wt.shutdown <- true:
+	default:
+	}
 }
 
 type notice struct {
@@ -214,8 +217,10 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 
 	i := 0
 	for _, w := range ws {
-		if _, ok := <-w.shutdown; ok {
+		select {
+		case <-w.shutdown:
 			continue
+		default:
 		}
 
 		if e.Seqn >= w.to {
