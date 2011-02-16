@@ -3,6 +3,7 @@ include ../../Make.inc
 TARG=doozer/consensus
 GOFILES=\
 	run.go\
+	learner.go\
 	m.go\
 	m.pb.go\
 	sink.go\
