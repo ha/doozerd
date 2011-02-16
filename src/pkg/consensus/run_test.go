@@ -13,27 +13,80 @@ const (
 )
 
 
-func TestRunSimple(t *testing.T) {
-	alpha := int64(3)
-	runs := make(chan Run)
-	st     := store.New()
+func TestGetCals(t *testing.T) {
+	st := store.New()
 	defer close(st.Ops)
 
-	for i := int64(0); i < alpha; i++ {
-		st.Ops <- store.Op{i, store.Nop}
-	}
+	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(slot+"/1", "a", 0)}
+	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(slot+"/2", "c", 0)}
+	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(slot+"/3", "b", 0)}
+	<-st.Seqns
 
-	go GenerateRuns(st, runs)
+	assert.Equal(t, []string{"a", "b", "c"}, getCals(st))
+}
+
+
+func alphaTest(t *testing.T, alpha int64) {
+	runs  := make(chan Run)
+	st    := store.New()
+	defer close(st.Ops)
 
 	st.Ops <- store.Op{
-		Seqn: alpha+0,
-		Mut:  store.MustEncodeSet(info+"/abc123/public-addr", "127.0.0.1:1234", 0),
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(info+"/a/public-addr", "127.0.0.1:1234", 0),
 	}
 
 	st.Ops <- store.Op{
-		Seqn: alpha+1,
-		Mut: store.MustEncodeSet(slot+"/1", "abc123", 0),
+		Seqn: 2,
+		Mut: store.MustEncodeSet(slot+"/1", "a", 0),
 	}
 
-	assert.Equal(t, Run{}, <-runs)
+	for 2 != <-st.Seqns {}
+
+	go GenerateRuns(alpha, st.Watch(store.Any), runs)
+
+	// The only way to generate a run is on an event.  Send a noop here
+	// to poke get things started
+	st.Ops <- store.Op{3, store.Nop}
+
+	assert.Equal(t, Run{Seqn: 3+alpha, Cals: []string{"a"}}, <-runs)
+}
+
+
+func TestRunAlphaOfOne(t *testing.T) {
+	alphaTest(t, 1)
+}
+
+
+func TestRunAlphaOfThree(t *testing.T) {
+	alphaTest(t, 3)
+}
+
+
+func TestRunAlphaOfFifty(t *testing.T) {
+	alphaTest(t, 50)
+}
+
+
+func TestRunAfterWatch(t *testing.T) {
+	alpha := int64(3)
+	runs  := make(chan Run)
+	st    := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(info+"/b/public-addr", "127.0.0.1:1234", 0),
+	}
+
+	for 1 != <-st.Seqns {}
+
+	go GenerateRuns(alpha, st.Watch(store.Any), runs)
+
+	st.Ops <- store.Op{
+		Seqn: 2,
+		Mut: store.MustEncodeSet(slot+"/1", "b", 0),
+	}
+
+	assert.Equal(t, Run{Seqn: 2+alpha, Cals: []string{"b"}}, <-runs)
 }
