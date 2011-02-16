@@ -3,9 +3,11 @@ include ../../Make.inc
 TARG=doozer/consensus
 GOFILES=\
 	run.go\
+	acceptor.go\
 	learner.go\
 	m.go\
 	m.pb.go\
+	putter.go\
 	sink.go\
 
 include $(GOROOT)/src/Make.pkg
