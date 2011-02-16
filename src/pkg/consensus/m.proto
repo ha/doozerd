@@ -1,0 +1,23 @@
+package consensus;
+
+message M {
+    enum Cmd {
+        NOP = 0;
+        INVITE = 1;
+        RSVP = 2;
+        NOMINATE = 3;
+        VOTE = 4;
+        TICK = 5;
+        PROPOSE = 6;
+        LEARN = 7;
+    }
+
+    optional Cmd wire_cmd = 1;
+    optional int64 wire_seqn = 2;
+
+    optional int64 crnd = 3;
+    optional int64 vrnd = 4;
+    optional bytes value = 5;
+
+    optional int32 wire_from = 1000; // never sent
+}
