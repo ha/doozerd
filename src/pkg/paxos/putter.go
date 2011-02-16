@@ -13,21 +13,6 @@ type PutterTo interface {
 	PutTo(m *M, addr string)
 }
 
-type putCloser interface {
-	Putter
-	Close()
-}
-
-type ChanPutCloser chan *M
-
-func (cp ChanPutCloser) Put(m *M) {
-	go func() { cp <- m }()
-}
-
-func (cp ChanPutCloser) Close() {
-	close(cp)
-}
-
 type putToWrapper struct {
 	seqn int64
 	pt   PutterTo

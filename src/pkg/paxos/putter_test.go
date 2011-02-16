@@ -32,10 +32,3 @@ func TestPutToWrapper(t *testing.T) {
 	assert.Equal(t, a, p.addrs[0])
 	assert.Equal(t, exp, p.msgs[0])
 }
-
-func TestChanPutCloser(t *testing.T) {
-	c := make(ChanPutCloser)
-	msg := newInvite(0) // any old Msg will do here
-	c.Put(msg)
-	assert.Equal(t, msg, <-c, "")
-}
