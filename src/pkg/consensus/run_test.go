@@ -93,21 +93,6 @@ func TestRunAfterWatch(t *testing.T) {
 }
 
 
-func TestRunLearnDeliverd(t *testing.T) {
-	r := Run{}
-
-	p := Packet{
-		M:    M{WireSeqn: proto.Int64(1), WireCmd: learn, Value: []byte("foo")},
-		Addr: "X",
-	}
-
-	r.Deliver(p)
-
-	assert.Equal(t, true, r.sink.done)
-	assert.Equal(t, "foo", r.sink.v)
-}
-
-
 func TestRunVoteDeliverd(t *testing.T) {
 	r := Run{}
 	r.learner.init(1)

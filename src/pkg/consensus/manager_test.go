@@ -48,5 +48,5 @@ func TestManagerPacketProcessing(t *testing.T) {
 	}
 
 	<-m
-	assert.Equal(t, true, run.sink.done)
+	assert.Equal(t, true, run.learner.done)
 }

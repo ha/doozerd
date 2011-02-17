@@ -19,36 +19,40 @@ func (ln *learner) init(quorum int64) {
 
 func (ln *learner) Deliver(p Packet) {
 	in := p.M
-	if in.Cmd() != M_VOTE {
-		return
-	}
-
-	if in.Vrnd == nil {
-		return
-	}
-
-	mRound, v := *in.Vrnd, in.Value
-
-	switch {
-	case mRound < ln.round:
-		return
-	case mRound > ln.round:
-		ln.round = mRound
-		ln.votes = make(map[string]int64)
-		ln.voted = make(map[string]bool)
-		fallthrough
-	case mRound == ln.round:
-		k := string(v)
-
-		if ln.voted[p.Addr] {
+	switch in.Cmd() {
+	case M_LEARN:
+		if ln.done {
 			return
 		}
-		ln.votes[k]++
-		ln.voted[p.Addr] = true
 
-		if ln.votes[k] >= ln.quorum {
-			ln.done, ln.v = true, string(v) // winner!
+		ln.done, ln.v = true, string(in.Value)
+	case M_VOTE:
+		if in.Vrnd == nil {
+			return
+		}
+
+		mRound, v := *in.Vrnd, in.Value
+
+		switch {
+		case mRound < ln.round:
+			return
+		case mRound > ln.round:
+			ln.round = mRound
+			ln.votes = make(map[string]int64)
+			ln.voted = make(map[string]bool)
+			fallthrough
+		case mRound == ln.round:
+			k := string(v)
+
+			if ln.voted[p.Addr] {
+				return
+			}
+			ln.votes[k]++
+			ln.voted[p.Addr] = true
+
+			if ln.votes[k] >= ln.quorum {
+				ln.done, ln.v = true, string(v) // winner!
+			}
 		}
 	}
-	return
 }

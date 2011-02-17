@@ -162,3 +162,24 @@ func TestLearnerIgnoresBadMessages(t *testing.T) {
 	ln.Deliver(Packet{M:M{WireCmd: vote}}) // missing Vrnd
 	assert.Equal(t, false, ln.done)
 }
+
+
+func TestSinkLearnsAValue(t *testing.T) {
+	var ln learner
+
+	ln.Deliver(Packet{M:*newLearn("foo")})
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
+}
+
+func TestSinkLearnsOkSticky(t *testing.T) {
+	var ln learner
+
+	ln.Deliver(Packet{M:*newLearn("foo")})
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
+
+	ln.Deliver(Packet{M:*newLearn("bar")})
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
+}

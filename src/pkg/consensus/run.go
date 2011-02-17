@@ -13,7 +13,6 @@ type Run struct {
 	coordinator coordinator
 	acceptor    acceptor
 	learner     learner
-	sink        sink
 }
 
 
@@ -21,7 +20,6 @@ func (r *Run) Deliver(p Packet) {
 	r.coordinator.Deliver(p)
 	r.acceptor.Put(&p.M)
 	r.learner.Deliver(p)
-	r.sink.Put(&p.M)
 }
 
 

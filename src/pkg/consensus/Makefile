@@ -9,7 +9,6 @@ GOFILES=\
 	m.go\
 	m.pb.go\
 	putter.go\
-	sink.go\
 	manager.go\
 
 include $(GOROOT)/src/Make.pkg
