@@ -9,6 +9,13 @@ import (
 type Run struct {
 	Seqn int64
 	Cals []string
+
+	sink sink
+}
+
+
+func (r *Run) Deliver(p Packet) {
+	r.sink.done = true
 }
 
 
