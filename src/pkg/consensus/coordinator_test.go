@@ -14,20 +14,20 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
-	co.Put(msgTick) // force the start of a new round
+	co.Deliver(Packet{M:*msgTick}) // force the start of a new round
 
 	// The two lines above modify got,
 	// so we have to reset it here.
 	got = M{}
 
-	co.Put(newRsvpFrom(1, 1, 0, ""))
-	co.Put(newRsvpFrom(2, 1, 0, ""))
-	co.Put(newRsvpFrom(3, 1, 0, ""))
-	co.Put(newRsvpFrom(4, 1, 0, ""))
-	co.Put(newRsvpFrom(5, 1, 0, ""))
-	co.Put(newRsvpFrom(6, 1, 0, ""))
+	co.Deliver(newRsvpFrom("1", 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
+	co.Deliver(newRsvpFrom("6", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 }
 
@@ -39,7 +39,7 @@ func TestCoordStart(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 	assert.Equal(t, newInvite(1), &got)
 }
 
@@ -54,18 +54,18 @@ func TestCoordQuorum(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
 	got = M{}
-	co.Put(newRsvpFrom(2, 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, M{}, got)
-	co.Put(newRsvpFrom(3, 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
 	assert.Equal(t, M{}, got)
-	co.Put(newRsvpFrom(4, 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
 	assert.Equal(t, M{}, got)
-	co.Put(newRsvpFrom(5, 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
 	assert.Equal(t, M{}, got)
-	co.Put(newRsvpFrom(6, 1, 0, ""))
+	co.Deliver(newRsvpFrom("6", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 }
 
@@ -79,26 +79,26 @@ func TestCoordDuplicateRsvp(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
 	got = M{}
 
-	co.Put(newRsvpFrom(2, 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(3, 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(4, 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(5, 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(6, 1, 0, "")) // from 6
+	co.Deliver(newRsvpFrom("6", 1, 0, "")) // from 6
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(6, 1, 0, "")) // from 6
+	co.Deliver(newRsvpFrom("6", 1, 0, "")) // from 6
 	assert.Equal(t, M{}, got)
 }
 
@@ -110,14 +110,14 @@ func TestCoordTargetNomination(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
-	co.Put(newRsvpFrom(2, 1, 0, ""))
-	co.Put(newRsvpFrom(3, 1, 0, ""))
-	co.Put(newRsvpFrom(4, 1, 0, ""))
-	co.Put(newRsvpFrom(5, 1, 0, ""))
-	co.Put(newRsvpFrom(6, 1, 0, ""))
-	co.Put(newRsvpFrom(7, 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
+	co.Deliver(newRsvpFrom("6", 1, 0, ""))
+	co.Deliver(newRsvpFrom("7", 1, 0, ""))
 
 	assert.Equal(t, newNominate(1, "foo"), &got)
 }
@@ -131,13 +131,13 @@ func TestCoordRetry(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
 	// message from a future round and another proposer
-	co.Put(newRsvpFrom(2, 2, 0, ""))
+	co.Deliver(newRsvpFrom("2", 2, 0, ""))
 	assert.Equal(t, int64(2), co.seen)
 
-	co.Put(msgTick) // force the start of a new round
+	co.Deliver(Packet{M:*msgTick}) // force the start of a new round
 	assert.Equal(t, newInvite(11), &got)
 }
 
@@ -150,14 +150,14 @@ func TestCoordNonTargetNomination(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
-	co.Put(newRsvpFrom(1, 1, 0, ""))
-	co.Put(newRsvpFrom(2, 1, 0, ""))
-	co.Put(newRsvpFrom(3, 1, 0, ""))
-	co.Put(newRsvpFrom(4, 1, 0, ""))
-	co.Put(newRsvpFrom(5, 1, 0, ""))
-	co.Put(newRsvpFrom(6, 1, 1, "bar"))
+	co.Deliver(newRsvpFrom("1", 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
+	co.Deliver(newRsvpFrom("6", 1, 1, "bar"))
 	assert.Equal(t, newNominate(1, "bar"), &got)
 }
 
@@ -170,32 +170,32 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
 	// Have to reset this ...
 	got = M{}
 
-	co.Put(newRsvpFrom(1, 1, 0, ""))
+	co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(2, 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(3, 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(4, 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(5, 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(6, 1, 0, ""))
+	co.Deliver(newRsvpFrom("6", 1, 0, ""))
 	assert.Equal(t, *newNominate(1, "foo"), got)
 
 	got = M{}
 
-	co.Put(newRsvpFrom(7, 1, 0, ""))
+	co.Deliver(newRsvpFrom("7", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 }
 
@@ -208,23 +208,23 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
-	co.Put(newRsvpFrom(1, 1, 0, ""))
-	co.Put(newRsvpFrom(2, 1, 0, ""))
-	co.Put(newRsvpFrom(3, 1, 0, ""))
-	co.Put(newRsvpFrom(4, 1, 0, ""))
-	co.Put(newRsvpFrom(5, 1, 0, ""))
-	co.Put(newRsvpFrom(6, 1, 0, ""))
+	co.Deliver(newRsvpFrom("1", 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
+	co.Deliver(newRsvpFrom("3", 1, 0, ""))
+	co.Deliver(newRsvpFrom("4", 1, 0, ""))
+	co.Deliver(newRsvpFrom("5", 1, 0, ""))
+	co.Deliver(newRsvpFrom("6", 1, 0, ""))
 
-	co.Put(msgTick) // force the start of a new round
+	co.Deliver(Packet{M:*msgTick}) // force the start of a new round
 
-	co.Put(newRsvpFrom(1, 11, 0, ""))
-	co.Put(newRsvpFrom(2, 11, 0, ""))
-	co.Put(newRsvpFrom(3, 11, 0, ""))
-	co.Put(newRsvpFrom(4, 11, 0, ""))
-	co.Put(newRsvpFrom(5, 11, 0, ""))
-	co.Put(newRsvpFrom(6, 11, 0, ""))
+	co.Deliver(newRsvpFrom("1", 11, 0, ""))
+	co.Deliver(newRsvpFrom("2", 11, 0, ""))
+	co.Deliver(newRsvpFrom("3", 11, 0, ""))
+	co.Deliver(newRsvpFrom("4", 11, 0, ""))
+	co.Deliver(newRsvpFrom("5", 11, 0, ""))
+	co.Deliver(newRsvpFrom("6", 11, 0, ""))
 
 	assert.Equal(t, newNominate(11, "foo"), &got)
 }
@@ -238,10 +238,10 @@ func TestCoordStartRsvp(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newRsvpFrom(1, 1, 0, ""))
+	co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
 	// If the RSVPs were ignored, this will be an invite. Otherwise, it'll be a
 	// nominate.
@@ -257,25 +257,25 @@ func TestCoordDuel(t *testing.T) {
 		outs: msgSlot{&got},
 	}
 
-	co.Put(newPropose("foo"))
+	co.Deliver(Packet{M:*newPropose("foo")})
 
 	got = M{}
 
-	co.Put(newRsvpFrom(2, 1, 0, ""))
+	co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(3, 2, 0, ""))
+	co.Deliver(newRsvpFrom("3", 2, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(4, 2, 0, ""))
+	co.Deliver(newRsvpFrom("4", 2, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(5, 2, 0, ""))
+	co.Deliver(newRsvpFrom("5", 2, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(6, 2, 0, ""))
+	co.Deliver(newRsvpFrom("6", 2, 0, ""))
 	assert.Equal(t, M{}, got)
 
-	co.Put(newRsvpFrom(7, 2, 0, ""))
+	co.Deliver(newRsvpFrom("7", 2, 0, ""))
 	assert.Equal(t, M{}, got)
 }

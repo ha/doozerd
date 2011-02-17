@@ -11,14 +11,16 @@ type coordinator struct {
 	target string
 	crnd   int64
 	cval   string
-	rsvps  map[int]bool
+	rsvps  map[string]bool
 	vr     int64
 	vv     string
 
 	seen int64
 }
 
-func (co *coordinator) Put(in *M) {
+func (co *coordinator) Deliver(p Packet) {
+	in := &p.M
+
 	if co.crnd == 0 {
 		co.crnd += int64(co.size)
 	}
@@ -34,7 +36,7 @@ func (co *coordinator) Put(in *M) {
 		co.outs.Put(&M{WireCmd: invite, Crnd: &co.crnd})
 		co.vr = 0
 		co.vv = ""
-		co.rsvps = make(map[int]bool)
+		co.rsvps = make(map[string]bool)
 		co.cval = ""
 	case M_RSVP:
 		if !co.begun {
@@ -60,7 +62,7 @@ func (co *coordinator) Put(in *M) {
 			co.vv = string(vval)
 		}
 
-		co.rsvps[in.From()] = true
+		co.rsvps[p.Addr] = true
 		if len(co.rsvps) >= co.quor {
 			var v string
 
@@ -78,7 +80,7 @@ func (co *coordinator) Put(in *M) {
 		co.outs.Put(&M{WireCmd: invite, Crnd: &co.crnd})
 		co.vr = 0
 		co.vv = ""
-		co.rsvps = make(map[int]bool)
+		co.rsvps = make(map[string]bool)
 		co.cval = ""
 	}
 }

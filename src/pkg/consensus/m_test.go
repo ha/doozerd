@@ -65,11 +65,10 @@ func newRsvp(i, vrnd int64, vval string) *M {
 }
 
 // For testing convenience
-func newRsvpFrom(from int32, i, vrnd int64, vval string) *M {
+func newRsvpFrom(from string, i, vrnd int64, vval string) Packet {
 	m := newRsvp(i, vrnd, vval)
 	m.SetSeqn(1)
-	m.SetFrom(from)
-	return m
+	return Packet{*m, from}
 }
 
 // For testing convenience
@@ -133,7 +132,7 @@ func TestBadMessagesOk(t *testing.T) {
 
 var goodMessages = []*M{
 	newInviteFrom(0, 1),
-	newRsvpFrom(0, 2, 1, "foo"),
+	&M{WireCmd: rsvp, WireSeqn: new(int64), Crnd: new(int64), Vrnd: new(int64), Value: []byte("foo")},
 	newNominateFrom(0, 1, "foo"),
 	&M{WireCmd: vote, WireSeqn: new(int64), Vrnd: new(int64), Value: []byte("foo")},
 }
