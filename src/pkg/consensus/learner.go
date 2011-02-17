@@ -27,6 +27,10 @@ func (ln *learner) Deliver(p Packet) {
 
 		ln.done, ln.v = true, string(in.Value)
 	case M_VOTE:
+		if ln.done {
+			return
+		}
+
 		if in.Vrnd == nil {
 			return
 		}

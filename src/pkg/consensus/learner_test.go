@@ -14,7 +14,7 @@ func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
 	assert.Equal(t, "foo", ln.v)
 }
 
-func TestLearnsOkSticky(t *testing.T) {
+func TestLearnsOkStickyInSameRound(t *testing.T) {
 	var ln learner
 	ln.init(1)
 
@@ -22,7 +22,20 @@ func TestLearnsOkSticky(t *testing.T) {
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 
+	ln.Deliver(newVoteFrom("b", 1, "bar"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
+}
+
+func TestLearnsOkStickyInNewRound(t *testing.T) {
+	var ln learner
+	ln.init(1)
+
 	ln.Deliver(newVoteFrom("a", 1, "foo"))
+	assert.Equal(t, true, ln.done)
+	assert.Equal(t, "foo", ln.v)
+
+	ln.Deliver(newVoteFrom("a", 2, "bar"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
