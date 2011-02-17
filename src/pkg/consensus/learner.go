@@ -23,6 +23,10 @@ func (ln *learner) Deliver(p Packet) {
 		return
 	}
 
+	if in.Vrnd == nil {
+		return
+	}
+
 	mRound, v := *in.Vrnd, in.Value
 
 	switch {

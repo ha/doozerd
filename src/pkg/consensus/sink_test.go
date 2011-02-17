@@ -35,3 +35,11 @@ func TestSinkIgnoresOtherMessages(t *testing.T) {
 	assert.Equal(t, true, s.done)
 	assert.Equal(t, "foo", s.v)
 }
+
+
+func TestSinkIgnoresBadMessages(t *testing.T) {
+	var s sink
+
+	s.Put(&M{})
+	assert.Equal(t, false, s.done)
+}

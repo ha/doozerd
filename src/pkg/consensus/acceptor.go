@@ -9,6 +9,10 @@ type acceptor struct {
 func (ac *acceptor) Put(m *M) {
 	switch m.Cmd() {
 	case M_INVITE:
+		if m.Crnd == nil {
+			return
+		}
+
 		i := *m.Crnd
 
 		if i > ac.rnd {
@@ -22,6 +26,10 @@ func (ac *acceptor) Put(m *M) {
 			})
 		}
 	case M_NOMINATE:
+		if m.Crnd == nil {
+			return
+		}
+
 		i, v := *m.Crnd, m.Value
 
 		// SUPER IMPT MAD PAXOS

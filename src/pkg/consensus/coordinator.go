@@ -43,6 +43,10 @@ func (co *coordinator) Deliver(p Packet) {
 			break
 		}
 
+		if in.Crnd == nil || in.Vrnd == nil {
+			break
+		}
+
 		i, vrnd, vval := *in.Crnd, *in.Vrnd, in.Value
 
 		if co.cval != "" {

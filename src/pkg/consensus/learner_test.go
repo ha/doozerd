@@ -151,3 +151,14 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
+
+
+func TestLearnerIgnoresBadMessages(t *testing.T) {
+	var ln learner
+
+	ln.Deliver(Packet{})
+	assert.Equal(t, false, ln.done)
+
+	ln.Deliver(Packet{M:M{WireCmd: vote}}) // missing Vrnd
+	assert.Equal(t, false, ln.done)
+}

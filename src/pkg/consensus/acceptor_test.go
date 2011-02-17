@@ -88,3 +88,18 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	})
 	ac.Put(newNominateFrom(1, 1, "v"))
 }
+
+
+func TestAcceptorIgnoresBadMessages(t *testing.T) {
+	var got M
+	ac := acceptor{outs: msgSlot{&got}}
+
+	ac.Put(&M{})
+	assert.Equal(t, M{}, got)
+
+	ac.Put(&M{WireCmd: invite}) // missing Crnd
+	assert.Equal(t, M{}, got)
+
+	ac.Put(&M{WireCmd: nominate}) // missing Crnd
+	assert.Equal(t, M{}, got)
+}

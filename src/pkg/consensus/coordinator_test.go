@@ -279,3 +279,23 @@ func TestCoordDuel(t *testing.T) {
 	co.Deliver(newRsvpFrom("7", 2, 0, ""))
 	assert.Equal(t, M{}, got)
 }
+
+
+func TestCoordinatorIgnoresBadMessages(t *testing.T) {
+	var got M
+	co := coordinator{outs: msgSlot{&got}, begun: true}
+	c1 := coordinator{outs: msgSlot{&got}, begun: true}
+
+
+	co.Deliver(Packet{})
+	assert.Equal(t, M{}, got)
+	assert.Equal(t, c1, co)
+
+	co.Deliver(Packet{M:M{WireCmd: rsvp, Vrnd: new(int64)}}) // missing Crnd
+	assert.Equal(t, M{}, got)
+	assert.Equal(t, c1, co)
+
+	co.Deliver(Packet{M:M{WireCmd: rsvp, Crnd: new(int64)}}) // missing Vrnd
+	assert.Equal(t, M{}, got)
+	assert.Equal(t, c1, co)
+}
