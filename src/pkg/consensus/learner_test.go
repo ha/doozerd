@@ -6,138 +6,148 @@ import (
 )
 
 func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
-	ln := *newLearner(1)
+	var ln learner
+	ln.init(1)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestLearnsOkSticky(t *testing.T) {
-	ln := *newLearner(1)
+	var ln learner
+	ln.init(1)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
-	ln := *newLearner(2)
+	var ln learner
+	ln.init(2)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 1, "foo"))
+	ln.Deliver(newVoteFrom("b", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
-	ln := *newLearner(1)
+	var ln learner
+	ln.init(1)
 
-	ln.Put(newVoteFrom(1, 0, "bar"))
+	ln.Deliver(newVoteFrom("a", 0, "bar"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
-	ln := *newLearner(2)
+	var ln learner
+	ln.init(2)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 1, "foo"))
+	ln.Deliver(newVoteFrom("b", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestIgnoresSenderInOldRound(t *testing.T) {
-	ln := *newLearner(2)
+	var ln learner
+	ln.init(2)
 
-	ln.Put(newVoteFrom(1, 2, "foo"))
+	ln.Deliver(newVoteFrom("a", 2, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 1, "foo"))
+	ln.Deliver(newVoteFrom("b", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 2, "foo"))
+	ln.Deliver(newVoteFrom("b", 2, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestResetsVotedFlags(t *testing.T) {
-	ln := *newLearner(2)
+	var ln learner
+	ln.init(2)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(1, 2, "foo"))
+	ln.Deliver(newVoteFrom("a", 2, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 2, "foo"))
+	ln.Deliver(newVoteFrom("b", 2, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestResetsVoteCounts(t *testing.T) {
-	ln := *newLearner(3)
+	var ln learner
+	ln.init(3)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 1, "foo"))
+	ln.Deliver(newVoteFrom("b", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(1, 2, "foo"))
+	ln.Deliver(newVoteFrom("a", 2, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 2, "foo"))
+	ln.Deliver(newVoteFrom("b", 2, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(3, 2, "foo"))
+	ln.Deliver(newVoteFrom("c", 2, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
-	ln := *newLearner(2)
+	var ln learner
+	ln.init(2)
 
-	ln.Put(newVoteFrom(1, 1, "foo"))
+	ln.Deliver(newVoteFrom("a", 1, "foo"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(3, 1, "bar"))
+	ln.Deliver(newVoteFrom("c", 1, "bar"))
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(2, 1, "foo"))
+	ln.Deliver(newVoteFrom("b", 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestBringsOrderOutOfChaos(t *testing.T) {
-	ln := *newLearner(2)
+	var ln learner
+	ln.init(2)
 
-	ln.Put(newVoteFrom(1, 1, "bar")) //valid
+	ln.Deliver(newVoteFrom("a", 1, "bar")) //valid
 	assert.Equal(t, false, ln.done)
-	ln.Put(newVoteFrom(3, 2, "funk")) //reset
+	ln.Deliver(newVoteFrom("c", 2, "funk")) //reset
 	assert.Equal(t, false, ln.done)
-	ln.Put(newVoteFrom(2, 1, "bar")) //ignored
+	ln.Deliver(newVoteFrom("b", 1, "bar")) //ignored
 	assert.Equal(t, false, ln.done)
 
-	ln.Put(newVoteFrom(3, 1, "foo")) //ignored
+	ln.Deliver(newVoteFrom("c", 1, "foo")) //ignored
 	assert.Equal(t, false, ln.done)
-	ln.Put(newVoteFrom(2, 2, "foo")) //valid
+	ln.Deliver(newVoteFrom("b", 2, "foo")) //valid
 	assert.Equal(t, false, ln.done)
-	ln.Put(newVoteFrom(1, 2, "foo")) //valid (at quorum)
+	ln.Deliver(newVoteFrom("a", 2, "foo")) //valid (at quorum)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }

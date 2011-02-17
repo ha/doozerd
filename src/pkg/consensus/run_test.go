@@ -106,3 +106,24 @@ func TestRunLearnDeliverd(t *testing.T) {
 	assert.Equal(t, true, r.sink.done)
 	assert.Equal(t, "foo", r.sink.v)
 }
+
+
+func TestRunVoteDeliverd(t *testing.T) {
+	r := Run{}
+	r.learner.init(1)
+
+	p := Packet{
+		M:    M{
+			WireSeqn: proto.Int64(1),
+			WireCmd:  vote,
+			Vrnd:     proto.Int64(1),
+			Value:    []byte("foo"),
+		},
+		Addr: "X",
+	}
+
+	r.Deliver(p)
+
+	assert.Equal(t, true, r.learner.done)
+	assert.Equal(t, "foo", r.learner.v)
+}

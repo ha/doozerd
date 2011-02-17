@@ -35,11 +35,10 @@ func newVote(i int64, vval string) *M {
 }
 
 // For testing convenience
-func newVoteFrom(from int32, i int64, vval string) *M {
+func newVoteFrom(from string, i int64, vval string) Packet {
 	m := newVote(i, vval)
 	m.SetSeqn(1)
-	m.SetFrom(from)
-	return m
+	return Packet{*m, from}
 }
 
 // For testing convenience
@@ -136,7 +135,7 @@ var goodMessages = []*M{
 	newInviteFrom(0, 1),
 	newRsvpFrom(0, 2, 1, "foo"),
 	newNominateFrom(0, 1, "foo"),
-	newVoteFrom(0, 1, "foo"),
+	&M{WireCmd: vote, WireSeqn: new(int64), Vrnd: new(int64), Value: []byte("foo")},
 }
 
 func TestGoodMessagesOk(t *testing.T) {
