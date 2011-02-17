@@ -15,7 +15,7 @@ type Run struct {
 
 
 func (r *Run) Deliver(p Packet) {
-	r.sink.done = true
+	r.sink.Put(&p.M)
 }
 
 

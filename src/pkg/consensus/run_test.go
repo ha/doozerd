@@ -3,6 +3,7 @@ package consensus
 import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
+	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
 )
 
@@ -89,4 +90,19 @@ func TestRunAfterWatch(t *testing.T) {
 	}
 
 	assert.Equal(t, Run{Seqn: 2+alpha, Cals: []string{"b"}}, <-runs)
+}
+
+
+func TestRunLearnDeliverd(t *testing.T) {
+	r := Run{}
+
+	p := Packet{
+		M:    M{WireSeqn: proto.Int64(1), WireCmd: learn, Value: []byte("foo")},
+		Addr: "X",
+	}
+
+	r.Deliver(p)
+
+	assert.Equal(t, true, r.sink.done)
+	assert.Equal(t, "foo", r.sink.v)
 }

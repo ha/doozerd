@@ -2,8 +2,8 @@ package consensus
 
 
 import (
-	"goprotobuf.googlecode.com/hg/proto"
 	"github.com/bmizerany/assert"
+	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
 )
 
