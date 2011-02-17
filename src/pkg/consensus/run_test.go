@@ -126,6 +126,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 func TestRunInviteDeliverd(t *testing.T) {
 	var r Run
+	r.out = msgSlot{new(M)}
 
 	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
 
@@ -150,4 +151,14 @@ func TestRunSendsCoordPacket(t *testing.T) {
 
 	r.Deliver(Packet{M: *newPropose("foo")})
 	assert.Equal(t, *newInvite(1), got)
+}
+
+
+func TestRunSendsAcceptorPacket(t *testing.T) {
+	var got M
+	var r Run
+	r.out = msgSlot{&got}
+
+	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
+	assert.Equal(t, *newRsvp(1, 0, ""), got)
 }

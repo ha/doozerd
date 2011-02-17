@@ -24,7 +24,11 @@ func (r *Run) Deliver(p Packet) {
 		r.out.Put(m)
 	}
 
-	r.acceptor.Put(&p.M)
+	m = r.acceptor.Put(&p.M)
+	if m != nil {
+		r.out.Put(m)
+	}
+
 	r.learner.Deliver(p)
 }
 
