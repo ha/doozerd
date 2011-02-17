@@ -13,11 +13,17 @@ type Run struct {
 	coordinator coordinator
 	acceptor    acceptor
 	learner     learner
+
+	out Putter
 }
 
 
 func (r *Run) Deliver(p Packet) {
-	r.coordinator.Deliver(p)
+	m := r.coordinator.Deliver(p)
+	if m != nil {
+		r.out.Put(m)
+	}
+
 	r.acceptor.Put(&p.M)
 	r.learner.Deliver(p)
 }
