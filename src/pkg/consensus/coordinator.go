@@ -5,8 +5,6 @@ type coordinator struct {
 	size int
 	quor int
 
-	outs Putter
-
 	begun  bool
 	target string
 	crnd   int64
@@ -18,7 +16,7 @@ type coordinator struct {
 	seen int64
 }
 
-func (co *coordinator) Deliver(p Packet) {
+func (co *coordinator) Deliver(p Packet) (m *M) {
 	in := &p.M
 
 	if co.crnd == 0 {
@@ -33,11 +31,11 @@ func (co *coordinator) Deliver(p Packet) {
 
 		co.begun = true
 		co.target = string(in.Value)
-		co.outs.Put(&M{WireCmd: invite, Crnd: &co.crnd})
 		co.vr = 0
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
+		return &M{WireCmd: invite, Crnd: &co.crnd}
 	case M_RSVP:
 		if !co.begun {
 			break
@@ -77,14 +75,16 @@ func (co *coordinator) Deliver(p Packet) {
 			}
 			co.cval = v
 
-			co.outs.Put(&M{WireCmd: nominate, Crnd: &co.crnd, Value: []byte(v)})
+			return &M{WireCmd: nominate, Crnd: &co.crnd, Value: []byte(v)}
 		}
 	case M_TICK:
 		co.crnd += int64(co.size)
-		co.outs.Put(&M{WireCmd: invite, Crnd: &co.crnd})
 		co.vr = 0
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
+		return &M{WireCmd: invite, Crnd: &co.crnd}
 	}
+
+	return
 }

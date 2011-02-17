@@ -127,7 +127,6 @@ func TestRunInviteDeliverd(t *testing.T) {
 
 func TestRunProposeDeliverd(t *testing.T) {
 	var r Run
-	r.coordinator.outs = msgSlot{new(M)}
 
 	r.Deliver(Packet{M: M{WireCmd: propose}})
 	assert.Equal(t, true, r.coordinator.begun)
