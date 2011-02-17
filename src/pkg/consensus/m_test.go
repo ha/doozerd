@@ -3,7 +3,6 @@ package consensus
 import (
 	"fmt"
 	"github.com/bmizerany/assert"
-	"github.com/kr/pretty.go"
 	"testing"
 )
 
@@ -108,41 +107,6 @@ func TestMessageSetSeqn(t *testing.T) {
 	assert.Equal(t, int64(1), m.Seqn(), "")
 	m.SetSeqn(2)
 	assert.Equal(t, int64(2), m.Seqn(), "")
-}
-
-var badMessages = []*M{
-	&M{},               // no cmd
-	&M{WireCmd: learn}, // no seqn
-
-	&M{WireCmd: invite, WireSeqn: new(int64)}, // no crnd
-	&M{WireCmd: nominate, WireSeqn: new(int64)}, // no crnd
-	&M{WireCmd: vote, WireSeqn: new(int64)}, // no vrnd
-
-	&M{WireCmd: rsvp, WireSeqn: new(int64), Crnd: new(int64)}, // no vrnd
-	&M{WireCmd: rsvp, WireSeqn: new(int64), Vrnd: new(int64)}, // no crnd
-}
-
-func TestBadMessagesOk(t *testing.T) {
-	for _, m := range badMessages {
-		if m.Ok() {
-			t.Errorf("check failed for bad msg: %#v", m)
-		}
-	}
-}
-
-var goodMessages = []*M{
-	newInviteFrom(0, 1),
-	&M{WireCmd: rsvp, WireSeqn: new(int64), Crnd: new(int64), Vrnd: new(int64), Value: []byte("foo")},
-	newNominateFrom(0, 1, "foo"),
-	&M{WireCmd: vote, WireSeqn: new(int64), Vrnd: new(int64), Value: []byte("foo")},
-}
-
-func TestGoodMessagesOk(t *testing.T) {
-	for _, m := range goodMessages {
-		if !m.Ok() {
-			t.Errorf("check failed for good msg: %# v", pretty.Formatter(m))
-		}
-	}
 }
 
 func TestDup(t *testing.T) {

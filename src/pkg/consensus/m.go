@@ -44,33 +44,6 @@ func (m *M) SetSeqn(seqn int64) {
 	m.WireSeqn = &seqn
 }
 
-// Check that `m` is well-formed. Does not guarantee that it will be valid or
-// meaningful. If this method returns `true`, you can safely pass `m` into a
-// `Putter`.
-func (m *M) Ok() bool {
-	if m.WireCmd == nil {
-		return false
-	}
-
-	if m.WireSeqn == nil {
-		return false
-	}
-
-	switch m.Cmd() {
-	case M_INVITE:
-		return m.Crnd != nil
-	case M_RSVP:
-		return m.Crnd != nil && m.Vrnd != nil
-	case M_NOMINATE:
-		return m.Crnd != nil
-	case M_VOTE:
-		return m.Vrnd != nil
-	case M_LEARN:
-		return true
-	}
-	return false
-}
-
 func (m *M) Dup() *M {
 	var n M
 	n = *m
