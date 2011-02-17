@@ -1,16 +1,15 @@
 package consensus
 
 type acceptor struct {
-	outs      Putter
 	rnd, vrnd int64
 	vval      string
 }
 
-func (ac *acceptor) Put(m *M) {
+func (ac *acceptor) Put(m *M) *M {
 	switch m.Cmd() {
 	case M_INVITE:
 		if m.Crnd == nil {
-			return
+			break
 		}
 
 		i := *m.Crnd
@@ -18,16 +17,16 @@ func (ac *acceptor) Put(m *M) {
 		if i > ac.rnd {
 			ac.rnd = i
 
-			ac.outs.Put(&M{
+			return &M{
 				WireCmd: rsvp,
 				Crnd:    &i,
 				Vrnd:    &ac.vrnd,
 				Value:   []byte(ac.vval),
-			})
+			}
 		}
 	case M_NOMINATE:
 		if m.Crnd == nil {
-			return
+			break
 		}
 
 		i, v := *m.Crnd, m.Value
@@ -43,7 +42,8 @@ func (ac *acceptor) Put(m *M) {
 				Vrnd:    &i,
 				Value:   []byte(ac.vval),
 			}
-			ac.outs.Put(broadcast)
+			return broadcast
 		}
 	}
+	return nil
 }

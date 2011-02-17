@@ -116,8 +116,6 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 func TestRunInviteDeliverd(t *testing.T) {
 	var r Run
-	var got M
-	r.acceptor.outs = msgSlot{&got}
 
 	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
 

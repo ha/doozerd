@@ -14,23 +14,19 @@ func TestIgnoreOldMessages(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		var got M
-		ac := acceptor{outs: msgSlot{&got}}
+		ac := acceptor{}
 
 		ac.Put(test[0])
 
-		// We want to check that it didn't try to send a response.
-		got = M{}
-		ac.Put(test[1])
-		assert.Equal(t, M{}, got)
+		got := ac.Put(test[1])
+		assert.Equal(t, (*M)(nil), got)
 	}
 }
 
 func TestAcceptsInvite(t *testing.T) {
-	var got M
-	ac := acceptor{outs: msgSlot{&got}}
-	ac.Put(newInviteFrom(1, 1))
-	assert.Equal(t, newRsvp(1, 0, ""), &got)
+	ac := acceptor{}
+	got := ac.Put(newInviteFrom(1, 1))
+	assert.Equal(t, newRsvp(1, 0, ""), got)
 }
 
 func TestItVotes(t *testing.T) {
@@ -40,66 +36,59 @@ func TestItVotes(t *testing.T) {
 	}
 
 	for _, test := range totest {
-		var got M
-		ac := acceptor{outs: msgSlot{&got}}
-		ac.Put(test[0])
-		assert.Equal(t, test[1], &got, test)
+		ac := acceptor{}
+		got := ac.Put(test[0])
+		assert.Equal(t, test[1], got, test)
 	}
 }
 
 func TestItVotesWithAnotherRound(t *testing.T) {
-	var got M
-	ac := acceptor{outs: msgSlot{&got}}
+	ac := acceptor{}
 	val := "bar"
 
 	// According to paxos, we can omit Phase 1 in the first round
-	ac.Put(newNominateFrom(1, 2, val))
-	assert.Equal(t, newVote(2, val), &got)
+	got := ac.Put(newNominateFrom(1, 2, val))
+	assert.Equal(t, newVote(2, val), got)
 }
 
 func TestItVotesWithAnotherSelf(t *testing.T) {
-	var got M
-	ac := acceptor{outs: msgSlot{&got}}
+	ac := acceptor{}
 	val := "bar"
 
 	// According to paxos, we can omit Phase 1 in the first round
-	ac.Put(newNominateFrom(1, 2, val))
-	assert.Equal(t, newVote(2, val), &got)
+	got := ac.Put(newNominateFrom(1, 2, val))
+	assert.Equal(t, newVote(2, val), got)
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
-	var got M
-	ac := acceptor{outs: msgSlot{&got}}
+	ac := acceptor{}
 
 	ac.Put(newNominateFrom(1, 1, "v"))
-	ac.Put(newInviteFrom(1, 2))
-	assert.Equal(t, newRsvp(2, 1, "v"), &got)
+
+	got := ac.Put(newInviteFrom(1, 2))
+	assert.Equal(t, newRsvp(2, 1, "v"), got)
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
-	var got M
-	ac := acceptor{outs: msgSlot{&got}}
+	ac := acceptor{}
 
-	ac.Put(newNominateFrom(1, 1, "v"))
-	assert.Equal(t, newVote(1, "v"), &got)
+	got := ac.Put(newNominateFrom(1, 1, "v"))
+	assert.Equal(t, newVote(1, "v"), got)
 
-	ac.outs = funcPutter(func(m *M) {
-		t.Error("should not vote twice in one round")
-	})
-	ac.Put(newNominateFrom(1, 1, "v"))
+	got = ac.Put(newNominateFrom(1, 1, "v"))
+	assert.Equal(t, (*M)(nil), got)
 }
 
 
 func TestAcceptorIgnoresBadMessages(t *testing.T) {
-	var got M
-	ac := acceptor{outs: msgSlot{&got}}
+	ac := acceptor{}
 
-	ac.Put(&M{})
-	assert.Equal(t, M{}, got)
+	got := ac.Put(&M{})
+	assert.Equal(t, (*M)(nil), got)
 
-	ac.Put(&M{WireCmd: invite}) // missing Crnd
-	assert.Equal(t, M{}, got)
+	got = ac.Put(&M{WireCmd: invite}) // missing Crnd
+	assert.Equal(t, (*M)(nil), got)
 
-	ac.Put(&M{WireCmd: nominate}) // missing Crnd
-	assert.Equal(t, M{}, got)
+	got = ac.Put(&M{WireCmd: nominate}) // missing Crnd
+	assert.Equal(t, (*M)(nil), got)
 }
