@@ -18,19 +18,16 @@ func (ln *learner) init(quorum int64) {
 }
 
 func (ln *learner) Deliver(p Packet) {
+	if ln.done {
+		return
+	}
+
 	in := p.M
 	switch in.Cmd() {
 	case M_LEARN:
-		if ln.done {
-			return
-		}
 
 		ln.done, ln.v = true, string(in.Value)
 	case M_VOTE:
-		if ln.done {
-			return
-		}
-
 		if in.Vrnd == nil {
 			return
 		}
