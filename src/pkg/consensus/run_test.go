@@ -127,3 +127,14 @@ func TestRunVoteDeliverd(t *testing.T) {
 	assert.Equal(t, true, r.learner.done)
 	assert.Equal(t, "foo", r.learner.v)
 }
+
+
+func TestRunInviteDeliverd(t *testing.T) {
+	var r Run
+	var got M
+	r.acceptor.outs = msgSlot{&got}
+
+	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
+
+	assert.Equal(t, int64(1), r.acceptor.rnd)
+}

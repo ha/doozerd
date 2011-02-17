@@ -10,12 +10,14 @@ type Run struct {
 	Seqn int64
 	Cals []string
 
-	learner learner
-	sink    sink
+	acceptor acceptor
+	learner  learner
+	sink     sink
 }
 
 
 func (r *Run) Deliver(p Packet) {
+	r.acceptor.Put(&p.M)
 	r.learner.Deliver(p)
 	r.sink.Put(&p.M)
 }
