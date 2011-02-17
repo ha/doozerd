@@ -14,6 +14,16 @@ const (
 )
 
 
+type msgSlot struct {
+	*M
+}
+
+
+func (ms msgSlot) Put(m *M) {
+	*ms.M = *m
+}
+
+
 func TestGetCals(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
