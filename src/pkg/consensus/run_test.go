@@ -37,6 +37,19 @@ func TestGetCals(t *testing.T) {
 }
 
 
+func TestGetAddrs(t *testing.T) {
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{1, store.MustEncodeSet(info+"/1/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet(info+"/2/addr", "y", 0)}
+	st.Ops <- store.Op{3, store.MustEncodeSet(info+"/3/addr", "z", 0)}
+	<-st.Seqns
+
+	assert.Equal(t, map[string]bool{"x":true, "y":true, "z":true}, getAddrs(st))
+}
+
+
 func alphaTest(t *testing.T, alpha int64) {
 	runs  := make(chan Run)
 	st    := store.New()

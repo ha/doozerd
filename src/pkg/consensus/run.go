@@ -51,3 +51,17 @@ func getCals(g store.Getter) []string {
 
 	return cals
 }
+
+
+func getAddrs(g store.Getter) map[string]bool {
+	// TODO include only CALs, once followers use TCP for updates.
+
+	members := store.Getdir(g, "/doozer/info")
+	addrs := make(map[string]bool)
+
+	for _, member := range members {
+		addrs[store.GetString(g, "/doozer/info/"+member+"/addr")] = true
+	}
+
+	return addrs
+}
