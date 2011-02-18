@@ -23,11 +23,11 @@ func (co *coordinator) Deliver(p packet) (m *M) {
 		co.crnd += int64(co.size)
 	}
 
-	if in.WireCmd == nil {
+	if in.Cmd == nil {
 		return nil
 	}
 
-	switch *in.WireCmd {
+	switch *in.Cmd {
 	case M_PROPOSE:
 		if co.begun {
 			break
@@ -39,7 +39,7 @@ func (co *coordinator) Deliver(p packet) (m *M) {
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
-		return &M{WireCmd: invite, Crnd: &co.crnd}
+		return &M{Cmd: invite, Crnd: &co.crnd}
 	case M_RSVP:
 		if !co.begun {
 			break
@@ -79,7 +79,7 @@ func (co *coordinator) Deliver(p packet) (m *M) {
 			}
 			co.cval = v
 
-			return &M{WireCmd: nominate, Crnd: &co.crnd, Value: []byte(v)}
+			return &M{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}
 		}
 	case M_TICK:
 		co.crnd += int64(co.size)
@@ -87,7 +87,7 @@ func (co *coordinator) Deliver(p packet) (m *M) {
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
-		return &M{WireCmd: invite, Crnd: &co.crnd}
+		return &M{Cmd: invite, Crnd: &co.crnd}
 	}
 
 	return

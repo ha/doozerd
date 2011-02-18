@@ -172,7 +172,7 @@ func TestLearnerIgnoresBadMessages(t *testing.T) {
 	ln.Deliver(packet{})
 	assert.Equal(t, false, ln.done)
 
-	ln.Deliver(packet{M: M{WireCmd: vote}}) // missing Vrnd
+	ln.Deliver(packet{M: M{Cmd: vote}}) // missing Vrnd
 	assert.Equal(t, false, ln.done)
 }
 

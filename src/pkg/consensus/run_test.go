@@ -136,10 +136,10 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 	p := packet{
 		M: M{
-			Seqn: proto.Int64(1),
-			WireCmd:  vote,
-			Vrnd:     proto.Int64(1),
-			Value:    []byte("foo"),
+			Seqn:  proto.Int64(1),
+			Cmd:   vote,
+			Vrnd:  proto.Int64(1),
+			Value: []byte("foo"),
 		},
 		Addr: "X",
 	}
@@ -165,7 +165,7 @@ func TestRunProposeDeliverd(t *testing.T) {
 	var r run
 	r.out = make(chan packet, 100)
 
-	r.Deliver(packet{M: M{WireCmd: propose}})
+	r.Deliver(packet{M: M{Cmd: propose}})
 	assert.Equal(t, true, r.coordinator.begun)
 }
 

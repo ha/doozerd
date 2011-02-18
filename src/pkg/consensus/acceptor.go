@@ -6,11 +6,11 @@ type acceptor struct {
 }
 
 func (ac *acceptor) Put(m *M) *M {
-	if m.WireCmd == nil {
+	if m.Cmd == nil {
 		return nil
 	}
 
-	switch *m.WireCmd {
+	switch *m.Cmd {
 	case M_INVITE:
 		if m.Crnd == nil {
 			break
@@ -22,10 +22,10 @@ func (ac *acceptor) Put(m *M) *M {
 			ac.rnd = i
 
 			return &M{
-				WireCmd: rsvp,
-				Crnd:    &i,
-				Vrnd:    &ac.vrnd,
-				Value:   []byte(ac.vval),
+				Cmd:   rsvp,
+				Crnd:  &i,
+				Vrnd:  &ac.vrnd,
+				Value: []byte(ac.vval),
 			}
 		}
 	case M_NOMINATE:
@@ -42,9 +42,9 @@ func (ac *acceptor) Put(m *M) *M {
 			ac.vval = string(v)
 
 			broadcast := &M{
-				WireCmd: vote,
-				Vrnd:    &i,
-				Value:   []byte(ac.vval),
+				Cmd:   vote,
+				Vrnd:  &i,
+				Value: []byte(ac.vval),
 			}
 			return broadcast
 		}

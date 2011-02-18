@@ -12,7 +12,7 @@ message M {
         LEARN = 7;
     }
 
-    optional Cmd wire_cmd = 1;
+    optional Cmd cmd = 1;
     optional int64 seqn = 2;
 
     optional int64 crnd = 3;

@@ -252,12 +252,12 @@ func TestCoordinatorIgnoresBadMessages(t *testing.T) {
 	assert.Equal(t, coordinator{begun: true}, co)
 
 	// missing Crnd
-	got = co.Deliver(packet{M: M{WireCmd: rsvp, Vrnd: new(int64)}})
+	got = co.Deliver(packet{M: M{Cmd: rsvp, Vrnd: new(int64)}})
 	assert.Equal(t, (*M)(nil), got)
 	assert.Equal(t, coordinator{begun: true}, co)
 
 	// missing Vrnd
-	got = co.Deliver(packet{M: M{WireCmd: rsvp, Crnd: new(int64)}})
+	got = co.Deliver(packet{M: M{Cmd: rsvp, Crnd: new(int64)}})
 	assert.Equal(t, (*M)(nil), got)
 	assert.Equal(t, coordinator{begun: true}, co)
 }

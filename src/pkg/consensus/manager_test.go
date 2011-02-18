@@ -43,7 +43,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 	runs <- &run
 
 	in <- packet{
-		M:    M{Seqn: proto.Int64(1), WireCmd: learn, Value: []byte("foo")},
+		M:    M{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")},
 		Addr: "127.0.0.1:9999",
 	}
 

@@ -16,7 +16,7 @@ var (
 )
 
 var (
-	msgTick = &M{WireCmd: tick}
+	msgTick = &M{Cmd: tick}
 )
 
 func (m *M) From() int {

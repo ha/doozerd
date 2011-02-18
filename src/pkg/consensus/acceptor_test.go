@@ -86,9 +86,9 @@ func TestAcceptorIgnoresBadMessages(t *testing.T) {
 	got := ac.Put(&M{})
 	assert.Equal(t, (*M)(nil), got)
 
-	got = ac.Put(&M{WireCmd: invite}) // missing Crnd
+	got = ac.Put(&M{Cmd: invite}) // missing Crnd
 	assert.Equal(t, (*M)(nil), got)
 
-	got = ac.Put(&M{WireCmd: nominate}) // missing Crnd
+	got = ac.Put(&M{Cmd: nominate}) // missing Crnd
 	assert.Equal(t, (*M)(nil), got)
 }

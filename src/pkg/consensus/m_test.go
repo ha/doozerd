@@ -30,7 +30,7 @@ func (x *M_Cmd) Format(f fmt.State, c int) {
 
 // For testing convenience
 func newVote(i int64, vval string) *M {
-	return &M{WireCmd: vote, Vrnd: &i, Value: []byte(vval)}
+	return &M{Cmd: vote, Vrnd: &i, Value: []byte(vval)}
 }
 
 // For testing convenience
@@ -42,7 +42,7 @@ func newVoteFrom(from string, i int64, vval string) packet {
 
 // For testing convenience
 func newNominate(crnd int64, v string) *M {
-	return &M{WireCmd: nominate, Crnd: &crnd, Value: []byte(v)}
+	return &M{Cmd: nominate, Crnd: &crnd, Value: []byte(v)}
 }
 
 // For testing convenience
@@ -56,10 +56,10 @@ func newNominateFrom(from int32, crnd int64, v string) *M {
 // For testing convenience
 func newRsvp(i, vrnd int64, vval string) *M {
 	return &M{
-		WireCmd: rsvp,
-		Crnd:    &i,
-		Vrnd:    &vrnd,
-		Value:   []byte(vval),
+		Cmd:   rsvp,
+		Crnd:  &i,
+		Vrnd:  &vrnd,
+		Value: []byte(vval),
 	}
 }
 
@@ -72,7 +72,7 @@ func newRsvpFrom(from string, i, vrnd int64, vval string) packet {
 
 // For testing convenience
 func newInvite(crnd int64) *M {
-	return &M{WireCmd: invite, Crnd: &crnd}
+	return &M{Cmd: invite, Crnd: &crnd}
 }
 
 // For testing convenience
@@ -85,12 +85,12 @@ func newInviteFrom(from int32, rnd int64) *M {
 
 // For testing convenience
 func newPropose(val string) *M {
-	return &M{WireCmd: propose, Value: []byte(val)}
+	return &M{Cmd: propose, Value: []byte(val)}
 }
 
 // For testing convenience
 func newLearn(val string) *M {
-	return &M{WireCmd: learn, Value: []byte(val)}
+	return &M{Cmd: learn, Value: []byte(val)}
 }
 
 func TestMessageSetFrom(t *testing.T) {
