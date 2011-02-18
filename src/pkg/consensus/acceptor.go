@@ -6,7 +6,11 @@ type acceptor struct {
 }
 
 func (ac *acceptor) Put(m *M) *M {
-	switch m.Cmd() {
+	if m.WireCmd == nil {
+		return nil
+	}
+
+	switch *m.WireCmd {
 	case M_INVITE:
 		if m.Crnd == nil {
 			break

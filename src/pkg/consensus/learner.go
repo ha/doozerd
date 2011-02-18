@@ -23,7 +23,11 @@ func (ln *learner) Deliver(p packet) {
 	}
 
 	in := p.M
-	switch in.Cmd() {
+	if in.WireCmd == nil {
+		return
+	}
+
+	switch *in.WireCmd {
 	case M_LEARN:
 
 		ln.done, ln.v = true, string(in.Value)

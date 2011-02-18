@@ -23,10 +23,6 @@ func (m *M) From() int {
 	return int(pb.GetInt32(m.WireFrom))
 }
 
-func (m *M) Cmd() int {
-	return int(pb.GetInt32((*int32)(m.WireCmd)))
-}
-
 // Typically used after reading from the network, when building a new `*M`
 // object.
 //

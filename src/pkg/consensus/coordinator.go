@@ -23,7 +23,11 @@ func (co *coordinator) Deliver(p packet) (m *M) {
 		co.crnd += int64(co.size)
 	}
 
-	switch in.Cmd() {
+	if in.WireCmd == nil {
+		return nil
+	}
+
+	switch *in.WireCmd {
 	case M_PROPOSE:
 		if co.begun {
 			break
