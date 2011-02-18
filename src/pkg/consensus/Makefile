@@ -8,7 +8,6 @@ GOFILES=\
 	learner.go\
 	m.go\
 	m.pb.go\
-	putter.go\
 	manager.go\
 
 include $(GOROOT)/src/Make.pkg
