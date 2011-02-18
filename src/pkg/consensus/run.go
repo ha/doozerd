@@ -33,9 +33,9 @@ func (r *Run) Deliver(p Packet) {
 }
 
 
-func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- Run) {
+func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *Run) {
 	for e := range w {
-		runs <- Run{Seqn: e.Seqn + alpha, Cals: getCals(e)}
+		runs <- &Run{Seqn: e.Seqn + alpha, Cals: getCals(e)}
 	}
 }
 

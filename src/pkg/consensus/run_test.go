@@ -51,7 +51,7 @@ func TestGetAddrs(t *testing.T) {
 
 
 func alphaTest(t *testing.T, alpha int64) {
-	runs := make(chan Run)
+	runs := make(chan *Run)
 	st := store.New()
 	defer close(st.Ops)
 
@@ -74,7 +74,7 @@ func alphaTest(t *testing.T, alpha int64) {
 	// to poke get things started
 	st.Ops <- store.Op{3, store.Nop}
 
-	assert.Equal(t, Run{Seqn: 3 + alpha, Cals: []string{"a"}}, <-runs)
+	assert.Equal(t, &Run{Seqn: 3 + alpha, Cals: []string{"a"}}, <-runs)
 }
 
 
@@ -95,7 +95,7 @@ func TestRunAlphaOfFifty(t *testing.T) {
 
 func TestRunAfterWatch(t *testing.T) {
 	alpha := int64(3)
-	runs := make(chan Run)
+	runs := make(chan *Run)
 	st := store.New()
 	defer close(st.Ops)
 
@@ -114,7 +114,7 @@ func TestRunAfterWatch(t *testing.T) {
 		Mut:  store.MustEncodeSet(slot+"/1", "b", 0),
 	}
 
-	assert.Equal(t, Run{Seqn: 2 + alpha, Cals: []string{"b"}}, <-runs)
+	assert.Equal(t, &Run{Seqn: 2 + alpha, Cals: []string{"b"}}, <-runs)
 }
 
 
