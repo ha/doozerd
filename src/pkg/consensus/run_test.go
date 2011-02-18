@@ -155,7 +155,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 	var r run
 	r.out = make(chan packet, 100)
 
-	r.Deliver(packet{M: *newInviteFrom(1, 1)})
+	r.Deliver(packet{M: *newInviteSeqn1(1)})
 
 	assert.Equal(t, int64(1), r.acceptor.rnd)
 }
@@ -186,7 +186,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 	var r run
 	r.out = c
 
-	r.Deliver(packet{M: *newInviteFrom(1, 1)})
+	r.Deliver(packet{M: *newInviteSeqn1(1)})
 	assert.Equal(t, *newRsvp(1, 0, ""), (<-c).M)
 }
 

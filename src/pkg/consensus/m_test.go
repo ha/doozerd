@@ -46,10 +46,9 @@ func newNominate(crnd int64, v string) *M {
 }
 
 // For testing convenience
-func newNominateFrom(from int32, crnd int64, v string) *M {
+func newNominateSeqn1(crnd int64, v string) *M {
 	m := newNominate(crnd, v)
 	m.SetSeqn(1)
-	m.SetFrom(from)
 	return m
 }
 
@@ -76,10 +75,9 @@ func newInvite(crnd int64) *M {
 }
 
 // For testing convenience
-func newInviteFrom(from int32, rnd int64) *M {
+func newInviteSeqn1(rnd int64) *M {
 	m := newInvite(rnd)
 	m.SetSeqn(1)
-	m.SetFrom(from)
 	return m
 }
 
@@ -91,14 +89,6 @@ func newPropose(val string) *M {
 // For testing convenience
 func newLearn(val string) *M {
 	return &M{Cmd: learn, Value: []byte(val)}
-}
-
-func TestMessageSetFrom(t *testing.T) {
-	m := newInvite(1)
-	m.SetFrom(1)
-	assert.Equal(t, 1, m.From(), "")
-	m.SetFrom(2)
-	assert.Equal(t, 2, m.From(), "")
 }
 
 func TestMessageSetSeqn(t *testing.T) {

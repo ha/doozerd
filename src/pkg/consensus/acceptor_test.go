@@ -7,10 +7,10 @@ import (
 
 func TestIgnoreOldMessages(t *testing.T) {
 	tests := [][]*M{
-		{newInviteFrom(1, 11), newNominateFrom(1, 1, "v")},
-		{newNominateFrom(1, 11, "v"), newInviteFrom(1, 1)},
-		{newInviteFrom(1, 11), newInviteFrom(1, 1)},
-		{newNominateFrom(1, 11, "v"), newNominateFrom(1, 1, "v")},
+		{newInviteSeqn1(11), newNominateSeqn1(1, "v")},
+		{newNominateSeqn1(11, "v"), newInviteSeqn1(1)},
+		{newInviteSeqn1(11), newInviteSeqn1(1)},
+		{newNominateSeqn1(11, "v"), newNominateSeqn1(1, "v")},
 	}
 
 	for _, test := range tests {
@@ -25,14 +25,14 @@ func TestIgnoreOldMessages(t *testing.T) {
 
 func TestAcceptsInvite(t *testing.T) {
 	ac := acceptor{}
-	got := ac.Put(newInviteFrom(1, 1))
+	got := ac.Put(newInviteSeqn1(1))
 	assert.Equal(t, newRsvp(1, 0, ""), got)
 }
 
 func TestItVotes(t *testing.T) {
 	totest := [][]*M{
-		{newNominateFrom(1, 1, "foo"), newVote(1, "foo")},
-		{newNominateFrom(1, 1, "bar"), newVote(1, "bar")},
+		{newNominateSeqn1(1, "foo"), newVote(1, "foo")},
+		{newNominateSeqn1(1, "bar"), newVote(1, "bar")},
 	}
 
 	for _, test := range totest {
@@ -47,7 +47,7 @@ func TestItVotesWithAnotherRound(t *testing.T) {
 	val := "bar"
 
 	// According to paxos, we can omit Phase 1 in the first round
-	got := ac.Put(newNominateFrom(1, 2, val))
+	got := ac.Put(newNominateSeqn1(2, val))
 	assert.Equal(t, newVote(2, val), got)
 }
 
@@ -56,26 +56,26 @@ func TestItVotesWithAnotherSelf(t *testing.T) {
 	val := "bar"
 
 	// According to paxos, we can omit Phase 1 in the first round
-	got := ac.Put(newNominateFrom(1, 2, val))
+	got := ac.Put(newNominateSeqn1(2, val))
 	assert.Equal(t, newVote(2, val), got)
 }
 
 func TestVotedRoundsAndValuesAreTracked(t *testing.T) {
 	ac := acceptor{}
 
-	ac.Put(newNominateFrom(1, 1, "v"))
+	ac.Put(newNominateSeqn1(1, "v"))
 
-	got := ac.Put(newInviteFrom(1, 2))
+	got := ac.Put(newInviteSeqn1(2))
 	assert.Equal(t, newRsvp(2, 1, "v"), got)
 }
 
 func TestVotesOnlyOncePerRound(t *testing.T) {
 	ac := acceptor{}
 
-	got := ac.Put(newNominateFrom(1, 1, "v"))
+	got := ac.Put(newNominateSeqn1(1, "v"))
 	assert.Equal(t, newVote(1, "v"), got)
 
-	got = ac.Put(newNominateFrom(1, 1, "v"))
+	got = ac.Put(newNominateSeqn1(1, "v"))
 	assert.Equal(t, (*M)(nil), got)
 }
 
