@@ -108,11 +108,3 @@ func TestMessageSetSeqn(t *testing.T) {
 	m.SetSeqn(2)
 	assert.Equal(t, int64(2), m.Seqn(), "")
 }
-
-func TestDup(t *testing.T) {
-	m := newInvite(1)
-	o := m.Dup()
-	assert.Equal(t, m, o)
-	o.SetSeqn(2)
-	assert.NotEqual(t, m, o)
-}

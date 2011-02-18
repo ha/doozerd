@@ -43,10 +43,3 @@ func (m *M) SetFrom(from int32) {
 func (m *M) SetSeqn(seqn int64) {
 	m.WireSeqn = &seqn
 }
-
-func (m *M) Dup() *M {
-	var n M
-	n = *m
-	n.Value = append([]byte{}, m.Value...)
-	return &n
-}
