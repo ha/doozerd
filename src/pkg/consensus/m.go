@@ -27,10 +27,6 @@ func (m *M) Cmd() int {
 	return int(pb.GetInt32((*int32)(m.WireCmd)))
 }
 
-func (m *M) Seqn() int64 {
-	return pb.GetInt64(m.WireSeqn)
-}
-
 // Typically used after reading from the network, when building a new `*M`
 // object.
 //
