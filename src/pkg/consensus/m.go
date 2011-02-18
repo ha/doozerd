@@ -37,5 +37,5 @@ func (m *M) SetFrom(from int32) {
 
 // Typically used just before writing `m` to the network.
 func (m *M) SetSeqn(seqn int64) {
-	m.WireSeqn = &seqn
+	m.Seqn = &seqn
 }

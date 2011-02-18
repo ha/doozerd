@@ -14,7 +14,7 @@ type packet struct {
 
 
 func (p packet) Less(y interface{}) bool {
-	return *p.WireSeqn < *y.(packet).WireSeqn
+	return *p.Seqn < *y.(packet).Seqn
 }
 
 
@@ -48,7 +48,7 @@ func NewManager(in <-chan packet, out chan<- packet, runs <-chan *run) Manager {
 			for packets.Len() > 0 {
 				p := packets.At(0).(packet)
 
-				seqn := *p.WireSeqn
+				seqn := *p.Seqn
 
 				if seqn >= nextRun {
 					break

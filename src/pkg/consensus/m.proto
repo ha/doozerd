@@ -13,7 +13,7 @@ message M {
     }
 
     optional Cmd wire_cmd = 1;
-    optional int64 wire_seqn = 2;
+    optional int64 seqn = 2;
 
     optional int64 crnd = 3;
     optional int64 vrnd = 4;

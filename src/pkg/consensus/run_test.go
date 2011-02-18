@@ -136,7 +136,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 	p := packet{
 		M: M{
-			WireSeqn: proto.Int64(1),
+			Seqn: proto.Int64(1),
 			WireCmd:  vote,
 			Vrnd:     proto.Int64(1),
 			Value:    []byte("foo"),

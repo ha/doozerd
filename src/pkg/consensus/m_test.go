@@ -104,7 +104,7 @@ func TestMessageSetFrom(t *testing.T) {
 func TestMessageSetSeqn(t *testing.T) {
 	m := newInvite(1)
 	m.SetSeqn(1)
-	assert.Equal(t, int64(1), *m.WireSeqn, "")
+	assert.Equal(t, int64(1), *m.Seqn, "")
 	m.SetSeqn(2)
-	assert.Equal(t, int64(2), *m.WireSeqn, "")
+	assert.Equal(t, int64(2), *m.Seqn, "")
 }
