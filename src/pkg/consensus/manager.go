@@ -7,14 +7,14 @@ import (
 )
 
 
-type Packet struct {
+type packet struct {
 	Addr string
 	M
 }
 
 
-func (p Packet) Less(y interface{}) bool {
-	return *p.WireSeqn < *y.(Packet).WireSeqn
+func (p packet) Less(y interface{}) bool {
+	return *p.WireSeqn < *y.(packet).WireSeqn
 }
 
 
@@ -27,7 +27,7 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(in <-chan Packet, out chan<- Packet, runs <-chan *Run) Manager {
+func NewManager(in <-chan packet, out chan<- packet, runs <-chan *Run) Manager {
 	stats := make(chan Stats)
 	running := make(map[int64]*Run)
 	packets := new(vector.Vector)
@@ -46,7 +46,7 @@ func NewManager(in <-chan Packet, out chan<- Packet, runs <-chan *Run) Manager {
 			}
 
 			for packets.Len() > 0 {
-				p := packets.At(0).(Packet)
+				p := packets.At(0).(packet)
 
 				seqn := *p.WireSeqn
 

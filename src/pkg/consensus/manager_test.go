@@ -22,13 +22,13 @@ func TestManagerRuns(t *testing.T) {
 
 
 func TestManagerPacketQueue(t *testing.T) {
-	in := make(chan Packet)
+	in := make(chan packet)
 
 	m := NewManager(in, nil, nil)
 
-	in <- Packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(1)}}
-	in <- Packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(2)}}
-	in <- Packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(3)}}
+	in <- packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(1)}}
+	in <- packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(2)}}
+	in <- packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(3)}}
 
 	assert.Equal(t, 3, (<-m).WaitPackets)
 }
@@ -36,13 +36,13 @@ func TestManagerPacketQueue(t *testing.T) {
 
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *Run)
-	in := make(chan Packet)
+	in := make(chan packet)
 	m := NewManager(in, nil, runs)
 
 	run := Run{Seqn: 1}
 	runs <- &run
 
-	in <- Packet{
+	in <- packet{
 		M:    M{WireSeqn: proto.Int64(1), WireCmd: learn, Value: []byte("foo")},
 		Addr: "127.0.0.1:9999",
 	}

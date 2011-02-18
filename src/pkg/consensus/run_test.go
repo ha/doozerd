@@ -134,7 +134,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 	r := Run{}
 	r.learner.init(1)
 
-	p := Packet{
+	p := packet{
 		M: M{
 			WireSeqn: proto.Int64(1),
 			WireCmd:  vote,
@@ -153,9 +153,9 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 func TestRunInviteDeliverd(t *testing.T) {
 	var r Run
-	r.out = make(chan Packet, 100)
+	r.out = make(chan packet, 100)
 
-	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
+	r.Deliver(packet{M: *newInviteFrom(1, 1)})
 
 	assert.Equal(t, int64(1), r.acceptor.rnd)
 }
@@ -163,37 +163,37 @@ func TestRunInviteDeliverd(t *testing.T) {
 
 func TestRunProposeDeliverd(t *testing.T) {
 	var r Run
-	r.out = make(chan Packet, 100)
+	r.out = make(chan packet, 100)
 
-	r.Deliver(Packet{M: M{WireCmd: propose}})
+	r.Deliver(packet{M: M{WireCmd: propose}})
 	assert.Equal(t, true, r.coordinator.begun)
 }
 
 
 func TestRunSendsCoordPacket(t *testing.T) {
-	c := make(chan Packet, 100)
+	c := make(chan packet, 100)
 	var r Run
 	r.coordinator.crnd = 1
 	r.out = c
 
-	r.Deliver(Packet{M: *newPropose("foo")})
+	r.Deliver(packet{M: *newPropose("foo")})
 	assert.Equal(t, *newInvite(1), (<-c).M)
 }
 
 
 func TestRunSendsAcceptorPacket(t *testing.T) {
-	c := make(chan Packet, 100)
+	c := make(chan packet, 100)
 	var r Run
 	r.out = c
 
-	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
+	r.Deliver(packet{M: *newInviteFrom(1, 1)})
 	assert.Equal(t, *newRsvp(1, 0, ""), (<-c).M)
 }
 
 
 func TestRunBroadcastThree(t *testing.T) {
-	c := make(chan Packet, 100)
-	sentinel := Packet{Addr: "sentinel"}
+	c := make(chan packet, 100)
+	sentinel := packet{Addr: "sentinel"}
 	var r Run
 	r.out = c
 	r.Addrs = map[string]bool{
@@ -218,8 +218,8 @@ func TestRunBroadcastThree(t *testing.T) {
 
 
 func TestRunBroadcastFive(t *testing.T) {
-	c := make(chan Packet, 100)
-	sentinel := Packet{Addr: "sentinel"}
+	c := make(chan packet, 100)
+	sentinel := packet{Addr: "sentinel"}
 	var r Run
 	r.out = c
 	r.Addrs = map[string]bool{

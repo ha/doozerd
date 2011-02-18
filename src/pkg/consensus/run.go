@@ -15,19 +15,19 @@ type Run struct {
 	acceptor    acceptor
 	learner     learner
 
-	out chan Packet
+	out chan packet
 }
 
 
-func (r *Run) Deliver(p Packet) {
+func (r *Run) Deliver(p packet) {
 	m := r.coordinator.Deliver(p)
 	if m != nil {
-		r.out <- Packet{M: *m}
+		r.out <- packet{M: *m}
 	}
 
 	m = r.acceptor.Put(&p.M)
 	if m != nil {
-		r.out <- Packet{M: *m}
+		r.out <- packet{M: *m}
 	}
 
 	r.learner.Deliver(p)
@@ -36,7 +36,7 @@ func (r *Run) Deliver(p Packet) {
 
 func (r *Run) broadcast(m *M) {
 	for addr := range r.Addrs {
-		r.out <- Packet{addr, *m}
+		r.out <- packet{addr, *m}
 	}
 }
 
