@@ -27,9 +27,9 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(in <-chan packet, out chan<- packet, runs <-chan *Run) Manager {
+func NewManager(in <-chan packet, out chan<- packet, runs <-chan *run) Manager {
 	stats := make(chan Stats)
-	running := make(map[int64]*Run)
+	running := make(map[int64]*run)
 	packets := new(vector.Vector)
 
 	var nextRun int64
@@ -38,8 +38,8 @@ func NewManager(in <-chan packet, out chan<- packet, runs <-chan *Run) Manager {
 		for {
 			select {
 			case run := <-runs:
-				running[run.Seqn] = run
-				nextRun = run.Seqn + 1
+				running[run.seqn] = run
+				nextRun = run.seqn + 1
 			case p := <-in:
 				heap.Push(packets, p)
 			case stats <- Stats{len(running), packets.Len()}:

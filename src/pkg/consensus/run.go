@@ -6,10 +6,10 @@ import (
 )
 
 
-type Run struct {
-	Seqn  int64
-	Cals  []string
-	Addrs map[string]bool
+type run struct {
+	seqn  int64
+	cals  []string
+	addrs map[string]bool
 
 	coordinator coordinator
 	acceptor    acceptor
@@ -19,7 +19,7 @@ type Run struct {
 }
 
 
-func (r *Run) Deliver(p packet) {
+func (r *run) Deliver(p packet) {
 	m := r.coordinator.Deliver(p)
 	if m != nil {
 		r.out <- packet{M: *m}
@@ -34,19 +34,19 @@ func (r *Run) Deliver(p packet) {
 }
 
 
-func (r *Run) broadcast(m *M) {
-	for addr := range r.Addrs {
+func (r *run) broadcast(m *M) {
+	for addr := range r.addrs {
 		r.out <- packet{addr, *m}
 	}
 }
 
 
-func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *Run) {
+func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run) {
 	for e := range w {
-		runs <- &Run{
-			Seqn:  e.Seqn + alpha,
-			Cals:  getCals(e),
-			Addrs: getAddrs(e),
+		runs <- &run{
+			seqn:  e.Seqn + alpha,
+			cals:  getCals(e),
+			addrs: getAddrs(e),
 		}
 	}
 }

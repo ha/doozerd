@@ -51,7 +51,7 @@ func TestGetAddrs(t *testing.T) {
 
 
 func alphaTest(t *testing.T, alpha int64) {
-	runs := make(chan *Run)
+	runs := make(chan *run)
 	st := store.New()
 	defer close(st.Ops)
 
@@ -74,10 +74,10 @@ func alphaTest(t *testing.T, alpha int64) {
 	// Send a noop here to get things started.
 	st.Ops <- store.Op{3, store.Nop}
 
-	exp := &Run{
-		Seqn:  3 + alpha,
-		Cals:  []string{"a"},
-		Addrs: map[string]bool{"x": true},
+	exp := &run{
+		seqn:  3 + alpha,
+		cals:  []string{"a"},
+		addrs: map[string]bool{"x": true},
 	}
 
 	assert.Equal(t, exp, <-runs)
@@ -101,7 +101,7 @@ func TestRunAlphaOfFifty(t *testing.T) {
 
 func TestRunAfterWatch(t *testing.T) {
 	alpha := int64(3)
-	runs := make(chan *Run)
+	runs := make(chan *run)
 	st := store.New()
 	defer close(st.Ops)
 
@@ -120,10 +120,10 @@ func TestRunAfterWatch(t *testing.T) {
 		Mut:  store.MustEncodeSet(slot+"/1", "b", 0),
 	}
 
-	exp := &Run{
-		Seqn:  2 + alpha,
-		Cals:  []string{"b"},
-		Addrs: map[string]bool{"y": true},
+	exp := &run{
+		seqn:  2 + alpha,
+		cals:  []string{"b"},
+		addrs: map[string]bool{"y": true},
 	}
 
 	assert.Equal(t, exp, <-runs)
@@ -131,7 +131,7 @@ func TestRunAfterWatch(t *testing.T) {
 
 
 func TestRunVoteDeliverd(t *testing.T) {
-	r := Run{}
+	r := run{}
 	r.learner.init(1)
 
 	p := packet{
@@ -152,7 +152,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 
 func TestRunInviteDeliverd(t *testing.T) {
-	var r Run
+	var r run
 	r.out = make(chan packet, 100)
 
 	r.Deliver(packet{M: *newInviteFrom(1, 1)})
@@ -162,7 +162,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 
 
 func TestRunProposeDeliverd(t *testing.T) {
-	var r Run
+	var r run
 	r.out = make(chan packet, 100)
 
 	r.Deliver(packet{M: M{WireCmd: propose}})
@@ -172,7 +172,7 @@ func TestRunProposeDeliverd(t *testing.T) {
 
 func TestRunSendsCoordPacket(t *testing.T) {
 	c := make(chan packet, 100)
-	var r Run
+	var r run
 	r.coordinator.crnd = 1
 	r.out = c
 
@@ -183,7 +183,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 
 func TestRunSendsAcceptorPacket(t *testing.T) {
 	c := make(chan packet, 100)
-	var r Run
+	var r run
 	r.out = c
 
 	r.Deliver(packet{M: *newInviteFrom(1, 1)})
@@ -194,9 +194,9 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 func TestRunBroadcastThree(t *testing.T) {
 	c := make(chan packet, 100)
 	sentinel := packet{Addr: "sentinel"}
-	var r Run
+	var r run
 	r.out = c
-	r.Addrs = map[string]bool{
+	r.addrs = map[string]bool{
 		"x": true,
 		"y": true,
 		"z": true,
@@ -206,23 +206,23 @@ func TestRunBroadcastThree(t *testing.T) {
 	c <- sentinel
 
 	addrs := map[string]bool{}
-	for i := 0; i < len(r.Addrs); i++ {
+	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
 		assert.Equal(t, *newInvite(1), p.M)
 	}
 
 	assert.Equal(t, sentinel, <-c)
-	assert.Equal(t, r.Addrs, addrs)
+	assert.Equal(t, r.addrs, addrs)
 }
 
 
 func TestRunBroadcastFive(t *testing.T) {
 	c := make(chan packet, 100)
 	sentinel := packet{Addr: "sentinel"}
-	var r Run
+	var r run
 	r.out = c
-	r.Addrs = map[string]bool{
+	r.addrs = map[string]bool{
 		"v": true,
 		"w": true,
 		"x": true,
@@ -234,12 +234,12 @@ func TestRunBroadcastFive(t *testing.T) {
 	c <- sentinel
 
 	addrs := map[string]bool{}
-	for i := 0; i < len(r.Addrs); i++ {
+	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
 		assert.Equal(t, *newInvite(1), p.M)
 	}
 
 	assert.Equal(t, sentinel, <-c)
-	assert.Equal(t, r.Addrs, addrs)
+	assert.Equal(t, r.addrs, addrs)
 }

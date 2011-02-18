@@ -9,13 +9,13 @@ import (
 
 
 func TestManagerRuns(t *testing.T) {
-	runs := make(chan *Run)
+	runs := make(chan *run)
 
 	m := NewManager(nil, nil, runs)
 
-	runs <- &Run{Seqn: 1}
-	runs <- &Run{Seqn: 2}
-	runs <- &Run{Seqn: 3}
+	runs <- &run{seqn: 1}
+	runs <- &run{seqn: 2}
+	runs <- &run{seqn: 3}
 
 	assert.Equal(t, 3, (<-m).Runs)
 }
@@ -35,11 +35,11 @@ func TestManagerPacketQueue(t *testing.T) {
 
 
 func TestManagerPacketProcessing(t *testing.T) {
-	runs := make(chan *Run)
+	runs := make(chan *run)
 	in := make(chan packet)
 	m := NewManager(in, nil, runs)
 
-	run := Run{Seqn: 1}
+	run := run{seqn: 1}
 	runs <- &run
 
 	in <- packet{
