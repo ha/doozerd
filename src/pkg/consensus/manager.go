@@ -8,8 +8,8 @@ import (
 
 
 type Packet struct {
-	M
 	Addr string
+	M
 }
 
 

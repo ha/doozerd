@@ -26,9 +26,9 @@ func TestManagerPacketQueue(t *testing.T) {
 
 	m := NewManager(in, nil, nil)
 
-	in <- Packet{M{WireSeqn: proto.Int64(1)}, "127.0.0.1:9999"}
-	in <- Packet{M{WireSeqn: proto.Int64(2)}, "127.0.0.1:9999"}
-	in <- Packet{M{WireSeqn: proto.Int64(3)}, "127.0.0.1:9999"}
+	in <- Packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(1)}}
+	in <- Packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(2)}}
+	in <- Packet{"127.0.0.1:9999", M{WireSeqn: proto.Int64(3)}}
 
 	assert.Equal(t, 3, (<-m).WaitPackets)
 }

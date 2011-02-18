@@ -37,7 +37,7 @@ func newVote(i int64, vval string) *M {
 func newVoteFrom(from string, i int64, vval string) Packet {
 	m := newVote(i, vval)
 	m.SetSeqn(1)
-	return Packet{*m, from}
+	return Packet{from ,*m}
 }
 
 // For testing convenience
@@ -67,7 +67,7 @@ func newRsvp(i, vrnd int64, vval string) *M {
 func newRsvpFrom(from string, i, vrnd int64, vval string) Packet {
 	m := newRsvp(i, vrnd, vval)
 	m.SetSeqn(1)
-	return Packet{*m, from}
+	return Packet{from, *m}
 }
 
 // For testing convenience
