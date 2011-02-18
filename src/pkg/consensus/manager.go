@@ -7,7 +7,6 @@ import (
 )
 
 
-
 type Packet struct {
 	M
 	Addr string
@@ -20,7 +19,7 @@ func (p Packet) Less(y interface{}) bool {
 
 
 type Stats struct {
-	Runs int
+	Runs        int
 	WaitPackets int
 }
 
@@ -40,7 +39,7 @@ func NewManager(in <-chan Packet, out chan<- Packet, runs <-chan *Run) Manager {
 			select {
 			case run := <-runs:
 				running[run.Seqn] = run
-				nextRun = run.Seqn+1
+				nextRun = run.Seqn + 1
 			case p := <-in:
 				heap.Push(packets, p)
 			case stats <- Stats{len(running), packets.Len()}:
@@ -64,5 +63,3 @@ func NewManager(in <-chan Packet, out chan<- Packet, runs <-chan *Run) Manager {
 
 	return stats
 }
-
-

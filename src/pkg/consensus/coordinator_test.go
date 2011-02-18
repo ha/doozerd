@@ -9,9 +9,9 @@ import (
 func TestCoordIgnoreOldMessages(t *testing.T) {
 	var co coordinator
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
-	co.Deliver(Packet{M:*msgTick}) // force the start of a new round
+	co.Deliver(Packet{M: *msgTick}) // force the start of a new round
 
 	got := co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
@@ -31,7 +31,7 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 func TestCoordStart(t *testing.T) {
 	co := coordinator{crnd: 1}
 
-	got := co.Deliver(Packet{M:*newPropose("foo")})
+	got := co.Deliver(Packet{M: *newPropose("foo")})
 	assert.Equal(t, newInvite(1), got)
 }
 
@@ -43,7 +43,7 @@ func TestCoordQuorum(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	got := co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
@@ -64,7 +64,7 @@ func TestCoordDuplicateRsvp(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	got := co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
@@ -88,7 +88,7 @@ func TestCoordDuplicateRsvp(t *testing.T) {
 func TestCoordTargetNomination(t *testing.T) {
 	co := coordinator{crnd: 1, quor: 6}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	co.Deliver(newRsvpFrom("3", 1, 0, ""))
@@ -106,13 +106,13 @@ func TestCoordRetry(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	// message from a future round and another proposer
 	co.Deliver(newRsvpFrom("2", 2, 0, ""))
 	assert.Equal(t, int64(2), co.seen)
 
-	got := co.Deliver(Packet{M:*msgTick}) // force the start of a new round
+	got := co.Deliver(Packet{M: *msgTick}) // force the start of a new round
 	assert.Equal(t, newInvite(11), got)
 }
 
@@ -122,7 +122,7 @@ func TestCoordNonTargetNomination(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	co.Deliver(newRsvpFrom("2", 1, 0, ""))
@@ -139,7 +139,7 @@ func TestCoordOneNominationPerRound(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	got := co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
@@ -170,7 +170,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	co.Deliver(newRsvpFrom("2", 1, 0, ""))
@@ -179,7 +179,7 @@ func TestCoordEachRoundResetsCval(t *testing.T) {
 	co.Deliver(newRsvpFrom("5", 1, 0, ""))
 	co.Deliver(newRsvpFrom("6", 1, 0, ""))
 
-	co.Deliver(Packet{M:*msgTick}) // force the start of a new round
+	co.Deliver(Packet{M: *msgTick}) // force the start of a new round
 
 	got := co.Deliver(newRsvpFrom("1", 11, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
@@ -209,7 +209,7 @@ func TestCoordStartRsvp(t *testing.T) {
 	got := co.Deliver(newRsvpFrom("1", 1, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
 
-	got = co.Deliver(Packet{M:*newPropose("foo")})
+	got = co.Deliver(Packet{M: *newPropose("foo")})
 
 	// If the RSVPs were ignored, this will be an invite.
 	// Otherwise, it'll be a nominate.
@@ -222,7 +222,7 @@ func TestCoordDuel(t *testing.T) {
 		crnd: 1,
 	}
 
-	co.Deliver(Packet{M:*newPropose("foo")})
+	co.Deliver(Packet{M: *newPropose("foo")})
 
 	got := co.Deliver(newRsvpFrom("2", 1, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
@@ -252,12 +252,12 @@ func TestCoordinatorIgnoresBadMessages(t *testing.T) {
 	assert.Equal(t, coordinator{begun: true}, co)
 
 	// missing Crnd
-	got = co.Deliver(Packet{M:M{WireCmd: rsvp, Vrnd: new(int64)}})
+	got = co.Deliver(Packet{M: M{WireCmd: rsvp, Vrnd: new(int64)}})
 	assert.Equal(t, (*M)(nil), got)
 	assert.Equal(t, coordinator{begun: true}, co)
 
 	// missing Vrnd
-	got = co.Deliver(Packet{M:M{WireCmd: rsvp, Crnd: new(int64)}})
+	got = co.Deliver(Packet{M: M{WireCmd: rsvp, Crnd: new(int64)}})
 	assert.Equal(t, (*M)(nil), got)
 	assert.Equal(t, coordinator{begun: true}, co)
 }

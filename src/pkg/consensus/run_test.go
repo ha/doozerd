@@ -46,13 +46,13 @@ func TestGetAddrs(t *testing.T) {
 	st.Ops <- store.Op{3, store.MustEncodeSet(info+"/3/addr", "z", 0)}
 	<-st.Seqns
 
-	assert.Equal(t, map[string]bool{"x":true, "y":true, "z":true}, getAddrs(st))
+	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, getAddrs(st))
 }
 
 
 func alphaTest(t *testing.T, alpha int64) {
-	runs  := make(chan Run)
-	st    := store.New()
+	runs := make(chan Run)
+	st := store.New()
 	defer close(st.Ops)
 
 	st.Ops <- store.Op{
@@ -62,10 +62,11 @@ func alphaTest(t *testing.T, alpha int64) {
 
 	st.Ops <- store.Op{
 		Seqn: 2,
-		Mut: store.MustEncodeSet(slot+"/1", "a", 0),
+		Mut:  store.MustEncodeSet(slot+"/1", "a", 0),
 	}
 
-	for 2 != <-st.Seqns {}
+	for 2 != <-st.Seqns {
+	}
 
 	go GenerateRuns(alpha, st.Watch(store.Any), runs)
 
@@ -73,7 +74,7 @@ func alphaTest(t *testing.T, alpha int64) {
 	// to poke get things started
 	st.Ops <- store.Op{3, store.Nop}
 
-	assert.Equal(t, Run{Seqn: 3+alpha, Cals: []string{"a"}}, <-runs)
+	assert.Equal(t, Run{Seqn: 3 + alpha, Cals: []string{"a"}}, <-runs)
 }
 
 
@@ -94,8 +95,8 @@ func TestRunAlphaOfFifty(t *testing.T) {
 
 func TestRunAfterWatch(t *testing.T) {
 	alpha := int64(3)
-	runs  := make(chan Run)
-	st    := store.New()
+	runs := make(chan Run)
+	st := store.New()
 	defer close(st.Ops)
 
 	st.Ops <- store.Op{
@@ -103,16 +104,17 @@ func TestRunAfterWatch(t *testing.T) {
 		Mut:  store.MustEncodeSet(info+"/b/public-addr", "127.0.0.1:1234", 0),
 	}
 
-	for 1 != <-st.Seqns {}
+	for 1 != <-st.Seqns {
+	}
 
 	go GenerateRuns(alpha, st.Watch(store.Any), runs)
 
 	st.Ops <- store.Op{
 		Seqn: 2,
-		Mut: store.MustEncodeSet(slot+"/1", "b", 0),
+		Mut:  store.MustEncodeSet(slot+"/1", "b", 0),
 	}
 
-	assert.Equal(t, Run{Seqn: 2+alpha, Cals: []string{"b"}}, <-runs)
+	assert.Equal(t, Run{Seqn: 2 + alpha, Cals: []string{"b"}}, <-runs)
 }
 
 
@@ -121,7 +123,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 	r.learner.init(1)
 
 	p := Packet{
-		M:    M{
+		M: M{
 			WireSeqn: proto.Int64(1),
 			WireCmd:  vote,
 			Vrnd:     proto.Int64(1),

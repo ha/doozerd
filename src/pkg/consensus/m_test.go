@@ -56,10 +56,10 @@ func newNominateFrom(from int32, crnd int64, v string) *M {
 // For testing convenience
 func newRsvp(i, vrnd int64, vval string) *M {
 	return &M{
-		WireCmd:  rsvp,
-		Crnd:     &i,
-		Vrnd:     &vrnd,
-		Value:    []byte(vval),
+		WireCmd: rsvp,
+		Crnd:    &i,
+		Vrnd:    &vrnd,
+		Value:   []byte(vval),
 	}
 }
 
