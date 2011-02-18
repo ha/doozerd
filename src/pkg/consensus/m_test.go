@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-func (x M_Cmd) Format(f fmt.State, c int) {
-	if c == 'v' && f.Flag('#') {
-		fmt.Fprintf(f, "M_%s", M_Cmd_name[int32(x)])
+func (x *M_Cmd) Format(f fmt.State, c int) {
+	if c == 'v' && f.Flag('#') && x != nil {
+		fmt.Fprintf(f, "M_%s", M_Cmd_name[int32(*x)])
 		return
 	}
 
@@ -25,7 +25,7 @@ func (x M_Cmd) Format(f fmt.State, c int) {
 		s += fmt.Sprintf(".%d", p)
 	}
 	s += string(c)
-	fmt.Fprintf(f, s, int32(x))
+	fmt.Fprintf(f, s, (*int32)(x))
 }
 
 // For testing convenience
