@@ -57,7 +57,7 @@ func alphaTest(t *testing.T, alpha int64) {
 
 	st.Ops <- store.Op{
 		Seqn: 1,
-		Mut:  store.MustEncodeSet(info+"/a/public-addr", "127.0.0.1:1234", 0),
+		Mut:  store.MustEncodeSet(info+"/a/addr", "x", 0),
 	}
 
 	st.Ops <- store.Op{
@@ -74,7 +74,13 @@ func alphaTest(t *testing.T, alpha int64) {
 	// to poke get things started
 	st.Ops <- store.Op{3, store.Nop}
 
-	assert.Equal(t, &Run{Seqn: 3 + alpha, Cals: []string{"a"}}, <-runs)
+	exp := &Run{
+		Seqn:  3 + alpha,
+		Cals:  []string{"a"},
+		Addrs: map[string]bool{"x": true},
+	}
+
+	assert.Equal(t, exp, <-runs)
 }
 
 
@@ -101,7 +107,7 @@ func TestRunAfterWatch(t *testing.T) {
 
 	st.Ops <- store.Op{
 		Seqn: 1,
-		Mut:  store.MustEncodeSet(info+"/b/public-addr", "127.0.0.1:1234", 0),
+		Mut:  store.MustEncodeSet(info+"/b/addr", "y", 0),
 	}
 
 	for 1 != <-st.Seqns {
@@ -114,7 +120,13 @@ func TestRunAfterWatch(t *testing.T) {
 		Mut:  store.MustEncodeSet(slot+"/1", "b", 0),
 	}
 
-	assert.Equal(t, &Run{Seqn: 2 + alpha, Cals: []string{"b"}}, <-runs)
+	exp := &Run{
+		Seqn:  2 + alpha,
+		Cals:  []string{"b"},
+		Addrs: map[string]bool{"y": true},
+	}
+
+	assert.Equal(t, exp, <-runs)
 }
 
 
