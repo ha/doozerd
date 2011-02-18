@@ -34,6 +34,13 @@ func (r *Run) Deliver(p Packet) {
 }
 
 
+func (r *Run) broadcast(m *M) {
+	for addr := range r.Addrs {
+		r.out <- Packet{addr, *m}
+	}
+}
+
+
 func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *Run) {
 	for e := range w {
 		runs <- &Run{

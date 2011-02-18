@@ -189,3 +189,57 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 	r.Deliver(Packet{M: *newInviteFrom(1, 1)})
 	assert.Equal(t, *newRsvp(1, 0, ""), (<-c).M)
 }
+
+
+func TestRunBroadcastThree(t *testing.T) {
+	c := make(chan Packet, 100)
+	sentinel := Packet{Addr: "sentinel"}
+	var r Run
+	r.out = c
+	r.Addrs = map[string]bool{
+		"x": true,
+		"y": true,
+		"z": true,
+	}
+
+	r.broadcast(newInvite(1))
+	c <- sentinel
+
+	addrs := map[string]bool{}
+	for i := 0; i < len(r.Addrs); i++ {
+		p := <-c
+		addrs[p.Addr] = true
+		assert.Equal(t, *newInvite(1), p.M)
+	}
+
+	assert.Equal(t, sentinel, <-c)
+	assert.Equal(t, r.Addrs, addrs)
+}
+
+
+func TestRunBroadcastFive(t *testing.T) {
+	c := make(chan Packet, 100)
+	sentinel := Packet{Addr: "sentinel"}
+	var r Run
+	r.out = c
+	r.Addrs = map[string]bool{
+		"v": true,
+		"w": true,
+		"x": true,
+		"y": true,
+		"z": true,
+	}
+
+	r.broadcast(newInvite(1))
+	c <- sentinel
+
+	addrs := map[string]bool{}
+	for i := 0; i < len(r.Addrs); i++ {
+		p := <-c
+		addrs[p.Addr] = true
+		assert.Equal(t, *newInvite(1), p.M)
+	}
+
+	assert.Equal(t, sentinel, <-c)
+	assert.Equal(t, r.Addrs, addrs)
+}
