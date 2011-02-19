@@ -9,6 +9,15 @@ import (
 )
 
 
+func mustMarshal(p interface{}) []byte {
+	buf, err := proto.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	return buf
+}
+
+
 func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
 
@@ -23,11 +32,11 @@ func TestManagerRuns(t *testing.T) {
 
 
 func TestManagerPacketQueue(t *testing.T) {
-	in := make(chan packet)
+	in := make(chan Packet)
 
 	m := NewManager(in, nil, nil)
 
-	in <- packet{"x", M{Seqn: proto.Int64(1)}}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
 }
@@ -36,9 +45,9 @@ func TestManagerPacketQueue(t *testing.T) {
 func TestRecvPacket(t *testing.T) {
 	q := new(vector.Vector)
 
-	recvPacket(q, packet{"x", M{Seqn: proto.Int64(1)}})
-	recvPacket(q, packet{"x", M{Seqn: proto.Int64(2)}})
-	recvPacket(q, packet{"x", M{Seqn: proto.Int64(3)}})
+	recvPacket(q, Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})})
+	recvPacket(q, Packet{"x", mustMarshal(&M{Seqn: proto.Int64(2)})})
+	recvPacket(q, Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3)})})
 
 	assert.Equal(t, 3, q.Len())
 }
@@ -46,14 +55,14 @@ func TestRecvPacket(t *testing.T) {
 
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
-	in := make(chan packet)
+	in := make(chan Packet)
 	m := NewManager(in, nil, runs)
 
 	run := run{seqn: 1}
 	runs <- &run
 
-	in <- packet{
-		M:    M{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")},
+	in <- Packet{
+		Data: mustMarshal(&M{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 

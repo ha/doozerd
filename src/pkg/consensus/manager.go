@@ -4,6 +4,7 @@ package consensus
 import (
 	"container/heap"
 	"container/vector"
+	"goprotobuf.googlecode.com/hg/proto"
 )
 
 
@@ -18,6 +19,12 @@ func (p packet) Less(y interface{}) bool {
 }
 
 
+type Packet struct {
+	Addr string
+	Data []byte
+}
+
+
 type Stats struct {
 	Runs        int
 	WaitPackets int
@@ -27,7 +34,7 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(in <-chan packet, out chan<- packet, runs <-chan *run) Manager {
+func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 	stats := make(chan Stats)
 	running := make(map[int64]*run)
 	packets := new(vector.Vector)
@@ -64,6 +71,10 @@ func NewManager(in <-chan packet, out chan<- packet, runs <-chan *run) Manager {
 	return stats
 }
 
-func recvPacket(q heap.Interface, p packet) {
+func recvPacket(q heap.Interface, P Packet) {
+	var p packet
+
+	proto.Unmarshal(P.Data, &p.M)
+
 	heap.Push(q, p)
 }
