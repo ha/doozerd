@@ -53,6 +53,14 @@ func TestRecvPacket(t *testing.T) {
 }
 
 
+func TestRecvEmptyPacket(t *testing.T) {
+	q := new(vector.Vector)
+
+	recvPacket(q, Packet{"x", []byte{}})
+	assert.Equal(t, 0, q.Len())
+}
+
+
 func TestRecvInvalidPacket(t *testing.T) {
 	q := new(vector.Vector)
 

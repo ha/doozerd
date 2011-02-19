@@ -79,5 +79,9 @@ func recvPacket(q heap.Interface, P Packet) {
 		return
 	}
 
+	if p.M.Seqn == nil {
+		return
+	}
+
 	heap.Push(q, p)
 }
