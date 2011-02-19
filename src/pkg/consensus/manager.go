@@ -36,14 +36,18 @@ type Manager <-chan Stats
 
 
 func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<- store.Op) Manager {
-	stats := make(chan Stats)
+	statCh := make(chan Stats)
 	running := make(map[int64]*run)
 	packets := new(vector.Vector)
 
 	var nextRun int64
 
 	go func() {
+		var stats Stats
 		for {
+			stats.Runs = len(running)
+			stats.WaitPackets = packets.Len()
+
 			select {
 			case run := <-runs:
 				running[run.seqn] = run
@@ -51,7 +55,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 				run.ops = ops
 			case p := <-in:
 				recvPacket(packets, p)
-			case stats <- Stats{len(running), packets.Len()}:
+			case statCh <- stats:
 			}
 
 			for packets.Len() > 0 {
@@ -70,7 +74,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 		}
 	}()
 
-	return stats
+	return statCh
 }
 
 func recvPacket(q heap.Interface, P Packet) {
