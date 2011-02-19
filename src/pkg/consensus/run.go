@@ -30,7 +30,10 @@ func (r *run) Deliver(p packet) {
 		r.out <- packet{M: *m}
 	}
 
-	r.learner.Deliver(p)
+	m, _, _ = r.learner.Deliver(p)
+	if m != nil {
+		r.out <- packet{M: *m}
+	}
 }
 
 

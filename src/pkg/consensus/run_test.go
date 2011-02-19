@@ -132,6 +132,7 @@ func TestRunAfterWatch(t *testing.T) {
 
 func TestRunVoteDeliverd(t *testing.T) {
 	r := run{}
+	r.out = make(chan packet, 100)
 	r.learner.init(1)
 
 	p := packet{
@@ -188,6 +189,16 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 
 	r.Deliver(packet{M: *newInviteSeqn1(1)})
 	assert.Equal(t, *newRsvp(1, 0, ""), (<-c).M)
+}
+
+
+func TestRunSendsLearnerPacket(t *testing.T) {
+	c := make(chan packet, 100)
+	var r run
+	r.out = c
+
+	r.Deliver(packet{M: *newVote(1, "foo")})
+	assert.Equal(t, *newLearn("foo"), (<-c).M)
 }
 
 
