@@ -12,9 +12,9 @@ type run struct {
 	cals  []string
 	addrs map[string]bool
 
-	coordinator coordinator
-	acceptor    acceptor
-	learner     learner
+	c coordinator
+	a acceptor
+	l learner
 
 	out chan Packet
 	ops chan<- store.Op
@@ -22,13 +22,13 @@ type run struct {
 
 
 func (r *run) deliver(p packet) {
-	m := r.coordinator.deliver(p)
+	m := r.c.deliver(p)
 	r.broadcast(m)
 
-	m = r.acceptor.put(&p.M)
+	m = r.a.put(&p.M)
 	r.broadcast(m)
 
-	m, v, ok := r.learner.deliver(p)
+	m, v, ok := r.l.deliver(p)
 	r.broadcast(m)
 	if ok {
 		r.ops <- store.Op{r.seqn, string(v)}

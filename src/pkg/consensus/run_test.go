@@ -134,7 +134,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 	r := run{}
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
-	r.learner.init(1)
+	r.l.init(1)
 
 	p := packet{
 		M: M{
@@ -148,8 +148,8 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 	r.deliver(p)
 
-	assert.Equal(t, true, r.learner.done)
-	assert.Equal(t, "foo", r.learner.v)
+	assert.Equal(t, true, r.l.done)
+	assert.Equal(t, "foo", r.l.v)
 }
 
 
@@ -160,7 +160,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 
 	r.deliver(packet{M: *newInviteSeqn1(1)})
 
-	assert.Equal(t, int64(1), r.acceptor.rnd)
+	assert.Equal(t, int64(1), r.a.rnd)
 }
 
 
@@ -170,14 +170,14 @@ func TestRunProposeDeliverd(t *testing.T) {
 	r.ops = make(chan store.Op, 100)
 
 	r.deliver(packet{M: M{Cmd: propose}})
-	assert.Equal(t, true, r.coordinator.begun)
+	assert.Equal(t, true, r.c.begun)
 }
 
 
 func TestRunSendsCoordPacket(t *testing.T) {
 	c := make(chan Packet, 100)
 	var r run
-	r.coordinator.crnd = 1
+	r.c.crnd = 1
 	r.out = c
 	r.addrs = map[string]bool{
 		"x": true,
