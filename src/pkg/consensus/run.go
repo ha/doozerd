@@ -38,8 +38,10 @@ func (r *run) Deliver(p packet) {
 
 
 func (r *run) broadcast(m *M) {
-	for addr := range r.addrs {
-		r.out <- packet{addr, *m}
+	if m != nil {
+		for addr := range r.addrs {
+			r.out <- packet{addr, *m}
+		}
 	}
 }
 

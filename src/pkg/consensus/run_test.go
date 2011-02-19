@@ -254,3 +254,21 @@ func TestRunBroadcastFive(t *testing.T) {
 	assert.Equal(t, sentinel, <-c)
 	assert.Equal(t, r.addrs, addrs)
 }
+
+
+func TestRunBroadcastNil(t *testing.T) {
+	c := make(chan packet, 100)
+	sentinel := packet{Addr: "sentinel"}
+	var r run
+	r.out = c
+	r.addrs = map[string]bool{
+		"x": true,
+		"y": true,
+		"z": true,
+	}
+
+	r.broadcast(nil)
+	c <- sentinel
+
+	assert.Equal(t, sentinel, <-c)
+}
