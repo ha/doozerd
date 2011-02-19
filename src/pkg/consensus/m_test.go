@@ -2,8 +2,7 @@ package consensus
 
 import (
 	"fmt"
-	"github.com/bmizerany/assert"
-	"testing"
+	"goprotobuf.googlecode.com/hg/proto"
 )
 
 func (x *M_Cmd) Format(f fmt.State, c int) {
@@ -36,7 +35,7 @@ func newVote(i int64, vval string) *M {
 // For testing convenience
 func newVoteFrom(from string, i int64, vval string) packet {
 	m := newVote(i, vval)
-	m.SetSeqn(1)
+	m.Seqn = proto.Int64(1)
 	return packet{from, *m}
 }
 
@@ -48,7 +47,7 @@ func newNominate(crnd int64, v string) *M {
 // For testing convenience
 func newNominateSeqn1(crnd int64, v string) *M {
 	m := newNominate(crnd, v)
-	m.SetSeqn(1)
+	m.Seqn = proto.Int64(1)
 	return m
 }
 
@@ -65,7 +64,7 @@ func newRsvp(i, vrnd int64, vval string) *M {
 // For testing convenience
 func newRsvpFrom(from string, i, vrnd int64, vval string) packet {
 	m := newRsvp(i, vrnd, vval)
-	m.SetSeqn(1)
+	m.Seqn = proto.Int64(1)
 	return packet{from, *m}
 }
 
@@ -77,7 +76,7 @@ func newInvite(crnd int64) *M {
 // For testing convenience
 func newInviteSeqn1(rnd int64) *M {
 	m := newInvite(rnd)
-	m.SetSeqn(1)
+	m.Seqn = proto.Int64(1)
 	return m
 }
 
@@ -89,12 +88,4 @@ func newPropose(val string) *M {
 // For testing convenience
 func newLearn(val string) *M {
 	return &M{Cmd: learn, Value: []byte(val)}
-}
-
-func TestMessageSetSeqn(t *testing.T) {
-	m := newInvite(1)
-	m.SetSeqn(1)
-	assert.Equal(t, int64(1), *m.Seqn, "")
-	m.SetSeqn(2)
-	assert.Equal(t, int64(2), *m.Seqn, "")
 }

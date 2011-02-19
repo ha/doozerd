@@ -14,8 +14,3 @@ var (
 var (
 	msgTick = &M{Cmd: tick}
 )
-
-// Typically used just before writing `m` to the network.
-func (m *M) SetSeqn(seqn int64) {
-	m.Seqn = &seqn
-}
