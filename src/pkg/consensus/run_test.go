@@ -184,9 +184,15 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		"y": true,
 	}
 
+	exp := M{
+		Seqn: proto.Int64(0),
+		Cmd:  invite,
+		Crnd: proto.Int64(1),
+	}
+
 	r.Deliver(packet{M: *newPropose("foo")})
 	assert.Equal(t, 2, len(c))
-	assert.Equal(t, *newInvite(1), (<-c).M)
+	assert.Equal(t, exp, (<-c).M)
 }
 
 
@@ -199,9 +205,16 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		"y": true,
 	}
 
+	exp := M{
+		Seqn: proto.Int64(0),
+		Cmd:  rsvp,
+		Crnd: proto.Int64(1),
+		Vrnd: proto.Int64(0),
+	}
+
 	r.Deliver(packet{M: *newInviteSeqn1(1)})
 	assert.Equal(t, 2, len(c))
-	assert.Equal(t, *newRsvp(1, 0, ""), (<-c).M)
+	assert.Equal(t, exp, (<-c).M)
 }
 
 
@@ -215,9 +228,15 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		"y": true,
 	}
 
+	exp := M{
+		Seqn:  proto.Int64(0),
+		Cmd:   learn,
+		Value: []byte("foo"),
+	}
+
 	r.Deliver(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, 2, len(c))
-	assert.Equal(t, *newLearn("foo"), (<-c).M)
+	assert.Equal(t, exp, (<-c).M)
 }
 
 
@@ -241,6 +260,7 @@ func TestRunBroadcastThree(t *testing.T) {
 	c := make(chan packet, 100)
 	sentinel := packet{Addr: "sentinel"}
 	var r run
+	r.seqn = 1
 	r.out = c
 	r.addrs = map[string]bool{
 		"x": true,
@@ -251,11 +271,17 @@ func TestRunBroadcastThree(t *testing.T) {
 	r.broadcast(newInvite(1))
 	c <- sentinel
 
+	exp := M{
+		Seqn: proto.Int64(1),
+		Cmd:  invite,
+		Crnd: proto.Int64(1),
+	}
+
 	addrs := map[string]bool{}
 	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
-		assert.Equal(t, *newInvite(1), p.M)
+		assert.Equal(t, exp, p.M)
 	}
 
 	assert.Equal(t, sentinel, <-c)
@@ -267,6 +293,7 @@ func TestRunBroadcastFive(t *testing.T) {
 	c := make(chan packet, 100)
 	sentinel := packet{Addr: "sentinel"}
 	var r run
+	r.seqn = 1
 	r.out = c
 	r.addrs = map[string]bool{
 		"v": true,
@@ -279,11 +306,17 @@ func TestRunBroadcastFive(t *testing.T) {
 	r.broadcast(newInvite(1))
 	c <- sentinel
 
+	exp := M{
+		Seqn: proto.Int64(1),
+		Cmd:  invite,
+		Crnd: proto.Int64(1),
+	}
+
 	addrs := map[string]bool{}
 	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
-		assert.Equal(t, *newInvite(1), p.M)
+		assert.Equal(t, exp, p.M)
 	}
 
 	assert.Equal(t, sentinel, <-c)
