@@ -16,6 +16,7 @@ type run struct {
 	learner     learner
 
 	out chan packet
+	ops chan<- store.Op
 }
 
 
@@ -26,8 +27,11 @@ func (r *run) Deliver(p packet) {
 	m = r.acceptor.Put(&p.M)
 	r.broadcast(m)
 
-	m, _, _ = r.learner.Deliver(p)
+	m, v, ok := r.learner.Deliver(p)
 	r.broadcast(m)
+	if ok {
+		r.ops <- store.Op{r.seqn, string(v)}
+	}
 }
 
 

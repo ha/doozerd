@@ -133,6 +133,7 @@ func TestRunAfterWatch(t *testing.T) {
 func TestRunVoteDeliverd(t *testing.T) {
 	r := run{}
 	r.out = make(chan packet, 100)
+	r.ops = make(chan store.Op, 100)
 	r.learner.init(1)
 
 	p := packet{
@@ -155,6 +156,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 func TestRunInviteDeliverd(t *testing.T) {
 	var r run
 	r.out = make(chan packet, 100)
+	r.ops = make(chan store.Op, 100)
 
 	r.Deliver(packet{M: *newInviteSeqn1(1)})
 
@@ -165,6 +167,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 func TestRunProposeDeliverd(t *testing.T) {
 	var r run
 	r.out = make(chan packet, 100)
+	r.ops = make(chan store.Op, 100)
 
 	r.Deliver(packet{M: M{Cmd: propose}})
 	assert.Equal(t, true, r.coordinator.begun)
@@ -206,6 +209,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 	c := make(chan packet, 100)
 	var r run
 	r.out = c
+	r.ops = make(chan store.Op, 100)
 	r.addrs = map[string]bool{
 		"x": true,
 		"y": true,
@@ -214,6 +218,22 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 	r.Deliver(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, 2, len(c))
 	assert.Equal(t, *newLearn("foo"), (<-c).M)
+}
+
+
+func TestRunAppliesOp(t *testing.T) {
+	c := make(chan store.Op, 100)
+	var r run
+	r.seqn = 1
+	r.out = make(chan packet, 100)
+	r.ops = c
+	r.addrs = map[string]bool{
+		"x": true,
+		"y": true,
+	}
+
+	r.Deliver(packet{M: *newVote(1, "foo")})
+	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
 

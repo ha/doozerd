@@ -3,6 +3,7 @@ package consensus
 
 import (
 	"container/vector"
+	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
@@ -20,21 +21,29 @@ func mustMarshal(p interface{}) []byte {
 
 func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
+	ops := make(chan<- store.Op)
 
-	m := NewManager(nil, nil, runs)
+	m := NewManager(nil, nil, runs, ops)
 
-	runs <- &run{seqn: 1}
-	runs <- &run{seqn: 2}
-	runs <- &run{seqn: 3}
+	r1 := &run{seqn: 1}
+	r2 := &run{seqn: 2}
+	r3 := &run{seqn: 3}
+
+	runs <- r1
+	runs <- r2
+	runs <- r3
 
 	assert.Equal(t, 3, (<-m).Runs)
+	assert.Equal(t, ops, r1.ops)
+	assert.Equal(t, ops, r2.ops)
+	assert.Equal(t, ops, r3.ops)
 }
 
 
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
-	m := NewManager(in, nil, nil)
+	m := NewManager(in, nil, nil, nil)
 
 	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
@@ -77,7 +86,7 @@ func TestRecvInvalidPacket(t *testing.T) {
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
 	in := make(chan Packet)
-	m := NewManager(in, nil, runs)
+	m := NewManager(in, nil, runs, make(chan store.Op, 100))
 
 	run := run{seqn: 1}
 	runs <- &run
