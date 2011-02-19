@@ -65,7 +65,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 
 				heap.Pop(packets)
 
-				running[seqn].Deliver(p)
+				running[seqn].deliver(p)
 			}
 		}
 	}()

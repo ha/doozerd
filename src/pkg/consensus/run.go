@@ -21,14 +21,14 @@ type run struct {
 }
 
 
-func (r *run) Deliver(p packet) {
-	m := r.coordinator.Deliver(p)
+func (r *run) deliver(p packet) {
+	m := r.coordinator.deliver(p)
 	r.broadcast(m)
 
-	m = r.acceptor.Put(&p.M)
+	m = r.acceptor.put(&p.M)
 	r.broadcast(m)
 
-	m, v, ok := r.learner.Deliver(p)
+	m, v, ok := r.learner.deliver(p)
 	r.broadcast(m)
 	if ok {
 		r.ops <- store.Op{r.seqn, string(v)}

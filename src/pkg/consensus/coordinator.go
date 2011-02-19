@@ -16,7 +16,7 @@ type coordinator struct {
 	seen int64
 }
 
-func (co *coordinator) Deliver(p packet) (m *M) {
+func (co *coordinator) deliver(p packet) (m *M) {
 	in := &p.M
 
 	if co.crnd == 0 {

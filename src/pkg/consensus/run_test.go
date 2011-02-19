@@ -146,7 +146,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 		Addr: "X",
 	}
 
-	r.Deliver(p)
+	r.deliver(p)
 
 	assert.Equal(t, true, r.learner.done)
 	assert.Equal(t, "foo", r.learner.v)
@@ -158,7 +158,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.Deliver(packet{M: *newInviteSeqn1(1)})
+	r.deliver(packet{M: *newInviteSeqn1(1)})
 
 	assert.Equal(t, int64(1), r.acceptor.rnd)
 }
@@ -169,7 +169,7 @@ func TestRunProposeDeliverd(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.Deliver(packet{M: M{Cmd: propose}})
+	r.deliver(packet{M: M{Cmd: propose}})
 	assert.Equal(t, true, r.coordinator.begun)
 }
 
@@ -191,7 +191,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	r.Deliver(packet{M: *newPropose("foo")})
+	r.deliver(packet{M: *newPropose("foo")})
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -216,7 +216,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		Vrnd: proto.Int64(0),
 	}
 
-	r.Deliver(packet{M: *newInviteSeqn1(1)})
+	r.deliver(packet{M: *newInviteSeqn1(1)})
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -241,7 +241,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		Value: []byte("foo"),
 	}
 
-	r.Deliver(packet{M: *newVote(1, "foo")})
+	r.deliver(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -260,7 +260,7 @@ func TestRunAppliesOp(t *testing.T) {
 		"y": true,
 	}
 
-	r.Deliver(packet{M: *newVote(1, "foo")})
+	r.deliver(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
