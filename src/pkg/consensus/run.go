@@ -22,7 +22,7 @@ type run struct {
 
 
 func (r *run) deliver(p packet) {
-	m := r.c.deliver(p)
+	m, _ := r.c.deliver(p)
 	r.broadcast(m)
 
 	m = r.a.put(&p.M)

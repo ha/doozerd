@@ -13,10 +13,10 @@ type coordinator struct {
 	vr     int64
 	vv     string
 
-	seen int64
+	sched bool
 }
 
-func (co *coordinator) deliver(p packet) (m *M) {
+func (co *coordinator) deliver(p packet) (m *M, tick bool) {
 	in := &p.M
 
 	if co.crnd == 0 {
@@ -24,7 +24,7 @@ func (co *coordinator) deliver(p packet) (m *M) {
 	}
 
 	if in.Cmd == nil {
-		return nil
+		return
 	}
 
 	switch *in.Cmd {
@@ -39,7 +39,7 @@ func (co *coordinator) deliver(p packet) (m *M) {
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
-		return &M{Cmd: invite, Crnd: &co.crnd}
+		return &M{Cmd: invite, Crnd: &co.crnd}, tick
 	case M_RSVP:
 		if !co.begun {
 			break
@@ -55,8 +55,9 @@ func (co *coordinator) deliver(p packet) (m *M) {
 			break
 		}
 
-		if i > co.seen {
-			co.seen = i
+		if i > co.crnd && !co.sched {
+			co.sched = true
+			tick = true
 		}
 
 		if i != co.crnd {
@@ -79,7 +80,7 @@ func (co *coordinator) deliver(p packet) (m *M) {
 			}
 			co.cval = v
 
-			return &M{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}
+			return &M{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}, tick
 		}
 	case M_TICK:
 		co.crnd += int64(co.size)
@@ -87,7 +88,8 @@ func (co *coordinator) deliver(p packet) (m *M) {
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
-		return &M{Cmd: invite, Crnd: &co.crnd}
+		co.sched = false
+		return &M{Cmd: invite, Crnd: &co.crnd}, tick
 	}
 
 	return
