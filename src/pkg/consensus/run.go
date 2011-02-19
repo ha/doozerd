@@ -21,19 +21,13 @@ type run struct {
 
 func (r *run) Deliver(p packet) {
 	m := r.coordinator.Deliver(p)
-	if m != nil {
-		r.out <- packet{M: *m}
-	}
+	r.broadcast(m)
 
 	m = r.acceptor.Put(&p.M)
-	if m != nil {
-		r.out <- packet{M: *m}
-	}
+	r.broadcast(m)
 
 	m, _, _ = r.learner.Deliver(p)
-	if m != nil {
-		r.out <- packet{M: *m}
-	}
+	r.broadcast(m)
 }
 
 

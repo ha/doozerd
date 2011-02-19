@@ -176,8 +176,13 @@ func TestRunSendsCoordPacket(t *testing.T) {
 	var r run
 	r.coordinator.crnd = 1
 	r.out = c
+	r.addrs = map[string]bool{
+		"x": true,
+		"y": true,
+	}
 
 	r.Deliver(packet{M: *newPropose("foo")})
+	assert.Equal(t, 2, len(c))
 	assert.Equal(t, *newInvite(1), (<-c).M)
 }
 
@@ -186,8 +191,13 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 	c := make(chan packet, 100)
 	var r run
 	r.out = c
+	r.addrs = map[string]bool{
+		"x": true,
+		"y": true,
+	}
 
 	r.Deliver(packet{M: *newInviteSeqn1(1)})
+	assert.Equal(t, 2, len(c))
 	assert.Equal(t, *newRsvp(1, 0, ""), (<-c).M)
 }
 
@@ -196,8 +206,13 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 	c := make(chan packet, 100)
 	var r run
 	r.out = c
+	r.addrs = map[string]bool{
+		"x": true,
+		"y": true,
+	}
 
 	r.Deliver(packet{M: *newVote(1, "foo")})
+	assert.Equal(t, 2, len(c))
 	assert.Equal(t, *newLearn("foo"), (<-c).M)
 }
 
