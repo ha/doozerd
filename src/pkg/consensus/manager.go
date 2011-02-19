@@ -74,7 +74,10 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 func recvPacket(q heap.Interface, P Packet) {
 	var p packet
 
-	proto.Unmarshal(P.Data, &p.M)
+	err := proto.Unmarshal(P.Data, &p.M)
+	if err != nil {
+		return
+	}
 
 	heap.Push(q, p)
 }

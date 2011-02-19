@@ -53,6 +53,19 @@ func TestRecvPacket(t *testing.T) {
 }
 
 
+func TestRecvInvalidPacket(t *testing.T) {
+	q := new(vector.Vector)
+
+	// The first element in a protobuf stream is always a varint.
+	// The high bit of a varint byte indicates continuation;
+	// Here we're supplying a continuation bit without a
+	// subsequent byte. See also
+	// http://code.google.com/apis/protocolbuffers/docs/encoding.html#varints.
+	recvPacket(q, Packet{"x", []byte{0x80}})
+	assert.Equal(t, 0, q.Len())
+}
+
+
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
 	in := make(chan Packet)
