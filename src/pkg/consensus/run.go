@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"doozer/store"
+	"goprotobuf.googlecode.com/hg/proto"
 	"sort"
 )
 
@@ -15,7 +16,7 @@ type run struct {
 	acceptor    acceptor
 	learner     learner
 
-	out chan packet
+	out chan Packet
 	ops chan<- store.Op
 }
 
@@ -38,8 +39,9 @@ func (r *run) Deliver(p packet) {
 func (r *run) broadcast(m *M) {
 	if m != nil {
 		m.Seqn = &r.seqn
+		b, _ := proto.Marshal(m)
 		for addr := range r.addrs {
-			r.out <- packet{addr, *m}
+			r.out <- Packet{addr, b}
 		}
 	}
 }

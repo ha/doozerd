@@ -132,7 +132,7 @@ func TestRunAfterWatch(t *testing.T) {
 
 func TestRunVoteDeliverd(t *testing.T) {
 	r := run{}
-	r.out = make(chan packet, 100)
+	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 	r.learner.init(1)
 
@@ -155,7 +155,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 
 func TestRunInviteDeliverd(t *testing.T) {
 	var r run
-	r.out = make(chan packet, 100)
+	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
 	r.Deliver(packet{M: *newInviteSeqn1(1)})
@@ -166,7 +166,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 
 func TestRunProposeDeliverd(t *testing.T) {
 	var r run
-	r.out = make(chan packet, 100)
+	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
 	r.Deliver(packet{M: M{Cmd: propose}})
@@ -175,7 +175,7 @@ func TestRunProposeDeliverd(t *testing.T) {
 
 
 func TestRunSendsCoordPacket(t *testing.T) {
-	c := make(chan packet, 100)
+	c := make(chan Packet, 100)
 	var r run
 	r.coordinator.crnd = 1
 	r.out = c
@@ -184,6 +184,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		"y": true,
 	}
 
+	var got M
 	exp := M{
 		Seqn: proto.Int64(0),
 		Cmd:  invite,
@@ -192,12 +193,14 @@ func TestRunSendsCoordPacket(t *testing.T) {
 
 	r.Deliver(packet{M: *newPropose("foo")})
 	assert.Equal(t, 2, len(c))
-	assert.Equal(t, exp, (<-c).M)
+	err := proto.Unmarshal((<-c).Data, &got)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, exp, got)
 }
 
 
 func TestRunSendsAcceptorPacket(t *testing.T) {
-	c := make(chan packet, 100)
+	c := make(chan Packet, 100)
 	var r run
 	r.out = c
 	r.addrs = map[string]bool{
@@ -205,6 +208,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		"y": true,
 	}
 
+	var got M
 	exp := M{
 		Seqn: proto.Int64(0),
 		Cmd:  rsvp,
@@ -214,12 +218,14 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 
 	r.Deliver(packet{M: *newInviteSeqn1(1)})
 	assert.Equal(t, 2, len(c))
-	assert.Equal(t, exp, (<-c).M)
+	err := proto.Unmarshal((<-c).Data, &got)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, exp, got)
 }
 
 
 func TestRunSendsLearnerPacket(t *testing.T) {
-	c := make(chan packet, 100)
+	c := make(chan Packet, 100)
 	var r run
 	r.out = c
 	r.ops = make(chan store.Op, 100)
@@ -228,6 +234,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		"y": true,
 	}
 
+	var got M
 	exp := M{
 		Seqn:  proto.Int64(0),
 		Cmd:   learn,
@@ -236,7 +243,9 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 
 	r.Deliver(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, 2, len(c))
-	assert.Equal(t, exp, (<-c).M)
+	err := proto.Unmarshal((<-c).Data, &got)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, exp, got)
 }
 
 
@@ -244,7 +253,7 @@ func TestRunAppliesOp(t *testing.T) {
 	c := make(chan store.Op, 100)
 	var r run
 	r.seqn = 1
-	r.out = make(chan packet, 100)
+	r.out = make(chan Packet, 100)
 	r.ops = c
 	r.addrs = map[string]bool{
 		"x": true,
@@ -257,8 +266,8 @@ func TestRunAppliesOp(t *testing.T) {
 
 
 func TestRunBroadcastThree(t *testing.T) {
-	c := make(chan packet, 100)
-	sentinel := packet{Addr: "sentinel"}
+	c := make(chan Packet, 100)
+	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.seqn = 1
 	r.out = c
@@ -281,7 +290,10 @@ func TestRunBroadcastThree(t *testing.T) {
 	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
-		assert.Equal(t, exp, p.M)
+		var got M
+		err := proto.Unmarshal(p.Data, &got)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, exp, got)
 	}
 
 	assert.Equal(t, sentinel, <-c)
@@ -290,8 +302,8 @@ func TestRunBroadcastThree(t *testing.T) {
 
 
 func TestRunBroadcastFive(t *testing.T) {
-	c := make(chan packet, 100)
-	sentinel := packet{Addr: "sentinel"}
+	c := make(chan Packet, 100)
+	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.seqn = 1
 	r.out = c
@@ -316,7 +328,10 @@ func TestRunBroadcastFive(t *testing.T) {
 	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
-		assert.Equal(t, exp, p.M)
+		var got M
+		err := proto.Unmarshal(p.Data, &got)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, exp, got)
 	}
 
 	assert.Equal(t, sentinel, <-c)
@@ -325,8 +340,8 @@ func TestRunBroadcastFive(t *testing.T) {
 
 
 func TestRunBroadcastNil(t *testing.T) {
-	c := make(chan packet, 100)
-	sentinel := packet{Addr: "sentinel"}
+	c := make(chan Packet, 100)
+	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.out = c
 	r.addrs = map[string]bool{
