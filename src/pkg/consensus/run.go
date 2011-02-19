@@ -3,7 +3,9 @@ package consensus
 import (
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
+	"rand"
 	"sort"
+	"time"
 )
 
 
@@ -16,14 +18,23 @@ type run struct {
 	a acceptor
 	l learner
 
-	out chan Packet
-	ops chan<- store.Op
+	out   chan Packet
+	ops   chan<- store.Op
+	ticks chan<- int64
+	bound int64
 }
 
 
 func (r *run) deliver(p packet) {
-	m, _ := r.c.deliver(p)
+	m, tick := r.c.deliver(p)
 	r.broadcast(m)
+	if tick {
+		r.bound *= 2
+		go func() {
+			time.Sleep(rand.Int63n(r.bound))
+			r.ticks <- r.seqn
+		}()
+	}
 
 	m = r.a.put(&p.M)
 	r.broadcast(m)

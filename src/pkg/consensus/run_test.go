@@ -199,6 +199,20 @@ func TestRunSendsCoordPacket(t *testing.T) {
 }
 
 
+func TestRunSchedulesTick(t *testing.T) {
+	ticks := make(chan int64)
+	var r run
+	r.seqn = 1
+	r.out = make(chan Packet, 100)
+	r.ticks = ticks
+
+	r.deliver(packet{M: *newPropose("foo")})
+
+	r.deliver(packet{M: *newRsvp(2, 0, "")})
+	assert.Equal(t, int64(1), <-ticks)
+}
+
+
 func TestRunSendsAcceptorPacket(t *testing.T) {
 	c := make(chan Packet, 100)
 	var r run
