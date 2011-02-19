@@ -39,6 +39,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 	statCh := make(chan Stats)
 	running := make(map[int64]*run)
 	packets := new(vector.Vector)
+	ticks := make(chan int64)
 
 	var nextRun int64
 
@@ -53,6 +54,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
 				run.ops = ops
+				run.ticks = ticks
 			case p := <-in:
 				recvPacket(packets, p)
 			case statCh <- stats:

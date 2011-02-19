@@ -37,6 +37,9 @@ func TestManagerRuns(t *testing.T) {
 	assert.Equal(t, ops, r1.ops)
 	assert.Equal(t, ops, r2.ops)
 	assert.Equal(t, ops, r3.ops)
+	assert.NotEqual(t, (chan<- int64)(nil), r1.ticks)
+	assert.NotEqual(t, (chan<- int64)(nil), r2.ticks)
+	assert.NotEqual(t, (chan<- int64)(nil), r3.ticks)
 }
 
 
