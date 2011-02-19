@@ -9,6 +9,9 @@ import (
 )
 
 
+const initialWaitBound = 1e6 // ns == 1ms
+
+
 type run struct {
 	seqn  int64
 	cals  []string

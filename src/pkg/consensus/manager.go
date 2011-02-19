@@ -55,6 +55,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 				nextRun = run.seqn + 1
 				run.ops = ops
 				run.ticks = ticks
+				run.bound = initialWaitBound
 			case p := <-in:
 				recvPacket(packets, p)
 			case statCh <- stats:
