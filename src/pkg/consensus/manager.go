@@ -58,6 +58,8 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 				run.bound = initialWaitBound
 			case p := <-in:
 				recvPacket(packets, p)
+			case n := <-ticks:
+				schedTick(packets, n)
 			case statCh <- stats:
 			}
 
@@ -93,4 +95,9 @@ func recvPacket(q heap.Interface, P Packet) {
 	}
 
 	heap.Push(q, p)
+}
+
+
+func schedTick(q heap.Interface, n int64) {
+	heap.Push(q, packet{M: M{Seqn: proto.Int64(n), Cmd: tick}})
 }
