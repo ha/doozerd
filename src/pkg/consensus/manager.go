@@ -41,7 +41,7 @@ func NewManager(in <-chan packet, out chan<- packet, runs <-chan *run) Manager {
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
 			case p := <-in:
-				heap.Push(packets, p)
+				recvPacket(packets, p)
 			case stats <- Stats{len(running), packets.Len()}:
 			}
 
@@ -62,4 +62,8 @@ func NewManager(in <-chan packet, out chan<- packet, runs <-chan *run) Manager {
 	}()
 
 	return stats
+}
+
+func recvPacket(q heap.Interface, p packet) {
+	heap.Push(q, p)
 }

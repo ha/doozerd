@@ -2,6 +2,7 @@ package consensus
 
 
 import (
+	"container/vector"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
@@ -26,11 +27,20 @@ func TestManagerPacketQueue(t *testing.T) {
 
 	m := NewManager(in, nil, nil)
 
-	in <- packet{"127.0.0.1:9999", M{Seqn: proto.Int64(1)}}
-	in <- packet{"127.0.0.1:9999", M{Seqn: proto.Int64(2)}}
-	in <- packet{"127.0.0.1:9999", M{Seqn: proto.Int64(3)}}
+	in <- packet{"x", M{Seqn: proto.Int64(1)}}
 
-	assert.Equal(t, 3, (<-m).WaitPackets)
+	assert.Equal(t, 1, (<-m).WaitPackets)
+}
+
+
+func TestRecvPacket(t *testing.T) {
+	q := new(vector.Vector)
+
+	recvPacket(q, packet{"x", M{Seqn: proto.Int64(1)}})
+	recvPacket(q, packet{"x", M{Seqn: proto.Int64(2)}})
+	recvPacket(q, packet{"x", M{Seqn: proto.Int64(3)}})
+
+	assert.Equal(t, 3, q.Len())
 }
 
 
