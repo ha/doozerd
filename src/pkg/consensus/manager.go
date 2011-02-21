@@ -4,7 +4,6 @@ package consensus
 import (
 	"container/heap"
 	"container/vector"
-	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 )
 
@@ -35,7 +34,7 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<- store.Op) Manager {
+func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 	statCh := make(chan Stats)
 	running := make(map[int64]*run)
 	packets := new(vector.Vector)
@@ -53,7 +52,6 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run, ops chan<
 			case run := <-runs:
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
-				run.ops = ops
 				run.ticks = ticks
 				run.bound = initialWaitBound
 			case p := <-in:

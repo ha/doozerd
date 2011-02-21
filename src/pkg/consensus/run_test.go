@@ -68,7 +68,7 @@ func alphaTest(t *testing.T, alpha int64) {
 	for 2 != <-st.Seqns {
 	}
 
-	go GenerateRuns(alpha, st.Watch(store.Any), runs)
+	go GenerateRuns(alpha, st.Watch(store.Any), runs, st.Ops)
 
 	// The only way to generate a run is on an event.
 	// Send a noop here to get things started.
@@ -78,6 +78,7 @@ func alphaTest(t *testing.T, alpha int64) {
 		seqn:  3 + alpha,
 		cals:  []string{"a"},
 		addrs: map[string]bool{"x": true},
+		ops:   st.Ops,
 	}
 
 	assert.Equal(t, exp, <-runs)
@@ -113,7 +114,7 @@ func TestRunAfterWatch(t *testing.T) {
 	for 1 != <-st.Seqns {
 	}
 
-	go GenerateRuns(alpha, st.Watch(store.Any), runs)
+	go GenerateRuns(alpha, st.Watch(store.Any), runs, st.Ops)
 
 	st.Ops <- store.Op{
 		Seqn: 2,
@@ -124,6 +125,7 @@ func TestRunAfterWatch(t *testing.T) {
 		seqn:  2 + alpha,
 		cals:  []string{"b"},
 		addrs: map[string]bool{"y": true},
+		ops:   st.Ops,
 	}
 
 	assert.Equal(t, exp, <-runs)

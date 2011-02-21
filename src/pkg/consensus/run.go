@@ -61,12 +61,13 @@ func (r *run) broadcast(m *M) {
 }
 
 
-func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run) {
+func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, ops chan<- store.Op) {
 	for e := range w {
 		runs <- &run{
 			seqn:  e.Seqn + alpha,
 			cals:  getCals(e),
 			addrs: getAddrs(e),
+			ops:   ops,
 		}
 	}
 }

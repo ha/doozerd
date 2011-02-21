@@ -21,9 +21,8 @@ func mustMarshal(p interface{}) []byte {
 
 func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
-	ops := make(chan<- store.Op)
 
-	m := NewManager(nil, nil, runs, ops)
+	m := NewManager(nil, nil, runs)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -34,9 +33,6 @@ func TestManagerRuns(t *testing.T) {
 	runs <- r3
 
 	assert.Equal(t, 3, (<-m).Runs)
-	assert.Equal(t, ops, r1.ops)
-	assert.Equal(t, ops, r2.ops)
-	assert.Equal(t, ops, r3.ops)
 	assert.NotEqual(t, (chan<- int64)(nil), r1.ticks)
 	assert.NotEqual(t, (chan<- int64)(nil), r2.ticks)
 	assert.NotEqual(t, (chan<- int64)(nil), r3.ticks)
@@ -49,7 +45,7 @@ func TestManagerRuns(t *testing.T) {
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
-	m := NewManager(in, nil, nil, nil)
+	m := NewManager(in, nil, nil)
 
 	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
@@ -100,9 +96,9 @@ func TestSchedTick(t *testing.T) {
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
 	in := make(chan Packet)
-	m := NewManager(in, nil, runs, make(chan store.Op, 100))
+	m := NewManager(in, nil, runs)
 
-	run := run{seqn: 1}
+	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
 
 	in <- Packet{
@@ -118,7 +114,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
 
-	m := NewManager(nil, nil, runs, nil)
+	m := NewManager(nil, nil, runs)
 
 	// get our hands on the ticks chan
 	r := &run{seqn: 1}
