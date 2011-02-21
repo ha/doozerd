@@ -79,6 +79,7 @@ func alphaTest(t *testing.T, alpha int64) {
 		cals:  []string{"a"},
 		addrs: map[string]bool{"x": true},
 		ops:   st.Ops,
+		bound: initialWaitBound,
 	}
 
 	assert.Equal(t, exp, <-runs)
@@ -126,6 +127,7 @@ func TestRunAfterWatch(t *testing.T) {
 		cals:  []string{"b"},
 		addrs: map[string]bool{"y": true},
 		ops:   st.Ops,
+		bound: initialWaitBound,
 	}
 
 	assert.Equal(t, exp, <-runs)

@@ -36,9 +36,6 @@ func TestManagerRuns(t *testing.T) {
 	assert.NotEqual(t, (chan<- int64)(nil), r1.ticks)
 	assert.NotEqual(t, (chan<- int64)(nil), r2.ticks)
 	assert.NotEqual(t, (chan<- int64)(nil), r3.ticks)
-	assert.Equal(t, int64(initialWaitBound), r1.bound)
-	assert.Equal(t, int64(initialWaitBound), r2.bound)
-	assert.Equal(t, int64(initialWaitBound), r3.bound)
 }
 
 

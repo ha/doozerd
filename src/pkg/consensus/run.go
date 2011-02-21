@@ -68,6 +68,7 @@ func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, ops chan<
 			cals:  getCals(e),
 			addrs: getAddrs(e),
 			ops:   ops,
+			bound: initialWaitBound,
 		}
 	}
 }

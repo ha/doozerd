@@ -53,7 +53,6 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
 				run.ticks = ticks
-				run.bound = initialWaitBound
 			case p := <-in:
 				recvPacket(packets, p)
 			case n := <-ticks:
