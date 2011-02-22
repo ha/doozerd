@@ -19,10 +19,6 @@ type coordinator struct {
 func (co *coordinator) deliver(p packet) (m *M, tick bool) {
 	in := &p.M
 
-	if co.crnd == 0 {
-		co.crnd += int64(co.size)
-	}
-
 	if in.Cmd == nil {
 		return
 	}

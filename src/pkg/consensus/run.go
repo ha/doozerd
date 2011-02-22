@@ -29,6 +29,11 @@ type run struct {
 }
 
 
+func (r *run) quorum() int {
+	return len(r.cals)/2 + 1
+}
+
+
 func (r *run) deliver(p packet) {
 	m, tick := r.c.deliver(p)
 	r.broadcast(m)
@@ -62,6 +67,16 @@ func (r *run) broadcast(m *M) {
 }
 
 
+func (r *run) indexOf(self string) int64 {
+	for i, id := range r.cals {
+		if id == self {
+			return int64(i)
+		}
+	}
+	return -1
+}
+
+
 func (r *run) isLeader(self string) bool {
 	for i, id := range r.cals {
 		if id == self {
@@ -78,6 +93,10 @@ func generateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
 		r.seqn  = e.Seqn + alpha
 		r.cals  = getCals(e)
 		r.addrs = getAddrs(e)
+		r.c.size = len(r.cals)
+		r.c.quor = r.quorum()
+		r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
+		r.l.init(int64(r.quorum()))
 		runs <- &r
 	}
 }

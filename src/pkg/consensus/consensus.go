@@ -8,6 +8,7 @@ import (
 func NewManager(self string, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, w <-chan store.Event) Manager {
 	runs := make(chan *run)
 	t := run{
+		self:  self,
 		out:   out,
 		ops:   ops,
 		bound: initialWaitBound,

@@ -50,6 +50,18 @@ func TestGetAddrs(t *testing.T) {
 }
 
 
+func TestQuorum(t *testing.T) {
+	assert.Equal(t, 1, (&run{cals: []string{"a"}}).quorum())
+	assert.Equal(t, 2, (&run{cals: []string{"a", "b"}}).quorum())
+	assert.Equal(t, 2, (&run{cals: []string{"a", "b", "c"}}).quorum())
+	assert.Equal(t, 3, (&run{cals: []string{"a", "b", "c", "d"}}).quorum())
+	assert.Equal(t, 3, (&run{cals: []string{"a", "b", "c", "d", "e"}}).quorum())
+	assert.Equal(t, 4, (&run{cals: []string{"a", "b", "c", "d", "e", "f"}}).quorum())
+	assert.Equal(t, 4, (&run{cals: []string{"a", "b", "c", "d", "e", "f", "g"}}).quorum())
+	assert.Equal(t, 5, (&run{cals: []string{"a", "b", "c", "d", "e", "f", "g", "h"}}).quorum())
+}
+
+
 func alphaTest(t *testing.T, alpha int64) {
 	runs := make(chan *run)
 	st := store.New()
@@ -68,7 +80,12 @@ func alphaTest(t *testing.T, alpha int64) {
 	for 2 != <-st.Seqns {
 	}
 
-	tr := run{ops: st.Ops, bound: initialWaitBound}
+	tr := run{
+		self:  "a",
+		ops:   st.Ops,
+		out:   make(chan Packet),
+		bound: initialWaitBound,
+	}
 	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
 
 	// The only way to generate a run is on an event.
@@ -76,11 +93,24 @@ func alphaTest(t *testing.T, alpha int64) {
 	st.Ops <- store.Op{3, store.Nop}
 
 	exp := &run{
+		self:  "a",
 		seqn:  3 + alpha,
 		cals:  []string{"a"},
 		addrs: map[string]bool{"x": true},
 		ops:   st.Ops,
+		out:   tr.out,
 		bound: initialWaitBound,
+	}
+	exp.c = coordinator{
+		crnd: 1,
+		size: 1,
+		quor: exp.quorum(),
+	}
+	exp.l = learner{
+		round:  1,
+		quorum: int64(exp.quorum()),
+		votes:  map[string]int64{},
+		voted:  map[string]bool{},
 	}
 
 	assert.Equal(t, exp, <-runs)
@@ -116,7 +146,12 @@ func TestRunAfterWatch(t *testing.T) {
 	for 1 != <-st.Seqns {
 	}
 
-	tr := run{ops: st.Ops, bound: initialWaitBound}
+	tr := run{
+		self:  "b",
+		ops:   st.Ops,
+		out:   make(chan Packet),
+		bound: initialWaitBound,
+	}
 	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
 
 	st.Ops <- store.Op{
@@ -125,11 +160,24 @@ func TestRunAfterWatch(t *testing.T) {
 	}
 
 	exp := &run{
+		self:  "b",
 		seqn:  2 + alpha,
 		cals:  []string{"b"},
 		addrs: map[string]bool{"y": true},
 		ops:   st.Ops,
+		out:   tr.out,
 		bound: initialWaitBound,
+	}
+	exp.c = coordinator{
+		crnd: 1,
+		size: 1,
+		quor: exp.quorum(),
+	}
+	exp.l = learner{
+		round:  1,
+		quorum: int64(exp.quorum()),
+		votes:  map[string]int64{},
+		voted:  map[string]bool{},
 	}
 
 	assert.Equal(t, exp, <-runs)
