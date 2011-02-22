@@ -72,15 +72,13 @@ func (r *run) isLeader(self string) bool {
 }
 
 
-func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, ops chan<- store.Op) {
+func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
 	for e := range w {
-		runs <- &run{
-			seqn:  e.Seqn + alpha,
-			cals:  getCals(e),
-			addrs: getAddrs(e),
-			ops:   ops,
-			bound: initialWaitBound,
-		}
+		r := t
+		r.seqn  = e.Seqn + alpha
+		r.cals  = getCals(e)
+		r.addrs = getAddrs(e)
+		runs <- &r
 	}
 }
 
