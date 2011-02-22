@@ -126,8 +126,8 @@ func TestManagerTick(t *testing.T) {
 
 
 func TestManagerFilterPropSeqn(t *testing.T) {
-	ps := make(chan int64)
-	runs := make(chan *run, 100)
+	ps := make(chan int64, 100)
+	runs := make(chan *run)
 	go filterPropSeqns("b", runs, ps)
 	defer close(runs)
 
