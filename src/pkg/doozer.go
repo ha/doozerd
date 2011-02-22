@@ -30,10 +30,18 @@ var slots = store.MustCompileGlob("/doozer/slot/*")
 type proposer struct {
 	seqns chan int64
 	props chan *consensus.Prop
+	st    *store.Store
 }
 
 
 func (p *proposer) Propose(v []byte) (e store.Event) {
+	for e.Mut != string(v) {
+		n := <-p.seqns
+		w := p.st.Wait(n)
+		println("propose", n, string(v))
+		p.props <- &consensus.Prop{n, v}
+		e = <-w
+	}
 	return
 }
 
@@ -118,6 +126,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	pr := &proposer{
 		seqns: make(chan int64),
 		props: make(chan *consensus.Prop),
+		st:    st,
 	}
 
 	cmw := st.Watch(store.Any)
