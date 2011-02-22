@@ -106,12 +106,12 @@ func viewHtml(w http.ResponseWriter, r *http.Request) {
 	var x info
 	x.Path = r.URL.Path[len("/view"):]
 	w.SetHeader("content-type", "text/html")
-	mainTpl.Execute(x, w)
+	mainTpl.Execute(w, x)
 }
 
 func statsHtml(w http.ResponseWriter, r *http.Request) {
 	w.SetHeader("content-type", "text/html")
-	statsTpl.Execute(runtime.MemStats, w)
+	statsTpl.Execute(w, runtime.MemStats)
 }
 
 func walk(path string, st *store.Store, ch chan store.Event) {
