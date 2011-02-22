@@ -125,10 +125,11 @@ func TestManagerTick(t *testing.T) {
 }
 
 
-func TestManagerPropSeqns(t *testing.T) {
+func TestManagerFilterPropSeqn(t *testing.T) {
 	ps := make(chan int64)
 	runs := make(chan *run, 100)
-	NewManager("b", ps, nil, nil, runs)
+	go filterPropSeqns("b", runs, ps)
+	defer close(runs)
 
 	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
 	runs <- &run{seqn: 4, cals: []string{"a", "b"}}
