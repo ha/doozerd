@@ -34,8 +34,17 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
+func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 	statCh := make(chan Stats)
+	propRuns := make(chan *run)
+
+	go func() {
+		for r := range propRuns {
+			if r.isLeader(self) {
+				propSeqns <- r.seqn
+			}
+		}
+	}()
 
 	go func() {
 		running := make(map[int64]*run)
@@ -53,6 +62,7 @@ func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
 				run.ticks = ticks
+				propRuns <- run
 			case p := <-in:
 				recvPacket(packets, p)
 			case n := <-ticks:

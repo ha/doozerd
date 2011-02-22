@@ -22,7 +22,7 @@ func mustMarshal(p interface{}) []byte {
 func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
 
-	m := NewManager(nil, nil, runs)
+	m := NewManager("", nil, nil, nil, runs)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -42,7 +42,7 @@ func TestManagerRuns(t *testing.T) {
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
-	m := NewManager(in, nil, nil)
+	m := NewManager("", nil, in, nil, nil)
 
 	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
@@ -93,7 +93,7 @@ func TestSchedTick(t *testing.T) {
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
 	in := make(chan Packet)
-	m := NewManager(in, nil, runs)
+	m := NewManager("", nil, in, nil, runs)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -111,7 +111,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
 
-	m := NewManager(nil, nil, runs)
+	m := NewManager("", nil, nil, nil, runs)
 
 	// get our hands on the ticks chan
 	r := &run{seqn: 1}
@@ -122,4 +122,21 @@ func TestManagerTick(t *testing.T) {
 	ticks <- 2
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
+}
+
+
+func TestManagerPropSeqns(t *testing.T) {
+	ps := make(chan int64)
+	runs := make(chan *run, 100)
+	NewManager("b", ps, nil, nil, runs)
+
+	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
+	runs <- &run{seqn: 4, cals: []string{"a", "b"}}
+	runs <- &run{seqn: 5, cals: []string{"a", "b"}}
+	assert.Equal(t, int64(3), <-ps)
+	assert.Equal(t, int64(5), <-ps)
+
+	runs <- &run{seqn: 6, cals: []string{"a", "b"}}
+	runs <- &run{seqn: 7, cals: []string{"a", "b"}}
+	assert.Equal(t, int64(7), <-ps)
 }
