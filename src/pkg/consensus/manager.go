@@ -36,14 +36,14 @@ type Manager <-chan Stats
 
 func NewManager(in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
 	statCh := make(chan Stats)
-	running := make(map[int64]*run)
-	packets := new(vector.Vector)
-	ticks := make(chan int64)
-
-	var nextRun int64
 
 	go func() {
+		running := make(map[int64]*run)
+		packets := new(vector.Vector)
+		ticks := make(chan int64)
+		var nextRun int64
 		var stats Stats
+
 		for {
 			stats.Runs = len(running)
 			stats.WaitPackets = packets.Len()
