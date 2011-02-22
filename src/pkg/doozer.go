@@ -168,6 +168,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go web.Serve(webListener)
 	}
 
+	go func() {
+		for p := range out {
+			println("out packet", string(p.Data), p.Addr)
+			acker.WriteTo(p.Data, p.Addr)
+		}
+	}()
+
 	for {
 		data, addr, err := acker.ReadFrom()
 		if err == os.EINVAL {
