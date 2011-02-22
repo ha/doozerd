@@ -34,7 +34,13 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run) Manager {
+type Prop struct {
+	Seqn int64
+	Mut  []byte
+}
+
+
+func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop) Manager {
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 
@@ -66,6 +72,9 @@ func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-ch
 			case n := <-ticks:
 				schedTick(packets, n)
 			case statCh <- stats:
+			case pr := <-props:
+				m := M{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
+				heap.Push(packets, packet{M: m})
 			}
 
 			for packets.Len() > 0 {
