@@ -38,13 +38,7 @@ func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, out chan<
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 
-	go func() {
-		for r := range propRuns {
-			if r.isLeader(self) {
-				propSeqns <- r.seqn
-			}
-		}
-	}()
+	go filterPropSeqns(self, propRuns, propSeqns)
 
 	go func() {
 		running := make(map[int64]*run)
@@ -88,6 +82,16 @@ func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, out chan<
 
 	return statCh
 }
+
+
+func filterPropSeqns(id string, rc <-chan *run, sc chan<- int64) {
+	for r := range rc {
+		if r.isLeader(id) {
+			sc <- r.seqn
+		}
+	}
+}
+
 
 func recvPacket(q heap.Interface, P Packet) {
 	var p packet
