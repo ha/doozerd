@@ -14,6 +14,7 @@ const initialWaitBound = 1e6 // ns == 1ms
 
 type run struct {
 	seqn  int64
+	self  string
 	cals  []string
 	addrs map[string]bool
 
@@ -58,6 +59,16 @@ func (r *run) broadcast(m *M) {
 			r.out <- Packet{addr, b}
 		}
 	}
+}
+
+
+func (r *run) isLeader(self string) bool {
+	for i, id := range r.cals {
+		if id == self {
+			return r.seqn % int64(len(r.cals)) == int64(i)
+		}
+	}
+	return false
 }
 
 

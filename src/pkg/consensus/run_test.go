@@ -373,3 +373,16 @@ func TestRunBroadcastNil(t *testing.T) {
 
 	assert.Equal(t, sentinel, <-c)
 }
+
+
+func TestRunIsLeader(t *testing.T) {
+	r := &run{
+		cals: []string{"a", "b", "c"}, // len(cals) == 3
+		seqn: 3,                       // 3 % 3 == 0
+	}
+
+	assert.T(t,  r.isLeader("a")) // index == 0
+	assert.T(t, !r.isLeader("b")) // index == 1
+	assert.T(t, !r.isLeader("c")) // index == 2
+	assert.T(t, !r.isLeader("x")) // index DNE
+}
