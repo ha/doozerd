@@ -23,7 +23,7 @@ func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	m := NewManager("", nil, nil, nil, runs)
+	m := NewManager("", nil, nil, runs)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -43,7 +43,7 @@ func TestManagerRuns(t *testing.T) {
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
-	m := NewManager("", nil, in, nil, nil)
+	m := NewManager("", nil, in, nil)
 
 	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
@@ -96,7 +96,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 	defer close(runs)
 
 	in := make(chan Packet)
-	m := NewManager("", nil, in, nil, runs)
+	m := NewManager("", nil, in, runs)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -115,7 +115,7 @@ func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	m := NewManager("", nil, nil, nil, runs)
+	m := NewManager("", nil, nil, runs)
 
 	// get our hands on the ticks chan
 	r := &run{seqn: 1}

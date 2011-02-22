@@ -34,7 +34,7 @@ type Stats struct {
 type Manager <-chan Stats
 
 
-func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, out chan<- packet, runs <-chan *run) Manager {
+func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run) Manager {
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 
