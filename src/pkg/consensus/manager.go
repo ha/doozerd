@@ -41,7 +41,7 @@ type Prop struct {
 
 
 // propSeqns must be buffered with capacity >= alpha
-func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop) Manager {
+func newManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop) Manager {
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 

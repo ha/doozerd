@@ -23,7 +23,7 @@ func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	m := NewManager("", nil, nil, runs, nil)
+	m := newManager("", nil, nil, runs, nil)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -43,7 +43,7 @@ func TestManagerRuns(t *testing.T) {
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
-	m := NewManager("", nil, in, nil, nil)
+	m := newManager("", nil, in, nil, nil)
 
 	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
@@ -96,7 +96,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 	defer close(runs)
 
 	in := make(chan Packet)
-	m := NewManager("", nil, in, runs, nil)
+	m := newManager("", nil, in, runs, nil)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -115,7 +115,7 @@ func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	m := NewManager("", nil, nil, runs, nil)
+	m := newManager("", nil, nil, runs, nil)
 
 	// get our hands on the ticks chan
 	r := &run{seqn: 1}
@@ -151,7 +151,7 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 func TestManagerProposalQueue(t *testing.T) {
 	props := make(chan *Prop)
 
-	m := NewManager("", nil, nil, nil, props)
+	m := newManager("", nil, nil, nil, props)
 	props <- &Prop{Seqn: 1, Mut: []byte("foo")}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)

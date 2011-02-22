@@ -2,6 +2,7 @@ include ../../Make.inc
 
 TARG=doozer/consensus
 GOFILES=\
+	consensus.go\
 	run.go\
 	coordinator.go\
 	acceptor.go\

@@ -69,7 +69,7 @@ func alphaTest(t *testing.T, alpha int64) {
 	}
 
 	tr := run{ops: st.Ops, bound: initialWaitBound}
-	go GenerateRuns(alpha, st.Watch(store.Any), runs, tr)
+	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
 
 	// The only way to generate a run is on an event.
 	// Send a noop here to get things started.
@@ -117,7 +117,7 @@ func TestRunAfterWatch(t *testing.T) {
 	}
 
 	tr := run{ops: st.Ops, bound: initialWaitBound}
-	go GenerateRuns(alpha, st.Watch(store.Any), runs, tr)
+	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
 
 	st.Ops <- store.Op{
 		Seqn: 2,

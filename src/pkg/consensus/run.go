@@ -22,7 +22,7 @@ type run struct {
 	a acceptor
 	l learner
 
-	out   chan Packet
+	out   chan<- Packet
 	ops   chan<- store.Op
 	ticks chan<- int64
 	bound int64
@@ -72,7 +72,7 @@ func (r *run) isLeader(self string) bool {
 }
 
 
-func GenerateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
+func generateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
 	for e := range w {
 		r := t
 		r.seqn  = e.Seqn + alpha
