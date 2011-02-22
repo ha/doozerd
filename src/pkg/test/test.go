@@ -10,12 +10,11 @@ type FakeProposer struct {
 	seqn int64
 }
 
-func (fp *FakeProposer) Propose(v string, cancel chan bool) (int64, int64, os.Error) {
+func (fp *FakeProposer) Propose(v []byte) store.Event {
 	fp.seqn++
 	ch := fp.Wait(fp.seqn)
-	fp.Ops <- store.Op{fp.seqn, v}
-	ev := <-ch
-	return fp.seqn, ev.Cas, ev.Err
+	fp.Ops <- store.Op{fp.seqn, string(v)}
+	return <-ch
 }
 
 // An io.Writer that will return os.EOF on the `n`th byte written

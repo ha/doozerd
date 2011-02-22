@@ -16,18 +16,18 @@ func TestLockSimple(t *testing.T) {
 	} // Wait for Clean's watch to take
 
 	// start our session
-	fp.Propose(store.MustEncodeSet("/session/a", "1.2.3.4:55", store.Clobber), nil)
+	fp.Propose([]byte(store.MustEncodeSet("/session/a", "1.2.3.4:55", store.Clobber)))
 
 	// lock something for a
-	fp.Propose(store.MustEncodeSet("/lock/x", "a", store.Missing), nil)
-	fp.Propose(store.MustEncodeSet("/lock/y", "b", store.Missing), nil)
-	fp.Propose(store.MustEncodeSet("/lock/z", "a", store.Missing), nil)
+	fp.Propose([]byte(store.MustEncodeSet("/lock/x", "a", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/lock/y", "b", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/lock/z", "a", store.Missing)))
 
 	// watch the locks to be deleted
 	ch := fp.Watch(store.MustCompileGlob("/lock/*"))
 
 	// end the session
-	fp.Propose(store.MustEncodeDel("/session/a", store.Clobber), nil)
+	fp.Propose([]byte(store.MustEncodeDel("/session/a", store.Clobber)))
 
 	// now that the session has ended, check all locks it owned are released
 	assert.Equal(t, "/lock/x", (<-ch).Path)

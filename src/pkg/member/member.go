@@ -1,7 +1,7 @@
 package member
 
 import (
-	"doozer/paxos"
+	"doozer/consensus"
 	"doozer/store"
 	"doozer/util"
 	"time"
@@ -13,7 +13,7 @@ var (
 	slots    = store.MustCompileGlob("/doozer/slot/*")
 )
 
-func Clean(c chan string, st *store.Store, p paxos.Proposer) {
+func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 	for addr := range c {
 		_, g := st.Snap()
 		name := getId(addr, g)
@@ -41,31 +41,31 @@ func getId(addr string, g store.Getter) string {
 }
 
 
-func clearSlot(p paxos.Proposer, g store.Getter, name string) {
+func clearSlot(p consensus.Proposer, g store.Getter, name string) {
 	store.Walk(g, slots, func(path, body string, cas int64) bool {
 		if body == name {
-			paxos.Set(p, path, "", cas, nil)
+			consensus.Set(p, path, nil, cas)
 		}
 		return false
 	})
 }
 
-func removeMember(p paxos.Proposer, g store.Getter, name string) {
+func removeMember(p consensus.Proposer, g store.Getter, name string) {
 	k := "/doozer/members/" + name
 	_, cas := g.Get(k)
 	if cas != store.Missing {
-		paxos.Del(p, k, cas, nil)
+		consensus.Del(p, k, cas)
 	}
 }
 
-func removeInfo(p paxos.Proposer, g store.Getter, name string) {
+func removeInfo(p consensus.Proposer, g store.Getter, name string) {
 	glob, err := store.CompileGlob("/doozer/info/"+name+"/**")
 	if err != nil {
 		logger.Println(err)
 		return
 	}
 	store.Walk(g, glob, func(path, _ string, cas int64) bool {
-		paxos.Del(p, path, cas, nil)
+		consensus.Del(p, path, cas)
 		return false
 	})
 }

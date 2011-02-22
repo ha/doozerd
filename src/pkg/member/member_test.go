@@ -16,12 +16,12 @@ func TestMemberSimple(t *testing.T) {
 	go Clean(c, fp.Store, fp)
 
 	// start our session
-	fp.Propose(store.MustEncodeSet("/session/a", "foo", store.Missing), nil)
+	fp.Propose([]byte(store.MustEncodeSet("/session/a", "foo", store.Missing)))
 
-	fp.Propose(store.MustEncodeSet("/doozer/info/a/x", "a", store.Missing), nil)
-	fp.Propose(store.MustEncodeSet("/doozer/info/a/y", "b", store.Missing), nil)
-	fp.Propose(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing), nil)
-	fp.Propose(store.MustEncodeSet("/doozer/slot/0", "a", store.Missing), nil)
+	fp.Propose([]byte(store.MustEncodeSet("/doozer/info/a/x", "a", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/doozer/info/a/y", "b", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/doozer/slot/0", "a", store.Missing)))
 
 	slotCh := fp.Watch(store.MustCompileGlob("/doozer/slot/0"))
 	membCh := fp.Watch(store.MustCompileGlob("/doozer/members/a"))

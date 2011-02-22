@@ -1,7 +1,7 @@
 package lock
 
 import (
-	"doozer/paxos"
+	"doozer/consensus"
 	"doozer/store"
 	"doozer/util"
 	"strings"
@@ -12,7 +12,7 @@ var (
 	locks    = store.MustCompileGlob("/lock/**")
 )
 
-func Clean(st *store.Store, pp paxos.Proposer) {
+func Clean(st *store.Store, pp consensus.Proposer) {
 	logger := util.NewLogger("lock")
 	for ev := range st.Watch(sessions) {
 		if !ev.IsDel() {
@@ -25,7 +25,7 @@ func Clean(st *store.Store, pp paxos.Proposer) {
 
 		store.Walk(ev, locks, func(path, body string, cas int64) bool {
 			if body == name {
-				paxos.Del(pp, path, cas, nil)
+				consensus.Del(pp, path, cas)
 			}
 			return false
 		})

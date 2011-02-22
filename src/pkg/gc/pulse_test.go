@@ -1,8 +1,8 @@
 package gc
 
 import (
+	"doozer/store"
 	"github.com/bmizerany/assert"
-	"os"
 	"testing"
 )
 
@@ -10,9 +10,10 @@ import (
 
 type FakeProposer chan string
 
-func (fs FakeProposer) Propose(v string, _ chan bool) (int64, int64, os.Error) {
-	fs <- v
-	return 123, 123, nil
+func (fs FakeProposer) Propose(v []byte) (e store.Event) {
+	fs <- string(v)
+	e.Cas = 123
+	return
 }
 
 func TestGcPulse(t *testing.T) {

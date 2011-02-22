@@ -1,16 +1,16 @@
 package session
 
 import (
-	"doozer/paxos"
+	"doozer/consensus"
 	"doozer/store"
 	"doozer/timer"
 )
 
 var sessions = store.MustCompileGlob("/session/*")
 
-func Clean(s *store.Store, p paxos.Proposer) {
+func Clean(s *store.Store, p consensus.Proposer) {
 	timer := timer.New(sessions, timer.OneSecond, s)
 	for tick := range timer.C {
-		paxos.Del(p, tick.Path, tick.Cas, nil)
+		consensus.Del(p, tick.Path, tick.Cas)
 	}
 }

@@ -18,7 +18,7 @@ PKGS="
     util
     store
     ack
-    paxos
+    consensus
     proto
     lock
     server

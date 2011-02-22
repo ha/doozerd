@@ -6,7 +6,7 @@ import (
 	"doozer/gc"
 	"doozer/lock"
 	"doozer/member"
-	"doozer/paxos"
+	"doozer/consensus"
 	"doozer/server"
 	"doozer/session"
 	"doozer/store"
@@ -25,6 +25,17 @@ const (
 const slot = "/doozer/slot"
 
 var slots = store.MustCompileGlob("/doozer/slot/*")
+
+
+type proposer struct {
+	seqns chan int64
+	props chan *consensus.Prop
+}
+
+
+func (p *proposer) Propose(v []byte) (e store.Event) {
+	return
+}
 
 
 func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener) {
@@ -104,7 +115,16 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	acker := ack.Ackify(udpConn)
 
-	mg := paxos.NewManager(self, alpha, st, paxos.Encoder{acker})
+	pr := &proposer{
+		seqns: make(chan int64),
+		props: make(chan *consensus.Prop),
+	}
+
+	cmw := st.Watch(store.Any)
+	in := make(chan consensus.Packet)
+	out := make(chan consensus.Packet)
+
+	consensus.NewManager(self, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw)
 
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
@@ -118,18 +138,18 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	live := make(chan string, 64)
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 
-	go member.Clean(shun, st, mg)
+	go member.Clean(shun, st, pr)
 	go member.Timeout(live, shun, listenAddr, timeout)
 
 	go func() {
 		<-cal
-		go lock.Clean(st, mg)
-		go session.Clean(st, mg)
-		go gc.Pulse(self, st.Seqns, mg, pulseInterval)
+		go lock.Clean(st, pr)
+		go session.Clean(st, pr)
+		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
 		go gc.Clean(st)
 	}()
 
-	sv := &server.Server{listenAddr, st, mg, self}
+	sv := &server.Server{listenAddr, st, pr, self, alpha}
 
 	go sv.Serve(listener, useSelf)
 
@@ -139,7 +159,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go web.Serve(webListener)
 	}
 
-	decoder := paxos.Decoder{mg}
 	for {
 		data, addr, err := acker.ReadFrom()
 		if err == os.EINVAL {
@@ -153,7 +172,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		// Update liveness time stamp for this addr
 		live <- addr
 
-		decoder.WriteFrom(addr, data)
+		in <- consensus.Packet{addr, data}
 	}
 }
 
@@ -195,7 +214,13 @@ func activate(st *store.Store, self string, c *client.Client) (seqn int64) {
 }
 
 func advanceUntil(cl *client.Client, done chan int) {
-	for _, ok := <-done; !ok; _, ok = <-done {
+	for {
+		select {
+		case <-done:
+			return
+		default:
+		}
+
 		cl.Noop()
 	}
 }

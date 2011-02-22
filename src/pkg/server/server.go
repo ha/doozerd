@@ -1,7 +1,7 @@
 package server
 
 import (
-	"doozer/paxos"
+	"doozer/consensus"
 	"doozer/proto"
 	"doozer/store"
 	"doozer/util"
@@ -79,9 +79,7 @@ type OpError struct {
 
 
 type Manager interface {
-	paxos.Proposer
-	ProposeOnce(v string, c chan bool) store.Event
-	Alpha() int
+	consensus.Proposer
 }
 
 
@@ -90,6 +88,8 @@ type Server struct {
 	St   *store.Store
 	Mg   Manager
 	Self string
+
+	Alpha int64
 }
 
 
@@ -156,9 +156,33 @@ func (sv *Server) cals() []string {
 
 // Repeatedly propose nop values until a successful read from `done`.
 func (sv *Server) AdvanceUntil(done chan int) {
-	for _, ok := <-done; !ok; _, ok = <-done {
-		sv.Mg.Propose(store.Nop, nil)
+	for {
+		select {
+		case <-done:
+			return
+		default:
+		}
+
+		sv.Mg.Propose([]byte(store.Nop))
 	}
+}
+
+
+func bgSet(p consensus.Proposer, k string, v []byte, c int64) chan store.Event {
+	ch := make(chan store.Event)
+	go func() {
+		ch <- consensus.Set(p, k, v, c)
+	}()
+	return ch
+}
+
+
+func bgDel(p consensus.Proposer, k string, c int64) chan store.Event {
+	ch := make(chan store.Event)
+	go func() {
+		ch <- consensus.Del(p, k, c)
+	}()
+	return ch
 }
 
 
@@ -339,24 +363,26 @@ func (c *conn) set(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		_, cas, err := paxos.Set(c.s.Mg, *t.Path, string(t.Value), *t.Cas, cancel)
-		switch e := err.(type) {
-		case *store.BadPathError:
-			return &R{ErrCode: badPath, ErrDetail: &e.Path}
-		}
-
-		switch err {
-		default:
-			return errResponse(err)
-		case store.ErrCasMismatch:
-			return casMismatch
-		case paxos.ErrCancel:
+		select {
+		case <-cancel:
 			return nil
-		case nil:
-			return &R{Cas: &cas}
-		}
-		panic("not reached")
+		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Cas):
+			switch e := ev.Err.(type) {
+			case *store.BadPathError:
+				return &R{ErrCode: badPath, ErrDetail: &e.Path}
+			}
 
+			switch ev.Err {
+			default:
+				return errResponse(ev.Err)
+			case store.ErrCasMismatch:
+				return casMismatch
+			case nil:
+				return &R{Cas: &ev.Cas}
+			}
+		}
+
+		panic("not reached")
 	})
 }
 
@@ -371,14 +397,14 @@ func (c *conn) del(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		err := paxos.Del(c.s.Mg, *t.Path, *t.Cas, cancel)
-		if err == paxos.ErrCancel {
+		select {
+		case <-cancel:
 			return nil
+		case ev := <-bgDel(c.s.Mg, *t.Path, *t.Cas):
+			if ev.Err != nil {
+				return errResponse(ev.Err)
+			}
 		}
-		if err != nil {
-			return errResponse(err)
-		}
-
 		return &R{}
 	})
 }
@@ -390,9 +416,10 @@ func (c *conn) noop(t *T) *R {
 	}
 
 	return c.cancellable(t, func(cancel chan bool) *R {
-		ev := c.s.Mg.ProposeOnce(store.Nop, cancel)
-		if ev.Err == paxos.ErrCancel {
+		select {
+		case <-cancel:
 			return nil
+		case <-bgDel(c.s.Mg, "/", store.Missing):
 		}
 		return &R{}
 	})
@@ -406,21 +433,24 @@ func (c *conn) join(t *T) *R {
 
 	return c.cancellable(t, func(cancel chan bool) *R {
 		key := "/doozer/members/" + pb.GetString(t.Path)
-		seqn, _, err := paxos.Set(c.s.Mg, key, string(t.Value), store.Missing, cancel)
-		if err == paxos.ErrCancel {
+		select {
+		case <-cancel:
 			return nil
-		}
-		if err != nil {
-			return errResponse(err)
-		}
+		case ev := <-bgSet(c.s.Mg, key, t.Value, store.Missing):
+			seqn := ev.Seqn
+			if ev.Err != nil {
+				return errResponse(ev.Err)
+			}
 
-		done := make(chan int)
-		go c.s.AdvanceUntil(done)
-		c.s.St.Sync(seqn + int64(c.s.Mg.Alpha()))
-		close(done)
-		seqn, snap := c.s.St.Snapshot()
-		seqn1 := int64(seqn)
-		return &R{Rev: &seqn1, Value: []byte(snap)}
+			done := make(chan int)
+			go c.s.AdvanceUntil(done)
+			c.s.St.Sync(seqn + int64(c.s.Alpha))
+			close(done)
+			seqn, snap := c.s.St.Snapshot()
+			seqn1 := int64(seqn)
+			return &R{Rev: &seqn1, Value: []byte(snap)}
+		}
+		panic("not reached")
 	})
 }
 
@@ -445,25 +475,26 @@ func (c *conn) checkin(t *T) *R {
 				return casMismatch
 			}
 		}
-		_, cas, err := paxos.Set(c.s.Mg, path, body, cas, cancel)
-		switch {
-		case err == paxos.ErrCancel:
+		select {
+		case <-cancel:
 			return nil
-		case err == store.ErrCasMismatch:
-			return casMismatch
-		case err != nil:
-			return errResponse(err)
-		}
+		case ev := <-bgSet(c.s.Mg, path, []byte(body), cas):
+			switch {
+			case ev.Err == store.ErrCasMismatch:
+				return casMismatch
+			case ev.Err != nil:
+				return errResponse(ev.Err)
+			}
 
-		if *t.Cas != 0 {
-			select {
-			case <-time.After(deadline - sessionPad - time.Nanoseconds()):
-				// nothing
-			case <-cancel:
-				return nil
+			if *t.Cas != 0 {
+				select {
+				case <-time.After(deadline - sessionPad - time.Nanoseconds()):
+					// nothing
+				case <-cancel:
+					return nil
+				}
 			}
 		}
-
 		return &R{Cas: pb.Int64(-1)}
 	})
 }
@@ -516,10 +547,10 @@ func (c *conn) getdir(t *T) *R {
 		}
 
 		for _, e := range ents[offset:end] {
-			if cancel != nil {
-				if _, b := <-cancel; b {
-					return nil
-				}
+			select {
+			case <-cancel:
+				return nil
+			default:
 			}
 
 			err := c.respond(t, Valid, &R{Path: &e})
@@ -615,11 +646,12 @@ func (c *conn) walk(t *T) *R {
 
 	return c.cancellable(t, func(cancel chan bool) *R {
 		stop := store.Walk(c.s.St, glob, func(path, body string, cas int64) (b bool) {
-			if cancel != nil {
-				if _, b = <-cancel; b {
-					return
-				}
+			select {
+			case <-cancel:
+				return
+			default:
 			}
+
 			var r R
 			r.Path = &path
 			r.Value = []byte(body)
