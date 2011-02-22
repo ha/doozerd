@@ -120,6 +120,7 @@ func TestManagerTick(t *testing.T) {
 	// get our hands on the ticks chan
 	r := &run{seqn: 1}
 	runs <- r
+	<-m
 	ticks := r.ticks
 
 	// send it a tick for seqn 2
