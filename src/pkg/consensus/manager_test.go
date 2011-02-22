@@ -21,6 +21,7 @@ func mustMarshal(p interface{}) []byte {
 
 func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
+	defer close(runs)
 
 	m := NewManager("", nil, nil, nil, runs)
 
@@ -92,6 +93,8 @@ func TestSchedTick(t *testing.T) {
 
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
+	defer close(runs)
+
 	in := make(chan Packet)
 	m := NewManager("", nil, in, nil, runs)
 
@@ -110,6 +113,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 
 func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
+	defer close(runs)
 
 	m := NewManager("", nil, nil, nil, runs)
 
@@ -128,8 +132,9 @@ func TestManagerTick(t *testing.T) {
 func TestManagerFilterPropSeqn(t *testing.T) {
 	ps := make(chan int64, 100)
 	runs := make(chan *run)
-	go filterPropSeqns("b", runs, ps)
 	defer close(runs)
+
+	go filterPropSeqns("b", runs, ps)
 
 	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
 	runs <- &run{seqn: 4, cals: []string{"a", "b"}}

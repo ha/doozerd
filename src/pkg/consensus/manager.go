@@ -53,6 +53,10 @@ func NewManager(self string, propSeqns chan<- int64, in <-chan Packet, out chan<
 
 			select {
 			case run := <-runs:
+				if closed(runs) {
+					return
+				}
+
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
 				run.ticks = ticks
