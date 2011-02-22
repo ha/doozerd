@@ -65,7 +65,7 @@ func (r *run) broadcast(m *M) {
 func (r *run) isLeader(self string) bool {
 	for i, id := range r.cals {
 		if id == self {
-			return r.seqn % int64(len(r.cals)) == int64(i)
+			return r.seqn%int64(len(r.cals)) == int64(i)
 		}
 	}
 	return false
