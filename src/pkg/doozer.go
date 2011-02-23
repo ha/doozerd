@@ -135,6 +135,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		st:    st,
 	}
 
+	start := <-st.Seqns
+	<-st.Wait(start)
 	cmw := st.Watch(store.Any)
 	in := make(chan consensus.Packet)
 	out := make(chan consensus.Packet)
@@ -144,8 +146,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
-		n := <-st.Seqns
-		for i := n + 1; i < n+alpha; i++ {
+		for i := start+1; i < start+alpha+1; i++ {
 			st.Ops <- store.Op{i, store.Nop}
 		}
 	}
