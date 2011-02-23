@@ -60,6 +60,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	self := util.RandId()
 	st := store.New()
 	if attachAddr == "" { // we are the only node in a new cluster
+		set(st, "/doozer/info/"+self+"/addr", listenAddr, store.Missing)
 		set(st, "/doozer/info/"+self+"/public-addr", listenAddr, store.Missing)
 		set(st, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/doozer/info/"+self+"/version", Version, store.Missing)
@@ -74,7 +75,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	} else {
 		cl = client.New("local", attachAddr) // TODO use real cluster name
 
-		path := "/doozer/info/" + self + "/public-addr"
+		path := "/doozer/info/" + self + "/addr"
+		_, err = cl.Set(path, store.Clobber, []byte(listenAddr))
+		if err != nil {
+			panic(err)
+		}
+
+		path = "/doozer/info/" + self + "/public-addr"
 		_, err = cl.Set(path, store.Clobber, []byte(listenAddr))
 		if err != nil {
 			panic(err)
