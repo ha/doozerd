@@ -38,7 +38,6 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 	for e.Mut != string(v) {
 		n := <-p.seqns
 		w := p.st.Wait(n)
-		println("propose", n, string(v))
 		p.props <- &consensus.Prop{n, v}
 		e = <-w
 	}
@@ -170,7 +169,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	go func() {
 		for p := range out {
-			println("out packet", string(p.Data), p.Addr)
 			acker.WriteTo(p.Data, p.Addr)
 		}
 	}()
