@@ -130,7 +130,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	acker := ack.Ackify(udpConn)
 
 	pr := &proposer{
-		seqns: make(chan int64),
+		seqns: make(chan int64, alpha),
 		props: make(chan *consensus.Prop),
 		st:    st,
 	}
