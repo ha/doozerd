@@ -51,6 +51,22 @@ func TestManagerPacketQueue(t *testing.T) {
 }
 
 
+func TestManagerDropsOldPackets(t *testing.T) {
+	runs := make(chan *run)
+	defer close(runs)
+
+	in := make(chan Packet)
+	m := newManager("", nil, in, runs, nil)
+
+	run := run{seqn: 2, ops: make(chan store.Op, 100)}
+	runs <- &run
+
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
+
+	assert.Equal(t, 0, (<-m).WaitPackets)
+}
+
+
 func TestRecvPacket(t *testing.T) {
 	q := new(vector.Vector)
 

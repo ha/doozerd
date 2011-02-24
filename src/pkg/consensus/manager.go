@@ -89,7 +89,10 @@ func newManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-ch
 
 				heap.Pop(packets)
 
-				running[seqn].deliver(p)
+				r := running[seqn]
+				if r != nil {
+					r.deliver(p)
+				}
 			}
 		}
 	}()
