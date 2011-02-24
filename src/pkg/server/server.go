@@ -188,6 +188,15 @@ func bgDel(p consensus.Proposer, k string, c int64) chan store.Event {
 }
 
 
+func bgNop(p consensus.Proposer) chan store.Event {
+	ch := make(chan store.Event)
+	go func() {
+		ch <- p.Propose([]byte(store.Nop))
+	}()
+	return ch
+}
+
+
 type conn struct {
 	c        io.ReadWriter
 	wl       sync.Mutex // write lock
@@ -424,7 +433,7 @@ func (c *conn) noop(t *T, tx txn) {
 		case <-tx.cancel:
 			c.closeTxn(*t.Tag)
 			return
-		case <-bgDel(c.s.Mg, "/", store.Missing):
+		case <-bgNop(c.s.Mg):
 		}
 		c.respond(t, Valid|Done, nil, &R{})
 		return
