@@ -7,6 +7,7 @@ import (
 	"doozer/util"
 	"encoding/binary"
 	"io"
+	"log"
 	"net"
 	"os"
 	"rand"
@@ -41,11 +42,11 @@ var (
 	badSnap     = &R{ErrCode: proto.NewResponse_Err(proto.Response_INVALID_SNAP)}
 	casMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_CAS_MISMATCH)}
 	readonly    = &R{
-		ErrCode: proto.NewResponse_Err(proto.Response_OTHER),
+		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
 		ErrDetail: pb.String("no known writeable addresses"),
 	}
-	badTag      = &R{
-		ErrCode: proto.NewResponse_Err(proto.Response_OTHER),
+	badTag = &R{
+		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
 		ErrDetail: pb.String("unknown tag"),
 	}
 )
@@ -53,7 +54,7 @@ var (
 
 func errResponse(e os.Error) *R {
 	return &R{
-		ErrCode: proto.NewResponse_Err(proto.Response_OTHER),
+		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
 		ErrDetail: pb.String(e.String()),
 	}
 }
@@ -125,13 +126,14 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 				return
 			}
 			c := &conn{
-				c:       rw,
-				addr:    rw.RemoteAddr().String(),
-				s:       s,
-				cal:     w,
-				snaps:   make(map[int32]store.Getter),
-				cancels: make(map[int32]chan bool),
+				c:     rw,
+				addr:  rw.RemoteAddr().String(),
+				s:     s,
+				cal:   w,
+				snaps: make(map[int32]store.Getter),
+				tx:    make(map[int32]txn),
 			}
+			c.log = util.NewLogger("%v", c.addr)
 			go c.serve()
 		case <-cal:
 			cal = nil
@@ -188,16 +190,17 @@ func bgDel(p consensus.Proposer, k string, c int64) chan store.Event {
 
 type conn struct {
 	c        io.ReadWriter
+	wl       sync.Mutex // write lock
 	addr     string
 	s        *Server
 	cal      bool
 	sid      int32
 	snaps    map[int32]store.Getter
 	slk      sync.RWMutex
-	cancels  map[int32]chan bool
 	tx       map[int32]txn
-	wl       sync.Mutex // write lock
+	tl       sync.Mutex // tx lock
 	poisoned bool
+	log      *log.Logger
 }
 
 
@@ -223,98 +226,84 @@ func (c *conn) readBuf() (*T, os.Error) {
 }
 
 
-func (c *conn) makeCancel(t *T) chan bool {
-	tag := pb.GetInt32(t.Tag)
-
-	c.wl.Lock()
-	defer c.wl.Unlock()
-
-	if _, ok := c.cancels[tag]; ok {
-		return nil
-	}
-
-	ch := make(chan bool)
-	c.cancels[tag] = ch
-	return ch
-}
-
-
-func (c *conn) cancellable(t *T, f func(chan bool) *R) *R {
-	cancel := c.makeCancel(t)
-	if cancel == nil {
-		return tagInUse
-	}
-
-	go func() {
-		r := f(cancel)
-		if r != nil {
-			c.respond(t, Valid|Done, r)
-		}
-	}()
-
-	return nil
-}
-
-
-func (c *conn) respond(t *T, flag int32, r *R) os.Error {
+func (c *conn) respond(t *T, flag int32, cc chan bool, r *R) {
 	r.Tag = t.Tag
 	r.Flags = pb.Int32(flag)
 	tag := pb.GetInt32(t.Tag)
 
-	c.wl.Lock()
-	defer c.wl.Unlock()
-
-	if c.poisoned {
-		return ErrPoisoned
+	if flag&Done != 0 {
+		c.closeTxn(tag)
 	}
 
-	if ch := c.cancels[tag]; ch != nil && flag&Done != 0 {
-		c.cancels[tag] = nil, false
-		close(ch)
+	if c.poisoned {
+		select {
+		case cc <- true:
+		default:
+		}
+		c.log.Println("poisoned")
+		return
 	}
 
 	buf, err := pb.Marshal(r)
+	c.wl.Lock()
+	defer c.wl.Unlock()
 	if err != nil {
 		c.poisoned = true
-		return err
+		select {
+		case cc <- true:
+		default:
+		}
+		c.log.Println(err)
+		return
 	}
 
 	err = binary.Write(c.c, binary.BigEndian, int32(len(buf)))
 	if err != nil {
 		c.poisoned = true
-		return err
+		select {
+		case cc <- true:
+		default:
+		}
+		c.log.Println(err)
+		return
 	}
 
 	for len(buf) > 0 {
 		n, err := c.c.Write(buf)
 		if err != nil {
 			c.poisoned = true
-			return err
+			select {
+			case cc <- true:
+			default:
+			}
+			c.log.Println(err)
+			return
 		}
 
 		buf = buf[n:]
 	}
-
-	return nil
 }
 
 
-func (c *conn) redirect() *R {
+func (c *conn) redirect(t *T) {
 	cals := c.s.cals()
 	if len(cals) < 1 {
-		return readonly
+		c.respond(t, Valid|Done, nil, readonly)
+		return
 	}
 
 	cal := cals[rand.Intn(len(cals))]
 	parts, cas := c.s.St.Get("/doozer/info/" + cal + "/public-addr")
 	if cas == store.Dir && cas == store.Missing {
-		return readonly
+		c.respond(t, Valid|Done, nil, readonly)
+		return
 	}
 
-	return &R{
-		ErrCode: proto.NewResponse_Err(proto.Response_REDIRECT),
+	r := &R{
+		ErrCode:   proto.NewResponse_Err(proto.Response_REDIRECT),
 		ErrDetail: &parts[0],
 	}
+	c.respond(t, Valid|Done, nil, r)
 }
 
 
@@ -334,15 +323,17 @@ func (c *conn) getSnap(id int32) (g store.Getter) {
 }
 
 
-func (c *conn) get(t *T, tx txn) *R {
+func (c *conn) get(t *T, tx txn) {
 	g := c.getSnap(pb.GetInt32(t.Id))
 	if g == nil {
-		return badSnap
+		c.respond(t, Valid|Done, nil, badSnap)
+		return
 	}
 
 	v, cas := g.Get(pb.GetString(t.Path))
 	if cas == store.Dir {
-		return isDir
+		c.respond(t, Valid|Done, nil, isDir)
+		return
 	}
 
 	var r R
@@ -350,97 +341,114 @@ func (c *conn) get(t *T, tx txn) *R {
 	if len(v) == 1 { // not missing
 		r.Value = []byte(v[0])
 	}
-	return &r
+	c.respond(t, Valid|Done, nil, &r)
 }
 
 
-func (c *conn) set(t *T, tx txn) *R {
+func (c *conn) set(t *T, tx txn) {
 	if !c.cal {
-		return c.redirect()
+		c.redirect(t)
+		return
 	}
 
 	if t.Path == nil || t.Cas == nil {
-		return missingArg
+		c.respond(t, Valid|Done, nil, missingArg)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
+	go func() {
 		select {
-		case <-cancel:
-			return nil
+		case <-tx.cancel:
+			c.closeTxn(*t.Tag)
+			return
 		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Cas):
 			switch e := ev.Err.(type) {
 			case *store.BadPathError:
-				return &R{ErrCode: badPath, ErrDetail: &e.Path}
+				c.respond(t, Valid|Done, nil, &R{ErrCode: badPath, ErrDetail: &e.Path})
+				return
 			}
 
 			switch ev.Err {
 			default:
-				return errResponse(ev.Err)
+				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
+				return
 			case store.ErrCasMismatch:
-				return casMismatch
+				c.respond(t, Valid|Done, nil, casMismatch)
+				return
 			case nil:
-				return &R{Cas: &ev.Cas}
+				c.respond(t, Valid|Done, nil, &R{Cas: &ev.Cas})
+				return
 			}
 		}
 
 		panic("not reached")
-	})
+	}()
 }
 
 
-func (c *conn) del(t *T, tx txn) *R {
+func (c *conn) del(t *T, tx txn) {
 	if !c.cal {
-		return c.redirect()
+		c.redirect(t)
+		return
 	}
 
 	if t.Path == nil || t.Cas == nil {
-		return missingArg
+		c.respond(t, Valid|Done, nil, missingArg)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
+	go func() {
 		select {
-		case <-cancel:
-			return nil
+		case <-tx.cancel:
+			c.closeTxn(*t.Tag)
+			return
 		case ev := <-bgDel(c.s.Mg, *t.Path, *t.Cas):
 			if ev.Err != nil {
-				return errResponse(ev.Err)
+				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
+				return
 			}
 		}
-		return &R{}
-	})
+		c.respond(t, Valid|Done, nil, &R{})
+	}()
 }
 
 
-func (c *conn) noop(t *T, tx txn) *R {
+func (c *conn) noop(t *T, tx txn) {
 	if !c.cal {
-		return c.redirect()
+		c.redirect(t)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
+	go func() {
 		select {
-		case <-cancel:
-			return nil
+		case <-tx.cancel:
+			c.closeTxn(*t.Tag)
+			return
 		case <-bgDel(c.s.Mg, "/", store.Missing):
 		}
-		return &R{}
-	})
+		c.respond(t, Valid|Done, nil, &R{})
+		return
+	}()
 }
 
 
-func (c *conn) join(t *T, tx txn) *R {
+func (c *conn) join(t *T, tx txn) {
 	if !c.cal {
-		return c.redirect()
+		c.redirect(t)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
+	go func() {
 		key := "/doozer/members/" + pb.GetString(t.Path)
 		select {
-		case <-cancel:
-			return nil
+		case <-tx.cancel:
+			c.closeTxn(*t.Tag)
+			return
 		case ev := <-bgSet(c.s.Mg, key, t.Value, store.Missing):
 			seqn := ev.Seqn
 			if ev.Err != nil {
-				return errResponse(ev.Err)
+				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
+				return
 			}
 
 			done := make(chan int)
@@ -449,23 +457,26 @@ func (c *conn) join(t *T, tx txn) *R {
 			close(done)
 			seqn, snap := c.s.St.Snapshot()
 			seqn1 := int64(seqn)
-			return &R{Rev: &seqn1, Value: []byte(snap)}
+			c.respond(t, Valid|Done, nil, &R{Rev: &seqn1, Value: []byte(snap)})
+			return
 		}
 		panic("not reached")
-	})
+	}()
 }
 
 
-func (c *conn) checkin(t *T, tx txn) *R {
+func (c *conn) checkin(t *T, tx txn) {
 	if !c.cal {
-		return c.redirect()
+		c.redirect(t)
+		return
 	}
 
 	if t.Path == nil || t.Cas == nil {
-		return missingArg
+		c.respond(t, Valid|Done, nil, missingArg)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
+	go func() {
 		deadline := time.Nanoseconds() + sessionLease
 		body := strconv.Itoa64(deadline)
 		cas := *t.Cas
@@ -473,66 +484,76 @@ func (c *conn) checkin(t *T, tx txn) *R {
 		if cas != 0 {
 			_, cas = c.s.St.Get(path)
 			if cas == 0 {
-				return casMismatch
+				c.respond(t, Valid|Done, nil, casMismatch)
+				return
 			}
 		}
 		select {
-		case <-cancel:
-			return nil
+		case <-tx.cancel:
+			c.closeTxn(*t.Tag)
+			return
 		case ev := <-bgSet(c.s.Mg, path, []byte(body), cas):
 			switch {
 			case ev.Err == store.ErrCasMismatch:
-				return casMismatch
+				c.respond(t, Valid|Done, nil, casMismatch)
+				return
 			case ev.Err != nil:
-				return errResponse(ev.Err)
+				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
+				return
 			}
 
 			if *t.Cas != 0 {
 				select {
 				case <-time.After(deadline - sessionPad - time.Nanoseconds()):
 					// nothing
-				case <-cancel:
-					return nil
+				case <-tx.cancel:
+					c.closeTxn(*t.Tag)
+					return
 				}
 			}
 		}
-		return &R{Cas: pb.Int64(-1)}
-	})
+
+		c.respond(t, Valid|Done, nil, &R{Cas: pb.Int64(-1)})
+	}()
 }
 
 
-func (c *conn) stat(t *T, tx txn) *R {
+func (c *conn) stat(t *T, tx txn) {
 	g := c.getSnap(pb.GetInt32(t.Id))
 	if g == nil {
-		return badSnap
+		c.respond(t, Valid|Done, nil, badSnap)
+		return
 	}
 
 	ln, cas := g.Stat(pb.GetString(t.Path))
-	return &R{Len: &ln, Cas: &cas}
+	c.respond(t, Valid|Done, nil, &R{Len: &ln, Cas: &cas})
 }
 
 
-func (c *conn) getdir(t *T, tx txn) *R {
+func (c *conn) getdir(t *T, tx txn) {
 	path := pb.GetString(t.Path)
 
 	g := c.getSnap(pb.GetInt32(t.Id))
 	if g == nil {
-		return badSnap
+		c.respond(t, Valid|Done, nil, badSnap)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
+	go func() {
 		ents, cas := g.Get(path)
 
 		if cas == store.Missing {
-			return noEnt
+			c.respond(t, Valid|Done, nil, noEnt)
+			return
 		}
 
 		if cas != store.Dir {
-			return notDir
+			c.respond(t, Valid|Done, nil, notDir)
+			return
 		}
 
 		offset := int(pb.GetInt32(t.Offset))
-		limit  := int(pb.GetInt32(t.Limit))
+		limit := int(pb.GetInt32(t.Limit))
 
 		if limit <= 0 {
 			limit = len(ents)
@@ -549,25 +570,21 @@ func (c *conn) getdir(t *T, tx txn) *R {
 
 		for _, e := range ents[offset:end] {
 			select {
-			case <-cancel:
-				return nil
+			case <-tx.cancel:
+				c.closeTxn(*t.Tag)
+				return
 			default:
 			}
 
-			err := c.respond(t, Valid, &R{Path: &e})
-			if err != nil {
-				return nil
-			}
+			c.respond(t, Valid, tx.cancel, &R{Path: &e})
 		}
 
-		c.respond(t, Done, &R{})
-
-		return nil
-	})
+		c.respond(t, Done, nil, &R{})
+	}()
 }
 
 
-func (c *conn) cancel(t *T, tx txn) *R {
+func (c *conn) cancel(t *T, tx txn) {
 	if otx, ok := c.tx[pb.GetInt32(t.Id)]; ok {
 		select {
 		case otx.cancel <- true:
@@ -576,28 +593,21 @@ func (c *conn) cancel(t *T, tx txn) *R {
 		<-otx.done
 	}
 
-	c.closeTxn(pb.GetInt32(t.Tag), tx)
-	c.respond(t, Valid|Done, &R{})
-	return nil
+	c.respond(t, Valid|Done, nil, &R{})
 }
 
 
-func (c *conn) watch(t *T, tx txn) *R {
+func (c *conn) watch(t *T, tx txn) {
 	pat := pb.GetString(t.Path)
 	glob, err := store.CompileGlob(pat)
 	if err != nil {
-		return errResponse(err)
-	}
-
-	cancel := c.makeCancel(t)
-	if cancel == nil {
-		return tagInUse
+		c.respond(t, Valid|Done, nil, errResponse(err))
+		return
 	}
 
 	w := store.NewWatch(c.s.St, glob)
 
 	go func() {
-		defer close(cancel)
 		defer close(w.C)
 		defer w.Stop()
 
@@ -613,38 +623,35 @@ func (c *conn) watch(t *T, tx txn) *R {
 				r.Value = []byte(ev.Body)
 				r.Cas = &ev.Cas
 				r.Rev = &ev.Seqn
-				err := c.respond(t, Valid, &r)
-				if err != nil {
-					// TODO log error
-					return
-				}
-			case <-cancel:
+				c.respond(t, Valid, tx.cancel, &r)
+			case <-tx.cancel:
 				return
 			}
 		}
 	}()
-
-	return nil
 }
 
 
-func (c *conn) walk(t *T, tx txn) *R {
+func (c *conn) walk(t *T, tx txn) {
 	pat := pb.GetString(t.Path)
 	glob, err := store.CompileGlob(pat)
 	if err != nil {
-		return errResponse(err)
+		c.respond(t, Valid|Done, nil, errResponse(err))
+		return
 	}
 
 	g := c.getSnap(pb.GetInt32(t.Id))
 	if g == nil {
-		return badSnap
+		c.respond(t, Valid|Done, nil, badSnap)
+		return
 	}
 
-	return c.cancellable(t, func(cancel chan bool) *R {
-		stop := store.Walk(c.s.St, glob, func(path, body string, cas int64) (b bool) {
+	go func() {
+		stopped := store.Walk(c.s.St, glob, func(path, body string, cas int64) (stop bool) {
 			select {
-			case <-cancel:
-				return
+			case <-tx.cancel:
+				c.closeTxn(*t.Tag)
+				return true
 			default:
 			}
 
@@ -652,26 +659,18 @@ func (c *conn) walk(t *T, tx txn) *R {
 			r.Path = &path
 			r.Value = []byte(body)
 			r.Cas = &cas
-			err := c.respond(t, Valid, &r)
-			if err != nil {
-				// TODO log error
-				b = true
-			}
-			return
+			c.respond(t, Valid, tx.cancel, &r)
+			return false
 		})
 
-		if !stop {
-			err = c.respond(t, Done, &R{})
-			if err != nil {
-				// TODO log error
-			}
+		if !stopped {
+			c.respond(t, Done, nil, &R{})
 		}
-		return nil
-	})
+	}()
 }
 
 
-func (c *conn) snap(t *T, tx txn) *R {
+func (c *conn) snap(t *T, tx txn) {
 	ver, g := c.s.St.Snap()
 
 	var r R
@@ -683,24 +682,25 @@ func (c *conn) snap(t *T, tx txn) *R {
 	c.snaps[*r.Id] = g
 	c.slk.Unlock()
 
-	return &r
+	c.respond(t, Valid|Done, nil, &r)
 }
 
 
-func (c *conn) delSnap(t *T, tx txn) *R {
+func (c *conn) delSnap(t *T, tx txn) {
 	if t.Id == nil {
-		return missingArg
+		c.respond(t, Valid|Done, nil, missingArg)
+		return
 	}
 
 	c.slk.Lock()
 	c.snaps[*t.Id] = nil, false
 	c.slk.Unlock()
 
-	return &R{}
+	c.respond(t, Valid|Done, nil, &R{})
 }
 
 
-var ops = map[int32] func(*conn, *T, txn) *R {
+var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_CANCEL:  (*conn).cancel,
 	proto.Request_DEL:     (*conn).del,
 	proto.Request_DELSNAP: (*conn).delSnap,
@@ -739,19 +739,28 @@ func (c *conn) serve() {
 			rlogger.Printf("unknown verb <%d>", verb)
 			var r R
 			r.ErrCode = proto.NewResponse_Err(proto.Response_UNKNOWN_VERB)
-			c.respond(t, Valid|Done, &r)
+			c.respond(t, Valid|Done, nil, &r)
 			continue
 		}
 
-		r := f(c, t, txn{})
-		if r != nil {
-			c.respond(t, Valid|Done, r)
-		}
+		tag := pb.GetInt32((*int32)(t.Verb))
+		tx := newTxn()
+
+		c.tl.Lock()
+		c.tx[tag] = tx
+		c.tl.Unlock()
+
+		f(c, t, tx)
 	}
 }
 
 
-func (c *conn) closeTxn(tag int32, tx txn) {
+func (c *conn) closeTxn(tag int32) {
+	c.tl.Lock()
+	tx, ok := c.tx[tag]
 	c.tx[tag] = txn{}, false
-	close(tx.done)
+	c.tl.Unlock()
+	if ok {
+		close(tx.done)
+	}
 }
