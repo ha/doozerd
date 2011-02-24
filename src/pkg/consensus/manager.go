@@ -112,6 +112,7 @@ func filterPropSeqns(id string, rc <-chan *run, sc chan<- int64) {
 
 func recvPacket(q heap.Interface, P Packet) {
 	var p packet
+	p.Addr = P.Addr
 
 	err := proto.Unmarshal(P.Data, &p.M)
 	if err != nil {
