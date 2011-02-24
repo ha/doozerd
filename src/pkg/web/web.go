@@ -51,7 +51,6 @@ func Serve(listener net.Listener) {
 }
 
 func send(ws *websocket.Conn, path string, evs <-chan store.Event, logger *log.Logger) {
-	defer close(evs)
 	l := len(path) - 1
 	for ev := range evs {
 		ev.Getter = nil // don't marshal the entire snapshot
