@@ -431,6 +431,8 @@ func (st *Store) Sync(seqn int64) {
 
 // Returns an immutable copy of `st` in which `path` exists as a regular file
 // (not a dir). Waits for `path` to be set, if necessary.
+//
+// Returns nil, nil if the store is closed.
 func (st *Store) SyncPath(path string) (Getter, os.Error) {
 	glob, err := CompileGlob(path)
 	if err != nil {
@@ -452,7 +454,7 @@ func (st *Store) SyncPath(path string) (Getter, os.Error) {
 		}
 	}
 
-	panic("unreachable")
+	return nil, nil
 }
 
 func (st *Store) Clean(seqn int64) {
