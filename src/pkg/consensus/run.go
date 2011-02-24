@@ -105,10 +105,16 @@ func getCals(g store.Getter) []string {
 	slots := store.Getdir(g, "/doozer/slot")
 	cals := make([]string, len(slots))
 
-	for i, slot := range slots {
-		cals[i] = store.GetString(g, "/doozer/slot/"+slot)
+	i := 0
+	for _, slot := range slots {
+		id := store.GetString(g, "/doozer/slot/"+slot)
+		if id != "" {
+			cals[i] = id
+			i++
+		}
 	}
 
+	cals = cals[0:i]
 	sort.SortStrings(cals)
 
 	return cals

@@ -24,7 +24,7 @@ func (ms msgSlot) Put(m *M) {
 }
 
 
-func TestGetCals(t *testing.T) {
+func TestGetCalsFull(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
@@ -34,6 +34,19 @@ func TestGetCals(t *testing.T) {
 	<-st.Seqns
 
 	assert.Equal(t, []string{"a", "b", "c"}, getCals(st))
+}
+
+
+func TestGetCalsPartial(t *testing.T) {
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(slot+"/1", "a", 0)}
+	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(slot+"/2", "", 0)}
+	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(slot+"/3", "", 0)}
+	<-st.Seqns
+
+	assert.Equal(t, []string{"a"}, getCals(st))
 }
 
 
