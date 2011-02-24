@@ -12,6 +12,7 @@ import (
 	"doozer/store"
 	"doozer/util"
 	"doozer/web"
+	"goprotobuf.googlecode.com/hg/proto"
 	"net"
 	"os"
 )
@@ -193,6 +194,16 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 		// Update liveness time stamp for this addr
 		live <- addr
+
+		// TODO delete this hack when we have TCP following
+		// begin hack
+		// shortcut the consensus stuff just for this one value
+		var m consensus.M
+		err = proto.Unmarshal(data, &m)
+		if err == nil && *m.Seqn < start+alpha+1 && *m.Cmd == 7 {
+			st.Ops <- store.Op{*m.Seqn, string(m.Value)}
+		}
+		// end hack
 
 		in <- consensus.Packet{addr, data}
 	}
