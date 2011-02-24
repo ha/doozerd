@@ -82,7 +82,25 @@ type Watch struct {
 	glob     *Glob
 	from, to int64
 	shutdown chan bool
+	stopped  bool
 }
+
+
+func (w *Watch) isStopped() bool {
+	if w.stopped {
+		return true
+	}
+
+	select {
+	case <-w.shutdown:
+		w.stopped = true
+		return true
+	default:
+	}
+
+	return false
+}
+
 
 func (wt *Watch) Stop() {
 	select {
@@ -92,7 +110,7 @@ func (wt *Watch) Stop() {
 }
 
 type notice struct {
-	ch chan<- Event
+	w  *Watch
 	ev Event
 }
 
@@ -217,10 +235,8 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 
 	i := 0
 	for _, w := range ws {
-		select {
-		case <-w.shutdown:
+		if w.isStopped() {
 			continue
-		default:
 		}
 
 		if e.Seqn >= w.to {
@@ -238,7 +254,7 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 		}
 
 		if w.glob.Match(e.Path) || e.Err == ErrTooLate {
-			st.notices = append(st.notices, notice{w.c, e})
+			st.notices = append(st.notices, notice{w, e})
 		}
 	}
 
@@ -260,13 +276,15 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 	for {
 		ver, values := st.state.ver, st.state.root
 
-		for len(st.notices) > 0 && closed(st.notices[0].ch) {
+		for len(st.notices) > 0 && st.notices[0].w.isStopped() {
 			st.notices = st.notices[1:]
 		}
 
-		var n notice
+		var nc chan<- Event
+		var ne Event
 		if len(st.notices) > 0 {
-			n = st.notices[0]
+			nc = st.notices[0].w.c
+			ne = st.notices[0].ev
 		}
 
 		// Take any incoming requests and queue them up.
@@ -297,7 +315,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			// nothing to do here
 		case watches <- len(st.watches):
 			// nothing to do here
-		case n.ch <- n.ev:
+		case nc <- ne:
 			st.notices = st.notices[1:]
 		}
 

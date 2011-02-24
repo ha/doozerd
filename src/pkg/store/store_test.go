@@ -1286,3 +1286,52 @@ func TestStoreStopWatch(t *testing.T) {
 	assert.Equal(t, 1, len(wt.C))
 	assert.Equal(t, 0, <-st.Watches)
 }
+
+func TestStoreStopDrainWatch(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+
+	st.Ops <- Op{1, Nop}
+	st.Ops <- Op{2, Nop}
+	<-st.Seqns
+
+	w1 := NewWatch(st, Any)
+
+	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
+	st.Ops <- Op{4, MustEncodeSet("/y", "", Clobber)}
+	assert.Equal(t, "/x", (<-w1.C).Path)
+	assert.Equal(t, "/y", (<-w1.C).Path)
+
+	w2 := NewWatch(st, Any)
+
+	st.Ops <- Op{5, MustEncodeSet("/a", "", Clobber)}
+	st.Ops <- Op{6, MustEncodeSet("/b", "", Clobber)}
+	st.Ops <- Op{7, MustEncodeSet("/c", "", Clobber)}
+	<-st.Seqns
+	w1.Stop()
+
+	st.Ops <- Op{8, MustEncodeSet("/p", "", Clobber)}
+	st.Ops <- Op{9, MustEncodeSet("/q", "", Clobber)}
+	assert.Equal(t, "/a", (<-w2.C).Path)
+	assert.Equal(t, "/b", (<-w2.C).Path)
+	assert.Equal(t, "/c", (<-w2.C).Path)
+	assert.Equal(t, "/p", (<-w2.C).Path)
+	assert.Equal(t, "/q", (<-w2.C).Path)
+}
+
+func TestWatchIsStopped(t *testing.T) {
+	w := Watch{
+		shutdown: make(chan bool, 1),
+		stopped:  false,
+	}
+
+	// it should begin unstopped
+	assert.Equal(t, false, w.isStopped())
+
+	// it should work the first time
+	w.shutdown <- true
+	assert.Equal(t, true, w.isStopped())
+
+	// it should remember that w has been stopped
+	assert.Equal(t, true, w.isStopped())
+}
