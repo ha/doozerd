@@ -63,7 +63,7 @@ func TestServerCloseTxn(t *testing.T) {
 		tx: make(map[int32]txn),
 	}
 
-	tx := txn{make(chan bool), make(chan bool, 1)}
+	tx := newTxn()
 	c.tx[1] = tx
 
 	c.closeTxn(1, tx)
