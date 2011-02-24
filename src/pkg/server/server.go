@@ -334,7 +334,7 @@ func (c *conn) getSnap(id int32) (g store.Getter) {
 }
 
 
-func (c *conn) get(t *T) *R {
+func (c *conn) get(t *T, tx txn) *R {
 	g := c.getSnap(pb.GetInt32(t.Id))
 	if g == nil {
 		return badSnap
@@ -354,7 +354,7 @@ func (c *conn) get(t *T) *R {
 }
 
 
-func (c *conn) set(t *T) *R {
+func (c *conn) set(t *T, tx txn) *R {
 	if !c.cal {
 		return c.redirect()
 	}
@@ -388,7 +388,7 @@ func (c *conn) set(t *T) *R {
 }
 
 
-func (c *conn) del(t *T) *R {
+func (c *conn) del(t *T, tx txn) *R {
 	if !c.cal {
 		return c.redirect()
 	}
@@ -411,7 +411,7 @@ func (c *conn) del(t *T) *R {
 }
 
 
-func (c *conn) noop(t *T) *R {
+func (c *conn) noop(t *T, tx txn) *R {
 	if !c.cal {
 		return c.redirect()
 	}
@@ -427,7 +427,7 @@ func (c *conn) noop(t *T) *R {
 }
 
 
-func (c *conn) join(t *T) *R {
+func (c *conn) join(t *T, tx txn) *R {
 	if !c.cal {
 		return c.redirect()
 	}
@@ -456,7 +456,7 @@ func (c *conn) join(t *T) *R {
 }
 
 
-func (c *conn) checkin(t *T) *R {
+func (c *conn) checkin(t *T, tx txn) *R {
 	if !c.cal {
 		return c.redirect()
 	}
@@ -501,7 +501,7 @@ func (c *conn) checkin(t *T) *R {
 }
 
 
-func (c *conn) stat(t *T) *R {
+func (c *conn) stat(t *T, tx txn) *R {
 	g := c.getSnap(pb.GetInt32(t.Id))
 	if g == nil {
 		return badSnap
@@ -512,7 +512,7 @@ func (c *conn) stat(t *T) *R {
 }
 
 
-func (c *conn) getdir(t *T) *R {
+func (c *conn) getdir(t *T, tx txn) *R {
 	path := pb.GetString(t.Path)
 
 	g := c.getSnap(pb.GetInt32(t.Id))
@@ -567,27 +567,22 @@ func (c *conn) getdir(t *T) *R {
 }
 
 
-func (c *conn) cancel(t *T) *R {
-	tag := pb.GetInt32(t.Id)
-
-	c.wl.Lock()
-	ch := c.cancels[tag]
-	c.wl.Unlock()
-
-	if ch != nil {
-		ch <- true
-		close(ch)
+func (c *conn) cancel(t *T, tx txn) *R {
+	if otx, ok := c.tx[pb.GetInt32(t.Id)]; ok {
+		select {
+		case otx.cancel <- true:
+		default:
+		}
+		<-otx.done
 	}
 
-	c.wl.Lock()
-	c.cancels[tag] = nil, false
-	c.wl.Unlock()
-
-	return &R{}
+	c.closeTxn(pb.GetInt32(t.Tag), tx)
+	c.respond(t, Valid|Done, &R{})
+	return nil
 }
 
 
-func (c *conn) watch(t *T) *R {
+func (c *conn) watch(t *T, tx txn) *R {
 	pat := pb.GetString(t.Path)
 	glob, err := store.CompileGlob(pat)
 	if err != nil {
@@ -633,7 +628,7 @@ func (c *conn) watch(t *T) *R {
 }
 
 
-func (c *conn) walk(t *T) *R {
+func (c *conn) walk(t *T, tx txn) *R {
 	pat := pb.GetString(t.Path)
 	glob, err := store.CompileGlob(pat)
 	if err != nil {
@@ -676,7 +671,7 @@ func (c *conn) walk(t *T) *R {
 }
 
 
-func (c *conn) snap(t *T) *R {
+func (c *conn) snap(t *T, tx txn) *R {
 	ver, g := c.s.St.Snap()
 
 	var r R
@@ -692,7 +687,7 @@ func (c *conn) snap(t *T) *R {
 }
 
 
-func (c *conn) delSnap(t *T) *R {
+func (c *conn) delSnap(t *T, tx txn) *R {
 	if t.Id == nil {
 		return missingArg
 	}
@@ -705,7 +700,7 @@ func (c *conn) delSnap(t *T) *R {
 }
 
 
-var ops = map[int32] func(*conn, *T) *R {
+var ops = map[int32] func(*conn, *T, txn) *R {
 	proto.Request_CANCEL:  (*conn).cancel,
 	proto.Request_DEL:     (*conn).del,
 	proto.Request_DELSNAP: (*conn).delSnap,
@@ -748,7 +743,7 @@ func (c *conn) serve() {
 			continue
 		}
 
-		r := f(c, t)
+		r := f(c, t, txn{})
 		if r != nil {
 			c.respond(t, Valid|Done, r)
 		}
