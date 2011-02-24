@@ -57,3 +57,17 @@ func TestSetNilFields(t *testing.T) {
 	r := c.set(&T{})
 	assert.Equal(t, missingArg, r)
 }
+
+func TestServerCloseTxn(t *testing.T) {
+	c := &conn{
+		tx: make(map[int32]txn),
+	}
+
+	tx := txn{make(chan bool), make(chan bool, 1)}
+	c.tx[1] = tx
+
+	c.closeTxn(1, tx)
+
+	assert.Equal(t, map[int32]txn{}, c.tx)
+	assert.Equal(t, false, <-tx.done)
+}

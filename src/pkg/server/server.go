@@ -195,6 +195,7 @@ type conn struct {
 	snaps    map[int32]store.Getter
 	slk      sync.RWMutex
 	cancels  map[int32]chan bool
+	tx       map[int32]txn
 	wl       sync.Mutex // write lock
 	poisoned bool
 }
@@ -752,4 +753,10 @@ func (c *conn) serve() {
 			c.respond(t, Valid|Done, r)
 		}
 	}
+}
+
+
+func (c *conn) closeTxn(tag int32, tx txn) {
+	c.tx[tag] = txn{}, false
+	close(tx.done)
 }
