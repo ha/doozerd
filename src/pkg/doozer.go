@@ -198,41 +198,39 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	}
 }
 
-func activate(st *store.Store, self string, c *client.Client) (seqn int64) {
+func activate(st *store.Store, self string, c *client.Client) int64 {
 	logger := util.NewLogger("activate")
 	w := store.NewWatch(st, slots)
-	var err os.Error
 
 	for _, base := range store.Getdir(st, slot) {
 		p := slot + "/" + base
 		v, cas := st.Get(p)
 		if cas != store.Dir && v[0] == "" {
-			seqn, err = c.Set(p, cas, []byte(self))
+			seqn, err := c.Set(p, cas, []byte(self))
 			if err != nil {
 				logger.Println(err)
 				continue
 			}
 
 			w.Stop()
-			close(w.C)
-			break
+			return seqn
 		}
 	}
 
 	for ev := range w.C {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			seqn, err = c.Set(ev.Path, ev.Cas, []byte(self))
+			seqn, err := c.Set(ev.Path, ev.Cas, []byte(self))
 			if err != nil {
 				logger.Println(err)
 				continue
 			}
 			w.Stop()
-			close(w.C)
+			return seqn
 		}
 	}
 
-	return seqn
+	return 0
 }
 
 func advanceUntil(cl *client.Client, done chan int) {
