@@ -1041,7 +1041,6 @@ func TestStoreWaitCasMismatchReplace(t *testing.T) {
 
 func TestSyncPathFuture(t *testing.T) {
 	st := New()
-	defer close(st.Ops)
 
 	go func() {
 		for <-st.Watches < 1 {
@@ -1050,6 +1049,7 @@ func TestSyncPathFuture(t *testing.T) {
 		st.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
 		st.Ops <- Op{3, MustEncodeSet("/y", "c", Clobber)}
 		st.Ops <- Op{4, MustEncodeSet("/z", "d", Clobber)}
+		close(st.Ops)
 	}()
 
 	g, err := st.SyncPath("/y")
