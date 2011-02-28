@@ -4,8 +4,13 @@ package consensus
 import (
 	"container/heap"
 	"container/vector"
+	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
+	"time"
 )
+
+
+const fillDelay = 15e8 // ns == 1.5s
 
 
 type packet struct {
@@ -25,9 +30,21 @@ type Packet struct {
 }
 
 
+type fill struct {
+	t int64 // trigger time
+	n int64 // seqn
+}
+
+
+func (f fill) Less(y interface{}) bool {
+	return f.n < y.(fill).n
+}
+
+
 type Stats struct {
 	Runs        int
 	WaitPackets int
+	WaitFills   int
 }
 
 
@@ -40,7 +57,7 @@ type Prop struct {
 }
 
 
-func newManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop) Manager {
+func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64) Manager {
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 
@@ -49,6 +66,7 @@ func newManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-ch
 	go func() {
 		running := make(map[int64]*run)
 		packets := new(vector.Vector)
+		fills := new(vector.Vector)
 		ticks := make(chan int64)
 		var nextRun int64
 		var stats Stats
@@ -56,6 +74,7 @@ func newManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-ch
 		for {
 			stats.Runs = len(running)
 			stats.WaitPackets = packets.Len()
+			stats.WaitFills = fills.Len()
 
 			select {
 			case run := <-runs:
@@ -75,6 +94,25 @@ func newManager(self string, propSeqns chan<- int64, in <-chan Packet, runs <-ch
 			case pr := <-props:
 				m := M{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
 				heap.Push(packets, packet{M: m})
+
+				for nextFill < pr.Seqn {
+					schedFill(fills, nextFill)
+					nextFill++
+				}
+				nextFill++
+			case t := <-ticker:
+				for fills.Len() > 0 {
+					f := fills.At(0).(fill)
+
+					if f.n >= t {
+						break
+					}
+
+					heap.Pop(fills)
+					
+					m := M{Seqn: &f.n, Cmd: propose, Value: []byte(store.Nop)}
+					heap.Push(packets, packet{M: m})
+				}
 			}
 
 			for packets.Len() > 0 {
@@ -123,6 +161,11 @@ func recvPacket(q heap.Interface, P Packet) {
 	}
 
 	heap.Push(q, p)
+}
+
+
+func schedFill(q heap.Interface, n int64) {
+	heap.Push(q, fill{n: n, t: time.Nanoseconds() + fillDelay})
 }
 
 

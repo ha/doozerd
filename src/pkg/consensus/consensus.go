@@ -2,11 +2,12 @@ package consensus
 
 import (
 	"doozer/store"
+	"time"
 )
 
 
 // propSeqns must be buffered with capacity >= alpha
-func NewManager(self string, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, w <-chan store.Event) Manager {
+func NewManager(self string, start int64, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, w <-chan store.Event) Manager {
 	runs := make(chan *run)
 	t := run{
 		self:  self,
@@ -15,7 +16,7 @@ func NewManager(self string, alpha int64, in <-chan Packet, out chan<- Packet, o
 		bound: initialWaitBound,
 	}
 	go generateRuns(alpha, w, runs, t)
-	return newManager(self, propSeqns, in, runs, props)
+	return newManager(self, start, propSeqns, in, runs, props, time.Tick(10e6))
 }
 
 

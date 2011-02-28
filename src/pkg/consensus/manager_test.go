@@ -7,6 +7,7 @@ import (
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
+	"time"
 )
 
 
@@ -23,7 +24,7 @@ func TestManagerRuns(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	m := newManager("", nil, nil, runs, nil)
+	m := newManager("", 0, nil, nil, runs, nil, nil)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -43,7 +44,7 @@ func TestManagerRuns(t *testing.T) {
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
-	m := newManager("", nil, in, nil, nil)
+	m := newManager("", 0, nil, in, nil, nil, nil)
 
 	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
 
@@ -56,7 +57,7 @@ func TestManagerDropsOldPackets(t *testing.T) {
 	defer close(runs)
 
 	in := make(chan Packet)
-	m := newManager("", nil, in, runs, nil)
+	m := newManager("", 0, nil, in, runs, nil, nil)
 
 	run := run{seqn: 2, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -107,12 +108,27 @@ func TestSchedTick(t *testing.T) {
 	assert.Equal(t, packet{M: M{Seqn: proto.Int64(1), Cmd: tick}}, q.At(0))
 }
 
+
+func TestSchedFill(t *testing.T) {
+	q := new(vector.Vector)
+
+	ts := time.Nanoseconds() + 15e8
+	schedFill(q, 1)
+
+	assert.Equal(t, 1, q.Len())
+	f, ok := q.At(0).(fill)
+	assert.Tf(t, ok, "expected a fill, got a %T", q.At(0))
+	assert.Equal(t, int64(1), f.n)
+	assert.T(t, f.t >= ts)
+}
+
+
 func TestManagerPacketProcessing(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
 	in := make(chan Packet)
-	m := newManager("", nil, in, runs, nil)
+	m := newManager("", 0, nil, in, runs, nil, nil)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -131,7 +147,7 @@ func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	m := newManager("", nil, nil, runs, nil)
+	m := newManager("", 0, nil, nil, runs, nil, nil)
 
 	// get our hands on the ticks chan
 	r := &run{seqn: 1}
@@ -168,8 +184,23 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 func TestManagerProposalQueue(t *testing.T) {
 	props := make(chan *Prop)
 
-	m := newManager("", nil, nil, nil, props)
+	m := newManager("", 0, nil, nil, nil, props, nil)
 	props <- &Prop{Seqn: 1, Mut: []byte("foo")}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
+}
+
+
+func TestManagerFillQueue(t *testing.T) {
+	props := make(chan *Prop)
+	ticker := make(chan int64)
+
+	m := newManager("", 3, nil, nil, nil, props, ticker)
+	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
+
+	assert.Equal(t, 6, (<-m).WaitFills)
+	
+	ticker <- time.Nanoseconds()
+	
+	assert.Equal(t, 7, (<-m).WaitPackets)
 }

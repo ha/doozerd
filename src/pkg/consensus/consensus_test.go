@@ -24,7 +24,7 @@ func TestConsensusOne(t *testing.T) {
 	props := make(chan *Prop)
 
 
-	NewManager(self, alpha, in, out, st.Ops, seqns, props, cmw)
+	NewManager(self, 0, alpha, in, out, st.Ops, seqns, props, cmw)
 
 	go func() {
 		for o := range out {
@@ -73,14 +73,14 @@ func TestConsensusTwo(t *testing.T) {
 	aout := make(chan Packet)
 	aseqns := make(chan int64, int(alpha))
 	aprops := make(chan *Prop)
-	NewManager(a, alpha, ain, aout, st.Ops, aseqns, aprops, acmw)
+	NewManager(a, 0, alpha, ain, aout, st.Ops, aseqns, aprops, acmw)
 
 	bcmw := st.Watch(store.Any)
 	bin := make(chan Packet)
 	bout := make(chan Packet)
 	bseqns := make(chan int64, int(alpha))
 	bprops := make(chan *Prop)
-	NewManager(b, alpha, bin, bout, st.Ops, bseqns, bprops, bcmw)
+	NewManager(b, 0, alpha, bin, bout, st.Ops, bseqns, bprops, bcmw)
 
 	go func() {
 		for o := range aout {
