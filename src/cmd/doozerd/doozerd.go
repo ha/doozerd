@@ -17,6 +17,9 @@ var (
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
+	pi = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
+	fd = flag.Float64("fill", 1.5, "delay (in seconds) to fill unowned seqns")
+	kt = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
 )
 
 
@@ -61,5 +64,9 @@ func main() {
 		}
 	}
 
-	doozer.Main(*clusterName, *attachAddr, conn, listener, wl)
+	doozer.Main(*clusterName, *attachAddr, conn, listener, wl, ns(*pi), ns(*fd), ns(*kt))
+}
+
+func ns(x float64) int64 {
+	return int64(x * 1e9)
 }

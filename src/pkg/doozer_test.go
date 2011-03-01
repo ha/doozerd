@@ -36,7 +36,7 @@ func TestDoozerNoop(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 	err := cl.Noop()
@@ -50,7 +50,7 @@ func TestDoozerGet(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -77,7 +77,7 @@ func TestDoozerSet(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -99,7 +99,7 @@ func TestDoozerSnap(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -145,7 +145,7 @@ func TestDoozerWatchSimple(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -177,7 +177,7 @@ func TestDoozerWalk(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -209,7 +209,7 @@ func TestDoozerStat(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -233,7 +233,7 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -259,7 +259,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -279,7 +279,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -297,7 +297,7 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 	cl.Set("/test/a", store.Clobber, []byte("1"))
@@ -327,7 +327,7 @@ func TestDoozerGetdirOffsetLimitBounds(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 	cl.Set("/test/a", store.Clobber, []byte("1"))
@@ -367,13 +367,13 @@ func TestDoozerReconnect(t *testing.T) {
 	a := l.Addr().String()
 	u := mustListenPacket(a)
 	defer u.Close()
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	l1 := mustListen()
-	go Main("a", a, mustListenPacket(l1.Addr().String()), l1, nil)
+	go Main("a", a, mustListenPacket(l1.Addr().String()), l1, nil, 1e9, 2e9, 3e9)
 
 	l2 := mustListen()
-	go Main("a", a, mustListenPacket(l2.Addr().String()), l2, nil)
+	go Main("a", a, mustListenPacket(l2.Addr().String()), l2, nil, 1e9, 2e9, 3e9)
 
 	c0 := client.New("foo", a)
 

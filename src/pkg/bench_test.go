@@ -15,7 +15,7 @@ func Benchmark1DoozerClientSet(b *testing.B) {
 	u := mustListenPacket(a)
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -34,7 +34,7 @@ func Benchmark1DoozerConClientSet(b *testing.B) {
 	u := mustListenPacket(a)
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -60,11 +60,11 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 	u := mustListenPacket(a)
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 
@@ -83,11 +83,11 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 	u := mustListenPacket(a)
 	defer u.Close()
 
-	go Main("a", "", u, l, nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
-	go Main("a", a, mustListenPacket(":0"), mustListen(), nil)
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
+	go Main("a", a, mustListenPacket(":0"), mustListen(), nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
 

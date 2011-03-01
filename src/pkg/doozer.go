@@ -17,11 +17,7 @@ import (
 	"os"
 )
 
-const (
-	alpha           = 50
-	pulseInterval   = 1e9
-	timeout         = 60e9 // 60s
-)
+const alpha = 50
 
 const slot = "/doozer/slot"
 
@@ -46,7 +42,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener) {
+func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	logger := util.NewLogger("main")
 
 	var err os.Error
@@ -142,7 +138,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	in := make(chan consensus.Packet)
 	out := make(chan consensus.Packet)
 
-	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw)
+	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw, fillDelay)
 
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
@@ -156,7 +152,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 
 	go member.Clean(shun, st, pr)
-	go member.Timeout(live, shun, listenAddr, timeout)
+	go member.Timeout(live, shun, listenAddr, kickTimeout)
 
 	go func() {
 		<-cal

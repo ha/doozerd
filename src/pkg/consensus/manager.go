@@ -10,9 +10,6 @@ import (
 )
 
 
-const fillDelay = 15e8 // ns == 1.5s
-
-
 type packet struct {
 	Addr string
 	M
@@ -57,7 +54,7 @@ type Prop struct {
 }
 
 
-func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64) Manager {
+func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64, fillDelay int64) Manager {
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 
@@ -96,7 +93,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 				heap.Push(packets, packet{M: m})
 
 				for nextFill < pr.Seqn {
-					schedFill(fills, nextFill)
+					schedFill(fills, nextFill, fillDelay)
 					nextFill++
 				}
 				nextFill++
@@ -164,7 +161,7 @@ func recvPacket(q heap.Interface, P Packet) {
 }
 
 
-func schedFill(q heap.Interface, n int64) {
+func schedFill(q heap.Interface, n, fillDelay int64) {
 	heap.Push(q, fill{n: n, t: time.Nanoseconds() + fillDelay})
 }
 
