@@ -634,6 +634,7 @@ func (c *conn) watch(t *T, tx txn) {
 				r.Rev = &ev.Seqn
 				c.respond(t, Valid, tx.cancel, &r)
 			case <-tx.cancel:
+				c.closeTxn(*t.Tag)
 				return
 			}
 		}
