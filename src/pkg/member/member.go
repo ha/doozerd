@@ -4,7 +4,6 @@ import (
 	"doozer/consensus"
 	"doozer/store"
 	"doozer/util"
-	"time"
 )
 
 var logger = util.NewLogger("member")
@@ -68,35 +67,4 @@ func removeInfo(p consensus.Proposer, g store.Getter, name string) {
 		consensus.Del(p, path, cas)
 		return false
 	})
-}
-
-
-func Timeout(live, shun chan string, self string, timeout int64) {
-	ticker := time.Tick(timeout / 2)
-	times := make(map[string]int64)
-	for {
-		// First read any packets
-		loop: for {
-			select {
-			case addr := <-live: // got a packet
-				times[addr] = time.Nanoseconds()
-			default:
-				break loop
-			}
-		}
-
-
-		select {
-		case addr := <-live: // got a packet
-			times[addr] = time.Nanoseconds()
-		case t := <-ticker:
-			n := t - timeout
-			for addr, s := range times {
-				if n > s && addr != self {
-					times[addr] = 0, false
-					shun <- addr
-				}
-			}
-		}
-	}
 }

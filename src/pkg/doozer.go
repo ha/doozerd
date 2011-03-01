@@ -15,6 +15,7 @@ import (
 	"goprotobuf.googlecode.com/hg/proto"
 	"net"
 	"os"
+	"time"
 )
 
 const alpha = 50
@@ -148,11 +149,10 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}
 
-	live := make(chan string, 64)
+	times := make(map[string]int64)
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 
 	go member.Clean(shun, st, pr)
-	go member.Timeout(live, shun, listenAddr, kickTimeout)
 
 	go func() {
 		<-cal
@@ -178,7 +178,11 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}()
 
+	var pt int64
+	pi := kickTimeout / 2
 	for {
+		t := time.Nanoseconds()
+
 		data, addr, err := acker.ReadFrom()
 		if err == os.EINVAL {
 			break
@@ -189,7 +193,18 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 
 		// Update liveness time stamp for this addr
-		live <- addr
+		times[addr] = t
+
+		if t > pt + pi {
+			n := t - kickTimeout
+			for addr, s := range times {
+				if n > s && addr != self {
+					times[addr] = 0, false
+					shun <- addr
+				}
+			}
+		}
+		pt = t
 
 		// TODO delete this hack when we have TCP following
 		// begin hack
