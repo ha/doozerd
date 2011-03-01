@@ -377,7 +377,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	assert.Equal(t, []string{"a"}, v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(st.todo))
+	assert.Equal(t, 0, st.todo.Len())
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
@@ -392,7 +392,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	assert.Equal(t, []string{"b"}, v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(st.todo))
+	assert.Equal(t, 0, st.todo.Len())
 }
 
 func TestGetWithDir(t *testing.T) {
@@ -710,6 +710,34 @@ func TestStoreSnapshotNoEvent(t *testing.T) {
 	assert.Equal(t, "/y", ev.Path)
 }
 
+
+func TestStoreFlush(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+
+	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
+	st.Flush() // should flush
+	st.Sync(2)
+
+	assert.Equal(t, int64(2), <-st.Seqns)
+
+	v, cas := st.Get("/x")
+	assert.Equal(t, int64(2), cas)
+	assert.Equal(t, []string{"b"}, v)
+
+	// Now, test that it is ineffective the second time.
+
+	st.Ops <- Op{4, MustEncodeSet("/x", "c", Clobber)}
+	st.Flush() // should do nothing
+
+	assert.Equal(t, int64(2), <-st.Seqns)
+
+	v, cas = st.Get("/x")
+	assert.Equal(t, int64(2), cas)
+	assert.Equal(t, []string{"b"}, v)
+}
+
+
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
@@ -788,7 +816,7 @@ func TestSnapshotBad(t *testing.T) {
 	st.Sync(1)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(st.todo))
+	assert.Equal(t, 0, st.todo.Len())
 }
 
 func TestSnapshotSeqn(t *testing.T) {
@@ -844,7 +872,7 @@ func TestSnapshotLeak(t *testing.T) {
 	s2.Sync(1)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s2.todo))
+	assert.Equal(t, 0, s2.todo.Len())
 }
 
 func TestSnapshotOutOfOrder(t *testing.T) {
@@ -869,7 +897,7 @@ func TestSnapshotOutOfOrder(t *testing.T) {
 	assert.Equal(t, int64(3), cas)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, len(s2.todo))
+	assert.Equal(t, 0, s2.todo.Len())
 }
 
 func TestSnapshotSync(t *testing.T) {
@@ -912,7 +940,7 @@ func TestStoreWaitWorks(t *testing.T) {
 	assert.Equal(t, int64(1), got.Seqn)
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut, got.Mut)
-	assert.Equal(t, 0, len(st.todo))
+	assert.Equal(t, 0, st.todo.Len())
 	assert.Equal(t, 0, <-st.Watches)
 }
 

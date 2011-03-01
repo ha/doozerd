@@ -2,6 +2,8 @@ package store
 
 import (
 	"bytes"
+	"container/heap"
+	"container/vector"
 	"gob"
 	"doozer/util"
 	"math"
@@ -54,11 +56,12 @@ type Store struct {
 	Watches <-chan int
 	watchCh chan *Watch
 	watches []*Watch
-	todo    map[int64]Op
+	todo    *vector.Vector
 	state   *state
 	log     map[int64]Event
 	cleanCh chan int64
 	notices []notice
+	flush   chan bool
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -70,6 +73,13 @@ type Op struct {
 	Seqn int64
 	Mut  string
 }
+
+
+// Satisfies vector.LessInterface.
+func (x Op) Less(y interface{}) bool {
+	return x.Seqn < y.(Op).Seqn
+}
+
 
 type state struct {
 	ver  int64
@@ -127,11 +137,12 @@ func New() *Store {
 		Seqns:   seqns,
 		Watches: watches,
 		watchCh: make(chan *Watch),
-		todo:    make(map[int64]Op),
+		todo:    new(vector.Vector),
 		watches: []*Watch{},
 		state:   &state{0, emptyDir},
 		log:     map[int64]Event{0: {Err: ErrTooLate}},
 		cleanCh: make(chan int64),
+		flush:   make(chan bool, 1),
 	}
 
 	go st.process(ops, seqns, watches)
@@ -274,6 +285,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 	var head int64
 
 	for {
+		var flush bool
 		ver, values := st.state.ver, st.state.root
 
 		for len(st.notices) > 0 && st.notices[0].w.isStopped() {
@@ -295,7 +307,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 
 			if a.Seqn > ver {
-				st.todo[a.Seqn] = a
+				heap.Push(st.todo, a)
 			}
 		case w := <-st.watchCh:
 			n, ws := w.from, []*Watch{w}
@@ -317,10 +329,25 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			// nothing to do here
 		case nc <- ne:
 			st.notices = st.notices[1:]
+		case flush = <-st.flush:
+			st.flush = nil // never flush again
 		}
 
 		// If we have any mutations that can be applied, do them.
-		for t, ok := st.todo[ver+1]; ok; t, ok = st.todo[ver+1] {
+		for st.todo.Len() > 0 {
+			t := st.todo.At(0).(Op)
+			if flush && ver < t.Seqn {
+				ver = t.Seqn - 1
+			}
+			if t.Seqn > ver+1 {
+				break
+			}
+
+			heap.Pop(st.todo)
+			if t.Seqn < ver+1 {
+				continue
+			}
+
 			var ev Event
 			var snap bool
 			values, ev, snap = values.apply(t.Seqn, t.Mut)
@@ -330,10 +357,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 				st.log[t.Seqn] = ev
 				st.watches = st.notify(ev, st.watches)
 			}
-			for ver < ev.Seqn {
-				ver++
-				st.todo[ver] = Op{}, false
-			}
+			ver = ev.Seqn
 			if snap {
 				head = ev.Seqn + 1
 			}
@@ -368,6 +392,19 @@ func (st *Store) Stat(path string) (int32, int64) {
 	_, g := st.Snap()
 	return g.Stat(path)
 }
+
+
+// Apply all operations in the internal queue, even if there are gaps in the
+// sequence (gaps will be treated as no-ops). This is only useful for
+// bootstrapping a store from a point-in-time snapshot of another store.
+// Flush is effective only once.
+func (st *Store) Flush() {
+	select {
+	case st.flush <- true:
+	default:
+	}
+}
+
 
 // Encodes the entire storage state, including the current sequence number, as
 // a mutation. This mutation can be applied to an empty store to reproduce the
