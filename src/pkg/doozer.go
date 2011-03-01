@@ -142,7 +142,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	in := make(chan consensus.Packet)
 	out := make(chan consensus.Packet)
 
-	consensus.NewManager(self, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw)
+	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw)
 
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
