@@ -102,22 +102,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			panic(err)
 		}
 
-		done := make(chan int)
 		st.Ops <- store.Op{1, snap}
 
-		go advanceUntil(cl, done)
-
 		go func() {
-			st.Sync(joinSeqn + alpha)
-			close(done)
-
+			advanceUntil(cl, st.Seqns, joinSeqn+alpha)
 			activateSeqn = activate(st, self, cl)
 			cal <- true
-
-			done = make(chan int)
-			go advanceUntil(cl, done)
-			st.Sync(activateSeqn + alpha)
-			close(done)
+			advanceUntil(cl, st.Seqns, activateSeqn+alpha)
 			useSelf <- true
 		}()
 
@@ -136,8 +127,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	start := <-st.Seqns
 	<-st.Wait(start)
 	cmw := st.Watch(store.Any)
-	in := make(chan consensus.Packet)
-	out := make(chan consensus.Packet)
+	in := make(chan consensus.Packet, 50)
+	out := make(chan consensus.Packet, 50)
 
 	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw, fillDelay)
 
@@ -255,14 +246,8 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 	return 0
 }
 
-func advanceUntil(cl *client.Client, done chan int) {
-	for {
-		select {
-		case <-done:
-			return
-		default:
-		}
-
+func advanceUntil(cl *client.Client, ver <-chan int64, done int64) {
+	for <-ver < done {
 		cl.Noop()
 	}
 }
