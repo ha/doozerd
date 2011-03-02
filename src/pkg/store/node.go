@@ -122,7 +122,7 @@ func (n node) setp(k, v string, cas int64, keep bool) node {
 	return n
 }
 
-func (n node) apply(seqn int64, mut string) (rep node, ev Event, snap bool) {
+func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 	ev.Seqn, ev.Cas, ev.Mut = seqn, seqn, mut
 	if mut == Nop {
 		ev.Path = "/"

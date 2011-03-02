@@ -203,7 +203,7 @@ func TestSnap(t *testing.T) {
 	root, ok := snap.(node)
 	assert.Equal(t, true, ok)
 
-	exp, _, _ := emptyDir.apply(1, mut)
+	exp, _ := emptyDir.apply(1, mut)
 	assert.Equal(t, exp, root)
 }
 

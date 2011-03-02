@@ -346,18 +346,12 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 
 			var ev Event
-			var snap bool
-			values, ev, snap = values.apply(t.Seqn, t.Mut)
+			values, ev = values.apply(t.Seqn, t.Mut)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			st.state = &state{ev.Seqn, values}
-			if !snap {
-				st.log[t.Seqn] = ev
-				st.watches = st.notify(ev, st.watches)
-			}
+			st.log[t.Seqn] = ev
+			st.watches = st.notify(ev, st.watches)
 			ver = ev.Seqn
-			if snap {
-				head = ev.Seqn + 1
-			}
 		}
 	}
 }
