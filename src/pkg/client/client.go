@@ -22,6 +22,7 @@ var lg = util.NewLogger("client")
 
 var (
 	ErrNoAddrs = os.NewError("no known address")
+	ErrBadTag  = os.NewError("bad tag")
 )
 
 var (
@@ -258,7 +259,9 @@ func (c *conn) readR() (*R, os.Error) {
 func (c *conn) close() {
 	c.cblk.Lock()
 	for _, ch := range c.cb {
-		close(ch)
+		if ch != nil {
+			close(ch)
+		}
 	}
 	c.cb = nil
 	c.cblk.Unlock()
@@ -290,6 +293,10 @@ func (c *conn) readResponses() {
 
 		c.cblk.Lock()
 		ch, ok := c.cb[tag]
+		if ok && ch == nil {
+			c.cblk.Unlock()
+			continue
+		}
 		if flags&Done != 0 {
 			c.cb[tag] = nil, false
 		}
@@ -311,22 +318,33 @@ func (c *conn) readResponses() {
 }
 
 
-func (c *conn) cancel(tag int32) os.Error {
+func (c *conn) cancel(tag int32, cb chan *R) os.Error {
+	c.cblk.Lock()
+	ch, ok := c.cb[tag]
+	if !ok || ch != cb {
+		c.cblk.Unlock()
+		return ErrBadTag
+	}
+
+	// Make a nil entry, to prevent any goroutine from
+	// reusing this tag until we are done with it.
+	c.cb[tag] = nil
+	c.cblk.Unlock()
+
 	_, err := c.call(&T{Verb: cancel, Id: &tag})
 	if err != nil {
+		// Something is very wrong.
+		// Leave a nil entry in the cb map,
+		// so we don't reuse this tag.
 		return err
 	}
 
 	c.cblk.Lock()
-	ch, ok := c.cb[tag]
-	if ok {
-		c.cb[tag] = nil, false
-	}
+	// Remove our nil entry, freeing up this tag for reuse.
+	c.cb[tag] = nil, false
 	c.cblk.Unlock()
 
-	if ok {
-		close(ch)
-	}
+	close(ch)
 	return nil
 }
 
@@ -676,5 +694,5 @@ type Watch struct {
 
 
 func (w *Watch) Cancel() os.Error {
-	return w.c.cancel(w.tag)
+	return w.c.cancel(w.tag, w.cb)
 }
