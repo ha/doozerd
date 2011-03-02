@@ -712,6 +712,20 @@ func TestStoreFlush(t *testing.T) {
 }
 
 
+func TestStoreNoEventsOnFlush(t *testing.T) {
+	st := New()
+	defer close(st.Ops)
+
+	ch := st.Watch(Any)
+	assert.Equal(t, 1, <-st.Watches)
+
+	st.Ops <- Op{2, MustEncodeSet("/x", "a", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/x", "b", Clobber)}
+	st.Flush()
+	assert.Equal(t, int64(3), (<-ch).Seqn)
+}
+
+
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)

@@ -330,6 +330,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			st.flush = nil // never flush again
 		}
 
+		var ev Event
 		// If we have any mutations that can be applied, do them.
 		for st.todo.Len() > 0 {
 			t := st.todo.At(0).(Op)
@@ -345,13 +346,21 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 				continue
 			}
 
-			var ev Event
 			values, ev = values.apply(t.Seqn, t.Mut)
 			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			st.state = &state{ev.Seqn, values}
-			st.log[t.Seqn] = ev
-			st.watches = st.notify(ev, st.watches)
 			ver = ev.Seqn
+			if !flush {
+				st.log[ev.Seqn] = ev
+				st.watches = st.notify(ev, st.watches)
+			}
+		}
+
+		// A flush just gets one final event.
+		if flush {
+			st.log[ev.Seqn] = ev
+			st.watches = st.notify(ev, st.watches)
+			head = ver + 1
 		}
 	}
 }
