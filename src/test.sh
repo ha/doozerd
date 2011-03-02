@@ -27,4 +27,5 @@ fi
 export GOMAXPROCS
 
 trap 'rm all-test.sh' EXIT
+trap 'rm all-test.sh' INT
 roundup
