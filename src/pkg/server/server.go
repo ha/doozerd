@@ -594,15 +594,20 @@ func (c *conn) getdir(t *T, tx txn) {
 
 
 func (c *conn) cancel(t *T, tx txn) {
-	if otx, ok := c.tx[pb.GetInt32(t.Id)]; ok {
+	tag := pb.GetInt32(t.Id)
+	c.tl.Lock()
+	otx, ok := c.tx[tag]
+	c.tl.Unlock()
+	if ok {
 		select {
 		case otx.cancel <- true:
 		default:
 		}
 		<-otx.done
+		c.respond(t, Valid|Done, nil, &R{})
+	} else {
+		c.respond(t, Valid|Done, nil, badTag)
 	}
-
-	c.respond(t, Valid|Done, nil, &R{})
 }
 
 
