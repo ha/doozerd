@@ -441,35 +441,57 @@ func (c *conn) noop(t *T, tx txn) {
 }
 
 
-func (c *conn) join(t *T, tx txn) {
-	if !c.cal {
-		c.redirect(t)
+func (c *conn) monitor(t *T, tx txn) {
+	pat := pb.GetString(t.Path)
+	glob, err := store.CompileGlob(pat)
+	if err != nil {
+		c.respond(t, Valid|Done, nil, errResponse(err))
 		return
 	}
 
+	w := store.NewWatch(c.s.St, glob)
+	rev, g := c.s.St.Snap()
+
 	go func() {
-		key := "/doozer/members/" + pb.GetString(t.Path)
-		select {
-		case <-tx.cancel:
-			c.closeTxn(*t.Tag)
-			return
-		case ev := <-bgSet(c.s.Mg, key, t.Value, store.Missing):
-			seqn := ev.Seqn
-			if ev.Err != nil {
-				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
-				return
+		defer w.Stop()
+		defer c.closeTxn(*t.Tag)
+
+		var r R
+		stopped := store.Walk(g, glob, func(path, body string, cas int64) (stop bool) {
+			select {
+			case <-tx.cancel:
+				return true
+			default:
 			}
 
-			done := make(chan int)
-			go c.s.AdvanceUntil(done)
-			c.s.St.Sync(seqn + int64(c.s.Alpha))
-			close(done)
-			seqn, snap := c.s.St.Snapshot()
-			seqn1 := int64(seqn)
-			c.respond(t, Valid|Done, nil, &R{Rev: &seqn1, Value: []byte(snap)})
+			r.Cas = &cas
+			r.Path = &path
+			r.Value = []byte(body)
+			c.respond(t, Valid, tx.cancel, &r)
+			return false
+		})
+		if stopped {
 			return
 		}
-		panic("not reached")
+
+		// TODO buffer (and possibly discard) events
+		for {
+			select {
+			case <-tx.cancel:
+				return
+			case ev := <-w.C:
+				if ev.Seqn <= rev {
+					continue
+				}
+
+				var r R
+				r.Rev = &ev.Seqn
+				r.Cas = &ev.Cas
+				r.Path = &ev.Path
+				r.Value = []byte(ev.Body)
+				c.respond(t, Valid, tx.cancel, &r)
+			}
+		}
 	}()
 }
 
@@ -717,18 +739,18 @@ func (c *conn) delSnap(t *T, tx txn) {
 
 var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_CANCEL:  (*conn).cancel,
+	proto.Request_CHECKIN: (*conn).checkin,
 	proto.Request_DEL:     (*conn).del,
 	proto.Request_DELSNAP: (*conn).delSnap,
-	proto.Request_NOOP:    (*conn).noop,
 	proto.Request_GET:     (*conn).get,
+	proto.Request_GETDIR:  (*conn).getdir,
+	proto.Request_MONITOR: (*conn).monitor,
+	proto.Request_NOOP:    (*conn).noop,
 	proto.Request_SET:     (*conn).set,
 	proto.Request_SNAP:    (*conn).snap,
-	proto.Request_WATCH:   (*conn).watch,
-	proto.Request_WALK:    (*conn).walk,
-	proto.Request_JOIN:    (*conn).join,
-	proto.Request_CHECKIN: (*conn).checkin,
 	proto.Request_STAT:    (*conn).stat,
-	proto.Request_GETDIR:  (*conn).getdir,
+	proto.Request_WALK:    (*conn).walk,
+	proto.Request_WATCH:   (*conn).watch,
 }
 
 

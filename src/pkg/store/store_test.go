@@ -2,8 +2,6 @@ package store
 
 import (
 	"github.com/bmizerany/assert"
-	"bytes"
-	"gob"
 	"sort"
 	"testing"
 )
@@ -686,30 +684,6 @@ func TestStoreNopEvent(t *testing.T) {
 	assert.T(t, ev.IsDummy())
 }
 
-func TestStoreSnapshotNoEvent(t *testing.T) {
-	s := New()
-	mut1 := MustEncodeSet("/x", "a", Clobber)
-	mut2 := MustEncodeSet("/x", "b", Clobber)
-	s.Ops <- Op{1, mut1}
-	s.Ops <- Op{2, mut2}
-	s.Sync(2)
-	_, snap := s.Snapshot()
-	close(s.Ops)
-
-	s = New()
-	defer close(s.Ops)
-
-	c := make(chan Event, 100)
-	w := s.watchOn(Any, c, 1, 100)
-
-	s.Ops <- Op{1, snap}
-	s.Ops <- Op{3, MustEncodeSet("/y", "c", Clobber)}
-
-	ev := <-w.C
-	assert.Equal(t, int64(3), ev.Seqn)
-	assert.Equal(t, "/y", ev.Path)
-}
-
 
 func TestStoreFlush(t *testing.T) {
 	st := New()
@@ -777,155 +751,6 @@ func TestSyncPathClose(t *testing.T) {
 	st.Ops <- Op{0, ""} // just for synchronization
 
 	assert.Equal(t, 0, <-st.Watches)
-}
-
-func TestSnapshotApply(t *testing.T) {
-	s1 := New()
-	defer close(s1.Ops)
-	mut1 := MustEncodeSet("/x", "a", Clobber)
-	mut2 := MustEncodeSet("/x", "b", Clobber)
-	s1.Ops <- Op{1, mut1}
-	s1.Ops <- Op{2, mut2}
-	s1.Sync(2)
-	seqn, snap := s1.Snapshot()
-	assert.Equal(t, int64(2), seqn)
-
-	s2 := New()
-	defer close(s2.Ops)
-	s2.Ops <- Op{1, snap}
-	s2.Sync(1)
-
-	v, cas := s2.Get("/x")
-	assert.Equal(t, int64(2), cas)
-	assert.Equal(t, []string{"b"}, v)
-}
-
-func TestSnapshotBad(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
-	gob.NewEncoder(buf).Encode(int64(1))
-	seqnPart := buf.String()
-
-	buf = bytes.NewBuffer([]byte{})
-	gob.NewEncoder(buf).Encode(emptyDir)
-	valPart := buf.String()
-	valPart = valPart[0 : len(valPart)/2]
-
-	st := New()
-	defer close(st.Ops)
-	st.Ops <- Op{1, seqnPart + valPart}
-	st.Sync(1)
-
-	// check that we aren't leaking memory
-	assert.Equal(t, 0, st.todo.Len())
-}
-
-func TestSnapshotSeqn(t *testing.T) {
-	s1 := New()
-	defer close(s1.Ops)
-	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s1.Sync(2)
-	seqn, snap := s1.Snapshot()
-	assert.Equal(t, int64(2), seqn)
-
-	s2 := New()
-	defer close(s2.Ops)
-	s2.Ops <- Op{1, snap}
-	s2.Sync(1)
-	v, cas := s2.Get("/x")
-	assert.Equal(t, int64(2), cas, "snap")
-	assert.Equal(t, []string{"b"}, v, "snap")
-
-	s2.Ops <- Op{1, MustEncodeSet("/x", "x", Clobber)}
-	s2.Sync(1)
-	v, cas = s2.Get("/x")
-	assert.Equal(t, int64(2), cas, "x")
-	assert.Equal(t, []string{"b"}, v, "x")
-
-	s2.Ops <- Op{2, MustEncodeSet("/x", "y", Clobber)}
-	s2.Sync(2)
-	v, cas = s2.Get("/x")
-	assert.Equal(t, int64(2), cas, "y")
-	assert.Equal(t, []string{"b"}, v, "y")
-
-	s2.Ops <- Op{3, MustEncodeSet("/x", "z", Clobber)}
-	s2.Sync(3)
-	v, cas = s2.Get("/x")
-	assert.Equal(t, int64(3), cas, "z")
-	assert.Equal(t, []string{"z"}, v, "z")
-}
-
-func TestSnapshotLeak(t *testing.T) {
-	s1 := New()
-	defer close(s1.Ops)
-	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s1.Sync(2)
-	seqn, snap := s1.Snapshot()
-	assert.Equal(t, int64(2), seqn)
-
-	s2 := New()
-	defer close(s2.Ops)
-
-	s2.Ops <- Op{2, MustEncodeSet("/x", "c", Clobber)}
-	s2.Ops <- Op{1, snap}
-	s2.Sync(1)
-
-	// check that we aren't leaking memory
-	assert.Equal(t, 0, s2.todo.Len())
-}
-
-func TestSnapshotOutOfOrder(t *testing.T) {
-	s1 := New()
-	defer close(s1.Ops)
-	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s1.Sync(2)
-	seqn, snap := s1.Snapshot()
-	assert.Equal(t, int64(2), seqn)
-
-	s2 := New()
-	defer close(s2.Ops)
-
-	s2.Ops <- Op{2, MustEncodeSet("/x", "c", Clobber)}
-	s2.Ops <- Op{3, MustEncodeSet("/x", "c", Clobber)}
-	s2.Ops <- Op{1, snap}
-	s2.Sync(3)
-
-	body, cas := s2.Get("/x")
-	assert.Equal(t, []string{"c"}, body)
-	assert.Equal(t, int64(3), cas)
-
-	// check that we aren't leaking memory
-	assert.Equal(t, 0, s2.todo.Len())
-}
-
-func TestSnapshotSync(t *testing.T) {
-	seqnCh := make(chan int64)
-	snapCh := make(chan string)
-	s1 := New()
-	defer close(s1.Ops)
-	go func() {
-		s1.Sync(2)
-		seqn, snap := s1.Snapshot()
-		seqnCh <- seqn
-		snapCh <- snap
-	}()
-	s1.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	s1.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	s1.Sync(2)
-	seqn := <-seqnCh
-	assert.Equal(t, int64(2), seqn)
-	snap := <-snapCh
-
-	s2 := New()
-	defer close(s2.Ops)
-	s2.Ops <- Op{1, snap}
-	s2.Sync(1)
-
-	v, cas := s2.Get("/x")
-	assert.Equal(t, int64(2), cas)
-	assert.Equal(t, []string{"b"}, v)
 }
 
 func TestStoreWaitWorks(t *testing.T) {

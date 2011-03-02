@@ -1,9 +1,6 @@
 package store
 
 import (
-	"bytes"
-	"gob"
-	"io"
 	"github.com/bmizerany/assert"
 	"os"
 	"testing"
@@ -71,38 +68,6 @@ func TestNodeApplyCasMismatch(t *testing.T) {
 	assert.Equal(t, Event{seqn, ErrorPath, ErrCasMismatch.String(), cas, m, ErrCasMismatch, n}, e)
 }
 
-func TestNodeSnapshotApply(t *testing.T) {
-	s1 := New()
-	mut1, _ := EncodeSet("/x", "a", Clobber)
-	mut2, _ := EncodeSet("/x", "b", Clobber)
-	s1.Ops <- Op{1, mut1}
-	s1.Ops <- Op{2, mut2}
-	s1.Sync(2)
-	_, m := s1.Snapshot()
-
-	n, e, b := emptyDir.apply(1, m)
-	assert.Equal(t, true, b)
-	exp := node{"", Dir, map[string]node{"x": {"b", 2, nil}}}
-	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{2, "", "", dummy, m, nil, n}, e)
-}
-
-func TestNodeSnapshotBad(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
-	gob.NewEncoder(buf).Encode(int64(1))
-	seqnPart := buf.String()
-
-	buf = bytes.NewBuffer([]byte{})
-	gob.NewEncoder(buf).Encode(emptyDir)
-	valPart := buf.String()
-	valPart = valPart[0 : len(valPart)/2]
-
-	m := seqnPart + valPart
-	n, e, b := emptyDir.apply(1, m)
-	assert.Equal(t, true, b)
-	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{1, "", "", dummy, m, io.ErrUnexpectedEOF, n}, e)
-}
 
 func TestNodeNotADirectory(t *testing.T) {
 	r, _, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))

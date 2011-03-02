@@ -31,7 +31,7 @@ var (
 	del     = proto.NewRequest_Verb(proto.Request_DEL)
 	delsnap = proto.NewRequest_Verb(proto.Request_DELSNAP)
 	get     = proto.NewRequest_Verb(proto.Request_GET)
-	join    = proto.NewRequest_Verb(proto.Request_JOIN)
+	monitor = proto.NewRequest_Verb(proto.Request_MONITOR)
 	noop    = proto.NewRequest_Verb(proto.Request_NOOP)
 	set     = proto.NewRequest_Verb(proto.Request_SET)
 	snap    = proto.NewRequest_Verb(proto.Request_SNAP)
@@ -69,6 +69,7 @@ var (
 
 
 type Event struct {
+	Rev  int64
 	Cas  int64
 	Path string
 	Body []byte
@@ -208,19 +209,20 @@ func (c *conn) call(t *T) (*R, os.Error) {
 
 
 func (c *conn) events(t *T) (*Watch, os.Error) {
-	ch, err := c.send(t)
+	cb, err := c.send(t)
 	if err != nil {
 		return nil, err
 	}
 
 	evs := make(chan *Event)
-	w := &Watch{evs, c, *t.Tag}
+	w := &Watch{evs, c, cb, *t.Tag}
 	go func() {
-		for r := range ch {
+		for r := range cb {
 			var ev Event
 			if err := r.err(); err != nil {
 				ev.Err = err
 			} else {
+				ev.Rev = pb.GetInt64(r.Rev)
 				ev.Cas = pb.GetInt64(r.Cas)
 				ev.Path = pb.GetString(r.Path)
 				ev.Body = r.Value
@@ -303,7 +305,20 @@ func (c *conn) readResponses() {
 		c.cblk.Unlock()
 
 		if !ok {
-			c.lg.Println("unexpected:", r.String())
+			c.lg.Printf(
+				"%v unexpected: tag=%d flags=%d rev=%d cas=%d path=%q value=%v id=%d len=%d err_code=%v err_detail=%q",
+				ch,
+				tag,
+				flags,
+				pb.GetInt64(r.Rev),
+				pb.GetInt64(r.Cas),
+				pb.GetString(r.Path),
+				r.Value,
+				pb.GetInt32(r.Id),
+				pb.GetInt32(r.Len),
+				pb.GetInt32((*int32)(r.ErrCode)),
+				pb.GetString(r.ErrDetail),
+			)
 			continue
 		}
 
@@ -571,13 +586,13 @@ func (cl *Client) retry(t *T) (r *R, err os.Error) {
 }
 
 
-func (cl *Client) Join(id, addr string) (seqn int64, snapshot string, err os.Error) {
-	r, err := cl.call(&T{Verb: join, Path: &id, Value: []byte(addr)})
-	if err != nil {
-		return 0, "", err
+func (cl *Client) Monitor(glob string) (*Watch, os.Error) {
+	c := <-cl.c
+	if c == nil {
+		return nil, ErrNoAddrs
 	}
 
-	return pb.GetInt64(r.Rev), string(r.Value), nil
+	return c.events(&T{Verb: monitor, Path: &glob})
 }
 
 
@@ -689,6 +704,7 @@ func (cl *Client) Walk(glob string, snapId int32) (*Watch, os.Error) {
 type Watch struct {
 	C   <-chan *Event // to caller
 	c   *conn
+	cb  chan *R
 	tag int32
 }
 

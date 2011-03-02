@@ -83,7 +83,6 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 
 	wt := store.NewWatch(Store, glob)
 
-	// TODO convert store.Snapshot to json and use that
 	go func() {
 		walk(path, Store, wevs)
 		close(wevs)

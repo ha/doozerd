@@ -1,9 +1,7 @@
 package store
 
 import (
-	"gob"
 	"os"
-	"strings"
 )
 
 var emptyDir = node{V: "", Ds: make(map[string]node), Cas: Dir}
@@ -126,21 +124,6 @@ func (n node) setp(k, v string, cas int64, keep bool) node {
 
 func (n node) apply(seqn int64, mut string) (rep node, ev Event, snap bool) {
 	ev.Seqn, ev.Cas, ev.Mut = seqn, seqn, mut
-	if seqn == 1 {
-		d := gob.NewDecoder(strings.NewReader(mut))
-		if d.Decode(&ev.Seqn) == nil {
-			snap = true
-			ev.Cas = dummy
-			ev.Err = d.Decode(&rep)
-			if ev.Err != nil {
-				ev.Seqn = seqn
-				rep = n
-			}
-			ev.Getter = rep
-			return
-		}
-	}
-
 	if mut == Nop {
 		ev.Path = "/"
 		ev.Cas = dummy

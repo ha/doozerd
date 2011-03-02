@@ -12,7 +12,6 @@ import (
 	"doozer/store"
 	"doozer/util"
 	"doozer/web"
-	"goprotobuf.googlecode.com/hg/proto"
 	"net"
 	"os"
 	"time"
@@ -67,7 +66,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		set(st, "/ping", "pong", store.Missing)
 
 		cal <- true
-		useSelf <- true
+		close(useSelf)
 
 		cl = client.New("local", listenAddr) // TODO use real cluster name
 	} else {
@@ -97,23 +96,23 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			panic(err)
 		}
 
-		joinSeqn, snap, err := cl.Join(self, listenAddr)
+		w, err := cl.Monitor("/**")
 		if err != nil {
 			panic(err)
 		}
 
-		st.Ops <- store.Op{1, snap}
+		go follow(st, w.C)
 
 		go func() {
-			advanceUntil(cl, st.Seqns, joinSeqn+alpha)
 			activateSeqn = activate(st, self, cl)
 			cal <- true
 			advanceUntil(cl, st.Seqns, activateSeqn+alpha)
-			useSelf <- true
+			err := w.Cancel()
+			if err != nil {
+				panic(err)
+			}
+			close(useSelf)
 		}()
-
-		// TODO sink needs a way to pick up missing values if there are any
-		// gaps in its sequence
 	}
 
 	acker := ack.Ackify(udpConn)
@@ -197,16 +196,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 		pt = t
 
-		// TODO delete this hack when we have TCP following
-		// begin hack
-		// shortcut the consensus stuff just for this one value
-		var m consensus.M
-		err = proto.Unmarshal(data, &m)
-		if err == nil && *m.Seqn < start+alpha+1 && *m.Cmd == 7 {
-			st.Ops <- store.Op{*m.Seqn, string(m.Value)}
-		}
-		// end hack
-
 		in <- consensus.Packet{addr, data}
 	}
 }
@@ -255,4 +244,27 @@ func advanceUntil(cl *client.Client, ver <-chan int64, done int64) {
 func set(st *store.Store, path, body string, cas int64) {
 	mut := store.MustEncodeSet(path, body, cas)
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
+}
+
+func follow(st *store.Store, evs <-chan *client.Event) {
+	for ev := range evs {
+		if ev.Rev > 0 {
+			st.Flush()
+			follow2(ev, st.Ops, evs)
+			return
+		}
+
+		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
+		st.Ops <- store.Op{ev.Cas, mut}
+	}
+}
+
+func follow2(ev *client.Event, ops chan<- store.Op, evs <-chan *client.Event) {
+	mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
+	ops <- store.Op{ev.Rev, mut}
+
+	for ev = range evs {
+		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
+		ops <- store.Op{ev.Rev, mut}
+	}
 }

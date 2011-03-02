@@ -17,14 +17,10 @@ message Request {
       CANCEL   = 10; // id               => {}
       GETDIR   = 14; // path, id         => {cas, value}+
       STAT     = 16;
-
+      MONITOR  = 11; // path             => {cas, path, value}+
 
       // future
-      MONITOR  = 11; // path             => {cas, path, value}+
       SYNCPATH = 12; // path             => cas, value
-
-      // deprecated
-      JOIN     = 13;
   }
   required Verb verb = 2;
 

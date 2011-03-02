@@ -1,10 +1,8 @@
 package store
 
 import (
-	"bytes"
 	"container/heap"
 	"container/vector"
-	"gob"
 	"doozer/util"
 	"math"
 	"os"
@@ -30,7 +28,6 @@ var Any = MustCompileGlob("/**")
 
 var (
 	ErrBadMutation = os.NewError("bad mutation")
-	ErrBadSnapshot = os.NewError("bad snapshot")
 	ErrTooLate     = os.NewError("too late")
 	ErrCasMismatch = os.NewError("cas mismatch")
 )
@@ -405,33 +402,6 @@ func (st *Store) Flush() {
 	}
 }
 
-
-// Encodes the entire storage state, including the current sequence number, as
-// a mutation. This mutation can be applied to an empty store to reproduce the
-// state of `s`.
-//
-// Returns the sequence number of the snapshot and the mutation itself.
-//
-// A snapshot must be applied at sequence number 1. Once a snapshot has been
-// applied, the store's sequence number will be set to `seqn`.
-//
-// Note that applying a snapshot does not send notifications.
-func (st *Store) Snapshot() (seqn int64, mutation string) {
-	w := new(bytes.Buffer)
-	ver, g := st.Snap()
-
-	err := gob.NewEncoder(w).Encode(ver)
-	if err != nil {
-		panic(err)
-	}
-
-	err = gob.NewEncoder(w).Encode(g)
-	if err != nil {
-		panic(err)
-	}
-
-	return ver, w.String()
-}
 
 // A convenience wrapper for NewWatch that returns only the channel. Useful for
 // code that never needs to stop the Watch.
