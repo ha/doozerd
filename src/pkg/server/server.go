@@ -753,7 +753,7 @@ func (c *conn) serve() {
 			continue
 		}
 
-		tag := pb.GetInt32((*int32)(t.Verb))
+		tag := pb.GetInt32((*int32)(t.Tag))
 		tx := newTxn()
 
 		c.tl.Lock()
