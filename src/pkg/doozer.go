@@ -101,7 +101,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			panic(err)
 		}
 
-		go follow(st, w.C)
+		follow(st, w.C)
 
 		go func() {
 			activateSeqn = activate(st, self, cl)
@@ -250,7 +250,8 @@ func follow(st *store.Store, evs <-chan *client.Event) {
 	for ev := range evs {
 		if ev.Rev > 0 {
 			st.Flush()
-			follow2(ev, st.Ops, evs)
+			go follow2(ev, st.Ops, evs)
+			<-st.Wait(ev.Rev)
 			return
 		}
 
