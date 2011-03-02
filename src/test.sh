@@ -26,6 +26,5 @@ fi
 : ${GOMAXPROCS:=10}
 export GOMAXPROCS
 
-trap 'rm all-test.sh' EXIT
-trap 'rm all-test.sh' INT
+trap 'rm -f all-test.sh' EXIT INT
 roundup
