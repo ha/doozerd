@@ -23,7 +23,6 @@ func TestConsensusOne(t *testing.T) {
 	seqns := make(chan int64, int(alpha))
 	props := make(chan *Prop)
 
-
 	NewManager(self, 0, alpha, in, out, st.Ops, seqns, props, cmw, 10e9)
 
 	go func() {
@@ -42,12 +41,12 @@ func TestConsensusOne(t *testing.T) {
 	e := <-w
 
 	exp := store.Event{
-		Seqn:   4,
-		Path:   "/store/error",
-		Body:   "bad mutation",
-		Cas:    4,
-		Mut:    "foo",
-		Err:    os.NewError("bad mutation"),
+		Seqn: 4,
+		Path: "/store/error",
+		Body: "bad mutation",
+		Cas:  4,
+		Mut:  "foo",
+		Err:  os.NewError("bad mutation"),
 	}
 
 	e.Getter = nil
@@ -98,7 +97,7 @@ func TestConsensusTwo(t *testing.T) {
 		}
 	}()
 
-	for i := snn+1; i < snn+1+alpha; i++ {
+	for i := snn + 1; i < snn+1+alpha; i++ {
 		st.Ops <- store.Op{Seqn: i, Mut: store.Nop}
 	}
 
@@ -108,12 +107,12 @@ func TestConsensusTwo(t *testing.T) {
 	e := <-w
 
 	exp := store.Event{
-		Seqn:   6,
-		Path:   "/store/error",
-		Body:   "bad mutation",
-		Cas:    6,
-		Mut:    "foo",
-		Err:    os.NewError("bad mutation"),
+		Seqn: 6,
+		Path: "/store/error",
+		Body: "bad mutation",
+		Cas:  6,
+		Mut:  "foo",
+		Err:  os.NewError("bad mutation"),
 	}
 
 	e.Getter = nil

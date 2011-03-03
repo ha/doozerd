@@ -90,8 +90,8 @@ func (r *run) isLeader(self string) bool {
 func generateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
 	for e := range w {
 		r := t
-		r.seqn  = e.Seqn + alpha
-		r.cals  = getCals(e)
+		r.seqn = e.Seqn + alpha
+		r.cals = getCals(e)
 		r.addrs = getAddrs(e)
 		r.c.size = len(r.cals)
 		r.c.quor = r.quorum()

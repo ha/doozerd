@@ -3,7 +3,7 @@ package main
 import (
 	"doozer/client"
 	"fmt"
-    "os"
+	"os"
 )
 
 
@@ -36,13 +36,13 @@ func walk(glob string) {
 		bail(err)
 	}
 
-    for ev := range w.C {
-        if ev.Err != nil {
-            fmt.Fprintln(os.Stderr, ev.Err)
-        }
+	for ev := range w.C {
+		if ev.Err != nil {
+			fmt.Fprintln(os.Stderr, ev.Err)
+		}
 
-        fmt.Println(ev.Path, ev.Cas, len(ev.Body))
-        os.Stdout.Write(ev.Body)
-        fmt.Println()
-    }
+		fmt.Println(ev.Path, ev.Cas, len(ev.Body))
+		os.Stdout.Write(ev.Body)
+		fmt.Println()
+	}
 }

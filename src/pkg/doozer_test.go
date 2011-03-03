@@ -87,7 +87,7 @@ func TestDoozerSet(t *testing.T) {
 	assert.Equal(t, []byte("pong"), ents)
 
 	for i := byte(0); i < 10; i++ {
-		cl.Set("/x", store.Missing, []byte{'0'+i})
+		cl.Set("/x", store.Missing, []byte{'0' + i})
 		assert.Equal(t, nil, err)
 	}
 }
@@ -268,8 +268,8 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 	w, err := cl.Getdir("/test/a", 0, 0, 0)
 	assert.Equal(t, nil, err)
 
-	exp := &client.ResponseError{Code:20, Detail:"not a directory"}
-	e   := <-w.C
+	exp := &client.ResponseError{Code: 20, Detail: "not a directory"}
+	e := <-w.C
 	assert.Equal(t, exp, e.Err)
 }
 
@@ -286,8 +286,8 @@ func TestDoozerGetdirMissing(t *testing.T) {
 	w, err := cl.Getdir("/not/here", 0, 0, 0)
 	assert.Equal(t, nil, err)
 
-	e   := <-w.C
-	exp := &client.ResponseError{Code:22, Detail:"NOENT"}
+	e := <-w.C
+	exp := &client.ResponseError{Code: 22, Detail: "NOENT"}
 	assert.Equal(t, exp, e.Err)
 }
 

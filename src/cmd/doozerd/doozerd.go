@@ -17,9 +17,9 @@ var (
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
-	pi = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
-	fd = flag.Float64("fill", 1.5, "delay (in seconds) to fill unowned seqns")
-	kt = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
+	pi          = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
+	fd          = flag.Float64("fill", 1.5, "delay (in seconds) to fill unowned seqns")
+	kt          = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
 )
 
 

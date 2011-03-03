@@ -200,8 +200,8 @@ func TestManagerFillQueue(t *testing.T) {
 	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
 
 	assert.Equal(t, 6, (<-m).WaitFills)
-	
+
 	ticker <- time.Nanoseconds()
-	
+
 	assert.Equal(t, 7, (<-m).WaitPackets)
 }

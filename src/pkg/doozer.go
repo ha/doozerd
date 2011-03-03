@@ -112,7 +112,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	if attachAddr == "" {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
-		for i := start+1; i < start+alpha+1; i++ {
+		for i := start + 1; i < start+alpha+1; i++ {
 			st.Ops <- store.Op{i, store.Nop}
 		}
 	}
@@ -163,7 +163,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		// Update liveness time stamp for this addr
 		times[addr] = t
 
-		if t > pt + pi {
+		if t > pt+pi {
 			n := t - kickTimeout
 			for addr, s := range times {
 				if n > s && addr != self {

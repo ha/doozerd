@@ -9,7 +9,7 @@ import (
 var logger = util.NewLogger("member")
 
 var (
-	slots    = store.MustCompileGlob("/doozer/slot/*")
+	slots = store.MustCompileGlob("/doozer/slot/*")
 )
 
 func Clean(c chan string, st *store.Store, p consensus.Proposer) {
@@ -58,7 +58,7 @@ func removeMember(p consensus.Proposer, g store.Getter, name string) {
 }
 
 func removeInfo(p consensus.Proposer, g store.Getter, name string) {
-	glob, err := store.CompileGlob("/doozer/info/"+name+"/**")
+	glob, err := store.CompileGlob("/doozer/info/" + name + "/**")
 	if err != nil {
 		logger.Println(err)
 		return

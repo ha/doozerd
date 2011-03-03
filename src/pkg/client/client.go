@@ -59,7 +59,7 @@ var (
 	ErrIsDir       = &ResponseError{proto.Response_ISDIR, "is a directory"}
 	ErrCasMismatch = &ResponseError{proto.Response_CAS_MISMATCH, "cas mismatch"}
 	ErrInvalidSnap = &ResponseError{proto.Response_INVALID_SNAP, "invalid snapshot id"}
-	respErrors = map[int32]*ResponseError{
+	respErrors     = map[int32]*ResponseError{
 		proto.Response_NOTDIR:       ErrNotDir,
 		proto.Response_ISDIR:        ErrIsDir,
 		proto.Response_CAS_MISMATCH: ErrCasMismatch,
@@ -385,7 +385,8 @@ func (c *conn) monitorAddrs(cl *Client) {
 		return
 	}
 
-	init: for {
+init:
+	for {
 		select {
 		case ev := <-walkAddr.C:
 			if closed(walkAddr.C) {
@@ -396,7 +397,6 @@ func (c *conn) monitorAddrs(cl *Client) {
 			addAddr(ev.Path, string(ev.Body))
 		}
 	}
-
 
 	glob := pb.String("/doozer/slot/*")
 
@@ -467,7 +467,7 @@ func (c *conn) monitorAddrs(cl *Client) {
 
 type Client struct {
 	Name string
-	c    chan *conn // current connection
+	c    chan *conn  // current connection
 	a    chan string // add address
 	r    chan string // remove address
 	lg   *log.Logger
@@ -486,7 +486,7 @@ func New(name, addr string) *Client {
 		lg:   util.NewLogger(name),
 		Len:  make(chan int),
 	}
-	go c.run(map[string]bool{addr:true})
+	go c.run(map[string]bool{addr: true})
 	return c
 }
 
@@ -682,11 +682,11 @@ func (cl *Client) Getdir(path string, offset, limit, snapId int32) (*Watch, os.E
 	}
 
 	var t T
-	t.Verb   = getdir
-	t.Id     = &snapId
-	t.Path   = &path
+	t.Verb = getdir
+	t.Id = &snapId
+	t.Path = &path
 	t.Offset = &offset
-	t.Limit  = &limit
+	t.Limit = &limit
 
 	return c.events(&t)
 }

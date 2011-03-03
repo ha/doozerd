@@ -106,7 +106,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 					}
 
 					heap.Pop(fills)
-					
+
 					m := M{Seqn: &f.n, Cmd: propose, Value: []byte(store.Nop)}
 					heap.Push(packets, packet{M: m})
 				}

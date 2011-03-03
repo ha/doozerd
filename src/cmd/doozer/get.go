@@ -3,7 +3,7 @@ package main
 import (
 	"doozer/client"
 	"fmt"
-    "os"
+	"os"
 )
 
 
@@ -30,6 +30,6 @@ func get(path string) {
 	}
 
 	fmt.Println(cas, len(body))
-    os.Stdout.Write(body)
+	os.Stdout.Write(body)
 	fmt.Println()
 }

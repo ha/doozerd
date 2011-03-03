@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	addr = flag.String("a", "127.0.0.1:8046", "the address to bind to")
-	showHelp = flag.Bool("h", false, "show help")
+	addr        = flag.String("a", "127.0.0.1:8046", "the address to bind to")
+	showHelp    = flag.Bool("h", false, "show help")
 	showVersion = flag.Bool("v", false, "print doozer's version string")
 )
 
@@ -26,9 +26,9 @@ type cmd struct {
 }
 
 var (
-	self     = os.Args[0]
-	cmds     = map[string]cmd{}
-	cmdHelp  = map[string]string{}
+	self    = os.Args[0]
+	cmds    = map[string]cmd{}
+	cmdHelp = map[string]string{}
 )
 
 const (
@@ -68,9 +68,12 @@ func Usage() {
 		}
 		var s string
 		switch name {
-		case "NOTDIR": s = "not a directory"
-		case "ISDIR": s = "is a directory"
-		default: s = strings.Replace(strings.ToLower(name), "_", " ", -1)
+		case "NOTDIR":
+			s = "not a directory"
+		case "ISDIR":
+			s = "is a directory"
+		default:
+			s = strings.Replace(strings.ToLower(name), "_", " ", -1)
 		}
 		fmt.Fprintf(os.Stderr, "  %3d: %s\n", n, s)
 	}

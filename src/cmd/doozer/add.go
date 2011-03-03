@@ -3,7 +3,7 @@ package main
 
 func init() {
 	cmds["add"] = cmd{add, "<path>", "add a key only if it isn't already set"}
-    cmdHelp["add"] = `Sets the body of the file located at <path> only if it didn't already exist.
+	cmdHelp["add"] = `Sets the body of the file located at <path> only if it didn't already exist.
 
 Equivalent to
 

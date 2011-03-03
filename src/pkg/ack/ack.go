@@ -33,7 +33,6 @@ type packet struct {
 }
 
 
-
 type Conn interface {
 	ReadFrom([]byte) (int, net.Addr, os.Error)
 	WriteTo([]byte, net.Addr) (int, os.Error)

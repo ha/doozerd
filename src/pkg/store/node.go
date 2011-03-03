@@ -24,7 +24,7 @@ func (n node) String() string {
 func (n node) readdir() []string {
 	names := make([]string, len(n.Ds))
 	i := 0
-	for name, _ := range n.Ds {
+	for name := range n.Ds {
 		names[i] = name
 		i++
 	}

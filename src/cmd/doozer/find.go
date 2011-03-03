@@ -3,7 +3,7 @@ package main
 import (
 	"doozer/client"
 	"fmt"
-    "os"
+	"os"
 )
 
 
@@ -30,7 +30,7 @@ func find(glob string) {
 	c := client.New("<test>", *addr)
 
 	if glob[len(glob)-1:] != "/" {
-		glob = glob+"/"
+		glob = glob + "/"
 	}
 
 	w, err := c.Walk(glob+"**", 0)
@@ -38,11 +38,11 @@ func find(glob string) {
 		bail(err)
 	}
 
-    for ev := range w.C {
-        if ev.Err != nil {
-            fmt.Fprintln(os.Stderr, ev.Err)
-        }
+	for ev := range w.C {
+		if ev.Err != nil {
+			fmt.Fprintln(os.Stderr, ev.Err)
+		}
 
-        fmt.Println(ev.Path)
-    }
+		fmt.Println(ev.Path)
+	}
 }

@@ -42,11 +42,11 @@ type Timer struct {
 func New(glob *store.Glob, interval int64, st *store.Store) *Timer {
 	c := make(chan Tick)
 	t := &Timer{
-		Glob:    glob,
-		C:       c,
-		wt:      store.NewWatch(st, glob),
-		ticks:   new(vector.Vector),
-		ticker:  time.NewTicker(interval),
+		Glob:   glob,
+		C:      c,
+		wt:     store.NewWatch(st, glob),
+		ticks:  new(vector.Vector),
+		ticker: time.NewTicker(interval),
 	}
 
 	go t.process(c)

@@ -29,12 +29,12 @@ func assertResponse(t *testing.T, exp *R, c *conn) {
 
 func TestDelNilFields(t *testing.T) {
 	c := &conn{
-		c:       &bytes.Buffer{},
-		s:       &Server{},
-		cal:     true,
-		snaps:   make(map[int32]store.Getter),
-		tx:      make(map[int32]txn),
-		log:     util.NewLogger("test"),
+		c:     &bytes.Buffer{},
+		s:     &Server{},
+		cal:   true,
+		snaps: make(map[int32]store.Getter),
+		tx:    make(map[int32]txn),
+		log:   util.NewLogger("test"),
 	}
 	c.del(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -43,12 +43,12 @@ func TestDelNilFields(t *testing.T) {
 
 func TestDelSnapNilFields(t *testing.T) {
 	c := &conn{
-		c:       &bytes.Buffer{},
-		s:       &Server{},
-		cal:     true,
-		snaps:   make(map[int32]store.Getter),
-		tx:      make(map[int32]txn),
-		log:     util.NewLogger("test"),
+		c:     &bytes.Buffer{},
+		s:     &Server{},
+		cal:   true,
+		snaps: make(map[int32]store.Getter),
+		tx:    make(map[int32]txn),
+		log:   util.NewLogger("test"),
 	}
 	c.delSnap(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -57,12 +57,12 @@ func TestDelSnapNilFields(t *testing.T) {
 
 func TestCheckinNilFields(t *testing.T) {
 	c := &conn{
-		c:       &bytes.Buffer{},
-		s:       &Server{},
-		cal:     true,
-		snaps:   make(map[int32]store.Getter),
-		tx:      make(map[int32]txn),
-		log:     util.NewLogger("test"),
+		c:     &bytes.Buffer{},
+		s:     &Server{},
+		cal:   true,
+		snaps: make(map[int32]store.Getter),
+		tx:    make(map[int32]txn),
+		log:   util.NewLogger("test"),
 	}
 	c.checkin(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -71,12 +71,12 @@ func TestCheckinNilFields(t *testing.T) {
 
 func TestSetNilFields(t *testing.T) {
 	c := &conn{
-		c:       &bytes.Buffer{},
-		s:       &Server{},
-		cal:     true,
-		snaps:   make(map[int32]store.Getter),
-		tx:      make(map[int32]txn),
-		log:     util.NewLogger("test"),
+		c:     &bytes.Buffer{},
+		s:     &Server{},
+		cal:   true,
+		snaps: make(map[int32]store.Getter),
+		tx:    make(map[int32]txn),
+		log:   util.NewLogger("test"),
 	}
 	c.set(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -100,12 +100,12 @@ func TestServerCloseTxn(t *testing.T) {
 func TestServerCancel(t *testing.T) {
 	var buf bytes.Buffer
 	c := &conn{
-		c:       &buf,
-		s:       &Server{},
-		cal:     true,
-		snaps:   make(map[int32]store.Getter),
-		tx:      make(map[int32]txn),
-		log:     util.NewLogger("test"),
+		c:     &buf,
+		s:     &Server{},
+		cal:   true,
+		snaps: make(map[int32]store.Getter),
+		tx:    make(map[int32]txn),
+		log:   util.NewLogger("test"),
 	}
 
 	fakeTx := newTxn()
@@ -131,7 +131,7 @@ func TestServerCancel(t *testing.T) {
 
 	exp := &R{
 		Tag:   proto.Int32(2),
-		Flags: proto.Int32(Valid|Done),
+		Flags: proto.Int32(Valid | Done),
 	}
 	assert.Equal(t, exp, mustUnmarshal(b[4:]))
 }

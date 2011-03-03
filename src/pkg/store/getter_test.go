@@ -51,7 +51,7 @@ func TestWalk(t *testing.T) {
 		"/d/z/a": "3",
 	}
 	var expPaths []string
-	for p, _ := range exp {
+	for p := range exp {
 		expPaths = append(expPaths, p)
 	}
 	sort.SortStrings(expPaths)
@@ -83,7 +83,7 @@ func TestWalkStop(t *testing.T) {
 		"/d/z/a": "3",
 	}
 	var expPaths []string
-	for p, _ := range exp {
+	for p := range exp {
 		expPaths = append(expPaths, p)
 	}
 	sort.SortStrings(expPaths)
