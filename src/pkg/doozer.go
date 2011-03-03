@@ -44,9 +44,6 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 
 func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	logger := util.NewLogger("main")
-
-	var err os.Error
-
 	listenAddr := listener.Addr().String()
 
 	var activateSeqn int64
@@ -72,29 +69,10 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	} else {
 		cl = client.New("local", attachAddr) // TODO use real cluster name
 
-		path := "/doozer/info/" + self + "/addr"
-		_, err = cl.Set(path, store.Clobber, []byte(listenAddr))
-		if err != nil {
-			panic(err)
-		}
-
-		path = "/doozer/info/" + self + "/public-addr"
-		_, err = cl.Set(path, store.Clobber, []byte(listenAddr))
-		if err != nil {
-			panic(err)
-		}
-
-		path = "/doozer/info/" + self + "/hostname"
-		_, err = cl.Set(path, store.Clobber, []byte(os.Getenv("HOSTNAME")))
-		if err != nil {
-			panic(err)
-		}
-
-		path = "/doozer/info/" + self + "/version"
-		_, err = cl.Set(path, store.Clobber, []byte(Version))
-		if err != nil {
-			panic(err)
-		}
+		setC(cl, "/doozer/info/"+self+"/addr", listenAddr, store.Clobber)
+		setC(cl, "/doozer/info/"+self+"/public-addr", listenAddr, store.Clobber)
+		setC(cl, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
+		setC(cl, "/doozer/info/"+self+"/version", Version, store.Clobber)
 
 		w, err := cl.Monitor("/**")
 		if err != nil {
@@ -244,6 +222,13 @@ func advanceUntil(cl *client.Client, ver <-chan int64, done int64) {
 func set(st *store.Store, path, body string, cas int64) {
 	mut := store.MustEncodeSet(path, body, cas)
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
+}
+
+func setC(cl *client.Client, path, body string, cas int64) {
+	_, err := cl.Set(path, cas, []byte(body))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func follow(st *store.Store, evs <-chan *client.Event) {
