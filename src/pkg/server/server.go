@@ -615,6 +615,18 @@ func (c *conn) getdir(t *T, tx txn) {
 }
 
 
+func (c *conn) cancelAll() {
+	c.tl.Lock()
+	for _, otx := range c.tx {
+		select {
+		case otx.cancel <- true:
+		default:
+		}
+	}
+	c.tl.Unlock()
+}
+
+
 func (c *conn) cancel(t *T, tx txn) {
 	tag := pb.GetInt32(t.Id)
 	c.tl.Lock()
@@ -762,6 +774,7 @@ func (c *conn) serve() {
 		if err != nil {
 			if err == os.EOF {
 				logger.Println("connection closed by peer")
+				c.cancelAll()
 			} else {
 				logger.Println(err)
 			}
