@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"container/vector"
 	"doozer/util"
+	"log"
 	"math"
 	"net"
 	"os"
@@ -124,6 +125,7 @@ func (a *Acker) time() {
 				heap.Push(&a.h, check{k.p, t + interval, k.until})
 
 				a.lk.Unlock()
+				log.Printf("udp-retry")
 				err := a.write(k.p.flag, k.p.data, k.p.addr)
 				if err != nil {
 					logger.Println(err)
