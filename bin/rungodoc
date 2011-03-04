@@ -1,2 +1,2 @@
 #!/bin/sh
-godoc -path src/pkg -http :6060
+godoc -path . -http :6060
