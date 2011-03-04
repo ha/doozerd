@@ -3,10 +3,8 @@ package member
 import (
 	"doozer/consensus"
 	"doozer/store"
-	"doozer/util"
+    "log"
 )
-
-var logger = util.NewLogger("member")
 
 var (
 	slots = store.MustCompileGlob("/doozer/slot/*")
@@ -18,7 +16,6 @@ func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 		name := getId(addr, g)
 
 		if name != "" {
-			logger.Printf("lost session %s", name)
 			go func() {
 				clearSlot(p, g, name)
 				removeMember(p, g, name)
@@ -60,7 +57,7 @@ func removeMember(p consensus.Proposer, g store.Getter, name string) {
 func removeInfo(p consensus.Proposer, g store.Getter, name string) {
 	glob, err := store.CompileGlob("/doozer/info/" + name + "/**")
 	if err != nil {
-		logger.Println(err)
+		log.Println(err)
 		return
 	}
 	store.Walk(g, glob, func(path, _ string, cas int64) bool {

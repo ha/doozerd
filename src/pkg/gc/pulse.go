@@ -3,14 +3,12 @@ package gc
 import (
 	"doozer/consensus"
 	"doozer/store"
-	"doozer/util"
 	"strconv"
 	"time"
+    "log"
 )
 
 func Pulse(node string, seqns <-chan int64, p consensus.Proposer, sleep int64) {
-	logger := util.NewLogger("pulse")
-
 	var e store.Event
 	for {
 		seqn := strconv.Itoa64(<-seqns)
@@ -20,7 +18,7 @@ func Pulse(node string, seqns <-chan int64, p consensus.Proposer, sleep int64) {
 
 		e = consensus.Set(p, "/doozer/info/"+node+"/applied", []byte(seqn), e.Cas)
 		if e.Err != nil {
-			logger.Println(e.Err)
+			log.Println(e.Err)
 		}
 
 		time.Sleep(sleep)

@@ -4,7 +4,6 @@ import (
 	"container/heap"
 	"container/vector"
 	"doozer/store"
-	"doozer/util"
 	"math"
 	"strconv"
 	"time"
@@ -59,8 +58,6 @@ func (t *Timer) process(c chan Tick) {
 
 	defer t.ticker.Stop()
 
-	logger := util.NewLogger("timer (%s)", t.Glob.Pattern)
-
 	peek := func() Tick {
 		if t.ticks.Len() == 0 {
 			return Tick{At: math.MaxInt64}
@@ -75,7 +72,6 @@ func (t *Timer) process(c chan Tick) {
 				return
 			}
 
-			logger.Printf("recvd: %v", e)
 			// TODO: Handle/Log the next error
 			// I'm not sure if we should notify the client
 			// on Set.  That seems like it would be difficult
@@ -97,7 +93,6 @@ func (t *Timer) process(c chan Tick) {
 
 				heap.Push(t.ticks, x)
 			case e.IsDel():
-				logger.Println("deleting", e.Path, e.Body)
 				// This could be optimize since t.ticks is sorted; I can't
 				// find a way without implementing our own quick-find.
 				for i := 0; i < t.ticks.Len(); i++ {
@@ -110,7 +105,6 @@ func (t *Timer) process(c chan Tick) {
 
 		case ns := <-t.ticker.C:
 			for next := peek(); next.At <= ns; next = peek() {
-				logger.Printf("ticked %#v", next)
 				heap.Pop(t.ticks)
 				c <- next
 			}

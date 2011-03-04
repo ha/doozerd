@@ -2,7 +2,6 @@ package web
 
 import (
 	"doozer/store"
-	"doozer/util"
 	"http"
 	"io"
 	"json"
@@ -50,20 +49,19 @@ func Serve(listener net.Listener) {
 	http.Serve(listener, nil)
 }
 
-func send(ws *websocket.Conn, path string, evs <-chan store.Event, logger *log.Logger) {
+func send(ws *websocket.Conn, path string, evs <-chan store.Event) {
 	l := len(path) - 1
 	for ev := range evs {
 		ev.Getter = nil // don't marshal the entire snapshot
 		ev.Path = ev.Path[l:]
-		logger.Println("sending", ev)
 		b, err := json.Marshal(ev)
 		if err != nil {
-			logger.Println(err)
+			log.Println(err)
 			return
 		}
 		_, err = ws.Write(b)
 		if err != nil {
-			logger.Println(err)
+			log.Println(err)
 			return
 		}
 	}
@@ -71,9 +69,7 @@ func send(ws *websocket.Conn, path string, evs <-chan store.Event, logger *log.L
 
 func evServer(w http.ResponseWriter, r *http.Request) {
 	wevs := make(chan store.Event)
-	logger := util.NewLogger(w.RemoteAddr())
 	path := r.URL.Path[len(evPrefix):]
-	logger.Println("new", path)
 
 	glob, err := store.CompileGlob(path + "**")
 	if err != nil {
@@ -89,8 +85,8 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	websocket.Handler(func(ws *websocket.Conn) {
-		send(ws, path, wevs, logger)
-		send(ws, path, wt.C, logger)
+		send(ws, path, wevs)
+		send(ws, path, wt.C)
 		wt.Stop()
 		ws.Close()
 	}).ServeHTTP(w, r)

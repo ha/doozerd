@@ -3,10 +3,10 @@ package doozer
 import (
 	"doozer/ack"
 	"doozer/client"
+	"doozer/consensus"
 	"doozer/gc"
 	"doozer/lock"
 	"doozer/member"
-	"doozer/consensus"
 	"doozer/server"
 	"doozer/session"
 	"doozer/store"
@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"time"
+    "log"
 )
 
 const alpha = 50
@@ -43,7 +44,6 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 
 
 func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
-	logger := util.NewLogger("main")
 	listenAddr := listener.Addr().String()
 
 	var activateSeqn int64
@@ -156,7 +156,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			break
 		}
 		if err != nil {
-			logger.Println(err)
+			log.Println(err)
 			continue
 		}
 
@@ -179,7 +179,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 }
 
 func activate(st *store.Store, self string, c *client.Client) int64 {
-	logger := util.NewLogger("activate")
 	w := store.NewWatch(st, slots)
 
 	for _, base := range store.Getdir(st, slot) {
@@ -188,7 +187,7 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 		if cas != store.Dir && v[0] == "" {
 			seqn, err := c.Set(p, cas, []byte(self))
 			if err != nil {
-				logger.Println(err)
+				log.Println(err)
 				continue
 			}
 
@@ -202,7 +201,7 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 		if ev.IsSet() && ev.Body == "" {
 			seqn, err := c.Set(ev.Path, ev.Cas, []byte(self))
 			if err != nil {
-				logger.Println(err)
+				log.Println(err)
 				continue
 			}
 			w.Stop()

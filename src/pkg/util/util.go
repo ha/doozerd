@@ -3,9 +3,7 @@ package util
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"strings"
 )
 
 // Sufficient for 10**6 simultaneous IDs with probability of collision less
@@ -21,11 +19,6 @@ func (nw NullWriter) Write(p []byte) (int, os.Error) {
 // Misc
 var (
 	urandom = MustOpen("/dev/urandom", os.O_RDONLY, 0)
-)
-
-// Logging
-var (
-	LogWriter io.Writer = NullWriter{}
 )
 
 // MustOpen is like os.Open but panics if the file cannot be opened. It
@@ -62,20 +55,6 @@ func Unpacki64(b []byte) (n int64) {
 		n |= int64(k)
 	}
 	return
-}
-
-func NewLogger(format string, a ...interface{}) *log.Logger {
-	prefix := fmt.Sprintf(format, a...)
-
-	if prefix == "" {
-		panic("always give a prefix!")
-	}
-
-	if strings.HasPrefix(prefix, "udp") {
-		return log.New(NullWriter{}, "", log.Lshortfile)
-	}
-
-	return log.New(LogWriter, "doozerd: "+prefix+" ", log.Lshortfile|log.Lmicroseconds)
 }
 
 func RandHexString(bits int) string {

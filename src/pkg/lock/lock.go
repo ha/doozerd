@@ -3,7 +3,6 @@ package lock
 import (
 	"doozer/consensus"
 	"doozer/store"
-	"doozer/util"
 	"strings"
 )
 
@@ -13,7 +12,6 @@ var (
 )
 
 func Clean(st *store.Store, pp consensus.Proposer) {
-	logger := util.NewLogger("lock")
 	for ev := range st.Watch(sessions) {
 		if !ev.IsDel() {
 			continue
@@ -21,7 +19,6 @@ func Clean(st *store.Store, pp consensus.Proposer) {
 
 		parts := strings.Split(ev.Path, "/", 3)
 		name := parts[2]
-		logger.Printf("lost session %s", name)
 
 		store.Walk(ev, locks, func(path, body string, cas int64) bool {
 			if body == name {

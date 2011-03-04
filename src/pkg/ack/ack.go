@@ -3,7 +3,6 @@ package ack
 import (
 	"container/heap"
 	"container/vector"
-	"doozer/util"
 	"log"
 	"math"
 	"net"
@@ -18,8 +17,6 @@ const (
 
 	max = 3000 // bytes. Definitely big enough for UDP over Ethernet.
 )
-
-var logger = util.NewLogger("net")
 
 const (
 	ack = 1 << iota
@@ -93,7 +90,7 @@ func (a *Acker) WriteTo(data []byte, addr string) {
 
 	err := a.write(p.flag, p.data, p.addr)
 	if err != nil {
-		logger.Println(err)
+		log.Println(err)
 	}
 }
 
@@ -128,7 +125,7 @@ func (a *Acker) time() {
 				log.Printf("udp-retry")
 				err := a.write(k.p.flag, k.p.data, k.p.addr)
 				if err != nil {
-					logger.Println(err)
+					log.Println(err)
 				}
 				a.lk.Lock()
 			}
@@ -148,7 +145,7 @@ func (a *Acker) recv() {
 			return
 		}
 		if err != nil {
-			logger.Println(err)
+			log.Println(err)
 			continue
 		}
 
@@ -166,7 +163,7 @@ func (a *Acker) recv() {
 		// send ack
 		err = a.write(p.flag|ack, p.data, p.addr)
 		if err != nil {
-			logger.Println(err)
+			log.Println(err)
 		}
 	}
 }

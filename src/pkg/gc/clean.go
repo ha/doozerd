@@ -2,7 +2,6 @@ package gc
 
 import (
 	"doozer/store"
-	"doozer/util"
 	"log"
 	"strings"
 	"strconv"
@@ -20,7 +19,6 @@ func Clean(st *store.Store) {
 	cl := &cleaner{
 		st:     st,
 		table:  make(map[string]int64),
-		logger: util.NewLogger("clean"),
 	}
 
 	for ev := range st.Watch(applied) {
@@ -34,7 +32,7 @@ func (cl *cleaner) update(ev store.Event) {
 	id := parts[3]
 	seqn, err := strconv.Atoi64(ev.Body)
 	if err != nil {
-		cl.logger.Println(err)
+		log.Println(err)
 		return
 	}
 	cl.table[id] = seqn

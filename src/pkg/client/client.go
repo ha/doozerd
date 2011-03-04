@@ -2,7 +2,6 @@ package client
 
 import (
 	"doozer/proto"
-	"doozer/util"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -18,7 +17,6 @@ const (
 	Done
 )
 
-var lg = util.NewLogger("client")
 
 var (
 	ErrNoAddrs = os.NewError("no known address")
@@ -119,8 +117,6 @@ type conn struct {
 	n    int32             // next tag
 	cb   map[int32]chan *R // callback channels
 	cblk sync.Mutex
-
-	lg *log.Logger
 
 	// redirect handling
 	redirectAddr string
@@ -305,7 +301,7 @@ func (c *conn) readResponses() {
 		c.cblk.Unlock()
 
 		if !ok {
-			c.lg.Printf(
+			log.Printf(
 				"%v unexpected: tag=%d flags=%d rev=%d cas=%d path=%q value=%v id=%d len=%d err_code=%v err_detail=%q",
 				ch,
 				tag,
@@ -375,13 +371,13 @@ func (c *conn) monitorAddrs(cl *Client) {
 	addrGlob := pb.String("/doozer/info/*/public-addr")
 	watchAddr, err := c.events(&T{Verb: watch, Path: addrGlob})
 	if err != nil {
-		c.lg.Println(err)
+		log.Println(err)
 		return
 	}
 
 	walkAddr, err := c.events(&T{Verb: walk, Path: addrGlob})
 	if err != nil {
-		c.lg.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -402,13 +398,13 @@ init:
 
 	watch, err := c.events(&T{Verb: watch, Path: glob})
 	if err != nil {
-		c.lg.Println(err)
+		log.Println(err)
 		return
 	}
 
 	walk, err := c.events(&T{Verb: walk, Path: glob})
 	if err != nil {
-		c.lg.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -470,7 +466,6 @@ type Client struct {
 	c    chan *conn  // current connection
 	a    chan string // add address
 	r    chan string // remove address
-	lg   *log.Logger
 	Len  chan int
 }
 
@@ -483,7 +478,6 @@ func New(name, addr string) *Client {
 		c:    make(chan *conn),
 		a:    make(chan string),
 		r:    make(chan string),
-		lg:   util.NewLogger(name),
 		Len:  make(chan int),
 	}
 	go c.run(map[string]bool{addr: true})
@@ -501,7 +495,7 @@ func (cl *Client) connect(a map[string]bool) *conn {
 		if err == nil {
 			return c
 		}
-		cl.lg.Println(err)
+		log.Println(err)
 		a[addr] = false, false
 	}
 	close(cl.c)
@@ -547,7 +541,6 @@ func (cl *Client) dial(addr string) (*conn, os.Error) {
 	}
 
 	c.cb = make(map[int32]chan *R)
-	c.lg = util.NewLogger(addr)
 	c.closed = make(chan bool, 1)
 	go c.readResponses()
 	go c.monitorAddrs(cl)

@@ -3,7 +3,6 @@ package store
 import (
 	"container/heap"
 	"container/vector"
-	"doozer/util"
 	"math"
 	"os"
 	"regexp"
@@ -276,7 +275,6 @@ func (st *Store) closeWatches() {
 }
 
 func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) {
-	logger := util.NewLogger("store")
 	defer st.closeWatches()
 
 	var head int64
@@ -347,7 +345,6 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 
 			values, ev = values.apply(t.Seqn, t.Mut)
-			logger.Printf("apply %s %v %v %v %v %v", ev.Desc(), ev.Seqn, ev.Path, ev.Body, ev.Cas, ev.Err)
 			st.state = &state{ev.Seqn, values}
 			ver = ev.Seqn
 			if !flush {

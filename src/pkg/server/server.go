@@ -4,7 +4,6 @@ import (
 	"doozer/consensus"
 	"doozer/proto"
 	"doozer/store"
-	"doozer/util"
 	"encoding/binary"
 	"io"
 	"log"
@@ -94,8 +93,6 @@ type Server struct {
 }
 
 
-var lg = util.NewLogger("server")
-
 
 func (s *Server) accept(l net.Listener, ch chan net.Conn) {
 	for {
@@ -107,7 +104,7 @@ func (s *Server) accept(l net.Listener, ch chan net.Conn) {
 			if e, ok := err.(*net.OpError); ok && e.Error == os.EINVAL {
 				break
 			}
-			lg.Println(err)
+			log.Println(err)
 		}
 		ch <- c
 	}
@@ -133,7 +130,6 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 				snaps: make(map[int32]store.Getter),
 				tx:    make(map[int32]txn),
 			}
-			c.log = util.NewLogger("%v", c.addr)
 			go c.serve()
 		case <-cal:
 			cal = nil
@@ -209,7 +205,6 @@ type conn struct {
 	tx       map[int32]txn
 	tl       sync.Mutex // tx lock
 	poisoned bool
-	log      *log.Logger
 }
 
 
@@ -249,7 +244,6 @@ func (c *conn) respond(t *T, flag int32, cc chan bool, r *R) {
 		case cc <- true:
 		default:
 		}
-		c.log.Println("poisoned")
 		return
 	}
 
@@ -262,7 +256,7 @@ func (c *conn) respond(t *T, flag int32, cc chan bool, r *R) {
 		case cc <- true:
 		default:
 		}
-		c.log.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -273,7 +267,7 @@ func (c *conn) respond(t *T, flag int32, cc chan bool, r *R) {
 		case cc <- true:
 		default:
 		}
-		c.log.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -285,7 +279,7 @@ func (c *conn) respond(t *T, flag int32, cc chan bool, r *R) {
 			case cc <- true:
 			default:
 			}
-			c.log.Println(err)
+			log.Println(err)
 			return
 		}
 
@@ -767,26 +761,20 @@ var ops = map[int32]func(*conn, *T, txn){
 
 
 func (c *conn) serve() {
-	logger := util.NewLogger("%v", c.addr)
-	logger.Println("accepted connection")
 	for {
 		t, err := c.readBuf()
 		if err != nil {
 			if err == os.EOF {
-				logger.Println("connection closed by peer")
 				c.cancelAll()
 			} else {
-				logger.Println(err)
+				log.Println(err)
 			}
 			return
 		}
 
-		rlogger := util.NewLogger("%v - req [%d]", c.addr, t.Tag)
-
 		verb := pb.GetInt32((*int32)(t.Verb))
 		f, ok := ops[verb]
 		if !ok {
-			rlogger.Printf("unknown verb <%d>", verb)
 			var r R
 			r.ErrCode = proto.NewResponse_Err(proto.Response_UNKNOWN_VERB)
 			c.respond(t, Valid|Done, nil, &r)

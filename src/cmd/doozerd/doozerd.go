@@ -3,7 +3,6 @@ package main
 
 import (
 	"doozer"
-	"doozer/util"
 	"flag"
 	"fmt"
 	"net"
@@ -31,7 +30,6 @@ func Usage() {
 
 
 func main() {
-	util.LogWriter = os.Stderr
 	flag.Usage = Usage
 	flag.Parse()
 
