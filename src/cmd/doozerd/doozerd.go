@@ -46,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.SetPrefix("DOOZER " + *listenAddr + " ")
+	log.SetPrefix("DOOZER ")
 
 	listener, err := net.Listen("tcp", *listenAddr)
 	if err != nil {
