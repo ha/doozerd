@@ -36,6 +36,10 @@ func (r *run) quorum() int {
 
 
 func (r *run) deliver(p packet) {
+	if p.M.Cmd != nil && *p.M.Cmd == M_TICK {
+		log.Printf("tick wasteful=%v", r.l.done)
+	}
+
 	m, tick := r.c.deliver(p)
 	r.broadcast(m)
 	if tick {
