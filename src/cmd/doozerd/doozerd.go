@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"log"
 )
-
 
 var (
 	listenAddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
@@ -45,6 +45,8 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	log.SetPrefix("DOOZER " + *listenAddr + " ")
 
 	listener, err := net.Listen("tcp", *listenAddr)
 	if err != nil {

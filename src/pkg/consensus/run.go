@@ -6,6 +6,7 @@ import (
 	"rand"
 	"sort"
 	"time"
+	"log"
 )
 
 
@@ -51,6 +52,7 @@ func (r *run) deliver(p packet) {
 	m, v, ok := r.l.deliver(p)
 	r.broadcast(m)
 	if ok {
+		log.Printf("learn seqn=%d", r.seqn)
 		r.ops <- store.Op{r.seqn, string(v)}
 	}
 }

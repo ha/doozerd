@@ -6,6 +6,7 @@ import (
 	"container/vector"
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
+	"log"
 	"time"
 )
 
@@ -89,6 +90,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 				schedTick(packets, n)
 			case statCh <- stats:
 			case pr := <-props:
+				log.Printf("propose seqn=%d", pr.Seqn)
 				m := M{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
 				heap.Push(packets, packet{M: m})
 
