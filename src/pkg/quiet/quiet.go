@@ -1,4 +1,4 @@
-package doozer
+package quiet
 
 import (
   "log"

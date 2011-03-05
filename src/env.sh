@@ -15,6 +15,7 @@ CMD_REQS="
 "
 
 PKGS="
+    quiet
     util
     store
     ack

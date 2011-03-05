@@ -1,6 +1,7 @@
 package consensus
 
 import (
+    _ "doozer/quiet"
 	"github.com/bmizerany/assert"
 	"testing"
 )

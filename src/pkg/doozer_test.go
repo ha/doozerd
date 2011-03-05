@@ -3,6 +3,7 @@ package doozer
 import (
 	"doozer/client"
 	"doozer/store"
+	_ "doozer/quiet"
 	"exec"
 	"github.com/bmizerany/assert"
 	"net"
