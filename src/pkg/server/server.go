@@ -93,7 +93,6 @@ type Server struct {
 }
 
 
-
 func (s *Server) accept(l net.Listener, ch chan net.Conn) {
 	for {
 		c, err := l.Accept()

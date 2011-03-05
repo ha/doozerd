@@ -3,7 +3,7 @@ package member
 import (
 	"doozer/consensus"
 	"doozer/store"
-    "log"
+	"log"
 )
 
 var (

@@ -17,8 +17,8 @@ type cleaner struct {
 
 func Clean(st *store.Store) {
 	cl := &cleaner{
-		st:     st,
-		table:  make(map[string]int64),
+		st:    st,
+		table: make(map[string]int64),
 	}
 
 	for ev := range st.Watch(applied) {

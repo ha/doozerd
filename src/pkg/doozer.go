@@ -15,7 +15,7 @@ import (
 	"net"
 	"os"
 	"time"
-    "log"
+	"log"
 )
 
 const alpha = 50

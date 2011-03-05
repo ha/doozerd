@@ -5,7 +5,7 @@ import (
 	"doozer/store"
 	"strconv"
 	"time"
-    "log"
+	"log"
 )
 
 func Pulse(node string, seqns <-chan int64, p consensus.Proposer, sleep int64) {
