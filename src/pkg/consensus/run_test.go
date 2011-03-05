@@ -235,6 +235,7 @@ func TestRunProposeDeliverd(t *testing.T) {
 	var r run
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
+	r.ticks = make(chan int64, 100)
 
 	r.deliver(packet{M: M{Cmd: propose}})
 	assert.Equal(t, true, r.c.begun)
@@ -246,6 +247,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 	var r run
 	r.c.crnd = 1
 	r.out = c
+	r.ticks = make(chan int64, 100)
 	r.addrs = map[string]bool{
 		"x": true,
 		"y": true,

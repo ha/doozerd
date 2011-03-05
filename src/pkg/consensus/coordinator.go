@@ -35,7 +35,7 @@ func (co *coordinator) deliver(p packet) (m *M, tick bool) {
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
-		return &M{Cmd: invite, Crnd: &co.crnd}, tick
+		return &M{Cmd: invite, Crnd: &co.crnd}, true
 	case M_RSVP:
 		if !co.begun {
 			break
@@ -49,11 +49,6 @@ func (co *coordinator) deliver(p packet) (m *M, tick bool) {
 
 		if co.cval != "" {
 			break
-		}
-
-		if i > co.crnd && !co.sched {
-			co.sched = true
-			tick = true
 		}
 
 		if i != co.crnd {
@@ -85,7 +80,7 @@ func (co *coordinator) deliver(p packet) (m *M, tick bool) {
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
 		co.sched = false
-		return &M{Cmd: invite, Crnd: &co.crnd}, tick
+		return &M{Cmd: invite, Crnd: &co.crnd}, true
 	}
 
 	return

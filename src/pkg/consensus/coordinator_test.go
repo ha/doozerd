@@ -45,7 +45,7 @@ func TestCoordStart(t *testing.T) {
 
 	got, tick := co.deliver(packet{M: *newPropose("foo")})
 	assert.Equal(t, newInvite(1), got)
-	assert.Equal(t, false, tick)
+	assert.Equal(t, true, tick)
 }
 
 
@@ -140,7 +140,7 @@ func TestCoordRetry(t *testing.T) {
 	// message from a future round and another proposer
 	got, tick := co.deliver(newRsvpFrom("2", 2, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
-	assert.Equal(t, true, tick)
+	assert.Equal(t, false, tick)
 
 	// second message from a future round and another proposer
 	got, tick = co.deliver(newRsvpFrom("2", 2, 0, ""))
@@ -149,30 +149,6 @@ func TestCoordRetry(t *testing.T) {
 
 	got, tick = co.deliver(packet{M: *msgTick}) // force the start of a new round
 	assert.Equal(t, newInvite(11), got)
-	assert.Equal(t, false, tick)
-}
-
-
-func TestCoordTickTwice(t *testing.T) {
-	co := coordinator{
-		size: 10,
-		crnd: 1,
-	}
-
-	co.deliver(packet{M: *newPropose("foo")})
-
-	// message from a future round and another proposer
-	got, tick := co.deliver(newRsvpFrom("2", 2, 0, ""))
-	assert.Equal(t, (*M)(nil), got)
-	assert.Equal(t, true, tick)
-
-	got, tick = co.deliver(packet{M: *msgTick}) // force the start of a new round
-	assert.Equal(t, newInvite(11), got)
-	assert.Equal(t, false, tick)
-
-	// message from a future round and another proposer
-	got, tick = co.deliver(newRsvpFrom("2", 12, 0, ""))
-	assert.Equal(t, (*M)(nil), got)
 	assert.Equal(t, true, tick)
 }
 
@@ -290,7 +266,7 @@ func TestCoordStartRsvp(t *testing.T) {
 	// If the RSVPs were ignored, this will be an invite.
 	// Otherwise, it'll be a nominate.
 	assert.Equal(t, newInvite(1), got)
-	assert.Equal(t, false, tick)
+	assert.Equal(t, true, tick)
 }
 
 func TestCoordDuel(t *testing.T) {
@@ -307,7 +283,7 @@ func TestCoordDuel(t *testing.T) {
 
 	got, tick = co.deliver(newRsvpFrom("3", 2, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
-	assert.Equal(t, true, tick)
+	assert.Equal(t, false, tick)
 
 	got, tick = co.deliver(newRsvpFrom("4", 2, 0, ""))
 	assert.Equal(t, (*M)(nil), got)
