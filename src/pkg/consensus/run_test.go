@@ -449,3 +449,93 @@ func TestRunIsLeader(t *testing.T) {
 	assert.T(t, !r.isLeader("c")) // index == 2
 	assert.T(t, !r.isLeader("x")) // index DNE
 }
+
+
+func TestRunVoteDoneAndNotDelivered(t *testing.T) {
+	r := run{}
+	r.out = make(chan Packet, 100)
+	r.ops = make(chan store.Op, 100)
+
+	r.l.init(1)
+	r.l.done = true
+
+	exp := r.l
+
+	p := packet{
+		M: M{
+			Seqn:  proto.Int64(1),
+			Cmd:   vote,
+			Vrnd:  proto.Int64(1),
+			Value: []byte("foo"),
+		},
+		Addr: "X",
+	}
+
+	r.deliver(p)
+
+	assert.Equal(t, exp, r.l)
+}
+
+
+func TestRunInviteDoneAndNotDelivered(t *testing.T) {
+	var r run
+	r.out = make(chan Packet, 100)
+	r.ops = make(chan store.Op, 100)
+
+	r.l.done = true
+	exp := r.a
+
+	r.deliver(packet{M: *newInviteSeqn1(1)})
+
+	assert.Equal(t, exp, r.a)
+}
+
+
+func TestRunProposeDoneAndNotDelivered(t *testing.T) {
+	var r run
+	r.out = make(chan Packet, 100)
+	r.ops = make(chan store.Op, 100)
+	r.l.done = true
+
+	exp := r.c
+
+	r.deliver(packet{M: M{Cmd: propose}})
+	assert.Equal(t, exp, r.c)
+}
+
+
+func TestRunRepliesWithLearnIfAlreadyDone(t *testing.T) {
+	var r run
+	out := make(chan Packet, 100)
+	r.out = out
+	r.ops = make(chan store.Op, 100)
+	r.l.v = "foobar"
+	r.l.done = true
+
+	r.deliver(packet{M: M{Cmd: invite}, Addr: "123"})
+
+	m:= M{Cmd: learn, Value: []byte("foobar"), Seqn: &r.seqn}
+	buf, err := proto.Marshal(&m)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, Packet{"123", buf}, <-out)
+}
+
+
+func TestRunSendLearn(t *testing.T) {
+	var r run
+	r.out = make(chan Packet, 100)
+	r.l.done = true
+
+	r.deliver(packet{M: M{Cmd: rsvp}, Addr: "123"})
+	r.deliver(packet{M: M{Cmd: nominate}, Addr: "123"})
+	r.deliver(packet{M: M{Cmd: vote}, Addr: "123"})
+	r.deliver(packet{M: M{Cmd: nop}, Addr: "123"})
+	r.deliver(packet{M: M{Cmd: tick}, Addr: "123"})
+	r.deliver(packet{M: M{Cmd: learn}, Addr: "123"})
+	r.deliver(packet{M: M{Cmd: propose}, Addr: "123"})
+
+	assert.Equal(t, 0, len(r.out))
+}

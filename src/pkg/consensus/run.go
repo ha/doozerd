@@ -40,6 +40,13 @@ func (r *run) deliver(p packet) {
 		log.Printf("tick wasteful=%v", r.l.done)
 	}
 
+	if r.l.done {
+		if p.M.Cmd != nil && *p.M.Cmd == M_INVITE {
+			r.sendLearn(p.Addr)
+		}
+		return
+	}
+
 	m, tick := r.c.deliver(p)
 	r.broadcast(m)
 	if tick {
@@ -59,6 +66,13 @@ func (r *run) deliver(p packet) {
 		log.Printf("learn seqn=%d", r.seqn)
 		r.ops <- store.Op{r.seqn, string(v)}
 	}
+}
+
+
+func (r *run) sendLearn(addr string) {
+	m := M{Cmd: learn, Value: []byte(r.l.v), Seqn: &r.seqn}
+	buf, _ := proto.Marshal(&m)
+	r.out <- Packet{addr, buf}
 }
 
 
