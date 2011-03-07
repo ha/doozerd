@@ -104,6 +104,7 @@ func (s *Server) accept(l net.Listener, ch chan net.Conn) {
 				break
 			}
 			log.Println(err)
+			continue
 		}
 		ch <- c
 	}
