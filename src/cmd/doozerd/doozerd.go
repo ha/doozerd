@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"log"
+	_ "expvar"
 )
 
 var (
