@@ -516,7 +516,7 @@ func TestRunRepliesWithLearnIfAlreadyDone(t *testing.T) {
 
 	r.deliver(packet{M: M{Cmd: invite}, Addr: "123"})
 
-	m:= M{Cmd: learn, Value: []byte("foobar"), Seqn: &r.seqn}
+	m := M{Cmd: learn, Value: []byte("foobar"), Seqn: &r.seqn}
 	buf, err := proto.Marshal(&m)
 	if err != nil {
 		panic(err)
