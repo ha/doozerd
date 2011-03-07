@@ -18,7 +18,6 @@ PKGS="
     quiet
     util
     store
-    ack
     consensus
     proto
     lock

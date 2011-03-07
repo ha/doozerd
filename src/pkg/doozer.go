@@ -1,7 +1,6 @@
 package doozer
 
 import (
-	"doozer/ack"
 	"doozer/client"
 	"doozer/consensus"
 	"doozer/gc"
@@ -18,7 +17,10 @@ import (
 	"log"
 )
 
-const alpha = 50
+const(
+	alpha = 50
+	maxUDPLen = 3000
+)
 
 const slot = "/doozer/slot"
 
@@ -93,8 +95,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}()
 	}
 
-	acker := ack.Ackify(udpConn)
-
 	pr := &proposer{
 		seqns: make(chan int64, alpha),
 		props: make(chan *consensus.Prop),
@@ -142,7 +142,20 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	go func() {
 		for p := range out {
-			acker.WriteTo(p.Data, p.Addr)
+			addr, err := net.ResolveUDPAddr(p.Addr)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			n, err := udpConn.WriteTo(p.Data, addr)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if n != len(p.Data) {
+				log.Println("packet len too long:", len(p.Data))
+				continue
+			}
 		}
 	}()
 
@@ -151,17 +164,20 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	for {
 		t := time.Nanoseconds()
 
-		data, addr, err := acker.ReadFrom()
+		buf := make([]byte, maxUDPLen)
+		n, addr, err := udpConn.ReadFrom(buf)
 		if err == os.EINVAL {
-			break
+			return
 		}
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
+		buf = buf[:n]
+
 		// Update liveness time stamp for this addr
-		times[addr] = t
+		times[addr.String()] = t
 
 		if t > pt+pi {
 			n := t - kickTimeout
@@ -174,7 +190,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 		pt = t
 
-		in <- consensus.Packet{addr, data}
+		in <- consensus.Packet{addr.String(), buf}
 	}
 }
 
