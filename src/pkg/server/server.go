@@ -130,7 +130,10 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 				snaps: make(map[int32]store.Getter),
 				tx:    make(map[int32]txn),
 			}
-			go c.serve()
+			go func() {
+				c.serve()
+				rw.Close()
+			}()
 		case <-cal:
 			cal = nil
 			w = true
