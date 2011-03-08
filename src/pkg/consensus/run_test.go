@@ -197,7 +197,7 @@ func TestRunAfterWatch(t *testing.T) {
 }
 
 
-func TestRunVoteDeliverd(t *testing.T) {
+func TestRunVoteDelivered(t *testing.T) {
 	r := run{}
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
@@ -220,7 +220,7 @@ func TestRunVoteDeliverd(t *testing.T) {
 }
 
 
-func TestRunInviteDeliverd(t *testing.T) {
+func TestRunInviteDelivered(t *testing.T) {
 	var r run
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
@@ -231,7 +231,7 @@ func TestRunInviteDeliverd(t *testing.T) {
 }
 
 
-func TestRunProposeDeliverd(t *testing.T) {
+func TestRunProposeDelivered(t *testing.T) {
 	var r run
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
