@@ -541,3 +541,39 @@ func TestRunSendLearn(t *testing.T) {
 
 	assert.Equal(t, 0, len(r.out))
 }
+
+
+func TestRunReturnTrueIfLearned(t *testing.T) {
+	r := run{}
+	r.out = make(chan Packet, 100)
+	r.ops = make(chan store.Op, 100)
+
+	p := packet{
+		M: M{
+			Seqn:  proto.Int64(1),
+			Cmd:   learn,
+			Value: []byte("foo"),
+		},
+		Addr: "X",
+	}
+
+	assert.T(t, r.deliver(p))
+}
+
+
+func TestRunReturnFalseIfNotLearned(t *testing.T) {
+	r := run{}
+	r.out = make(chan Packet, 100)
+	r.ops = make(chan store.Op, 100)
+
+	p := packet{
+		M: M{
+			Seqn:  proto.Int64(1),
+			Cmd:   invite,
+			Value: []byte("foo"),
+		},
+		Addr: "X",
+	}
+
+	assert.T(t, !r.deliver(p))
+}
