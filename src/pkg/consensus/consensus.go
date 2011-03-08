@@ -7,7 +7,7 @@ import (
 
 
 // propSeqns must be buffered with capacity >= alpha
-func NewManager(self string, start int64, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, w <-chan store.Event, fillDelay int64) Manager {
+func NewManager(self string, start int64, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, w <-chan store.Event, fillDelay int64, st *store.Store) Manager {
 	runs := make(chan *run)
 	t := run{
 		self:  self,
@@ -16,7 +16,7 @@ func NewManager(self string, start int64, alpha int64, in <-chan Packet, out cha
 		bound: initialWaitBound,
 	}
 	go generateRuns(alpha, w, runs, t)
-	return newManager(self, start, propSeqns, in, runs, props, time.Tick(10e6), fillDelay)
+	return newManager(self, start, propSeqns, in, runs, props, time.Tick(10e6), fillDelay, st, out)
 }
 
 

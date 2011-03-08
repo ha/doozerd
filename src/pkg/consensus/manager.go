@@ -56,7 +56,7 @@ type Prop struct {
 }
 
 
-func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64, fillDelay int64) Manager {
+func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64, fillDelay int64, st *store.Store, out chan<- Packet) Manager {
 	statCh := make(chan Stats)
 	propRuns := make(chan *run)
 
@@ -128,16 +128,39 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 				heap.Pop(packets)
 
 				r := running[seqn]
-				if r != nil {
-					if r.deliver(p) {
-						running[seqn] = nil, false
-					}
+				if r == nil {
+					go sendLearn(out, p, st)
+					continue
+				}
+
+				learned := r.deliver(p)
+				if learned {
+					running[seqn] = nil, false
 				}
 			}
 		}
 	}()
 
 	return statCh
+}
+
+
+func sendLearn(out chan<- Packet, p packet, st *store.Store) {
+	if p.M.Cmd != nil && *p.M.Cmd == M_INVITE {
+		e := <-st.Wait(*p.Seqn)
+
+		log.Printf("teach seqn=%d err='%s' addr='%s'", p.Addr, *p.Seqn, e.Err)
+
+		if e.Err == nil {
+			m := M{
+				Seqn:  &e.Seqn,
+				Cmd:   learn,
+				Value: []byte(e.Mut),
+			}
+			buf, _ := proto.Marshal(&m)
+			out <- Packet{p.Addr, buf}
+		}
+	}
 }
 
 

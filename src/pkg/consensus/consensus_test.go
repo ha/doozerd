@@ -3,6 +3,7 @@ package consensus
 import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
+	"goprotobuf.googlecode.com/hg/proto"
 	"os"
 	"testing"
 )
@@ -23,7 +24,7 @@ func TestConsensusOne(t *testing.T) {
 	seqns := make(chan int64, int(alpha))
 	props := make(chan *Prop)
 
-	NewManager(self, 0, alpha, in, out, st.Ops, seqns, props, cmw, 10e9)
+	NewManager(self, 0, alpha, in, out, st.Ops, seqns, props, cmw, 10e9, st)
 
 	go func() {
 		for o := range out {
@@ -72,14 +73,14 @@ func TestConsensusTwo(t *testing.T) {
 	aout := make(chan Packet)
 	aseqns := make(chan int64, int(alpha))
 	aprops := make(chan *Prop)
-	NewManager(a, 0, alpha, ain, aout, st.Ops, aseqns, aprops, acmw, 10e9)
+	NewManager(a, 0, alpha, ain, aout, st.Ops, aseqns, aprops, acmw, 10e9, st)
 
 	bcmw := st.Watch(store.Any)
 	bin := make(chan Packet)
 	bout := make(chan Packet)
 	bseqns := make(chan int64, int(alpha))
 	bprops := make(chan *Prop)
-	NewManager(b, 0, alpha, bin, bout, st.Ops, bseqns, bprops, bcmw, 10e9)
+	NewManager(b, 0, alpha, bin, bout, st.Ops, bseqns, bprops, bcmw, 10e9, st)
 
 	go func() {
 		for o := range aout {
@@ -117,4 +118,42 @@ func TestConsensusTwo(t *testing.T) {
 
 	e.Getter = nil
 	assert.Equal(t, exp, e)
+}
+
+
+func TestLearnedValueIsLearned(t *testing.T) {
+	self := "test"
+	alpha := int64(1)
+	st := store.New()
+
+	st.Ops <- store.Op{1, store.MustEncodeSet("/doozer/info/"+self+"/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", self, 0)}
+	<-st.Wait(2)
+
+	cmw := st.Watch(store.Any)
+	in := make(chan Packet)
+	out := make(chan Packet)
+	seqns := make(chan int64, int(alpha))
+	props := make(chan *Prop)
+
+	NewManager(self, 0, alpha, in, out, st.Ops, seqns, props, cmw, 10e9, st)
+
+	v := store.MustEncodeSet("/foo", "bar", -1)
+	st.Ops <- store.Op{Seqn: 3, Mut: v}
+
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: rsvp})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: nominate})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: vote})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: nop})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: tick})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: learn})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: propose})}
+	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: invite})}
+	exp := Packet{"x", mustMarshal(&M{
+		Cmd:   learn,
+		Seqn:  proto.Int64(3),
+		Value: []byte(v),
+	})}
+
+	assert.Equal(t, exp, <-out)
 }

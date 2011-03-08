@@ -506,43 +506,6 @@ func TestRunProposeDoneAndNotDelivered(t *testing.T) {
 }
 
 
-func TestRunRepliesWithLearnIfAlreadyDone(t *testing.T) {
-	var r run
-	out := make(chan Packet, 100)
-	r.out = out
-	r.ops = make(chan store.Op, 100)
-	r.l.v = "foobar"
-	r.l.done = true
-
-	r.deliver(packet{M: M{Cmd: invite}, Addr: "123"})
-
-	m := M{Cmd: learn, Value: []byte("foobar"), Seqn: &r.seqn}
-	buf, err := proto.Marshal(&m)
-	if err != nil {
-		panic(err)
-	}
-
-	assert.Equal(t, Packet{"123", buf}, <-out)
-}
-
-
-func TestRunSendLearn(t *testing.T) {
-	var r run
-	r.out = make(chan Packet, 100)
-	r.l.done = true
-
-	r.deliver(packet{M: M{Cmd: rsvp}, Addr: "123"})
-	r.deliver(packet{M: M{Cmd: nominate}, Addr: "123"})
-	r.deliver(packet{M: M{Cmd: vote}, Addr: "123"})
-	r.deliver(packet{M: M{Cmd: nop}, Addr: "123"})
-	r.deliver(packet{M: M{Cmd: tick}, Addr: "123"})
-	r.deliver(packet{M: M{Cmd: learn}, Addr: "123"})
-	r.deliver(packet{M: M{Cmd: propose}, Addr: "123"})
-
-	assert.Equal(t, 0, len(r.out))
-}
-
-
 func TestRunReturnTrueIfLearned(t *testing.T) {
 	r := run{}
 	r.out = make(chan Packet, 100)

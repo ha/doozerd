@@ -41,9 +41,6 @@ func (r *run) deliver(p packet) (learned bool) {
 	}
 
 	if r.l.done {
-		if p.M.Cmd != nil && *p.M.Cmd == M_INVITE {
-			r.sendLearn(p.Addr)
-		}
 		return false
 	}
 
@@ -69,13 +66,6 @@ func (r *run) deliver(p packet) (learned bool) {
 	}
 
 	return false
-}
-
-
-func (r *run) sendLearn(addr string) {
-	m := M{Cmd: learn, Value: []byte(r.l.v), Seqn: &r.seqn}
-	buf, _ := proto.Marshal(&m)
-	r.out <- Packet{addr, buf}
 }
 
 
