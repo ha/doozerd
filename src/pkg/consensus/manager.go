@@ -43,6 +43,7 @@ type Stats struct {
 	Runs        int
 	WaitPackets int
 	WaitFills   int
+	Running     int
 }
 
 
@@ -73,6 +74,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 			stats.Runs = len(running)
 			stats.WaitPackets = packets.Len()
 			stats.WaitFills = fills.Len()
+			stats.Running = len(running)
 
 			select {
 			case run := <-runs:
