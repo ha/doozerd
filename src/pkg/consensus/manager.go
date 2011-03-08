@@ -149,9 +149,10 @@ func sendLearn(out chan<- Packet, p packet, st *store.Store) {
 	if p.M.Cmd != nil && *p.M.Cmd == M_INVITE {
 		e := <-st.Wait(*p.Seqn)
 
-		log.Printf("teach seqn=%d err='%s' addr='%s'", p.Addr, *p.Seqn, e.Err)
 
-		if e.Err == nil {
+		if e.Err != nil {
+			log.Println(e.Err)
+		} else {
 			m := M{
 				Seqn:  &e.Seqn,
 				Cmd:   learn,
