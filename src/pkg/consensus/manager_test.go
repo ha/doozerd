@@ -144,6 +144,26 @@ func TestManagerPacketProcessing(t *testing.T) {
 }
 
 
+func TestManagerDeletesSuccessfulRun(t *testing.T) {
+	runs := make(chan *run)
+	defer close(runs)
+
+	in := make(chan Packet)
+	m := newManager("", 0, nil, in, runs, nil, nil, 0)
+
+	run := run{seqn: 1, ops: make(chan store.Op, 100)}
+	runs <- &run
+
+	in <- Packet{
+		Data: mustMarshal(&M{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
+		Addr: "127.0.0.1:9999",
+	}
+
+	stat := <-m
+	assert.Equal(t, 0, stat.Running)
+}
+
+
 func TestManagerTick(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)

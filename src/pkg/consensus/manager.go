@@ -129,7 +129,9 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 
 				r := running[seqn]
 				if r != nil {
-					r.deliver(p)
+					if r.deliver(p) {
+						running[seqn] = nil, false
+					}
 				}
 			}
 		}
