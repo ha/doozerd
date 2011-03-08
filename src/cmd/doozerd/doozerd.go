@@ -67,6 +67,7 @@ func main() {
 	}
 
 	doozer.Main(*clusterName, *attachAddr, conn, listener, wl, ns(*pi), ns(*fd), ns(*kt))
+	panic("main exit")
 }
 
 func ns(x float64) int64 {
