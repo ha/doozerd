@@ -9,6 +9,7 @@ import (
 	"os"
 	"log"
 	_ "expvar"
+	_ "http/pprof"
 )
 
 var (
