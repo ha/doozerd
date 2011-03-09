@@ -653,7 +653,6 @@ func (c *conn) watch(t *T, tx txn) {
 	w := store.NewWatch(c.s.St, glob)
 
 	go func() {
-		defer close(w.C)
 		defer w.Stop()
 
 		// TODO buffer (and possibly discard) events
