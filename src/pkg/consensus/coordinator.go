@@ -16,7 +16,7 @@ type coordinator struct {
 	sched bool
 }
 
-func (co *coordinator) deliver(p packet) (m *M, tick bool) {
+func (co *coordinator) deliver(p packet) (m *M, wantTick bool) {
 	in := &p.M
 
 	if in.Cmd == nil {
@@ -71,7 +71,7 @@ func (co *coordinator) deliver(p packet) (m *M, tick bool) {
 			}
 			co.cval = v
 
-			return &M{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}, tick
+			return &M{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}, false
 		}
 	case M_TICK:
 		co.crnd += int64(co.size)
