@@ -22,7 +22,7 @@ func Clean(st *store.Store, pp consensus.Proposer) {
 
 		store.Walk(ev, locks, func(path, body string, cas int64) bool {
 			if body == name {
-				consensus.Del(pp, path, cas)
+				go consensus.Del(pp, path, cas)
 			}
 			return false
 		})
