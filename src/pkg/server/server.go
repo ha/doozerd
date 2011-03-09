@@ -763,12 +763,12 @@ var ops = map[int32]func(*conn, *T, txn){
 
 
 func (c *conn) serve() {
+	defer c.cancelAll()
+
 	for {
 		t, err := c.readBuf()
 		if err != nil {
-			if err == os.EOF {
-				c.cancelAll()
-			} else {
+			if err != os.EOF {
 				log.Println(err)
 			}
 			return
