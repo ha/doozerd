@@ -23,7 +23,7 @@ func encodeTimer(path string, offset int64) string {
 func TestManyOneshotTimers(t *testing.T) {
 	st := store.New()
 	timer := New(testGlob, OneMillisecond, st)
-	defer timer.Close()
+	defer timer.Stop()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/longest", 40*OneMillisecond)}
 	st.Ops <- store.Op{2, encodeTimer("/timer/short", 10*OneMillisecond)}
@@ -50,7 +50,7 @@ func TestManyOneshotTimers(t *testing.T) {
 func TestDeleteTimer(t *testing.T) {
 	st := store.New()
 	timer := New(testGlob, OneMillisecond, st)
-	defer timer.Close()
+	defer timer.Stop()
 
 	never := "/timer/never/ticks"
 	does := "/timer/does/tick"
@@ -72,7 +72,7 @@ func TestDeleteTimer(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	st := store.New()
 	timer := New(testGlob, OneMillisecond, st)
-	defer timer.Close()
+	defer timer.Stop()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/y", 90*OneMillisecond)}
 	st.Ops <- store.Op{2, encodeTimer("/timer/x", 30*OneMillisecond)}
@@ -92,7 +92,7 @@ func TestUpdate(t *testing.T) {
 func TestTimerStop(t *testing.T) {
 	st := store.New()
 	timer := New(testGlob, OneMillisecond, st)
-	timer.Close()
+	timer.Stop()
 
 	st.Ops <- store.Op{1, encodeTimer("/timer/y", 90*OneMillisecond)}
 	st.Ops <- store.Op{2, encodeTimer("/timer/x", 30*OneMillisecond)}

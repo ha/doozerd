@@ -36,6 +36,7 @@ type Timer struct {
 
 	ticks  *vector.Vector
 	ticker *time.Ticker
+	stop   chan bool
 }
 
 func New(glob *store.Glob, interval int64, st *store.Store) *Timer {
@@ -46,6 +47,7 @@ func New(glob *store.Glob, interval int64, st *store.Store) *Timer {
 		wt:     store.NewWatch(st, glob),
 		ticks:  new(vector.Vector),
 		ticker: time.NewTicker(interval),
+		stop:   make(chan bool, 1),
 	}
 
 	go t.process(c)
@@ -67,6 +69,9 @@ func (t *Timer) process(c chan Tick) {
 
 	for {
 		select {
+		case <-t.stop:
+			t.wt.Stop()
+			return
 		case e := <-t.wt.C:
 			if closed(t.wt.C) {
 				return
@@ -112,7 +117,9 @@ func (t *Timer) process(c chan Tick) {
 	}
 }
 
-func (t *Timer) Close() {
-	t.wt.Stop()
-	close(t.wt.C)
+func (t *Timer) Stop() {
+	select {
+	case t.stop <- true:
+	default:
+	}
 }
