@@ -345,7 +345,6 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 
 			values, ev = values.apply(t.Seqn, t.Mut)
-			println("applied", t.Seqn)
 			st.state = &state{ev.Seqn, values}
 			ver = ev.Seqn
 			if !flush {
