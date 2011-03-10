@@ -174,7 +174,7 @@ func TestGet(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	v, cas := st.Get("/x")
 	assert.Equal(t, int64(1), cas)
 	assert.Equal(t, []string{"a"}, v)
@@ -185,7 +185,7 @@ func TestGetDeleted(t *testing.T) {
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeDel("/x", Clobber)}
-	st.Sync(2)
+	<-st.Wait(2)
 	v, cas := st.Get("/x")
 	assert.Equal(t, Missing, cas)
 	assert.Equal(t, []string{""}, v)
@@ -212,7 +212,7 @@ func TestApplyInOrder(t *testing.T) {
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	st.Sync(2)
+	<-st.Wait(2)
 	v, cas := st.Get("/x")
 	assert.Equal(t, int64(2), cas)
 	assert.Equal(t, []string{"b"}, v)
@@ -235,7 +235,7 @@ func TestGetSyncOne(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
 	go func() {
-		st.Sync(5)
+		<-st.Wait(5)
 		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
@@ -245,7 +245,7 @@ func TestGetSyncOne(t *testing.T) {
 	st.Ops <- Op{3, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{4, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{5, MustEncodeSet("/x", "b", Clobber)}
-	st.Sync(5)
+	<-st.Wait(5)
 	assert.Equal(t, []string{"b"}, <-chV)
 	assert.Equal(t, int64(5), <-chCas)
 }
@@ -256,17 +256,17 @@ func TestGetSyncSeveral(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
 	go func() {
-		st.Sync(1)
+		<-st.Wait(1)
 		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		st.Sync(5)
+		<-st.Wait(5)
 		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		st.Sync(0)
+		<-st.Wait(0)
 		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
@@ -297,17 +297,17 @@ func TestGetSyncExtra(t *testing.T) {
 	defer close(st.Ops)
 
 	go func() {
-		st.Sync(0)
+		<-st.Wait(0)
 		v, cas := st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		st.Sync(5)
+		<-st.Wait(5)
 		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
 
-		st.Sync(0)
+		<-st.Wait(0)
 		v, cas = st.Get("/x")
 		chV <- v
 		chCas <- cas
@@ -346,7 +346,7 @@ func TestApplyBadThenGood(t *testing.T) {
 	defer close(st.Ops)
 	st.Ops <- Op{1, "foo"} // bad mutation
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
-	st.Sync(2)
+	<-st.Wait(2)
 	v, cas := st.Get("/x")
 	assert.Equal(t, int64(2), cas)
 	assert.Equal(t, []string{"b"}, v)
@@ -358,7 +358,7 @@ func TestApplyOutOfOrder(t *testing.T) {
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 
-	st.Sync(2)
+	<-st.Wait(2)
 	v, cas := st.Get("/x")
 	assert.Equal(t, int64(2), cas)
 	assert.Equal(t, []string{"b"}, v)
@@ -369,7 +369,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{1, MustEncodeSet("/x", "b", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	v, cas := st.Get("/x")
 	assert.Equal(t, int64(1), cas)
 	assert.Equal(t, []string{"a"}, v)
@@ -384,7 +384,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	st.Ops <- Op{1, MustEncodeSet("/x", "c", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	v, cas := st.Get("/x")
 	assert.Equal(t, int64(2), cas)
 	assert.Equal(t, []string{"b"}, v)
@@ -398,7 +398,7 @@ func TestGetWithDir(t *testing.T) {
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
-	st.Sync(2)
+	<-st.Wait(2)
 	dents, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
 	sort.SortStrings(dents)
@@ -410,7 +410,7 @@ func TestStatWithDir(t *testing.T) {
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
 	st.Ops <- Op{2, MustEncodeSet("/y", "b", Clobber)}
-	st.Sync(2)
+	<-st.Wait(2)
 
 	ln, cas := st.Stat("/")
 	assert.Equal(t, Dir, cas)
@@ -421,7 +421,7 @@ func TestStatWithFile(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
 	st.Ops <- Op{1, MustEncodeSet("/x", "123", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 
 	ln, cas := st.Stat("/x")
 	assert.Equal(t, int64(1), cas)
@@ -451,7 +451,7 @@ func TestDirParents(t *testing.T) {
 	defer close(st.Ops)
 
 	st.Ops <- Op{1, MustEncodeSet("/x/y/z", "a", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 
 	dents, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
@@ -477,7 +477,7 @@ func TestDelDirParents(t *testing.T) {
 	st.Ops <- Op{1, MustEncodeSet("/x/y/z", "a", Clobber)}
 
 	st.Ops <- Op{2, MustEncodeDel("/x/y/z", Clobber)}
-	st.Sync(2)
+	<-st.Wait(2)
 
 	v, cas := st.Get("/")
 	assert.Equal(t, Dir, cas)
@@ -691,7 +691,7 @@ func TestStoreFlush(t *testing.T) {
 
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	st.Flush() // should flush
-	st.Sync(2)
+	<-st.Wait(2)
 
 	assert.Equal(t, int64(2), <-st.Seqns)
 

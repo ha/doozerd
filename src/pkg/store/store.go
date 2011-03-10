@@ -446,15 +446,6 @@ func (st *Store) Wait(seqn int64) <-chan Event {
 	return ch
 }
 
-// Ensures that the application of mutation at `seqn` happens before the call
-// to `Sync` returns.
-//
-// See http://golang.org/doc/go_mem.html for the meaning of "happens before" in
-// Go.
-func (st *Store) Sync(seqn int64) {
-	<-st.Wait(seqn)
-}
-
 // Returns an immutable copy of `st` in which `path` exists as a regular file
 // (not a dir). Waits for `path` to be set, if necessary.
 //

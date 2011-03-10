@@ -9,7 +9,7 @@ import (
 func TestGetString(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	assert.Equal(t, "a", GetString(st, "/x"))
 }
 
@@ -21,14 +21,14 @@ func TestGetStringMissing(t *testing.T) {
 func TestGetStringDir(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x/y", "a", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	assert.Equal(t, "", GetString(st, "/x"))
 }
 
 func TestGetdir(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x/y", "a", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	assert.Equal(t, []string{"y"}, Getdir(st, "/x"))
 }
 
@@ -40,7 +40,7 @@ func TestGetdirMissing(t *testing.T) {
 func TestGetdirString(t *testing.T) {
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/x", "a", Clobber)}
-	st.Sync(1)
+	<-st.Wait(1)
 	assert.Equal(t, []string(nil), Getdir(st, "/x"))
 }
 
