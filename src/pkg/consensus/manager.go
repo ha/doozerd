@@ -58,9 +58,6 @@ type Prop struct {
 
 func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64, fillDelay int64, st *store.Store, out chan<- Packet) Manager {
 	statCh := make(chan Stats)
-	propRuns := make(chan *run)
-
-	go filterPropSeqns(self, propRuns, propSeqns)
 
 	go func() {
 		running := make(map[int64]*run)
@@ -85,7 +82,9 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
 				run.ticks = ticks
-				propRuns <- run
+				if run.isLeader(self) {
+					propSeqns <- run.seqn
+				}
 			case p := <-in:
 				recvPacket(packets, p)
 			case n := <-ticks:
@@ -149,7 +148,6 @@ func sendLearn(out chan<- Packet, p packet, st *store.Store) {
 	if p.M.Cmd != nil && *p.M.Cmd == M_INVITE {
 		e := <-st.Wait(*p.Seqn)
 
-
 		if e.Err != nil {
 			log.Println(e.Err)
 		} else {
@@ -160,15 +158,6 @@ func sendLearn(out chan<- Packet, p packet, st *store.Store) {
 			}
 			buf, _ := proto.Marshal(&m)
 			out <- Packet{p.Addr, buf}
-		}
-	}
-}
-
-
-func filterPropSeqns(id string, rc <-chan *run, sc chan<- int64) {
-	for r := range rc {
-		if r.isLeader(id) {
-			sc <- r.seqn
 		}
 	}
 }

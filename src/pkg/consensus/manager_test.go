@@ -200,7 +200,7 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	go filterPropSeqns("b", runs, ps)
+	newManager("b", 0, ps, nil, runs, nil, nil, 0, nil, nil)
 
 	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
 	runs <- &run{seqn: 4, cals: []string{"a", "b"}}
