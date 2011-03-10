@@ -261,10 +261,11 @@ func TestRunSendsCoordPacket(t *testing.T) {
 	}
 
 	r.deliver(packet{M: *newPropose("foo")})
-	assert.Equal(t, 2, len(c))
+	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, exp, got)
+	assert.Equal(t, 0, len(c))
 }
 
 
@@ -300,10 +301,11 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 	}
 
 	r.deliver(packet{M: *newInviteSeqn1(1)})
-	assert.Equal(t, 2, len(c))
+	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, exp, got)
+	assert.Equal(t, 0, len(c))
 }
 
 
