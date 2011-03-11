@@ -105,31 +105,16 @@ func TestRecvInvalidPacket(t *testing.T) {
 }
 
 
-func TestSchedFill(t *testing.T) {
+func TestSchedTrigger(t *testing.T) {
 	q := new(vector.Vector)
 	d := int64(15e8)
 
 	ts := time.Nanoseconds() + d
-	schedFill(q, 1, d)
+	schedTrigger(q, 1, d)
 
 	assert.Equal(t, 1, q.Len())
-	f, ok := q.At(0).(fill)
-	assert.Tf(t, ok, "expected a fill, got a %T", q.At(0))
-	assert.Equal(t, int64(1), f.n)
-	assert.T(t, f.t >= ts)
-}
-
-
-func TestSchedTick(t *testing.T) {
-	q := new(vector.Vector)
-	d := int64(15e8)
-
-	ts := time.Nanoseconds() + d
-	schedTick(q, 1, d)
-
-	assert.Equal(t, 1, q.Len())
-	f, ok := q.At(0).(tickTime)
-	assert.Tf(t, ok, "expected a tickTime, got a %T", q.At(0))
+	f, ok := q.At(0).(trigger)
+	assert.Tf(t, ok, "expected a trigger, got a %T", q.At(0))
 	assert.Equal(t, int64(1), f.n)
 	assert.T(t, f.t >= ts)
 }
@@ -252,79 +237,40 @@ func TestManagerFillQueue(t *testing.T) {
 }
 
 
-func TestApplyTicks(t *testing.T) {
+func TestApplyTriggers(t *testing.T) {
 	packets := new(vector.Vector)
-	ticks := new(vector.Vector)
+	triggers := new(vector.Vector)
 
-	heap.Push(ticks, tickTime{t: 1, n: 1})
-	heap.Push(ticks, tickTime{t: 2, n: 2})
-	heap.Push(ticks, tickTime{t: 3, n: 3})
-	heap.Push(ticks, tickTime{t: 4, n: 4})
-	heap.Push(ticks, tickTime{t: 5, n: 5})
-	heap.Push(ticks, tickTime{t: 6, n: 6})
-	heap.Push(ticks, tickTime{t: 7, n: 7})
-	heap.Push(ticks, tickTime{t: 8, n: 8})
-	heap.Push(ticks, tickTime{t: 9, n: 9})
+	heap.Push(triggers, trigger{t: 1, n: 1})
+	heap.Push(triggers, trigger{t: 2, n: 2})
+	heap.Push(triggers, trigger{t: 3, n: 3})
+	heap.Push(triggers, trigger{t: 4, n: 4})
+	heap.Push(triggers, trigger{t: 5, n: 5})
+	heap.Push(triggers, trigger{t: 6, n: 6})
+	heap.Push(triggers, trigger{t: 7, n: 7})
+	heap.Push(triggers, trigger{t: 8, n: 8})
+	heap.Push(triggers, trigger{t: 9, n: 9})
 
-	n := applyTicks(packets, ticks, 5)
+	n := applyTriggers(packets, triggers, 5, &M{Cmd: tick})
 	assert.Equal(t, 5, n)
 
-	expTicks := new(vector.Vector)
+	expTriggers := new(vector.Vector)
 	expPackets := new(vector.Vector)
 	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(1)}})
 	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(2)}})
 	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(3)}})
 	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(4)}})
 	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(5)}})
-	heap.Push(expTicks, tickTime{t: 6, n: 6})
-	heap.Push(expTicks, tickTime{t: 7, n: 7})
-	heap.Push(expTicks, tickTime{t: 8, n: 8})
-	heap.Push(expTicks, tickTime{t: 9, n: 9})
+	heap.Push(expTriggers, trigger{t: 6, n: 6})
+	heap.Push(expTriggers, trigger{t: 7, n: 7})
+	heap.Push(expTriggers, trigger{t: 8, n: 8})
+	heap.Push(expTriggers, trigger{t: 9, n: 9})
 
 	sort.Sort(packets)
-	sort.Sort(ticks)
+	sort.Sort(triggers)
 	sort.Sort(expPackets)
-	sort.Sort(expTicks)
+	sort.Sort(expTriggers)
 
-	assert.Equal(t, expTicks, ticks)
-	assert.Equal(t, expPackets, packets)
-}
-
-
-func TestApplyFills(t *testing.T) {
-	packets := new(vector.Vector)
-	fills := new(vector.Vector)
-
-	heap.Push(fills, fill{t: 1, n: 1})
-	heap.Push(fills, fill{t: 2, n: 2})
-	heap.Push(fills, fill{t: 3, n: 3})
-	heap.Push(fills, fill{t: 4, n: 4})
-	heap.Push(fills, fill{t: 5, n: 5})
-	heap.Push(fills, fill{t: 6, n: 6})
-	heap.Push(fills, fill{t: 7, n: 7})
-	heap.Push(fills, fill{t: 8, n: 8})
-	heap.Push(fills, fill{t: 9, n: 9})
-
-	n := applyFills(packets, fills, 5)
-	assert.Equal(t, 5, n)
-
-	expFills := new(vector.Vector)
-	expPackets := new(vector.Vector)
-	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(1), Value: []byte(store.Nop)}})
-	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(2), Value: []byte(store.Nop)}})
-	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(3), Value: []byte(store.Nop)}})
-	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(4), Value: []byte(store.Nop)}})
-	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(5), Value: []byte(store.Nop)}})
-	heap.Push(expFills, fill{t: 6, n: 6})
-	heap.Push(expFills, fill{t: 7, n: 7})
-	heap.Push(expFills, fill{t: 8, n: 8})
-	heap.Push(expFills, fill{t: 9, n: 9})
-
-	sort.Sort(packets)
-	sort.Sort(fills)
-	sort.Sort(expPackets)
-	sort.Sort(expFills)
-
-	assert.Equal(t, expFills, fills)
+	assert.Equal(t, expTriggers, triggers)
 	assert.Equal(t, expPackets, packets)
 }

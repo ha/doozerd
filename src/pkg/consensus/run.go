@@ -47,7 +47,7 @@ func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
 	r.broadcast(m)
 	if tick {
 		r.bound *= 2
-		schedTick(ticks, r.seqn, rand.Int63n(r.bound))
+		schedTrigger(ticks, r.seqn, rand.Int63n(r.bound))
 	}
 
 	m = r.a.update(&p.M)

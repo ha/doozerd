@@ -28,25 +28,14 @@ type Packet struct {
 }
 
 
-type fill struct {
+type trigger struct {
 	t int64 // trigger time
 	n int64 // seqn
 }
 
 
-func (f fill) Less(y interface{}) bool {
-	return f.n < y.(fill).n
-}
-
-
-type tickTime struct {
-	t int64 // trigger time
-	n int64 // seqn
-}
-
-
-func (t tickTime) Less(y interface{}) bool {
-	return t.t < y.(tickTime).t
+func (t trigger) Less(y interface{}) bool {
+	return t.t < y.(trigger).t
 }
 
 
@@ -72,6 +61,8 @@ type Prop struct {
 	Mut  []byte
 }
 
+var tickTemplate = &M{Cmd: tick}
+var fillTemplate = &M{Cmd: propose, Value: []byte(store.Nop)}
 
 func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64, fillDelay int64, st *store.Store, out chan<- Packet) Manager {
 	statCh := make(chan Stats)
@@ -111,14 +102,16 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 				heap.Push(packets, packet{M: m})
 
 				for nextFill < pr.Seqn {
-					schedFill(fills, nextFill, fillDelay)
+					schedTrigger(fills, nextFill, fillDelay)
 					nextFill++
 				}
 				nextFill++
 			case t := <-ticker:
-				n := applyFills(packets, fills, t)
+				n := applyTriggers(packets, fills, t, fillTemplate)
 				stats.TotalFills += int64(n)
-				stats.TotalTicks += int64(applyTicks(packets, ticks, t))
+
+				n = applyTriggers(packets, ticks, t, tickTemplate)
+				stats.TotalTicks += int64(n)
 			}
 
 			for packets.Len() > 0 {
@@ -186,44 +179,23 @@ func recvPacket(q heap.Interface, P Packet) {
 }
 
 
-func schedFill(q heap.Interface, n, fillDelay int64) {
-	heap.Push(q, fill{n: n, t: time.Nanoseconds() + fillDelay})
+func schedTrigger(q heap.Interface, n, fillDelay int64) {
+	heap.Push(q, trigger{n: n, t: time.Nanoseconds() + fillDelay})
 }
 
 
-func schedTick(q heap.Interface, n, fillDelay int64) {
-	heap.Push(q, tickTime{n: n, t: time.Nanoseconds() + fillDelay})
-}
-
-
-func applyTicks(packets, ticks *vector.Vector, now int64) (n int) {
+func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *M) (n int) {
 	for ticks.Len() > 0 {
-		tt := ticks.At(0).(tickTime)
+		tt := ticks.At(0).(trigger)
 		if tt.t > now {
 			break
 		}
 
 		heap.Pop(ticks)
-		heap.Push(packets, packet{M: M{Cmd: tick, Seqn: &tt.n}})
-		n++
-	}
-	return
-}
 
-
-func applyFills(packets, fills *vector.Vector, now int64) (n int) {
-	for fills.Len() > 0 {
-		f := fills.At(0).(fill)
-		if f.t > now {
-			break
-		}
-
-		heap.Pop(fills)
-		heap.Push(packets, packet{M: M{
-			Cmd:   propose,
-			Seqn:  &f.n,
-			Value: []byte(store.Nop),
-		}})
+		p := packet{M: *tpl}
+		p.M.Seqn = &tt.n
+		heap.Push(packets, p)
 		n++
 	}
 	return
