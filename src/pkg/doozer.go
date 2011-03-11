@@ -17,8 +17,8 @@ import (
 	"log"
 )
 
-const(
-	alpha = 50
+const (
+	alpha     = 50
 	maxUDPLen = 3000
 )
 
