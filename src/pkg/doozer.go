@@ -52,7 +52,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	cal := make(chan bool, 1)
 	useSelf := make(chan bool, 1)
 
-	var cl *client.Client
 	self := util.RandId()
 	st := store.New()
 	if attachAddr == "" { // we are the only node in a new cluster
@@ -66,9 +65,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 		cal <- true
 		close(useSelf)
-
-		cl = client.New("local", listenAddr) // TODO use real cluster name
 	} else {
+		var cl *client.Client
 		cl = client.New("local", attachAddr) // TODO use real cluster name
 
 		setC(cl, "/doozer/info/"+self+"/addr", listenAddr, store.Clobber)
