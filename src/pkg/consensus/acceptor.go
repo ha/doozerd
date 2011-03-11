@@ -5,7 +5,7 @@ type acceptor struct {
 	vval      string
 }
 
-func (ac *acceptor) put(m *M) *M {
+func (ac *acceptor) update(m *M) *M {
 	if m.Cmd == nil {
 		return nil
 	}

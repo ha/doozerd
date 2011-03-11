@@ -17,7 +17,7 @@ func (ln *learner) init(quorum int64) {
 	ln.quorum = quorum
 }
 
-func (ln *learner) deliver(p packet) (m *M, v []byte, ok bool) {
+func (ln *learner) update(p packet) (m *M, v []byte, ok bool) {
 	if ln.done {
 		return
 	}

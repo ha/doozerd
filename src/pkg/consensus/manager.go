@@ -132,7 +132,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 					continue
 				}
 
-				learned := r.deliver(p)
+				learned := r.update(p)
 				if learned {
 					running[seqn] = nil, false
 				}

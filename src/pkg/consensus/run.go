@@ -35,7 +35,7 @@ func (r *run) quorum() int {
 }
 
 
-func (r *run) deliver(p packet) (learned bool) {
+func (r *run) update(p packet) (learned bool) {
 	if p.M.Cmd != nil && *p.M.Cmd == M_TICK {
 		log.Printf("tick wasteful=%v", r.l.done)
 	}
@@ -44,7 +44,7 @@ func (r *run) deliver(p packet) (learned bool) {
 		return false
 	}
 
-	m, tick := r.c.deliver(p)
+	m, tick := r.c.update(p)
 	r.broadcast(m)
 	if tick {
 		r.bound *= 2
@@ -54,10 +54,10 @@ func (r *run) deliver(p packet) (learned bool) {
 		}()
 	}
 
-	m = r.a.put(&p.M)
+	m = r.a.update(&p.M)
 	r.broadcast(m)
 
-	m, v, ok := r.l.deliver(p)
+	m, v, ok := r.l.update(p)
 	r.broadcast(m)
 	if ok {
 		log.Printf("learn seqn=%d", r.seqn)

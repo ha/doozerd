@@ -16,7 +16,7 @@ type coordinator struct {
 	sched bool
 }
 
-func (co *coordinator) deliver(p packet) (m *M, wantTick bool) {
+func (co *coordinator) update(p packet) (m *M, wantTick bool) {
 	in := &p.M
 
 	if in.Cmd == nil {

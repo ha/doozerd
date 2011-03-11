@@ -213,7 +213,7 @@ func TestRunVoteDelivered(t *testing.T) {
 		Addr: "X",
 	}
 
-	r.deliver(p)
+	r.update(p)
 
 	assert.Equal(t, true, r.l.done)
 	assert.Equal(t, "foo", r.l.v)
@@ -225,7 +225,7 @@ func TestRunInviteDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.deliver(packet{M: *newInviteSeqn1(1)})
+	r.update(packet{M: *newInviteSeqn1(1)})
 
 	assert.Equal(t, int64(1), r.a.rnd)
 }
@@ -237,7 +237,7 @@ func TestRunProposeDelivered(t *testing.T) {
 	r.ops = make(chan store.Op, 100)
 	r.ticks = make(chan int64, 100)
 
-	r.deliver(packet{M: M{Cmd: propose}})
+	r.update(packet{M: M{Cmd: propose}})
 	assert.Equal(t, true, r.c.begun)
 }
 
@@ -260,7 +260,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	r.deliver(packet{M: *newPropose("foo")})
+	r.update(packet{M: *newPropose("foo")})
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -276,9 +276,9 @@ func TestRunSchedulesTick(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ticks = ticks
 
-	r.deliver(packet{M: *newPropose("foo")})
+	r.update(packet{M: *newPropose("foo")})
 
-	r.deliver(packet{M: *newRsvp(2, 0, "")})
+	r.update(packet{M: *newRsvp(2, 0, "")})
 	assert.Equal(t, int64(1), <-ticks)
 }
 
@@ -300,7 +300,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		Vrnd: proto.Int64(0),
 	}
 
-	r.deliver(packet{M: *newInviteSeqn1(1)})
+	r.update(packet{M: *newInviteSeqn1(1)})
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -326,7 +326,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		Value: []byte("foo"),
 	}
 
-	r.deliver(packet{M: *newVote(1, "foo")})
+	r.update(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -345,7 +345,7 @@ func TestRunAppliesOp(t *testing.T) {
 		"y": true,
 	}
 
-	r.deliver(packet{M: *newVote(1, "foo")})
+	r.update(packet{M: *newVote(1, "foo")})
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
@@ -475,7 +475,7 @@ func TestRunVoteDoneAndNotDelivered(t *testing.T) {
 		Addr: "X",
 	}
 
-	r.deliver(p)
+	r.update(p)
 
 	assert.Equal(t, exp, r.l)
 }
@@ -489,7 +489,7 @@ func TestRunInviteDoneAndNotDelivered(t *testing.T) {
 	r.l.done = true
 	exp := r.a
 
-	r.deliver(packet{M: *newInviteSeqn1(1)})
+	r.update(packet{M: *newInviteSeqn1(1)})
 
 	assert.Equal(t, exp, r.a)
 }
@@ -503,7 +503,7 @@ func TestRunProposeDoneAndNotDelivered(t *testing.T) {
 
 	exp := r.c
 
-	r.deliver(packet{M: M{Cmd: propose}})
+	r.update(packet{M: M{Cmd: propose}})
 	assert.Equal(t, exp, r.c)
 }
 
@@ -522,7 +522,7 @@ func TestRunReturnTrueIfLearned(t *testing.T) {
 		Addr: "X",
 	}
 
-	assert.T(t, r.deliver(p))
+	assert.T(t, r.update(p))
 }
 
 
@@ -540,5 +540,5 @@ func TestRunReturnFalseIfNotLearned(t *testing.T) {
 		Addr: "X",
 	}
 
-	assert.T(t, !r.deliver(p))
+	assert.T(t, !r.update(p))
 }
