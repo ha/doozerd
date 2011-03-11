@@ -59,6 +59,7 @@ type Stats struct {
 	Running     int
 
 	// Totals over all time
+	TotalFills int64
 	TotalTicks int64
 }
 
@@ -115,19 +116,8 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 				}
 				nextFill++
 			case t := <-ticker:
-				for fills.Len() > 0 {
-					f := fills.At(0).(fill)
-
-					if f.n >= t {
-						break
-					}
-
-					heap.Pop(fills)
-
-					m := M{Seqn: &f.n, Cmd: propose, Value: []byte(store.Nop)}
-					heap.Push(packets, packet{M: m})
-				}
-
+				n := applyFills(packets, fills, t)
+				stats.TotalFills += int64(n)
 				stats.TotalTicks += int64(applyTicks(packets, ticks, t))
 			}
 
@@ -215,6 +205,25 @@ func applyTicks(packets, ticks *vector.Vector, now int64) (n int) {
 
 		heap.Pop(ticks)
 		heap.Push(packets, packet{M: M{Cmd: tick, Seqn: &tt.n}})
+		n++
+	}
+	return
+}
+
+
+func applyFills(packets, fills *vector.Vector, now int64) (n int) {
+	for fills.Len() > 0 {
+		f := fills.At(0).(fill)
+		if f.t > now {
+			break
+		}
+
+		heap.Pop(fills)
+		heap.Push(packets, packet{M: M{
+			Cmd:   propose,
+			Seqn:  &f.n,
+			Value: []byte(store.Nop),
+		}})
 		n++
 	}
 	return

@@ -289,3 +289,42 @@ func TestApplyTicks(t *testing.T) {
 	assert.Equal(t, expTicks, ticks)
 	assert.Equal(t, expPackets, packets)
 }
+
+
+func TestApplyFills(t *testing.T) {
+	packets := new(vector.Vector)
+	fills := new(vector.Vector)
+
+	heap.Push(fills, fill{t: 1, n: 1})
+	heap.Push(fills, fill{t: 2, n: 2})
+	heap.Push(fills, fill{t: 3, n: 3})
+	heap.Push(fills, fill{t: 4, n: 4})
+	heap.Push(fills, fill{t: 5, n: 5})
+	heap.Push(fills, fill{t: 6, n: 6})
+	heap.Push(fills, fill{t: 7, n: 7})
+	heap.Push(fills, fill{t: 8, n: 8})
+	heap.Push(fills, fill{t: 9, n: 9})
+
+	n := applyFills(packets, fills, 5)
+	assert.Equal(t, 5, n)
+
+	expFills := new(vector.Vector)
+	expPackets := new(vector.Vector)
+	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(1), Value: []byte(store.Nop)}})
+	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(2), Value: []byte(store.Nop)}})
+	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(3), Value: []byte(store.Nop)}})
+	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(4), Value: []byte(store.Nop)}})
+	heap.Push(expPackets, packet{M: M{Cmd: propose, Seqn: proto.Int64(5), Value: []byte(store.Nop)}})
+	heap.Push(expFills, fill{t: 6, n: 6})
+	heap.Push(expFills, fill{t: 7, n: 7})
+	heap.Push(expFills, fill{t: 8, n: 8})
+	heap.Push(expFills, fill{t: 9, n: 9})
+
+	sort.Sort(packets)
+	sort.Sort(fills)
+	sort.Sort(expPackets)
+	sort.Sort(expFills)
+
+	assert.Equal(t, expFills, fills)
+	assert.Equal(t, expPackets, packets)
+}
