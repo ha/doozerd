@@ -3,6 +3,7 @@ package test
 import (
 	"doozer/store"
 	"os"
+	"sync/atomic"
 )
 
 type FakeProposer struct {
@@ -11,9 +12,10 @@ type FakeProposer struct {
 }
 
 func (fp *FakeProposer) Propose(v []byte) store.Event {
-	fp.seqn++
-	ch := fp.Wait(fp.seqn)
-	fp.Ops <- store.Op{fp.seqn, string(v)}
+	n := atomic.AddInt64(&fp.seqn, 1)
+
+	ch := fp.Wait(n)
+	fp.Ops <- store.Op{n, string(v)}
 	return <-ch
 }
 
