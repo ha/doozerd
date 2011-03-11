@@ -76,6 +76,26 @@ func TestWalk(t *testing.T) {
 	assert.Equal(t, 3, c)
 }
 
+
+func TestWalkOneLevel(t *testing.T) {
+	exp := [][2]string{
+		{"/d/a/z", "3"},
+	}
+
+	st := New()
+	st.Ops <- Op{1, MustEncodeSet("/d/x", "1", Clobber)}
+	st.Ops <- Op{2, MustEncodeSet("/d/y", "2", Clobber)}
+	st.Ops <- Op{3, MustEncodeSet("/d/a/z", "3", Clobber)}
+	<-st.Wait(3)
+	got := [][2]string{}
+	Walk(st, MustCompileGlob("/d/*/*"), func(path, body string, cas int64) bool {
+		got = append(got, [2]string{path, body})
+		return false
+	})
+	assert.Equal(t, exp, got)
+}
+
+
 func TestWalkStop(t *testing.T) {
 	exp := map[string]string{
 		"/d/x":   "1",

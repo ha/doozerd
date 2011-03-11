@@ -44,12 +44,12 @@ type Visitor func(path, body string, cas int64) (stop bool)
 
 func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
 	v, cas := g.Get(path)
-	if cas != Dir && glob.Match(path) {
-		return f(path, v[0], cas)
-	}
-
 	if cas == Missing {
 		return
+	}
+
+	if cas != Dir {
+		return glob.Match(path) && f(path, v[0], cas)
 	}
 
 	if path == "/" {
