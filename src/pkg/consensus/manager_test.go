@@ -105,10 +105,10 @@ func TestRecvInvalidPacket(t *testing.T) {
 	assert.Equal(t, 0, q.Len())
 }
 
-func TestSchedTick(t *testing.T) {
+func TestApplyTick(t *testing.T) {
 	q := new(vector.Vector)
 
-	schedTick(q, 1)
+	applyTick(q, 1)
 
 	assert.Equal(t, 1, q.Len())
 	assert.Equal(t, packet{M: M{Seqn: proto.Int64(1), Cmd: tick}}, q.At(0))

@@ -88,7 +88,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 			case p := <-in:
 				recvPacket(packets, p)
 			case n := <-ticks:
-				schedTick(packets, n)
+				applyTick(packets, n)
 			case statCh <- stats:
 			case pr := <-props:
 				log.Printf("propose seqn=%d", pr.Seqn)
@@ -185,6 +185,6 @@ func schedFill(q heap.Interface, n, fillDelay int64) {
 }
 
 
-func schedTick(q heap.Interface, n int64) {
+func applyTick(q heap.Interface, n int64) {
 	heap.Push(q, packet{M: M{Seqn: proto.Int64(n), Cmd: tick}})
 }
