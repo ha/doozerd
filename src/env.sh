@@ -25,7 +25,6 @@ PKGS="
     web
     client
     test
-    timer
     session
     member
     gc

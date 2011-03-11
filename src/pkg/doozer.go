@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	alpha     = 50
-	maxUDPLen = 3000
+	alpha               = 50
+	maxUDPLen           = 3000
+	sessionPollInterval = 1e9 // ns == 1s
 )
 
 const slot = "/doozer/slot"
@@ -123,7 +124,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	go func() {
 		<-cal
 		go lock.Clean(st, pr)
-		go session.Clean(st, pr)
+		go session.Clean(st, pr, time.Tick(sessionPollInterval))
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
 		go gc.Clean(st)
 	}()
