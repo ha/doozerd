@@ -2,10 +2,12 @@ package consensus
 
 
 import (
+	"container/heap"
 	"container/vector"
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
+	"sort"
 	"testing"
 	"time"
 )
@@ -37,9 +39,6 @@ func TestManagerRuns(t *testing.T) {
 	runs <- r3
 
 	assert.Equal(t, 3, (<-m).Runs)
-	assert.NotEqual(t, (chan<- int64)(nil), r1.ticks)
-	assert.NotEqual(t, (chan<- int64)(nil), r2.ticks)
-	assert.NotEqual(t, (chan<- int64)(nil), r3.ticks)
 }
 
 
@@ -105,15 +104,6 @@ func TestRecvInvalidPacket(t *testing.T) {
 	assert.Equal(t, 0, q.Len())
 }
 
-func TestApplyTick(t *testing.T) {
-	q := new(vector.Vector)
-
-	applyTick(q, 1)
-
-	assert.Equal(t, 1, q.Len())
-	assert.Equal(t, packet{M: M{Seqn: proto.Int64(1), Cmd: tick}}, q.At(0))
-}
-
 
 func TestSchedFill(t *testing.T) {
 	q := new(vector.Vector)
@@ -125,6 +115,21 @@ func TestSchedFill(t *testing.T) {
 	assert.Equal(t, 1, q.Len())
 	f, ok := q.At(0).(fill)
 	assert.Tf(t, ok, "expected a fill, got a %T", q.At(0))
+	assert.Equal(t, int64(1), f.n)
+	assert.T(t, f.t >= ts)
+}
+
+
+func TestSchedTick(t *testing.T) {
+	q := new(vector.Vector)
+	d := int64(15e8)
+
+	ts := time.Nanoseconds() + d
+	schedTick(q, 1, d)
+
+	assert.Equal(t, 1, q.Len())
+	f, ok := q.At(0).(tickTime)
+	assert.Tf(t, ok, "expected a tickTime, got a %T", q.At(0))
 	assert.Equal(t, int64(1), f.n)
 	assert.T(t, f.t >= ts)
 }
@@ -174,24 +179,28 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 }
 
 
-func TestManagerTick(t *testing.T) {
+func TestManagerTickQueue(t *testing.T) {
+	ticker := make(chan int64)
 	runs := make(chan *run)
 	defer close(runs)
 
 	st := store.New()
-	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, nil, runs, nil, nil, 0, st, out)
+	defer close(st.Ops)
+	in := make(chan Packet)
+	m := newManager("", 0, nil, in, runs, nil, ticker, 0, st, nil)
 
-	// get our hands on the ticks chan
-	r := &run{seqn: 1}
-	runs <- r
-	<-m
-	ticks := r.ticks
+	runs <- &run{seqn: 1}
+	for (<-m).Runs < 1 {
+	}
 
-	// send it a tick for seqn 2
-	ticks <- 2
+	// get it to tick for seqn 2
+	in <- Packet{Data: mustMarshal(&M{Seqn: proto.Int64(1), Cmd: propose})}
 
-	assert.Equal(t, 1, (<-m).WaitPackets)
+	assert.Equal(t, 1, (<-m).WaitTicks)
+
+	ticker <- time.Nanoseconds()
+
+	assert.Equal(t, int64(1), (<-m).TotalTicks)
 }
 
 
@@ -240,4 +249,43 @@ func TestManagerFillQueue(t *testing.T) {
 	ticker <- time.Nanoseconds()
 
 	assert.Equal(t, 7, (<-m).WaitPackets)
+}
+
+
+func TestApplyTicks(t *testing.T) {
+	packets := new(vector.Vector)
+	ticks := new(vector.Vector)
+
+	heap.Push(ticks, tickTime{t: 1, n: 1})
+	heap.Push(ticks, tickTime{t: 2, n: 2})
+	heap.Push(ticks, tickTime{t: 3, n: 3})
+	heap.Push(ticks, tickTime{t: 4, n: 4})
+	heap.Push(ticks, tickTime{t: 5, n: 5})
+	heap.Push(ticks, tickTime{t: 6, n: 6})
+	heap.Push(ticks, tickTime{t: 7, n: 7})
+	heap.Push(ticks, tickTime{t: 8, n: 8})
+	heap.Push(ticks, tickTime{t: 9, n: 9})
+
+	n := applyTicks(packets, ticks, 5)
+	assert.Equal(t, 5, n)
+
+	expTicks := new(vector.Vector)
+	expPackets := new(vector.Vector)
+	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(1)}})
+	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(2)}})
+	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(3)}})
+	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(4)}})
+	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(5)}})
+	heap.Push(expTicks, tickTime{t: 6, n: 6})
+	heap.Push(expTicks, tickTime{t: 7, n: 7})
+	heap.Push(expTicks, tickTime{t: 8, n: 8})
+	heap.Push(expTicks, tickTime{t: 9, n: 9})
+
+	sort.Sort(packets)
+	sort.Sort(ticks)
+	sort.Sort(expPackets)
+	sort.Sort(expTicks)
+
+	assert.Equal(t, expTicks, ticks)
+	assert.Equal(t, expPackets, packets)
 }

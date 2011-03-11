@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"container/vector"
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
@@ -213,7 +214,7 @@ func TestRunVoteDelivered(t *testing.T) {
 		Addr: "X",
 	}
 
-	r.update(p)
+	r.update(p, new(vector.Vector))
 
 	assert.Equal(t, true, r.l.done)
 	assert.Equal(t, "foo", r.l.v)
@@ -225,7 +226,7 @@ func TestRunInviteDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{M: *newInviteSeqn1(1)})
+	r.update(packet{M: *newInviteSeqn1(1)}, new(vector.Vector))
 
 	assert.Equal(t, int64(1), r.a.rnd)
 }
@@ -235,9 +236,8 @@ func TestRunProposeDelivered(t *testing.T) {
 	var r run
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
-	r.ticks = make(chan int64, 100)
 
-	r.update(packet{M: M{Cmd: propose}})
+	r.update(packet{M: M{Cmd: propose}}, new(vector.Vector))
 	assert.Equal(t, true, r.c.begun)
 }
 
@@ -247,7 +247,6 @@ func TestRunSendsCoordPacket(t *testing.T) {
 	var r run
 	r.c.crnd = 1
 	r.out = c
-	r.ticks = make(chan int64, 100)
 	r.addrs = map[string]bool{
 		"x": true,
 		"y": true,
@@ -260,7 +259,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	r.update(packet{M: *newPropose("foo")})
+	r.update(packet{M: *newPropose("foo")}, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -270,16 +269,15 @@ func TestRunSendsCoordPacket(t *testing.T) {
 
 
 func TestRunSchedulesTick(t *testing.T) {
-	ticks := make(chan int64)
 	var r run
 	r.seqn = 1
+	r.bound = 10
 	r.out = make(chan Packet, 100)
-	r.ticks = ticks
+	ticks := new(vector.Vector)
 
-	r.update(packet{M: *newPropose("foo")})
+	r.update(packet{M: *newPropose("foo")}, ticks)
 
-	r.update(packet{M: *newRsvp(2, 0, "")})
-	assert.Equal(t, int64(1), <-ticks)
+	assert.Equal(t, 1, ticks.Len())
 }
 
 
@@ -300,7 +298,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		Vrnd: proto.Int64(0),
 	}
 
-	r.update(packet{M: *newInviteSeqn1(1)})
+	r.update(packet{M: *newInviteSeqn1(1)}, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -326,7 +324,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		Value: []byte("foo"),
 	}
 
-	r.update(packet{M: *newVote(1, "foo")})
+	r.update(packet{M: *newVote(1, "foo")}, new(vector.Vector))
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -345,7 +343,7 @@ func TestRunAppliesOp(t *testing.T) {
 		"y": true,
 	}
 
-	r.update(packet{M: *newVote(1, "foo")})
+	r.update(packet{M: *newVote(1, "foo")}, new(vector.Vector))
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
@@ -475,7 +473,7 @@ func TestRunVoteDoneAndNotDelivered(t *testing.T) {
 		Addr: "X",
 	}
 
-	r.update(p)
+	r.update(p, new(vector.Vector))
 
 	assert.Equal(t, exp, r.l)
 }
@@ -489,7 +487,7 @@ func TestRunInviteDoneAndNotDelivered(t *testing.T) {
 	r.l.done = true
 	exp := r.a
 
-	r.update(packet{M: *newInviteSeqn1(1)})
+	r.update(packet{M: *newInviteSeqn1(1)}, new(vector.Vector))
 
 	assert.Equal(t, exp, r.a)
 }
@@ -503,7 +501,7 @@ func TestRunProposeDoneAndNotDelivered(t *testing.T) {
 
 	exp := r.c
 
-	r.update(packet{M: M{Cmd: propose}})
+	r.update(packet{M: M{Cmd: propose}}, new(vector.Vector))
 	assert.Equal(t, exp, r.c)
 }
 
@@ -522,7 +520,8 @@ func TestRunReturnTrueIfLearned(t *testing.T) {
 		Addr: "X",
 	}
 
-	assert.T(t, r.update(p))
+	learned := r.update(p, new(vector.Vector))
+	assert.T(t, learned)
 }
 
 
@@ -540,5 +539,6 @@ func TestRunReturnFalseIfNotLearned(t *testing.T) {
 		Addr: "X",
 	}
 
-	assert.T(t, !r.update(p))
+	learned := r.update(p, new(vector.Vector))
+	assert.T(t, !learned)
 }

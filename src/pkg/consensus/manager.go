@@ -39,11 +39,27 @@ func (f fill) Less(y interface{}) bool {
 }
 
 
+type tickTime struct {
+	t int64 // trigger time
+	n int64 // seqn
+}
+
+
+func (t tickTime) Less(y interface{}) bool {
+	return t.t < y.(tickTime).t
+}
+
+
 type Stats struct {
+	// Current queue sizes
 	Runs        int
 	WaitPackets int
 	WaitFills   int
+	WaitTicks   int
 	Running     int
+
+	// Totals over all time
+	TotalTicks int64
 }
 
 
@@ -63,7 +79,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 		running := make(map[int64]*run)
 		packets := new(vector.Vector)
 		fills := new(vector.Vector)
-		ticks := make(chan int64)
+		ticks := new(vector.Vector)
 		var nextRun int64
 		var stats Stats
 
@@ -71,6 +87,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 			stats.Runs = len(running)
 			stats.WaitPackets = packets.Len()
 			stats.WaitFills = fills.Len()
+			stats.WaitTicks = ticks.Len()
 			stats.Running = len(running)
 
 			select {
@@ -81,14 +98,11 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
-				run.ticks = ticks
 				if run.isLeader(self) {
 					propSeqns <- run.seqn
 				}
 			case p := <-in:
 				recvPacket(packets, p)
-			case n := <-ticks:
-				applyTick(packets, n)
 			case statCh <- stats:
 			case pr := <-props:
 				log.Printf("propose seqn=%d", pr.Seqn)
@@ -113,6 +127,8 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 					m := M{Seqn: &f.n, Cmd: propose, Value: []byte(store.Nop)}
 					heap.Push(packets, packet{M: m})
 				}
+
+				stats.TotalTicks += int64(applyTicks(packets, ticks, t))
 			}
 
 			for packets.Len() > 0 {
@@ -132,7 +148,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 					continue
 				}
 
-				learned := r.update(p)
+				learned := r.update(p, ticks)
 				if learned {
 					running[seqn] = nil, false
 				}
@@ -185,6 +201,21 @@ func schedFill(q heap.Interface, n, fillDelay int64) {
 }
 
 
-func applyTick(q heap.Interface, n int64) {
-	heap.Push(q, packet{M: M{Seqn: proto.Int64(n), Cmd: tick}})
+func schedTick(q heap.Interface, n, fillDelay int64) {
+	heap.Push(q, tickTime{n: n, t: time.Nanoseconds() + fillDelay})
+}
+
+
+func applyTicks(packets, ticks *vector.Vector, now int64) (n int) {
+	for ticks.Len() > 0 {
+		tt := ticks.At(0).(tickTime)
+		if tt.t > now {
+			break
+		}
+
+		heap.Pop(ticks)
+		heap.Push(packets, packet{M: M{Cmd: tick, Seqn: &tt.n}})
+		n++
+	}
+	return
 }

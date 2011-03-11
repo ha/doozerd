@@ -1,11 +1,11 @@
 package consensus
 
 import (
+	"container/heap"
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"rand"
 	"sort"
-	"time"
 	"log"
 )
 
@@ -25,7 +25,6 @@ type run struct {
 
 	out   chan<- Packet
 	ops   chan<- store.Op
-	ticks chan<- int64
 	bound int64
 }
 
@@ -35,7 +34,7 @@ func (r *run) quorum() int {
 }
 
 
-func (r *run) update(p packet) (learned bool) {
+func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
 	if p.M.Cmd != nil && *p.M.Cmd == M_TICK {
 		log.Printf("tick wasteful=%v", r.l.done)
 	}
@@ -48,10 +47,7 @@ func (r *run) update(p packet) (learned bool) {
 	r.broadcast(m)
 	if tick {
 		r.bound *= 2
-		go func() {
-			time.Sleep(rand.Int63n(r.bound))
-			r.ticks <- r.seqn
-		}()
+		schedTick(ticks, r.seqn, rand.Int63n(r.bound))
 	}
 
 	m = r.a.update(&p.M)
