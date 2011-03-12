@@ -147,7 +147,7 @@ func sendLearn(out chan<- Packet, p packet, st *store.Store) {
 	if p.M.Cmd != nil && *p.M.Cmd == M_INVITE {
 		e := <-st.Wait(*p.Seqn)
 
-		if e.Err != nil {
+		if e.Err == store.ErrTooLate {
 			log.Println(e.Err)
 		} else {
 			m := M{
