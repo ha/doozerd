@@ -126,7 +126,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go lock.Clean(st, pr)
 		go session.Clean(st, pr, time.Tick(sessionPollInterval))
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
-		go gc.Clean(st)
+		go gc.Clean(st, 360000, time.Tick(1e9))
 	}()
 
 	sv := &server.Server{listenAddr, st, pr, self, alpha}

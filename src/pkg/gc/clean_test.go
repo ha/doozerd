@@ -10,20 +10,18 @@ func TestGcClean(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	go Clean(st)
-	for <-st.Watches < 1 {
-	} // Wait for Clean()'s Watch to take
+	ticker := make(chan int64)
+	defer close(ticker)
+
+	go Clean(st, 3, ticker)
 
 	st.Ops <- store.Op{1, store.Nop}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", "a", store.Missing)}
-	st.Ops <- store.Op{3, store.MustEncodeSet("/doozer/info/a/applied", "2", store.Missing)}
+	st.Ops <- store.Op{2, store.Nop}
+	st.Ops <- store.Op{3, store.Nop}
+	st.Ops <- store.Op{4, store.Nop}
 
-	st.Ops <- store.Op{4, store.MustEncodeSet("/doozer/info/X/applied", "0", store.Missing)}
-	w := store.NewWatch(st, store.MustCompileGlob("/x"))
-	st.Ops <- store.Op{5, store.MustEncodeSet("/x", "", store.Missing)}
-	<-w.C
-	w.Stop()
-
-	ev := <-st.Wait(1)
-	assert.Equal(t, store.ErrTooLate, (ev).Err)
+	assert.Equal(t, nil, (<-st.Wait(1)).Err)
+	ticker <- 1
+	ticker <- 1 // Extra tick to ensure the last st.Clean has completed
+	assert.Equal(t, store.ErrTooLate, (<-st.Wait(1)).Err)
 }
