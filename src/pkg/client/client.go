@@ -659,13 +659,13 @@ func (cl *Client) DelSnap(id int32) os.Error {
 }
 
 
-func (cl *Client) Watch(glob string) (*Watch, os.Error) {
+func (cl *Client) Watch(glob string, from int64) (*Watch, os.Error) {
 	c := <-cl.c
 	if c == nil {
 		return nil, ErrNoAddrs
 	}
 
-	return c.events(&T{Verb: watch, Path: &glob})
+	return c.events(&T{Verb: watch, Path: &glob, Rev: &from})
 }
 
 func (cl *Client) Getdir(path string, offset, limit, snapId int32) (*Watch, os.Error) {

@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-
 func mustListen() net.Listener {
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -150,7 +149,7 @@ func TestDoozerWatchSimple(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	w, err := cl.Watch("/test/**")
+	w, err := cl.Watch("/test/**", 0)
 	assert.Equal(t, nil, err, err)
 	defer w.Cancel()
 
@@ -169,6 +168,37 @@ func TestDoozerWatchSimple(t *testing.T) {
 	w.Cancel()
 	ev = <-w.C
 	assert.Tf(t, closed(w.C), "got %v", ev)
+}
+
+
+func TestDoozerWatchWithRev(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+
+	cl := client.New("foo", l.Addr().String())
+
+	// Create some history
+	cl.Set("/test/foo", store.Clobber, []byte("bar"))
+	cl.Set("/test/fun", store.Clobber, []byte("house"))
+
+	// Ask doozer for the history
+	w, err := cl.Watch("/test/**", 1)
+	assert.Equal(t, nil, err, err)
+	defer w.Cancel()
+
+	ev := <-w.C
+	assert.Equal(t, "/test/foo", ev.Path)
+	assert.Equal(t, []byte("bar"), ev.Body)
+	assert.NotEqual(t, "", ev.Cas)
+
+	ev = <-w.C
+	assert.Equal(t, "/test/fun", ev.Path)
+	assert.Equal(t, []byte("house"), ev.Body)
+	assert.NotEqual(t, "", ev.Cas)
 }
 
 

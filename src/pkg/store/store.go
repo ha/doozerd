@@ -416,9 +416,13 @@ func (st *Store) Watch(glob *Glob) <-chan Event {
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
 func NewWatch(st *Store, glob *Glob) (w *Watch) {
+	rev, _ := st.Snap()
+	return NewWatchFrom(st, glob, rev+1)
+}
+
+func NewWatchFrom(st *Store, glob *Glob, from int64) (w *Watch) {
 	ch := make(chan Event)
-	ver, _ := st.Snap()
-	return st.watchOn(glob, ch, ver+1, math.MaxInt64)
+	return st.watchOn(glob, ch, from, math.MaxInt64)
 }
 
 func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) *Watch {

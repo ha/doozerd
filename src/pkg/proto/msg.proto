@@ -31,6 +31,8 @@ message Request {
 
   optional int32 offset = 7;
   optional int32 limit = 8;
+
+  optional int64 rev = 9 [default=0];
 }
 
 message Response {

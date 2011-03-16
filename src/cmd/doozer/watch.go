@@ -33,7 +33,7 @@ If a file is deleted, <cas> will be 0.
 func watch(glob string) {
 	c := client.New("<test>", *addr)
 
-	w, err := c.Watch(glob)
+	w, err := c.Watch(glob, 0)
 	if err != nil {
 		bail(err)
 	}

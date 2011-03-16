@@ -650,7 +650,14 @@ func (c *conn) watch(t *T, tx txn) {
 		return
 	}
 
-	w := store.NewWatch(c.s.St, glob)
+
+	var w *store.Watch
+	rev := pb.GetInt64(t.Rev)
+	if rev == 0 {
+		w = store.NewWatch(c.s.St, glob)
+	} else {
+		w = store.NewWatchFrom(c.s.St, glob, rev)
+	}
 
 	go func() {
 		defer w.Stop()
