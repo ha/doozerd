@@ -38,7 +38,7 @@ var (
 	isDir       = &R{ErrCode: proto.NewResponse_Err(proto.Response_ISDIR)}
 	notDir      = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOTDIR)}
 	noEnt       = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOENT)}
-	badSnap     = &R{ErrCode: proto.NewResponse_Err(proto.Response_INVALID_SNAP)}
+	tooLate     = &R{ErrCode: proto.NewResponse_Err(proto.Response_TOO_LATE)}
 	casMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_CAS_MISMATCH)}
 	readonly    = &R{
 		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
@@ -127,7 +127,6 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 				addr:  rw.RemoteAddr().String(),
 				s:     s,
 				cal:   w,
-				snaps: make(map[int32]store.Getter),
 				tx:    make(map[int32]txn),
 			}
 			go func() {
@@ -203,7 +202,6 @@ type conn struct {
 	s        *Server
 	cal      bool
 	sid      int32
-	snaps    map[int32]store.Getter
 	slk      sync.RWMutex
 	tx       map[int32]txn
 	tl       sync.Mutex // tx lock
@@ -215,13 +213,11 @@ var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_CANCEL:  (*conn).cancel,
 	proto.Request_CHECKIN: (*conn).checkin,
 	proto.Request_DEL:     (*conn).del,
-	proto.Request_DELSNAP: (*conn).delSnap,
 	proto.Request_GET:     (*conn).get,
 	proto.Request_GETDIR:  (*conn).getdir,
 	proto.Request_MONITOR: (*conn).monitor,
 	proto.Request_NOOP:    (*conn).noop,
 	proto.Request_SET:     (*conn).set,
-	proto.Request_SNAP:    (*conn).snap,
 	proto.Request_STAT:    (*conn).stat,
 	proto.Request_WALK:    (*conn).walk,
 	proto.Request_WATCH:   (*conn).watch,
@@ -374,21 +370,6 @@ func (c *conn) redirect(t *T) {
 }
 
 
-func (c *conn) getSnap(id int32) (g store.Getter) {
-	if id == 0 {
-		return c.s.St
-	}
-
-	var ok bool
-	c.slk.RLock()
-	g, ok = c.snaps[id]
-	c.slk.RUnlock()
-	if !ok {
-		return nil
-	}
-	return g
-}
-
 func (c *conn) getterFor(t *T) store.Getter {
 	rev := pb.GetInt64(t.Rev)
 
@@ -402,7 +383,7 @@ func (c *conn) getterFor(t *T) store.Getter {
 		c.respond(t, Valid|Done, nil, errResponse(e.Err))
 		return nil
 	case store.ErrTooLate:
-		c.respond(t, Valid|Done, nil, badSnap)
+		c.respond(t, Valid|Done, nil, tooLate)
 		return nil
 	case nil:
 		return e.Getter
@@ -745,7 +726,7 @@ func (c *conn) watch(t *T, tx txn) {
 				default:
 					c.respond(t, Valid|Done, nil, errResponse(ev.Err))
 				case store.ErrTooLate:
-					c.respond(t, Valid|Done, nil, badSnap)
+					c.respond(t, Valid|Done, nil, tooLate)
 				case nil:
 					r := R{
 						Path:  &ev.Path,
@@ -799,34 +780,4 @@ func (c *conn) walk(t *T, tx txn) {
 			}
 		}()
 	}
-}
-
-
-func (c *conn) snap(t *T, tx txn) {
-	ver, g := c.s.St.Snap()
-
-	var r R
-	r.Rev = pb.Int64(int64(ver))
-
-	c.slk.Lock()
-	c.sid++
-	r.Id = pb.Int32(c.sid)
-	c.snaps[*r.Id] = g
-	c.slk.Unlock()
-
-	c.respond(t, Valid|Done, nil, &r)
-}
-
-
-func (c *conn) delSnap(t *T, tx txn) {
-	if t.Id == nil {
-		c.respond(t, Valid|Done, nil, missingArg)
-		return
-	}
-
-	c.slk.Lock()
-	c.snaps[*t.Id] = nil, false
-	c.slk.Unlock()
-
-	c.respond(t, Valid|Done, nil, &R{})
 }

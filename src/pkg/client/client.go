@@ -27,12 +27,10 @@ var (
 	cancel  = proto.NewRequest_Verb(proto.Request_CANCEL)
 	checkin = proto.NewRequest_Verb(proto.Request_CHECKIN)
 	del     = proto.NewRequest_Verb(proto.Request_DEL)
-	delsnap = proto.NewRequest_Verb(proto.Request_DELSNAP)
 	get     = proto.NewRequest_Verb(proto.Request_GET)
 	monitor = proto.NewRequest_Verb(proto.Request_MONITOR)
 	noop    = proto.NewRequest_Verb(proto.Request_NOOP)
 	set     = proto.NewRequest_Verb(proto.Request_SET)
-	snap    = proto.NewRequest_Verb(proto.Request_SNAP)
 	walk    = proto.NewRequest_Verb(proto.Request_WALK)
 	watch   = proto.NewRequest_Verb(proto.Request_WATCH)
 	stat    = proto.NewRequest_Verb(proto.Request_STAT)
@@ -56,12 +54,12 @@ var (
 	ErrNotDir      = &ResponseError{proto.Response_NOTDIR, "not a directory"}
 	ErrIsDir       = &ResponseError{proto.Response_ISDIR, "is a directory"}
 	ErrCasMismatch = &ResponseError{proto.Response_CAS_MISMATCH, "cas mismatch"}
-	ErrInvalidSnap = &ResponseError{proto.Response_INVALID_SNAP, "invalid snapshot id"}
+	ErrTooLate     = &ResponseError{proto.Response_TOO_LATE, "that rev is gone"}
 	respErrors     = map[int32]*ResponseError{
 		proto.Response_NOTDIR:       ErrNotDir,
 		proto.Response_ISDIR:        ErrIsDir,
 		proto.Response_CAS_MISMATCH: ErrCasMismatch,
-		proto.Response_INVALID_SNAP: ErrInvalidSnap,
+		proto.Response_TOO_LATE:     ErrTooLate,
 	}
 )
 
@@ -640,22 +638,6 @@ func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
 	}
 
 	return pb.GetInt64(r.Cas), nil
-}
-
-
-func (cl *Client) Snap() (id int32, ver int64, err os.Error) {
-	r, err := cl.call(&T{Verb: snap})
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return pb.GetInt32(r.Id), pb.GetInt64(r.Rev), nil
-}
-
-
-func (cl *Client) DelSnap(id int32) os.Error {
-	_, err := cl.call(&T{Verb: delsnap, Id: &id})
-	return err
 }
 
 

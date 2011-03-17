@@ -9,8 +9,6 @@ message Request {
       SET      = 2;  // cas, path, value => cas
       DEL      = 3;  // cas, path        => {}
       ESET     = 4;  // cas, path        => {}
-      SNAP     = 5;  // {}               => rev, id
-      DELSNAP  = 6;  // id               => {}
       NOOP     = 7;  // {}               => {}
       WATCH    = 8;  // path             => {cas, path, value}+
       WALK     = 9;  // path, id         => {cas, path, value}+
@@ -52,7 +50,7 @@ message Response {
     TAG_IN_USE   = 1;
     UNKNOWN_VERB = 2;
     REDIRECT     = 3;
-    INVALID_SNAP = 4;
+    TOO_LATE     = 4;
     CAS_MISMATCH = 5;
     BAD_PATH     = 6;
     MISSING_ARG  = 7;

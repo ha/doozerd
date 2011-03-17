@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
@@ -31,23 +30,9 @@ func TestDelNilFields(t *testing.T) {
 		c:     &bytes.Buffer{},
 		s:     &Server{},
 		cal:   true,
-		snaps: make(map[int32]store.Getter),
 		tx:    make(map[int32]txn),
 	}
 	c.del(&T{Tag: proto.Int32(1)}, newTxn())
-	assertResponse(t, missingArg, c)
-}
-
-
-func TestDelSnapNilFields(t *testing.T) {
-	c := &conn{
-		c:     &bytes.Buffer{},
-		s:     &Server{},
-		cal:   true,
-		snaps: make(map[int32]store.Getter),
-		tx:    make(map[int32]txn),
-	}
-	c.delSnap(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
 }
 
@@ -57,7 +42,6 @@ func TestCheckinNilFields(t *testing.T) {
 		c:     &bytes.Buffer{},
 		s:     &Server{},
 		cal:   true,
-		snaps: make(map[int32]store.Getter),
 		tx:    make(map[int32]txn),
 	}
 	c.checkin(&T{Tag: proto.Int32(1)}, newTxn())
@@ -70,7 +54,6 @@ func TestSetNilFields(t *testing.T) {
 		c:     &bytes.Buffer{},
 		s:     &Server{},
 		cal:   true,
-		snaps: make(map[int32]store.Getter),
 		tx:    make(map[int32]txn),
 	}
 	c.set(&T{Tag: proto.Int32(1)}, newTxn())
@@ -98,7 +81,6 @@ func TestServerCancel(t *testing.T) {
 		c:     &buf,
 		s:     &Server{},
 		cal:   true,
-		snaps: make(map[int32]store.Getter),
 		tx:    make(map[int32]txn),
 	}
 

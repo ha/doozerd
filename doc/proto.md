@@ -171,12 +171,6 @@ This is indicated by a + sign after the response fields.
 
    Del deletes the file at *path* if its CAS token matches *cas*.
 
- * `DELSNAP` *id* &rArr; &empty;
-
-   Delsnap removes the snapshot *id*. It is okay to delete
-   a snapshot that does not exist (either because it was
-   deleted or it never existed).
-
  * `ELOCK` (not yet implemented)
 
  * `ESET` (not yet implemented)
@@ -192,7 +186,7 @@ This is indicated by a + sign after the response fields.
  * `GET` *path*, *id* &rArr; *value*, *cas*
 
    Gets the contents (*value*) and CAS token (*cas*)
-   of the file at *path*, in the snapshot *id*.
+   of the file at *path*, in the *rev*.
    If *id* is 0 or unset, uses the current revision
    of the data store.
 
@@ -218,7 +212,7 @@ This is indicated by a + sign after the response fields.
    Equivalent to `WALK` followed by `WATCH`, but guarantees that
    no two responses will have the same CAS token, and that
    the *rev* of the first event is one greater than the rev
-   of the `WALK` snapshot.
+   of the `WALK` rev.
 
  * `NOOP` (deprecated)
 
@@ -228,19 +222,12 @@ This is indicated by a + sign after the response fields.
    as long as the file's old CAS token matches *cas*.
    Returns the new CAS token.
 
- * `SNAP` &empty; &rArr; *id*, *rev*
-
-   Snap creates a consistent snapshot of the data store.
-   Returns *id*, a number identifying this snapshot,
-   and *rev*, the total number of writes to the store
-   before the snapshot was taken.
-
  * `SYNCPATH` (not yet implemented)
 
  * `WALK` *path*, *id* &rArr; {*path*, *cas*, *value*}+
 
    Iterates over all existing files that match *path*, a
-   glob pattern, in snapshot *id*. Sends one response
+   glob pattern, in *rev*. Sends one response
    for each matching file. If *id* is 0, uses the current
    state of the data store.
 
@@ -286,10 +273,12 @@ Error codes are defined with the following meanings:
 
    Deprecated. Subject to change.
 
- * `INVALID_SNAP`
+ * `TOO_LATE`
 
-   The snapshot id given in the request is invalid;
-   there is no snapshot with that id.
+   The rev given in the request is invalid;
+   it has been garbage collected.
+
+   The current default of history kept is 360,000 revs.
 
  * `CAS_MISMATCH`
 
