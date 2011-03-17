@@ -669,12 +669,22 @@ func (c *conn) watch(t *T, tx txn) {
 				if closed(w.C) {
 					return
 				}
-				var r R
-				r.Path = &ev.Path
-				r.Value = []byte(ev.Body)
-				r.Cas = &ev.Cas
-				r.Rev = &ev.Seqn
-				c.respond(t, Valid, tx.cancel, &r)
+
+				switch ev.Err {
+				default:
+					c.respond(t, Valid|Done, nil, errResponse(ev.Err))
+				case store.ErrTooLate:
+					c.respond(t, Valid|Done, nil, badSnap)
+				case nil:
+					r := R{
+						Path:  &ev.Path,
+						Value: []byte(ev.Body),
+						Cas:   &ev.Cas,
+						Rev:   &ev.Seqn,
+					}
+					c.respond(t, Valid, tx.cancel, &r)
+				}
+
 			case <-tx.cancel:
 				c.closeTxn(*t.Tag)
 				return
