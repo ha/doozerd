@@ -389,6 +389,15 @@ func (c *conn) getSnap(id int32) (g store.Getter) {
 	return g
 }
 
+func (c *conn) getterAt(rev int64) (store.Getter, os.Error) {
+	if rev == 0 {
+		return c.s.St, nil
+	}
+
+	e := <-c.s.St.Wait(rev)
+	return e.Getter, e.Err
+}
+
 
 func (c *conn) get(t *T, tx txn) {
 	g := c.getSnap(pb.GetInt32(t.Id))
@@ -763,19 +772,17 @@ func (c *conn) walk(t *T, tx txn) {
 		return
 	}
 
-	var g store.Getter
-	rev := pb.GetInt64(t.Rev)
-	if rev == 0 {
-		g = c.s.St
-	} else {
-		e := <-c.s.St.Wait(rev)
-		if e.Err != nil {
-			c.respond(t, Valid|Done, nil, errResponse(e.Err))
-			return
-		}
-		g = e.Getter
+	g, err := c.getterAt(pb.GetInt64(t.Rev))
+	switch err {
+	default:
+		c.respond(t, Valid|Done, nil, errResponse(err))
+		return
+	case store.ErrTooLate:
+		c.respond(t, Valid|Done, nil, badSnap)
+		return
+	case nil:
+		// Do nothing
 	}
-
 
 	go func() {
 		stopped := store.Walk(g, glob, func(path, body string, cas int64) (stop bool) {
