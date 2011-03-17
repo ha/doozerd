@@ -618,13 +618,13 @@ func (cl *Client) Del(path string, cas int64) os.Error {
 	return err
 }
 
-func (cl *Client) Stat(path string, snapId int32) (int32, int64, os.Error) {
-	r, err := cl.retry(&T{Verb: stat, Path: &path, Id: &snapId})
+func (cl *Client) Stat(path string, rev int64) (int32, int64, os.Error) {
+	r, err := cl.retry(&T{Verb: stat, Path: &path, Rev: &rev})
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return pb.GetInt32(r.Len), pb.GetInt64(r.Cas), nil
+	return pb.GetInt32(r.Len), pb.GetInt64(r.Rev), nil
 }
 
 func (cl *Client) Noop() os.Error {

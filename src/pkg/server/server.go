@@ -625,14 +625,10 @@ func (c *conn) checkin(t *T, tx txn) {
 
 
 func (c *conn) stat(t *T, tx txn) {
-	g := c.getSnap(pb.GetInt32(t.Id))
-	if g == nil {
-		c.respond(t, Valid|Done, nil, badSnap)
-		return
+	if g := c.getterFor(t); g != nil {
+		ln, rev := g.Stat(pb.GetString(t.Path))
+		c.respond(t, Valid|Done, nil, &R{Len: &ln, Rev: &rev})
 	}
-
-	ln, cas := g.Stat(pb.GetString(t.Path))
-	c.respond(t, Valid|Done, nil, &R{Len: &ln, Cas: &cas})
 }
 
 
