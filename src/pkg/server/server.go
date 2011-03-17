@@ -692,14 +692,22 @@ func (c *conn) walk(t *T, tx txn) {
 		return
 	}
 
-	g := c.getSnap(pb.GetInt32(t.Id))
-	if g == nil {
-		c.respond(t, Valid|Done, nil, badSnap)
-		return
+	var g store.Getter
+	rev := pb.GetInt64(t.Rev)
+	if rev == 0 {
+		g = c.s.St
+	} else {
+		e := <-c.s.St.Wait(rev)
+		if e.Err != nil {
+			c.respond(t, Valid|Done, nil, errResponse(e.Err))
+			return
+		}
+		g = e.Getter
 	}
 
+
 	go func() {
-		stopped := store.Walk(c.s.St, glob, func(path, body string, cas int64) (stop bool) {
+		stopped := store.Walk(g, glob, func(path, body string, cas int64) (stop bool) {
 			select {
 			case <-tx.cancel:
 				c.closeTxn(*t.Tag)
@@ -711,6 +719,7 @@ func (c *conn) walk(t *T, tx txn) {
 			r.Path = &path
 			r.Value = []byte(body)
 			r.Cas = &cas
+			r.Rev = &cas
 			c.respond(t, Valid, tx.cancel, &r)
 			return false
 		})

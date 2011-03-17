@@ -234,6 +234,34 @@ func TestDoozerWalk(t *testing.T) {
 	assert.Tf(t, closed(w.C), "got %v", ev)
 }
 
+
+func TestDoozerWalkWithRev(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+
+	cl := client.New("foo", l.Addr().String())
+
+	rev, _ := cl.Set("/test/foo", store.Clobber, []byte("bar"))
+	cl.Set("/test/fun", store.Clobber, []byte("house"))
+	cl.Set("/test/fab", store.Clobber, []byte("ulous"))
+
+	w, err := cl.Walk("/test/**", rev)
+	assert.Equal(t, nil, err, err)
+
+	ls := []string{}
+	for e := range w.C {
+		ls = append(ls, e.Path)
+	}
+
+	sort.SortStrings(ls)
+	assert.Equal(t, []string{"/test/foo"}, ls)
+}
+
+
 func TestDoozerStat(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
