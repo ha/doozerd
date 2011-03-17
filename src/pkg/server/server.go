@@ -412,24 +412,20 @@ func (c *conn) getterFor(t *T) store.Getter {
 
 
 func (c *conn) get(t *T, tx txn) {
-	g := c.getSnap(pb.GetInt32(t.Id))
-	if g == nil {
-		c.respond(t, Valid|Done, nil, badSnap)
-		return
-	}
+	if g := c.getterFor(t); g != nil {
+		v, rev := g.Get(pb.GetString(t.Path))
+		if rev == store.Dir {
+			c.respond(t, Valid|Done, nil, isDir)
+			return
+		}
 
-	v, cas := g.Get(pb.GetString(t.Path))
-	if cas == store.Dir {
-		c.respond(t, Valid|Done, nil, isDir)
-		return
+		var r R
+		r.Rev = &rev
+		if len(v) == 1 { // not missing
+			r.Value = []byte(v[0])
+		}
+		c.respond(t, Valid|Done, nil, &r)
 	}
-
-	var r R
-	r.Cas = &cas
-	if len(v) == 1 { // not missing
-		r.Value = []byte(v[0])
-	}
-	c.respond(t, Valid|Done, nil, &r)
 }
 
 

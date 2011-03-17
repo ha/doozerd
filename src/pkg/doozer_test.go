@@ -93,7 +93,7 @@ func TestDoozerSet(t *testing.T) {
 }
 
 
-func TestDoozerSnap(t *testing.T) {
+func TestDoozerGetWithRev(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -103,39 +103,26 @@ func TestDoozerSnap(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	cas1, err := cl.Set("/x", store.Missing, []byte{'a'})
+	rev1, err := cl.Set("/x", store.Missing, []byte{'a'})
 	assert.Equal(t, nil, err)
 
-	sid, ver, err := cl.Snap()
+	v, rev, err := cl.Get("/x", rev1) // Use the snapshot.
 	assert.Equal(t, nil, err)
-	assert.Equal(t, int32(1), sid)
-	assert.T(t, ver >= cas1)
-
-	v, cas, err := cl.Get("/x", sid) // Use the snapshot.
-	assert.Equal(t, nil, err)
-	assert.Equal(t, cas1, cas)
+	assert.Equal(t, rev1, rev)
 	assert.Equal(t, []byte{'a'}, v)
 
-	cas2, err := cl.Set("/x", cas, []byte{'b'})
+	rev2, err := cl.Set("/x", rev, []byte{'b'})
 	assert.Equal(t, nil, err)
 
-	v, cas, err = cl.Get("/x", 0) // Read the new value.
+	v, rev, err = cl.Get("/x", 0) // Read the new value.
 	assert.Equal(t, nil, err)
-	assert.Equal(t, cas2, cas)
+	assert.Equal(t, rev2, rev)
 	assert.Equal(t, []byte{'b'}, v)
 
-	v, cas, err = cl.Get("/x", sid) // Read the saved value again.
+	v, rev, err = cl.Get("/x", rev1) // Read the saved value again.
 	assert.Equal(t, nil, err)
-	assert.Equal(t, cas1, cas)
+	assert.Equal(t, rev1, rev)
 	assert.Equal(t, []byte{'a'}, v)
-
-	err = cl.DelSnap(sid)
-	assert.Equal(t, nil, err)
-
-	v, cas, err = cl.Get("/x", sid) // Use the missing snapshot.
-	assert.Equal(t, client.ErrInvalidSnap, err)
-	assert.Equal(t, int64(0), cas)
-	assert.Equal(t, []byte{}, v)
 }
 
 

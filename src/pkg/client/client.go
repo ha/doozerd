@@ -600,16 +600,16 @@ func (cl *Client) Set(path string, oldCas int64, body []byte) (newCas int64, err
 
 
 // Returns the body and CAS token of the file at path.
-// If snapId is 0, uses the current state, otherwise,
-// snapId must be a value previously returned from Snap.
+// If rev is 0, uses the current state, otherwise,
+// rev must be a value previously returned buy an operation.
 // If path does not denote a file, returns an error.
-func (cl *Client) Get(path string, snapId int32) (body []byte, cas int64, err os.Error) {
-	r, err := cl.retry(&T{Verb: get, Path: &path, Id: &snapId})
+func (cl *Client) Get(path string, rev int64) ([]byte, int64, os.Error) {
+	r, err := cl.retry(&T{Verb: get, Path: &path, Rev: &rev})
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return r.Value, pb.GetInt64(r.Cas), nil
+	return r.Value, pb.GetInt64(r.Rev), nil
 }
 
 
