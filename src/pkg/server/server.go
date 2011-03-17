@@ -639,54 +639,50 @@ func (c *conn) stat(t *T, tx txn) {
 func (c *conn) getdir(t *T, tx txn) {
 	path := pb.GetString(t.Path)
 
-	g := c.getSnap(pb.GetInt32(t.Id))
-	if g == nil {
-		c.respond(t, Valid|Done, nil, badSnap)
-		return
-	}
+	if g := c.getterFor(t); g != nil {
+		go func() {
+			ents, rev := g.Get(path)
 
-	go func() {
-		ents, cas := g.Get(path)
-
-		if cas == store.Missing {
-			c.respond(t, Valid|Done, nil, noEnt)
-			return
-		}
-
-		if cas != store.Dir {
-			c.respond(t, Valid|Done, nil, notDir)
-			return
-		}
-
-		offset := int(pb.GetInt32(t.Offset))
-		limit := int(pb.GetInt32(t.Limit))
-
-		if limit <= 0 {
-			limit = len(ents)
-		}
-
-		if offset < 0 {
-			offset = 0
-		}
-
-		end := offset + limit
-		if end > len(ents) {
-			end = len(ents)
-		}
-
-		for _, e := range ents[offset:end] {
-			select {
-			case <-tx.cancel:
-				c.closeTxn(*t.Tag)
+			if rev == store.Missing {
+				c.respond(t, Valid|Done, nil, noEnt)
 				return
-			default:
 			}
 
-			c.respond(t, Valid, tx.cancel, &R{Path: &e})
-		}
+			if rev != store.Dir {
+				c.respond(t, Valid|Done, nil, notDir)
+				return
+			}
 
-		c.respond(t, Done, nil, &R{})
-	}()
+			offset := int(pb.GetInt32(t.Offset))
+			limit := int(pb.GetInt32(t.Limit))
+
+			if limit <= 0 {
+				limit = len(ents)
+			}
+
+			if offset < 0 {
+				offset = 0
+			}
+
+			end := offset + limit
+			if end > len(ents) {
+				end = len(ents)
+			}
+
+			for _, e := range ents[offset:end] {
+				select {
+				case <-tx.cancel:
+					c.closeTxn(*t.Tag)
+					return
+				default:
+				}
+
+				c.respond(t, Valid, tx.cancel, &R{Path: &e})
+			}
+
+			c.respond(t, Done, nil, &R{})
+		}()
+	}
 }
 
 
