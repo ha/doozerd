@@ -389,13 +389,25 @@ func (c *conn) getSnap(id int32) (g store.Getter) {
 	return g
 }
 
-func (c *conn) getterAt(rev int64) (store.Getter, os.Error) {
+func (c *conn) getterFor(t *T) store.Getter {
+	rev := pb.GetInt64(t.Rev)
+
 	if rev == 0 {
-		return c.s.St, nil
+		return c.s.St
 	}
 
-	e := <-c.s.St.Wait(rev)
-	return e.Getter, e.Err
+	switch e := <-c.s.St.Wait(rev); e.Err {
+	default:
+		c.respond(t, Valid|Done, nil, errResponse(e.Err))
+		return nil
+	case store.ErrTooLate:
+		c.respond(t, Valid|Done, nil, badSnap)
+		return nil
+	case nil:
+		return e.Getter
+	}
+
+	panic("unreachable")
 }
 
 
@@ -772,40 +784,32 @@ func (c *conn) walk(t *T, tx txn) {
 		return
 	}
 
-	g, err := c.getterAt(pb.GetInt64(t.Rev))
-	switch err {
-	default:
-		c.respond(t, Valid|Done, nil, errResponse(err))
-		return
-	case store.ErrTooLate:
-		c.respond(t, Valid|Done, nil, badSnap)
-		return
-	case nil:
-		// Do nothing
-	}
+	if g := c.getterFor(t); g != nil {
+		go func() {
+			f := func(path, body string, cas int64) (stop bool) {
+				select {
+				case <-tx.cancel:
+					c.closeTxn(*t.Tag)
+					return true
+				default:
+				}
 
-	go func() {
-		stopped := store.Walk(g, glob, func(path, body string, cas int64) (stop bool) {
-			select {
-			case <-tx.cancel:
-				c.closeTxn(*t.Tag)
-				return true
-			default:
+				var r R
+				r.Path = &path
+				r.Value = []byte(body)
+				r.Cas = &cas
+				r.Rev = &cas
+				c.respond(t, Valid, tx.cancel, &r)
+				return false
 			}
 
-			var r R
-			r.Path = &path
-			r.Value = []byte(body)
-			r.Cas = &cas
-			r.Rev = &cas
-			c.respond(t, Valid, tx.cancel, &r)
-			return false
-		})
+			stopped := store.Walk(g, glob, f)
 
-		if !stopped {
-			c.respond(t, Done, nil, &R{})
-		}
-	}()
+			if !stopped {
+				c.respond(t, Done, nil, &R{})
+			}
+		}()
+	}
 }
 
 
