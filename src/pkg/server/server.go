@@ -393,7 +393,8 @@ func (c *conn) getterFor(t *T) store.Getter {
 	rev := pb.GetInt64(t.Rev)
 
 	if rev == 0 {
-		return c.s.St
+		_, g := c.s.St.Snap()
+		return g
 	}
 
 	switch e := <-c.s.St.Wait(rev); e.Err {
