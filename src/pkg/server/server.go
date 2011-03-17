@@ -211,6 +211,23 @@ type conn struct {
 }
 
 
+var ops = map[int32]func(*conn, *T, txn){
+	proto.Request_CANCEL:  (*conn).cancel,
+	proto.Request_CHECKIN: (*conn).checkin,
+	proto.Request_DEL:     (*conn).del,
+	proto.Request_DELSNAP: (*conn).delSnap,
+	proto.Request_GET:     (*conn).get,
+	proto.Request_GETDIR:  (*conn).getdir,
+	proto.Request_MONITOR: (*conn).monitor,
+	proto.Request_NOOP:    (*conn).noop,
+	proto.Request_SET:     (*conn).set,
+	proto.Request_SNAP:    (*conn).snap,
+	proto.Request_STAT:    (*conn).stat,
+	proto.Request_WALK:    (*conn).walk,
+	proto.Request_WATCH:   (*conn).watch,
+}
+
+
 func (c *conn) readBuf() (*T, os.Error) {
 	var size int32
 	err := binary.Read(c.c, binary.BigEndian, &size)
@@ -230,6 +247,50 @@ func (c *conn) readBuf() (*T, os.Error) {
 		return nil, err
 	}
 	return &t, nil
+}
+
+
+func (c *conn) serve() {
+	defer c.cancelAll()
+
+	for {
+		t, err := c.readBuf()
+		if err != nil {
+			if err != os.EOF {
+				log.Println(err)
+			}
+			return
+		}
+
+		verb := pb.GetInt32((*int32)(t.Verb))
+		f, ok := ops[verb]
+		if !ok {
+			var r R
+			r.ErrCode = proto.NewResponse_Err(proto.Response_UNKNOWN_VERB)
+			c.respond(t, Valid|Done, nil, &r)
+			continue
+		}
+
+		tag := pb.GetInt32((*int32)(t.Tag))
+		tx := newTxn()
+
+		c.tl.Lock()
+		c.tx[tag] = tx
+		c.tl.Unlock()
+
+		f(c, t, tx)
+	}
+}
+
+
+func (c *conn) closeTxn(tag int32) {
+	c.tl.Lock()
+	tx, ok := c.tx[tag]
+	c.tx[tag] = txn{}, false
+	c.tl.Unlock()
+	if ok {
+		close(tx.done)
+	}
 }
 
 
@@ -768,65 +829,4 @@ func (c *conn) delSnap(t *T, tx txn) {
 	c.slk.Unlock()
 
 	c.respond(t, Valid|Done, nil, &R{})
-}
-
-
-var ops = map[int32]func(*conn, *T, txn){
-	proto.Request_CANCEL:  (*conn).cancel,
-	proto.Request_CHECKIN: (*conn).checkin,
-	proto.Request_DEL:     (*conn).del,
-	proto.Request_DELSNAP: (*conn).delSnap,
-	proto.Request_GET:     (*conn).get,
-	proto.Request_GETDIR:  (*conn).getdir,
-	proto.Request_MONITOR: (*conn).monitor,
-	proto.Request_NOOP:    (*conn).noop,
-	proto.Request_SET:     (*conn).set,
-	proto.Request_SNAP:    (*conn).snap,
-	proto.Request_STAT:    (*conn).stat,
-	proto.Request_WALK:    (*conn).walk,
-	proto.Request_WATCH:   (*conn).watch,
-}
-
-
-func (c *conn) serve() {
-	defer c.cancelAll()
-
-	for {
-		t, err := c.readBuf()
-		if err != nil {
-			if err != os.EOF {
-				log.Println(err)
-			}
-			return
-		}
-
-		verb := pb.GetInt32((*int32)(t.Verb))
-		f, ok := ops[verb]
-		if !ok {
-			var r R
-			r.ErrCode = proto.NewResponse_Err(proto.Response_UNKNOWN_VERB)
-			c.respond(t, Valid|Done, nil, &r)
-			continue
-		}
-
-		tag := pb.GetInt32((*int32)(t.Tag))
-		tx := newTxn()
-
-		c.tl.Lock()
-		c.tx[tag] = tx
-		c.tl.Unlock()
-
-		f(c, t, tx)
-	}
-}
-
-
-func (c *conn) closeTxn(tag int32) {
-	c.tl.Lock()
-	tx, ok := c.tx[tag]
-	c.tx[tag] = txn{}, false
-	c.tl.Unlock()
-	if ok {
-		close(tx.done)
-	}
 }
