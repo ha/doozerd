@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 	"rand"
@@ -753,6 +754,13 @@ func (c *conn) walk(t *T, tx txn) {
 		return
 	}
 
+	offset := pb.GetInt32(t.Offset)
+
+	var limit int32 = math.MaxInt32
+	if t.Limit != nil {
+		limit = pb.GetInt32(t.Limit)
+	}
+
 	if g := c.getterFor(t); g != nil {
 		go func() {
 			f := func(path, body string, cas int64) (stop bool) {
@@ -763,12 +771,18 @@ func (c *conn) walk(t *T, tx txn) {
 				default:
 				}
 
-				var r R
-				r.Path = &path
-				r.Value = []byte(body)
-				r.Cas = &cas
-				r.Rev = &cas
-				c.respond(t, Valid, tx.cancel, &r)
+				if offset <= 0 && limit > 0 {
+					var r R
+					r.Path = &path
+					r.Value = []byte(body)
+					r.Cas = &cas
+					r.Rev = &cas
+					c.respond(t, Valid, tx.cancel, &r)
+
+					limit--
+				}
+
+				offset--
 				return false
 			}
 

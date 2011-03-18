@@ -202,7 +202,7 @@ func TestDoozerWalk(t *testing.T) {
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	w, err := cl.Walk("/test/**", 0)
+	w, err := cl.Walk("/test/**", 0, nil, nil)
 	assert.Equal(t, nil, err, err)
 
 	ev := <-w.C
@@ -236,7 +236,7 @@ func TestDoozerWalkWithRev(t *testing.T) {
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 	cl.Set("/test/fab", store.Clobber, []byte("ulous"))
 
-	w, err := cl.Walk("/test/**", rev)
+	w, err := cl.Walk("/test/**", rev, nil, nil)
 	assert.Equal(t, nil, err, err)
 
 	ls := []string{}
@@ -248,6 +248,42 @@ func TestDoozerWalkWithRev(t *testing.T) {
 	assert.Equal(t, []string{"/test/foo"}, ls)
 }
 
+func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
+	l := mustListen()
+	defer l.Close()
+	u := mustListenPacket(l.Addr().String())
+	defer u.Close()
+
+	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+
+	cl := client.New("foo", l.Addr().String())
+
+	cl.Set("/test/a", store.Clobber, []byte("abc"))
+	cl.Set("/test/b", store.Clobber, []byte("def"))
+	cl.Set("/test/c", store.Clobber, []byte("ghi"))
+	cl.Set("/test/d", store.Clobber, []byte("jkl"))
+
+	offset := int32(1)
+	limit := int32(2)
+
+	w, err := cl.Walk("/test/**", 0, &offset, &limit)
+	assert.Equal(t, nil, err, err)
+
+	ev := <-w.C
+	assert.NotEqual(t, (*client.Event)(nil), ev)
+	assert.Equal(t, "/test/b", ev.Path)
+	assert.Equal(t, "def", string(ev.Body))
+	assert.NotEqual(t, "", ev.Cas)
+
+	ev = <-w.C
+	assert.NotEqual(t, (*client.Event)(nil), ev)
+	assert.Equal(t, "/test/c", ev.Path)
+	assert.Equal(t, "ghi", string(ev.Body))
+	assert.NotEqual(t, "", ev.Cas)
+
+	ev = <-w.C
+	assert.Tf(t, closed(w.C), "got %v", ev)
+}
 
 func TestDoozerStat(t *testing.T) {
 	l := mustListen()
