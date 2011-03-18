@@ -123,11 +123,11 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 				return
 			}
 			c := &conn{
-				c:     rw,
-				addr:  rw.RemoteAddr().String(),
-				s:     s,
-				cal:   w,
-				tx:    make(map[int32]txn),
+				c:    rw,
+				addr: rw.RemoteAddr().String(),
+				s:    s,
+				cal:  w,
+				tx:   make(map[int32]txn),
 			}
 			go func() {
 				c.serve()
@@ -701,7 +701,6 @@ func (c *conn) watch(t *T, tx txn) {
 		c.respond(t, Valid|Done, nil, errResponse(err))
 		return
 	}
-
 
 	var w *store.Watch
 	rev := pb.GetInt64(t.Rev)

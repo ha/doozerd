@@ -27,10 +27,10 @@ func assertResponse(t *testing.T, exp *R, c *conn) {
 
 func TestDelNilFields(t *testing.T) {
 	c := &conn{
-		c:     &bytes.Buffer{},
-		s:     &Server{},
-		cal:   true,
-		tx:    make(map[int32]txn),
+		c:   &bytes.Buffer{},
+		s:   &Server{},
+		cal: true,
+		tx:  make(map[int32]txn),
 	}
 	c.del(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -39,10 +39,10 @@ func TestDelNilFields(t *testing.T) {
 
 func TestCheckinNilFields(t *testing.T) {
 	c := &conn{
-		c:     &bytes.Buffer{},
-		s:     &Server{},
-		cal:   true,
-		tx:    make(map[int32]txn),
+		c:   &bytes.Buffer{},
+		s:   &Server{},
+		cal: true,
+		tx:  make(map[int32]txn),
 	}
 	c.checkin(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -51,10 +51,10 @@ func TestCheckinNilFields(t *testing.T) {
 
 func TestSetNilFields(t *testing.T) {
 	c := &conn{
-		c:     &bytes.Buffer{},
-		s:     &Server{},
-		cal:   true,
-		tx:    make(map[int32]txn),
+		c:   &bytes.Buffer{},
+		s:   &Server{},
+		cal: true,
+		tx:  make(map[int32]txn),
 	}
 	c.set(&T{Tag: proto.Int32(1)}, newTxn())
 	assertResponse(t, missingArg, c)
@@ -78,10 +78,10 @@ func TestServerCloseTxn(t *testing.T) {
 func TestServerCancel(t *testing.T) {
 	var buf bytes.Buffer
 	c := &conn{
-		c:     &buf,
-		s:     &Server{},
-		cal:   true,
-		tx:    make(map[int32]txn),
+		c:   &buf,
+		s:   &Server{},
+		cal: true,
+		tx:  make(map[int32]txn),
 	}
 
 	fakeTx := newTxn()
