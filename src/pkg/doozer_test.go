@@ -144,13 +144,18 @@ func TestDoozerWatchSimple(t *testing.T) {
 	ev := <-w.C
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 	ev = <-w.C
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
+
+	cl.Del("/test/foo", store.Clobber)
+	ev = <-w.C
+	assert.Equal(t, "/test/foo", ev.Path)
+	assert.T(t, ev.IsDel())
 
 	w.Cancel()
 	ev = <-w.C
@@ -180,12 +185,12 @@ func TestDoozerWatchWithRev(t *testing.T) {
 	ev := <-w.C
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 
 	ev = <-w.C
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 }
 
 
@@ -209,13 +214,13 @@ func TestDoozerWalk(t *testing.T) {
 	assert.NotEqual(t, (*client.Event)(nil), ev)
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, "bar", string(ev.Body))
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 
 	ev = <-w.C
 	assert.NotEqual(t, (*client.Event)(nil), ev)
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, "house", string(ev.Body))
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 
 	ev = <-w.C
 	assert.Tf(t, closed(w.C), "got %v", ev)
@@ -273,13 +278,13 @@ func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
 	assert.NotEqual(t, (*client.Event)(nil), ev)
 	assert.Equal(t, "/test/b", ev.Path)
 	assert.Equal(t, "def", string(ev.Body))
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 
 	ev = <-w.C
 	assert.NotEqual(t, (*client.Event)(nil), ev)
 	assert.Equal(t, "/test/c", ev.Path)
 	assert.Equal(t, "ghi", string(ev.Body))
-	assert.NotEqual(t, "", ev.Cas)
+	assert.T(t, ev.IsSet())
 
 	ev = <-w.C
 	assert.Tf(t, closed(w.C), "got %v", ev)

@@ -64,6 +64,8 @@ func errResponse(e os.Error) *R {
 const (
 	Valid = 1 << iota
 	Done
+	Set
+	Del
 )
 
 
@@ -530,7 +532,7 @@ func (c *conn) monitor(t *T, tx txn) {
 			r.Cas = &cas
 			r.Path = &path
 			r.Value = []byte(body)
-			c.respond(t, Valid, tx.cancel, &r)
+			c.respond(t, Valid|Set, tx.cancel, &r)
 			return false
 		})
 		if stopped {
@@ -552,7 +554,15 @@ func (c *conn) monitor(t *T, tx txn) {
 				r.Cas = &ev.Cas
 				r.Path = &ev.Path
 				r.Value = []byte(ev.Body)
-				c.respond(t, Valid, tx.cancel, &r)
+
+				var flag int32
+				switch {
+				case ev.IsSet():
+					flag = Set
+				case ev.IsDel():
+					flag = Del
+				}
+				c.respond(t, Valid|flag, tx.cancel, &r)
 			}
 		}
 	}()
@@ -739,7 +749,16 @@ func (c *conn) watch(t *T, tx txn) {
 						Cas:   &ev.Cas,
 						Rev:   &ev.Seqn,
 					}
-					c.respond(t, Valid, tx.cancel, &r)
+
+					var flag int32
+					switch {
+					case ev.IsSet():
+						flag = Set
+					case ev.IsDel():
+						flag = Del
+					}
+
+					c.respond(t, Valid|flag, tx.cancel, &r)
 				}
 
 			case <-tx.cancel:
@@ -782,7 +801,7 @@ func (c *conn) walk(t *T, tx txn) {
 					r.Value = []byte(body)
 					r.Cas = &cas
 					r.Rev = &cas
-					c.respond(t, Valid, tx.cancel, &r)
+					c.respond(t, Valid|Set, tx.cancel, &r)
 
 					limit--
 				}

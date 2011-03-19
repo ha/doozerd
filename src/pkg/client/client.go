@@ -15,6 +15,8 @@ import (
 const (
 	Valid = 1 << iota
 	Done
+	Set
+	Del
 )
 
 
@@ -70,7 +72,18 @@ type Event struct {
 	Cas  int64
 	Path string
 	Body []byte
+	Flag int32
 	Err  os.Error
+}
+
+
+func (e Event) IsSet() bool {
+	return e.Flag&Set > 0
+}
+
+
+func (e Event) IsDel() bool {
+	return e.Flag&Del > 0
 }
 
 
@@ -221,6 +234,7 @@ func (c *conn) events(t *T) (*Watch, os.Error) {
 				ev.Cas = pb.GetInt64(r.Cas)
 				ev.Path = pb.GetString(r.Path)
 				ev.Body = r.Value
+				ev.Flag = pb.GetInt32(r.Flags)
 			}
 			evs <- &ev
 		}
