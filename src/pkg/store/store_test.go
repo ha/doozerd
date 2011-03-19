@@ -875,7 +875,7 @@ func TestStoreWaitCasMatchReplace(t *testing.T) {
 }
 
 func TestStoreWaitCasMismatchMissing(t *testing.T) {
-	mut := MustEncodeSet("/a", "foo", 123)
+	mut := MustEncodeSet("/a", "foo", -123)
 
 	st := New()
 	defer close(st.Ops)
@@ -891,7 +891,7 @@ func TestStoreWaitCasMismatchMissing(t *testing.T) {
 
 func TestStoreWaitCasMismatchReplace(t *testing.T) {
 	mut1 := MustEncodeSet("/a", "foo", Clobber)
-	mut2 := MustEncodeSet("/a", "foo", 123)
+	mut2 := MustEncodeSet("/a", "foo", 0)
 
 	st := New()
 	defer close(st.Ops)

@@ -56,8 +56,11 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 func TestNodeApplyCasMismatch(t *testing.T) {
 	k, v, seqn, cas := "x", "a", int64(1), int64(1)
 	p := "/" + k
-	m := MustEncodeSet(p, v, 123)
+
+	// -123 is less that the current rev, which is zero; and not Clobber.
+	m := MustEncodeSet(p, v, -123)
 	n, e := emptyDir.apply(seqn, m)
+
 	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrCasMismatch.String(), cas, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, ErrCasMismatch.String(), cas, m, ErrCasMismatch, n}, e)

@@ -152,7 +152,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 
 	if ev.Err == nil {
 		_, curCas := n.Get(ev.Path)
-		if cas != Clobber && cas != curCas {
+		if cas != Clobber && cas < curCas {
 			ev.Err = ErrCasMismatch
 		} else if curCas == Dir {
 			ev.Err = os.EISDIR

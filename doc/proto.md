@@ -169,7 +169,8 @@ This is indicated by a + sign after the response fields.
 
  * `DEL` *path*, *cas* &rArr; &empty;
 
-   Del deletes the file at *path* if its CAS token matches *cas*.
+   Del deletes the file at *path* if *cas* is greater than
+   or equal to the file's CAS token.
 
  * `ELOCK` (not yet implemented)
 
@@ -223,7 +224,8 @@ This is indicated by a + sign after the response fields.
  * `SET` *path*, *cas*, *value* &rArr; *cas*
 
    Sets the contents of the file at *path* to *value*,
-   as long as the file's old CAS token matches *cas*.
+   as long as *cas* is greater than or equal to the file's
+   old CAS token.
    Returns the new CAS token.
 
  * `SYNCPATH` (not yet implemented)
