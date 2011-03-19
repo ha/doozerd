@@ -24,7 +24,7 @@ Here, <cas> is the cas token, <len> is the number of bytes in the body,
 func get(path string) {
 	c := client.New("<test>", *addr)
 
-	body, cas, err := c.Get(path, 0)
+	body, cas, err := c.Get(path, nil)
 	if err != nil {
 		bail(err)
 	}

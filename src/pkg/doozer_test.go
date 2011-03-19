@@ -54,7 +54,7 @@ func TestDoozerGet(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ents, cas, err := cl.Get("/ping", 0)
+	ents, cas, err := cl.Get("/ping", nil)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, store.Dir, cas)
 	assert.Equal(t, []byte("pong"), ents)
@@ -81,7 +81,7 @@ func TestDoozerSet(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ents, cas, err := cl.Get("/ping", 0)
+	ents, cas, err := cl.Get("/ping", nil)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, store.Dir, cas)
 	assert.Equal(t, []byte("pong"), ents)
@@ -106,7 +106,7 @@ func TestDoozerGetWithRev(t *testing.T) {
 	rev1, err := cl.Set("/x", store.Missing, []byte{'a'})
 	assert.Equal(t, nil, err)
 
-	v, rev, err := cl.Get("/x", rev1) // Use the snapshot.
+	v, rev, err := cl.Get("/x", &rev1) // Use the snapshot.
 	assert.Equal(t, nil, err)
 	assert.Equal(t, rev1, rev)
 	assert.Equal(t, []byte{'a'}, v)
@@ -114,12 +114,12 @@ func TestDoozerGetWithRev(t *testing.T) {
 	rev2, err := cl.Set("/x", rev, []byte{'b'})
 	assert.Equal(t, nil, err)
 
-	v, rev, err = cl.Get("/x", 0) // Read the new value.
+	v, rev, err = cl.Get("/x", nil) // Read the new value.
 	assert.Equal(t, nil, err)
 	assert.Equal(t, rev2, rev)
 	assert.Equal(t, []byte{'b'}, v)
 
-	v, rev, err = cl.Get("/x", rev1) // Read the saved value again.
+	v, rev, err = cl.Get("/x", &rev1) // Read the saved value again.
 	assert.Equal(t, nil, err)
 	assert.Equal(t, rev1, rev)
 	assert.Equal(t, []byte{'a'}, v)
@@ -478,7 +478,7 @@ func TestDoozerReconnect(t *testing.T) {
 
 	l1.Close()
 
-	ents, cas, err := c0.Get("/ping", 0)
+	ents, cas, err := c0.Get("/ping", nil)
 	assert.Equal(t, nil, err, err)
 	assert.NotEqual(t, store.Dir, cas)
 	assert.Equal(t, []byte("pong"), ents)
