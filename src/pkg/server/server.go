@@ -373,14 +373,12 @@ func (c *conn) redirect(t *T) {
 
 
 func (c *conn) getterFor(t *T) store.Getter {
-	rev := pb.GetInt64(t.Rev)
-
-	if rev == 0 {
+	if t.Rev == nil || *t.Rev == 0 {
 		_, g := c.s.St.Snap()
 		return g
 	}
 
-	switch e := <-c.s.St.Wait(rev); e.Err {
+	switch e := <-c.s.St.Wait(*t.Rev); e.Err {
 	default:
 		c.respond(t, Valid|Done, nil, errResponse(e.Err))
 		return nil
