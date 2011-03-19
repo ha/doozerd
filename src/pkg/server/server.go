@@ -373,7 +373,7 @@ func (c *conn) redirect(t *T) {
 
 
 func (c *conn) getterFor(t *T) store.Getter {
-	if t.Rev == nil || *t.Rev == 0 {
+	if t.Rev == nil {
 		_, g := c.s.St.Snap()
 		return g
 	}
