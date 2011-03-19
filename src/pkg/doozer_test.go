@@ -323,7 +323,7 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 	cl.Set("/test/b", store.Clobber, []byte("2"))
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 
-	w, err := cl.Getdir("/test", 0, 0, 0)
+	w, err := cl.Getdir("/test", 0, 0, nil)
 	assert.Equal(t, nil, err)
 
 	got := make([]string, 0)
@@ -347,7 +347,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 
 	cl.Set("/test/a", store.Clobber, []byte("1"))
 
-	w, err := cl.Getdir("/test/a", 0, 0, 0)
+	w, err := cl.Getdir("/test/a", 0, 0, nil)
 	assert.Equal(t, nil, err)
 
 	exp := &client.ResponseError{Code: 20, Detail: "not a directory"}
@@ -365,7 +365,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	w, err := cl.Getdir("/not/here", 0, 0, 0)
+	w, err := cl.Getdir("/not/here", 0, 0, nil)
 	assert.Equal(t, nil, err)
 
 	e := <-w.C
@@ -389,13 +389,13 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 
 	// The order is arbitrary.  We need to collect them
 	// because it's not safe to assume the order.
-	w, _ := cl.Getdir("/test", 0, 0, 0)
+	w, _ := cl.Getdir("/test", 0, 0, nil)
 	ents := make([]string, 0)
 	for e := range w.C {
 		ents = append(ents, e.Path)
 	}
 
-	w, _ = cl.Getdir("/test", 1, 2, 0)
+	w, _ = cl.Getdir("/test", 1, 2, nil)
 	assert.Equal(t, ents[1], (<-w.C).Path)
 	assert.Equal(t, ents[2], (<-w.C).Path)
 	assert.Equal(t, (*client.Event)(nil), <-w.C)
@@ -417,7 +417,7 @@ func TestDoozerGetdirOffsetLimitBounds(t *testing.T) {
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 	cl.Set("/test/d", store.Clobber, []byte("4"))
 
-	w, _ := cl.Getdir("/test", 1, 5, 0)
+	w, _ := cl.Getdir("/test", 1, 5, nil)
 	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
 	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
 	assert.NotEqual(t, (*client.Event)(nil), <-w.C)
