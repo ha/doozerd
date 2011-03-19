@@ -417,7 +417,7 @@ func (c *conn) set(t *T, tx txn) {
 		return
 	}
 
-	if t.Path == nil || t.Cas == nil {
+	if t.Path == nil || t.Rev == nil {
 		c.respond(t, Valid|Done, nil, missingArg)
 		return
 	}
@@ -427,7 +427,7 @@ func (c *conn) set(t *T, tx txn) {
 		case <-tx.cancel:
 			c.closeTxn(*t.Tag)
 			return
-		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Cas):
+		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Rev):
 			switch e := ev.Err.(type) {
 			case *store.BadPathError:
 				c.respond(t, Valid|Done, nil, &R{ErrCode: badPath, ErrDetail: &e.Path})
@@ -458,7 +458,7 @@ func (c *conn) del(t *T, tx txn) {
 		return
 	}
 
-	if t.Path == nil || t.Cas == nil {
+	if t.Path == nil || t.Rev == nil {
 		c.respond(t, Valid|Done, nil, missingArg)
 		return
 	}
@@ -468,7 +468,7 @@ func (c *conn) del(t *T, tx txn) {
 		case <-tx.cancel:
 			c.closeTxn(*t.Tag)
 			return
-		case ev := <-bgDel(c.s.Mg, *t.Path, *t.Cas):
+		case ev := <-bgDel(c.s.Mg, *t.Path, *t.Rev):
 			if ev.Err != nil {
 				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
 				return
@@ -565,7 +565,7 @@ func (c *conn) checkin(t *T, tx txn) {
 		return
 	}
 
-	if t.Path == nil || t.Cas == nil {
+	if t.Path == nil || t.Rev == nil {
 		c.respond(t, Valid|Done, nil, missingArg)
 		return
 	}
@@ -573,7 +573,7 @@ func (c *conn) checkin(t *T, tx txn) {
 	go func() {
 		deadline := time.Nanoseconds() + sessionLease
 		body := strconv.Itoa64(deadline)
-		cas := *t.Cas
+		cas := *t.Rev
 		path := "/session/" + *t.Path
 		if cas != 0 {
 			_, cas = c.s.St.Get(path)
@@ -596,7 +596,7 @@ func (c *conn) checkin(t *T, tx txn) {
 				return
 			}
 
-			if *t.Cas != 0 {
+			if *t.Rev != 0 {
 				select {
 				case <-time.After(deadline - sessionPad - time.Nanoseconds()):
 					// nothing

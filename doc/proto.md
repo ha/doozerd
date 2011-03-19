@@ -32,7 +32,6 @@ respectively. These structures are defined as follows
       required int32 tag = 1;
       required Verb verb = 2;
 
-      optional int64 cas = 3;
       optional string path = 4;
       optional bytes value = 5;
       optional int32 id = 6;
@@ -130,7 +129,7 @@ This is indicated by a + sign after the response fields.
    message arrives in the interim), at which point tag
    *id* may be reused.
 
- * `CHECKIN` *path*, *cas* &rArr; *cas*
+ * `CHECKIN` *path*, *rev* &rArr; *cas*
 
    Used to establish and maintain a session, required if
    the client wishes to create ephemeral files or obtain
@@ -143,8 +142,8 @@ This is indicated by a + sign after the response fields.
    and is typically several seconds after the checkin
    request message was received.
 
-   If *cas* is 0, the file will be created only if it did
-   not exist. Otherwise, the request *cas* is customarily
+   If *rev* is 0, the file will be created only if it did
+   not exist. Otherwise, the request *rev* is customarily
    -1, which means the file should be written
    unconditionally.
 
@@ -167,9 +166,9 @@ This is indicated by a + sign after the response fields.
 
    The response *cas* field is always -1.
 
- * `DEL` *path*, *cas* &rArr; &empty;
+ * `DEL` *path*, *rev* &rArr; &empty;
 
-   Del deletes the file at *path* if *cas* is greater than
+   Del deletes the file at *path* if *rev* is greater than
    or equal to the file's CAS token.
 
  * `ELOCK` (not yet implemented)
@@ -221,10 +220,10 @@ This is indicated by a + sign after the response fields.
 
    Returns the current revision.
 
- * `SET` *path*, *cas*, *value* &rArr; *cas*
+ * `SET` *path*, *rev*, *value* &rArr; *cas*
 
    Sets the contents of the file at *path* to *value*,
-   as long as *cas* is greater than or equal to the file's
+   as long as *rev* is greater than or equal to the file's
    old CAS token.
    Returns the new CAS token.
 
@@ -353,7 +352,7 @@ see replies come out of order:
         tag:   0,
         verb:  SET,
         path:  "/a",
-        cas:   -1,
+        rev:   -1,
         value: "goodbye",
     }
 

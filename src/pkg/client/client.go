@@ -589,7 +589,7 @@ func (cl *Client) Monitor(glob string) (*Watch, os.Error) {
 
 
 func (cl *Client) Set(path string, oldCas int64, body []byte) (newCas int64, err os.Error) {
-	r, err := cl.call(&T{Verb: set, Path: &path, Value: body, Cas: &oldCas})
+	r, err := cl.call(&T{Verb: set, Path: &path, Value: body, Rev: &oldCas})
 	if err != nil {
 		return 0, err
 	}
@@ -623,7 +623,7 @@ func (cl *Client) Rev() (int64, os.Error) {
 
 
 func (cl *Client) Del(path string, cas int64) os.Error {
-	_, err := cl.call(&T{Verb: del, Path: &path, Cas: &cas})
+	_, err := cl.call(&T{Verb: del, Path: &path, Rev: &cas})
 	return err
 }
 
@@ -643,7 +643,7 @@ func (cl *Client) Noop() os.Error {
 
 
 func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
-	r, err := cl.retry(&T{Verb: checkin, Path: &id, Cas: &cas})
+	r, err := cl.retry(&T{Verb: checkin, Path: &id, Rev: &cas})
 	if err != nil {
 		return 0, err
 	}
