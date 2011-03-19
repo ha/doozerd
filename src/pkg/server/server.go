@@ -218,6 +218,7 @@ var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_GETDIR:  (*conn).getdir,
 	proto.Request_MONITOR: (*conn).monitor,
 	proto.Request_NOOP:    (*conn).noop,
+	proto.Request_REV:     (*conn).rev,
 	proto.Request_SET:     (*conn).set,
 	proto.Request_STAT:    (*conn).stat,
 	proto.Request_WALK:    (*conn).walk,
@@ -496,6 +497,12 @@ func (c *conn) noop(t *T, tx txn) {
 		c.respond(t, Valid|Done, nil, &R{})
 		return
 	}()
+}
+
+
+func (c *conn) rev(t *T, tx txn) {
+	rev := <-c.s.St.Seqns
+	c.respond(t, Valid|Done, nil, &R{Rev: &rev})
 }
 
 

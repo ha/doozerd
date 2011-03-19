@@ -9,6 +9,7 @@ message Request {
       SET      = 2;  // cas, path, value => cas
       DEL      = 3;  // cas, path        => {}
       ESET     = 4;  // cas, path        => {}
+      REV      = 5;  // {}               => rev
       NOOP     = 7;  // {}               => {}
       WATCH    = 8;  // path             => {cas, path, value}+
       WALK     = 9;  // path, id         => {cas, path, value}+

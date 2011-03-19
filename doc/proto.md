@@ -216,6 +216,10 @@ This is indicated by a + sign after the response fields.
 
  * `NOOP` (deprecated)
 
+ * `REV` &empty; &rArr; *rev*
+
+   Returns the current revision.
+
  * `SET` *path*, *cas*, *value* &rArr; *cas*
 
    Sets the contents of the file at *path* to *value*,

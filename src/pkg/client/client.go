@@ -30,6 +30,7 @@ var (
 	get     = proto.NewRequest_Verb(proto.Request_GET)
 	monitor = proto.NewRequest_Verb(proto.Request_MONITOR)
 	noop    = proto.NewRequest_Verb(proto.Request_NOOP)
+	rev     = proto.NewRequest_Verb(proto.Request_REV)
 	set     = proto.NewRequest_Verb(proto.Request_SET)
 	walk    = proto.NewRequest_Verb(proto.Request_WALK)
 	watch   = proto.NewRequest_Verb(proto.Request_WATCH)
@@ -608,6 +609,16 @@ func (cl *Client) Get(path string, rev int64) ([]byte, int64, os.Error) {
 	}
 
 	return r.Value, pb.GetInt64(r.Rev), nil
+}
+
+
+func (cl *Client) Rev() (int64, os.Error) {
+	r, err := cl.retry(&T{Verb: rev})
+	if err != nil {
+		return 0, err
+	}
+
+	return *r.Rev, nil
 }
 
 
