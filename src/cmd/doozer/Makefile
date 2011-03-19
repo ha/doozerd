@@ -8,6 +8,7 @@ GOFILES=\
 	get.go\
 	help.go\
 	noop.go\
+	rev.go\
 	set.go\
 	walk.go\
 	watch.go\
