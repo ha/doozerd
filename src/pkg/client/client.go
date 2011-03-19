@@ -677,7 +677,7 @@ func (cl *Client) Getdir(path string, offset, limit int32, rev int64) (*Watch, o
 	return c.events(&t)
 }
 
-func (cl *Client) Walk(glob string, rev int64, offset, limit *int32) (*Watch, os.Error) {
+func (cl *Client) Walk(glob string, rev *int64, offset, limit *int32) (*Watch, os.Error) {
 	c := <-cl.c
 	if c == nil {
 		return nil, ErrNoAddrs
@@ -686,7 +686,7 @@ func (cl *Client) Walk(glob string, rev int64, offset, limit *int32) (*Watch, os
 	return c.events(&T{
 		Verb:   walk,
 		Path:   &glob,
-		Rev:    &rev,
+		Rev:    rev,
 		Offset: offset,
 		Limit:  limit,
 	})

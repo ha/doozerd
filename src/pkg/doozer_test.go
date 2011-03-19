@@ -202,7 +202,7 @@ func TestDoozerWalk(t *testing.T) {
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	w, err := cl.Walk("/test/**", 0, nil, nil)
+	w, err := cl.Walk("/test/**", nil, nil, nil)
 	assert.Equal(t, nil, err, err)
 
 	ev := <-w.C
@@ -236,7 +236,7 @@ func TestDoozerWalkWithRev(t *testing.T) {
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 	cl.Set("/test/fab", store.Clobber, []byte("ulous"))
 
-	w, err := cl.Walk("/test/**", rev, nil, nil)
+	w, err := cl.Walk("/test/**", &rev, nil, nil)
 	assert.Equal(t, nil, err, err)
 
 	ls := []string{}
@@ -266,7 +266,7 @@ func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
 	offset := int32(1)
 	limit := int32(2)
 
-	w, err := cl.Walk("/test/**", 0, &offset, &limit)
+	w, err := cl.Walk("/test/**", nil, &offset, &limit)
 	assert.Equal(t, nil, err, err)
 
 	ev := <-w.C

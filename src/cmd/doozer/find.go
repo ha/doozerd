@@ -33,7 +33,7 @@ func find(glob string) {
 		glob = glob + "/"
 	}
 
-	w, err := c.Walk(glob+"**", 0, nil, nil)
+	w, err := c.Walk(glob+"**", nil, nil, nil)
 	if err != nil {
 		bail(err)
 	}
