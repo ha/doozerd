@@ -627,8 +627,8 @@ func (cl *Client) Del(path string, cas int64) os.Error {
 	return err
 }
 
-func (cl *Client) Stat(path string, rev int64) (int32, int64, os.Error) {
-	r, err := cl.retry(&T{Verb: stat, Path: &path, Rev: &rev})
+func (cl *Client) Stat(path string, rev *int64) (int32, int64, os.Error) {
+	r, err := cl.retry(&T{Verb: stat, Path: &path, Rev: rev})
 	if err != nil {
 		return 0, 0, err
 	}

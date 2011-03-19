@@ -298,12 +298,12 @@ func TestDoozerStat(t *testing.T) {
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	setCas, _ := cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	ln, cas, err := cl.Stat("/test", 0)
+	ln, cas, err := cl.Stat("/test", nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, store.Dir, cas)
 	assert.Equal(t, int32(2), ln)
 
-	ln, cas, err = cl.Stat("/test/fun", 0)
+	ln, cas, err = cl.Stat("/test/fun", nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, setCas, cas)
 	assert.Equal(t, int32(5), ln)
