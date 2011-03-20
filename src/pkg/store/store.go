@@ -25,9 +25,10 @@ var pathRe = mustBuildRe(charPat)
 
 var Any = MustCompileGlob("/**")
 
+var ErrTooLate = os.NewError("too late")
+
 var (
 	ErrBadMutation = os.NewError("bad mutation")
-	ErrTooLate     = os.NewError("too late")
 	ErrCasMismatch = os.NewError("cas mismatch")
 )
 
@@ -54,6 +55,7 @@ type Store struct {
 	watches []*Watch
 	todo    *vector.Vector
 	state   *state
+	head    int64
 	log     map[int64]Event
 	cleanCh chan int64
 	notices []notice
@@ -136,7 +138,7 @@ func New() *Store {
 		todo:    new(vector.Vector),
 		watches: []*Watch{},
 		state:   &state{0, emptyDir},
-		log:     map[int64]Event{0: {Err: ErrTooLate}},
+		log:     map[int64]Event{},
 		cleanCh: make(chan int64),
 		flush:   make(chan bool, 1),
 	}
@@ -260,7 +262,7 @@ func (st *Store) notify(e Event, ws []*Watch) []*Watch {
 			continue
 		}
 
-		if w.glob.Match(e.Path) || e.Err == ErrTooLate {
+		if w.glob.Match(e.Path) {
 			st.notices = append(st.notices, notice{w, e})
 		}
 	}
@@ -276,8 +278,6 @@ func (st *Store) closeWatches() {
 
 func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) {
 	defer st.closeWatches()
-
-	var head int64
 
 	for {
 		var flush bool
@@ -306,8 +306,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 		case w := <-st.watchCh:
 			n, ws := w.from, []*Watch{w}
-			for ; len(ws) > 0 && n < head; n++ {
-				ws = st.notify(Event{Seqn: n, Err: ErrTooLate}, ws)
+			for ; len(ws) > 0 && n < st.head; n++ {
+				ws = ws[0:0]
 			}
 			for ; len(ws) > 0 && n <= ver; n++ {
 				ws = st.notify(st.log[n], ws)
@@ -315,8 +315,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 
 			st.watches = append(st.watches, ws...)
 		case seqn := <-st.cleanCh:
-			for ; head <= seqn; head++ {
-				st.log[head] = Event{}, false
+			for ; st.head <= seqn; st.head++ {
+				st.log[st.head] = Event{}, false
 			}
 		case seqns <- ver:
 			// nothing to do here
@@ -357,7 +357,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 		if flush {
 			st.log[ev.Seqn] = ev
 			st.watches = st.notify(ev, st.watches)
-			head = ver + 1
+			st.head = ver + 1
 		}
 	}
 }
@@ -424,12 +424,24 @@ func NewWatch(st *Store, glob *Glob) *Watch {
 	return w
 }
 
+// Arranges for w to receive notifications when mutations are applied to st.
+// One event e will be received from w.C for each mutation iff
+// glob.Match(e.Path).
+//
+// Notifications will not be sent for changes that were made by calling
+// st.Flush.
+//
+// If `from` is less than any value passed to st.Clean, NewWatchFrom
+// will return `ErrTooLate`.
 func NewWatchFrom(st *Store, glob *Glob, from int64) (*Watch, os.Error) {
 	ch := make(chan Event)
 	return st.watchOn(glob, ch, from, math.MaxInt64)
 }
 
 func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) (*Watch, os.Error) {
+	if from < 1 {
+		return nil, ErrTooLate
+	}
 	wt := &Watch{
 		C:        ch,
 		c:        ch,
@@ -439,18 +451,25 @@ func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) (*Watch, os.
 		shutdown: make(chan bool, 1),
 	}
 	st.watchCh <- wt
+	head := st.head
+	if head > from {
+		wt.Stop()
+		return nil, ErrTooLate
+	}
 	return wt, nil
 }
 
 // Returns a read-only chan that will receive a single event representing the
 // change made at position `seqn`.
 //
-// If `seqn` was applied before the call to `Wait`, a dummy event will be
-// sent with its `Err` set to `ErrTooLate`.
+// If `seqn` is less than any value passed to st.Clean, Wait will return
+// `ErrTooLate`.
 func (st *Store) Wait(seqn int64) (<-chan Event, os.Error) {
-	ch := make(chan Event, 1)
-	_, _ = st.watchOn(Any, ch, seqn, seqn+1)
-	return ch, nil
+	w, err := st.watchOn(Any, make(chan Event, 1), seqn, seqn+1)
+	if err != nil {
+		return nil, err
+	}
+	return w.C, nil
 }
 
 // Returns an immutable copy of `st` in which `path` exists as a regular file

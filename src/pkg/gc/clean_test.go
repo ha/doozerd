@@ -20,10 +20,10 @@ func TestGcClean(t *testing.T) {
 	st.Ops <- store.Op{3, store.Nop}
 	st.Ops <- store.Op{4, store.Nop}
 
-	ch, _ := st.Wait(1)
-	assert.Equal(t, nil, (<-ch).Err)
+	_, err := st.Wait(1)
+	assert.Equal(t, nil, err)
 	ticker <- 1
 	ticker <- 1 // Extra tick to ensure the last st.Clean has completed
-	ch, _ = st.Wait(1)
-	assert.Equal(t, store.ErrTooLate, (<-ch).Err)
+	_, err = st.Wait(1)
+	assert.Equal(t, store.ErrTooLate, err)
 }

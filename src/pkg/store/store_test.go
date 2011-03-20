@@ -71,8 +71,9 @@ var Splits = [][]string{
 
 
 func sync(s *Store, n int64) {
-	ev, _ := s.Wait(n)
-	<-ev
+	if ev, _ := s.Wait(n); ev != nil {
+		<-ev
+	}
 }
 
 
@@ -671,9 +672,9 @@ func TestStoreWaitZero(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
 
-	ch, _ := st.Wait(0)
-	ev := <-ch
-	assert.Equal(t, Event{Err: ErrTooLate}, ev)
+	ch, err := st.Wait(0)
+	assert.Equal(t, ErrTooLate, err)
+	assert.Equal(t, (<-chan Event)(nil), ch)
 }
 
 func TestStoreNopEvent(t *testing.T) {
@@ -975,11 +976,9 @@ func TestStoreClean(t *testing.T) {
 
 	st.Clean(1)
 
-	ch, _ := st.Wait(1)
-	ev := <-ch
-	assert.Equal(t, int64(1), ev.Seqn)
-	assert.Equal(t, ErrTooLate, ev.Err)
-	assert.Equal(t, "", ev.Mut)
+	ch, err := st.Wait(1)
+	assert.Equal(t, ErrTooLate, err)
+	assert.Equal(t, (<-chan Event)(nil), ch)
 }
 
 func TestStoreSeqn(t *testing.T) {
@@ -1073,7 +1072,6 @@ func TestStoreWatchIntervalTrans(t *testing.T) {
 func TestStoreWatchIntervalTooLate(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
-	ch := make(chan Event)
 
 	st.Ops <- Op{1, Nop}
 	st.Ops <- Op{2, Nop}
@@ -1082,16 +1080,9 @@ func TestStoreWatchIntervalTooLate(t *testing.T) {
 	st.Ops <- Op{5, Nop}
 	st.Clean(3)
 
-	st.watchOn(Any, ch, 2, 5)
-	ev := <-ch
-	assert.Equal(t, int64(2), ev.Seqn)
-	assert.Equal(t, ErrTooLate, ev.Err)
-	ev = <-ch
-	assert.Equal(t, int64(3), ev.Seqn)
-	assert.Equal(t, ErrTooLate, ev.Err)
-	ev = <-ch
-	assert.Equal(t, int64(4), ev.Seqn)
-	assert.Equal(t, "/x", ev.Path)
+	w, err := st.watchOn(Any, make(chan Event), 2, 5)
+	assert.Equal(t, ErrTooLate, err)
+	assert.Equal(t, (*Watch)(nil), w)
 	assert.Equal(t, 0, <-st.Watches)
 }
 
@@ -1113,17 +1104,15 @@ func TestStoreWatchIntervalWaitFuture(t *testing.T) {
 func TestStoreWatchIntervalWaitTooLate(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
-	ch := make(chan Event, 1)
 	st.Ops <- Op{1, Nop}
 	st.Ops <- Op{2, Nop}
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
 	st.Ops <- Op{4, Nop}
 	st.Clean(4)
 
-	st.watchOn(Any, ch, 3, 4)
-	ev := <-ch
-	assert.Equal(t, int64(3), ev.Seqn)
-	assert.Equal(t, ErrTooLate, ev.Err)
+	w, err := st.watchOn(Any, make(chan Event, 1), 3, 4)
+	assert.Equal(t, ErrTooLate, err)
+	assert.Equal(t, (*Watch)(nil), w)
 	assert.Equal(t, 0, <-st.Watches)
 }
 

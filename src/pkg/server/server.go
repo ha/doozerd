@@ -380,16 +380,16 @@ func (c *conn) getterFor(t *T) store.Getter {
 		return g
 	}
 
-	ch, _ := c.s.St.Wait(*t.Rev)
-	switch e := <-ch; e.Err {
+	ch, err := c.s.St.Wait(*t.Rev)
+	switch err {
 	default:
-		c.respond(t, Valid|Done, nil, errResponse(e.Err))
+		c.respond(t, Valid|Done, nil, errResponse(err))
 		return nil
 	case store.ErrTooLate:
 		c.respond(t, Valid|Done, nil, tooLate)
 		return nil
 	case nil:
-		return e.Getter
+		return (<-ch).Getter
 	}
 
 	panic("unreachable")
@@ -722,9 +722,18 @@ func (c *conn) watch(t *T, tx txn) {
 	var w *store.Watch
 	rev := pb.GetInt64(t.Rev)
 	if rev == 0 {
-		w = store.NewWatch(c.s.St, glob)
+		w, err = store.NewWatch(c.s.St, glob), nil
 	} else {
-		w, _ = store.NewWatchFrom(c.s.St, glob, rev)
+		w, err = store.NewWatchFrom(c.s.St, glob, rev)
+	}
+
+	switch err {
+	case nil:
+		// nothing
+	case store.ErrTooLate:
+		c.respond(t, Valid|Done, nil, tooLate)
+	default:
+		c.respond(t, Valid|Done, nil, errResponse(err))
 	}
 
 	go func() {
@@ -738,29 +747,22 @@ func (c *conn) watch(t *T, tx txn) {
 					return
 				}
 
-				switch ev.Err {
-				default:
-					c.respond(t, Valid|Done, nil, errResponse(ev.Err))
-				case store.ErrTooLate:
-					c.respond(t, Valid|Done, nil, tooLate)
-				case nil:
-					r := R{
-						Path:  &ev.Path,
-						Value: []byte(ev.Body),
-						Cas:   &ev.Cas,
-						Rev:   &ev.Seqn,
-					}
-
-					var flag int32
-					switch {
-					case ev.IsSet():
-						flag = Set
-					case ev.IsDel():
-						flag = Del
-					}
-
-					c.respond(t, Valid|flag, tx.cancel, &r)
+				r := R{
+					Path:  &ev.Path,
+					Value: []byte(ev.Body),
+					Cas:   &ev.Cas,
+					Rev:   &ev.Seqn,
 				}
+
+				var flag int32
+				switch {
+				case ev.IsSet():
+					flag = Set
+				case ev.IsDel():
+					flag = Del
+				}
+
+				c.respond(t, Valid|flag, tx.cancel, &r)
 
 			case <-tx.cancel:
 				c.closeTxn(*t.Tag)

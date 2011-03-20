@@ -24,7 +24,7 @@ func TestEventIsDel(t *testing.T) {
 }
 
 func TestEventIsDummy(t *testing.T) {
-	ev := Event{Seqn: 1, Cas: dummy, Err: ErrTooLate}
+	ev := Event{Seqn: 1, Cas: dummy}
 	assert.Equal(t, true, ev.IsDummy())
 	assert.Equal(t, false, ev.IsSet())
 	assert.Equal(t, false, ev.IsDel())
