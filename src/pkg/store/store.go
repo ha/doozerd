@@ -307,7 +307,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 		case w := <-st.watchCh:
 			n, ws := w.from, []*Watch{w}
 			for ; len(ws) > 0 && n < st.head; n++ {
-				ws = ws[0:0]
+				ws = []*Watch{}
 			}
 			for ; len(ws) > 0 && n <= ver; n++ {
 				ws = st.notify(st.log[n], ws)
