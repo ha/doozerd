@@ -15,7 +15,7 @@ const (
 	Missing = int64(-iota)
 	Clobber
 	Dir
-	dummy
+	nop
 )
 
 // TODO revisit this when package regexp is more complete (e.g. do Unicode)

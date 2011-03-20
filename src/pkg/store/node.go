@@ -126,7 +126,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 	ev.Seqn, ev.Cas, ev.Mut = seqn, seqn, mut
 	if mut == Nop {
 		ev.Path = "/"
-		ev.Cas = dummy
+		ev.Cas = nop
 		rep = n
 		ev.Getter = rep
 		return

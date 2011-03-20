@@ -31,7 +31,7 @@ func TestNodeApplyNop(t *testing.T) {
 	m := Nop
 	n, e := emptyDir.apply(seqn, m)
 	assert.Equal(t, emptyDir, n)
-	assert.Equal(t, Event{seqn, "/", "", dummy, m, nil, n}, e)
+	assert.Equal(t, Event{seqn, "/", "", nop, m, nil, n}, e)
 }
 
 func TestNodeApplyBadMutation(t *testing.T) {
