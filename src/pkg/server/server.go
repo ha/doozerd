@@ -724,7 +724,7 @@ func (c *conn) watch(t *T, tx txn) {
 	if rev == 0 {
 		w = store.NewWatch(c.s.St, glob)
 	} else {
-		w = store.NewWatchFrom(c.s.St, glob, rev)
+		w, _ = store.NewWatchFrom(c.s.St, glob, rev)
 	}
 
 	go func() {

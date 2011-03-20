@@ -415,17 +415,21 @@ func (st *Store) Watch(glob *Glob) <-chan Event {
 //
 // Notifications will not be sent for changes made as the result of applying a
 // snapshot.
-func NewWatch(st *Store, glob *Glob) (w *Watch) {
+func NewWatch(st *Store, glob *Glob) *Watch {
 	rev, _ := st.Snap()
-	return NewWatchFrom(st, glob, rev+1)
+	w, err := NewWatchFrom(st, glob, rev+1)
+	if err != nil {
+		panic(err)
+	}
+	return w
 }
 
-func NewWatchFrom(st *Store, glob *Glob, from int64) (w *Watch) {
+func NewWatchFrom(st *Store, glob *Glob, from int64) (*Watch, os.Error) {
 	ch := make(chan Event)
 	return st.watchOn(glob, ch, from, math.MaxInt64)
 }
 
-func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) *Watch {
+func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) (*Watch, os.Error) {
 	wt := &Watch{
 		C:        ch,
 		c:        ch,
@@ -435,7 +439,7 @@ func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) *Watch {
 		shutdown: make(chan bool, 1),
 	}
 	st.watchCh <- wt
-	return wt
+	return wt, nil
 }
 
 // Returns a read-only chan that will receive a single event representing the
@@ -445,7 +449,7 @@ func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) *Watch {
 // sent with its `Err` set to `ErrTooLate`.
 func (st *Store) Wait(seqn int64) (<-chan Event, os.Error) {
 	ch := make(chan Event, 1)
-	st.watchOn(Any, ch, seqn, seqn+1)
+	_, _ = st.watchOn(Any, ch, seqn, seqn+1)
 	return ch, nil
 }
 

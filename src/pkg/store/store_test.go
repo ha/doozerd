@@ -681,7 +681,7 @@ func TestStoreNopEvent(t *testing.T) {
 	defer close(st.Ops)
 
 	c := make(chan Event, 100)
-	w := st.watchOn(Any, c, 1, 100)
+	w, _ := st.watchOn(Any, c, 1, 100)
 
 	st.Ops <- Op{1, Nop}
 
