@@ -92,6 +92,14 @@ following values:
    request (unless there is a pending cancel
    transaction for that tag; see `CANCEL` below).
 
+ * *set* = 4
+
+   This response represents a mutation event that set a key.
+
+ * *del* = 8
+
+   This response represents a mutation event that deleted a key.
+
 A client can send multiple requests without waiting for
 the corresponding responses, but all outstanding
 requests must specify different tags. The server may
