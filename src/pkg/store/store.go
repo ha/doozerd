@@ -64,9 +64,7 @@ type Store struct {
 
 // Represents an operation to apply to the store at position Seqn.
 //
-// If Mut is a snapshot, notifications will not be sent.
-//
-// If Mut is Nop, no change will be made, but a dummy event will still be sent.
+// If Mut is Nop, no change will be made, but an event will still be sent.
 type Op struct {
 	Seqn int64
 	Mut  string
@@ -413,8 +411,8 @@ func (st *Store) Watch(glob *Glob) <-chan Event {
 // One event e will be received from w.C for each mutation iff
 // glob.Match(e.Path).
 //
-// Notifications will not be sent for changes made as the result of applying a
-// snapshot.
+// Notifications will not be sent for changes that were made by calling
+// st.Flush.
 func NewWatch(st *Store, glob *Glob) *Watch {
 	rev, _ := st.Snap()
 	w, err := NewWatchFrom(st, glob, rev+1)

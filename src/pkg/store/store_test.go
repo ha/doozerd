@@ -690,7 +690,7 @@ func TestStoreNopEvent(t *testing.T) {
 	assert.Equal(t, int64(1), ev.Seqn)
 	assert.Equal(t, "/", ev.Path)
 	assert.Equal(t, "nop", ev.Desc())
-	assert.T(t, ev.IsDummy())
+	assert.T(t, ev.IsNop())
 }
 
 
