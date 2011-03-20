@@ -16,7 +16,7 @@ func TestConsensusOne(t *testing.T) {
 
 	st.Ops <- store.Op{1, store.MustEncodeSet("/doozer/info/"+self+"/addr", "x", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", self, 0)}
-	<-st.Wait(2)
+	<-st.Seqns
 
 	cmw := st.Watch(store.Any)
 	in := make(chan Packet)
@@ -37,7 +37,10 @@ func TestConsensusOne(t *testing.T) {
 	}
 
 	n := <-seqns
-	w := st.Wait(n)
+	w, err := st.Wait(n)
+	if err != nil {
+		panic(err)
+	}
 	props <- &Prop{n, []byte("foo")}
 	e := <-w
 
@@ -66,7 +69,6 @@ func TestConsensusTwo(t *testing.T) {
 	st.Ops <- store.Op{3, store.MustEncodeSet("/doozer/info/"+b+"/addr", "x", 0)}
 	st.Ops <- store.Op{4, store.MustEncodeSet("/doozer/slot/2", b, 0)}
 	snn := <-st.Seqns
-	<-st.Wait(snn)
 
 	acmw := st.Watch(store.Any)
 	ain := make(chan Packet)
@@ -103,7 +105,10 @@ func TestConsensusTwo(t *testing.T) {
 	}
 
 	n := <-aseqns
-	w := st.Wait(n)
+	w, err := st.Wait(n)
+	if err != nil {
+		panic(err)
+	}
 	aprops <- &Prop{n, []byte("foo")}
 	e := <-w
 
@@ -128,7 +133,7 @@ func TestLearnedValueIsLearned(t *testing.T) {
 
 	st.Ops <- store.Op{1, store.MustEncodeSet("/doozer/info/"+self+"/addr", "x", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", self, 0)}
-	<-st.Wait(2)
+	<-st.Seqns
 
 	cmw := st.Watch(store.Any)
 	in := make(chan Packet)

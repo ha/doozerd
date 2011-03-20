@@ -45,7 +45,7 @@ func TestExpired(t *testing.T) {
 	st.Ops <- store.Op{7, store.MustEncodeSet("/session/g", "7", 0)}
 	st.Ops <- store.Op{8, store.MustEncodeSet("/session/h", "8", 0)}
 	st.Ops <- store.Op{9, store.MustEncodeSet("/session/i", "9", 0)}
-	<-st.Wait(9)
+	<-st.Seqns
 
 	got := expired(st, 5)
 	exp := map[string]int64{

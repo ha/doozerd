@@ -443,10 +443,10 @@ func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) *Watch {
 //
 // If `seqn` was applied before the call to `Wait`, a dummy event will be
 // sent with its `Err` set to `ErrTooLate`.
-func (st *Store) Wait(seqn int64) <-chan Event {
+func (st *Store) Wait(seqn int64) (<-chan Event, os.Error) {
 	ch := make(chan Event, 1)
 	st.watchOn(Any, ch, seqn, seqn+1)
-	return ch
+	return ch, nil
 }
 
 // Returns an immutable copy of `st` in which `path` exists as a regular file

@@ -38,7 +38,7 @@ type proposer struct {
 func (p *proposer) Propose(v []byte) (e store.Event) {
 	for e.Mut != string(v) {
 		n := <-p.seqns
-		w := p.st.Wait(n)
+		w, _ := p.st.Wait(n)
 		p.props <- &consensus.Prop{n, v}
 		e = <-w
 	}
@@ -101,7 +101,8 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	}
 
 	start := <-st.Seqns
-	<-st.Wait(start)
+	ch, _ := st.Wait(start)
+	<-ch
 	cmw := st.Watch(store.Any)
 	in := make(chan consensus.Packet, 50)
 	out := make(chan consensus.Packet, 50)
@@ -250,7 +251,8 @@ func follow(st *store.Store, evs <-chan *client.Event) {
 		if ev.Rev > 0 {
 			st.Flush()
 			go follow2(ev, st.Ops, evs)
-			<-st.Wait(ev.Rev)
+			ch, _ := st.Wait(ev.Rev)
+			<-ch
 			return
 		}
 

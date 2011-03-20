@@ -380,7 +380,8 @@ func (c *conn) getterFor(t *T) store.Getter {
 		return g
 	}
 
-	switch e := <-c.s.St.Wait(*t.Rev); e.Err {
+	ch, _ := c.s.St.Wait(*t.Rev)
+	switch e := <-ch; e.Err {
 	default:
 		c.respond(t, Valid|Done, nil, errResponse(e.Err))
 		return nil
