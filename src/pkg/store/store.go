@@ -138,7 +138,7 @@ func New() *Store {
 		state:   &state{0, emptyDir},
 		log:     map[int64]Event{},
 		cleanCh: make(chan int64),
-		flush:   make(chan bool, 1),
+		flush:   make(chan bool),
 	}
 
 	go st.process(ops, seqns, watches)
@@ -323,7 +323,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 		case nc <- ne:
 			st.notices = st.notices[1:]
 		case flush = <-st.flush:
-			st.flush = nil // never flush again
+			// nothing
 		}
 
 		var ev Event
@@ -392,12 +392,8 @@ func (st *Store) Stat(path string) (int32, int64) {
 // Apply all operations in the internal queue, even if there are gaps in the
 // sequence (gaps will be treated as no-ops). This is only useful for
 // bootstrapping a store from a point-in-time snapshot of another store.
-// Flush is effective only once.
 func (st *Store) Flush() {
-	select {
-	case st.flush <- true:
-	default:
-	}
+	st.flush <- true
 }
 
 

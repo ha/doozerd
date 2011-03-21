@@ -700,22 +700,10 @@ func TestStoreFlush(t *testing.T) {
 
 	st.Ops <- Op{2, MustEncodeSet("/x", "b", Clobber)}
 	st.Flush() // should flush
-	sync(st, 2)
 
 	assert.Equal(t, int64(2), <-st.Seqns)
 
 	v, cas := st.Get("/x")
-	assert.Equal(t, int64(2), cas)
-	assert.Equal(t, []string{"b"}, v)
-
-	// Now, test that it is ineffective the second time.
-
-	st.Ops <- Op{4, MustEncodeSet("/x", "c", Clobber)}
-	st.Flush() // should do nothing
-
-	assert.Equal(t, int64(2), <-st.Seqns)
-
-	v, cas = st.Get("/x")
 	assert.Equal(t, int64(2), cas)
 	assert.Equal(t, []string{"b"}, v)
 }
