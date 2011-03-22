@@ -78,18 +78,34 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		setC(cl, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
 		setC(cl, "/doozer/info/"+self+"/version", Version, store.Clobber)
 
-		w, err := cl.Monitor("/**")
+		rev, err := cl.Rev()
 		if err != nil {
 			panic(err)
 		}
 
-		follow(st, w.C)
+		walk, err := cl.Walk("/**", &rev, nil, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		watch, err := cl.Watch("/**", rev+1)
+		if err != nil {
+			panic(err)
+		}
+
+		go follow(st.Ops, watch.C)
+		follow(st.Ops, walk.C)
+		st.Flush()
+		ch, err := st.Wait(rev + 1)
+		if err == nil {
+			<-ch
+		}
 
 		go func() {
 			activateSeqn = activate(st, self, cl)
 			cal <- true
 			advanceUntil(cl, st.Seqns, activateSeqn+alpha)
-			err := w.Cancel()
+			err := watch.Cancel()
 			if err != nil {
 				panic(err)
 			}
@@ -247,28 +263,10 @@ func setC(cl *client.Client, path, body string, cas int64) {
 	}
 }
 
-func follow(st *store.Store, evs <-chan *client.Event) {
-	for ev := range evs {
-		if ev.Rev > 0 {
-			st.Flush()
-			go follow2(ev, st.Ops, evs)
-			ch, err := st.Wait(ev.Rev)
-			if err == nil {
-				<-ch
-			}
-			return
-		}
-
-		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
-		st.Ops <- store.Op{ev.Cas, mut}
-	}
-}
-
-func follow2(ev *client.Event, ops chan<- store.Op, evs <-chan *client.Event) {
-	mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
-	ops <- store.Op{ev.Rev, mut}
-
-	for ev = range evs {
+func follow(ops chan<- store.Op, ch <-chan *client.Event) {
+	for ev := range ch {
+		// store.Clobber is okay here because the event
+		// has already passed through another store
 		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
 		ops <- store.Op{ev.Rev, mut}
 	}
