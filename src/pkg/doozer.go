@@ -258,10 +258,9 @@ func follow(st *store.Store, evs <-chan *client.Event) {
 			st.Flush()
 			go follow2(ev, st.Ops, evs)
 			ch, err := st.Wait(ev.Rev)
-			if err != nil {
-				panic(err) // can't happen
+			if err == nil {
+				<-ch
 			}
-			<-ch
 			return
 		}
 
