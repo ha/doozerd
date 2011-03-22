@@ -30,7 +30,6 @@ var (
 	checkin = proto.NewRequest_Verb(proto.Request_CHECKIN)
 	del     = proto.NewRequest_Verb(proto.Request_DEL)
 	get     = proto.NewRequest_Verb(proto.Request_GET)
-	monitor = proto.NewRequest_Verb(proto.Request_MONITOR)
 	noop    = proto.NewRequest_Verb(proto.Request_NOOP)
 	rev     = proto.NewRequest_Verb(proto.Request_REV)
 	set     = proto.NewRequest_Verb(proto.Request_SET)
@@ -589,16 +588,6 @@ func (cl *Client) retry(t *T) (r *R, err os.Error) {
 	}
 
 	panic("not reached")
-}
-
-
-func (cl *Client) Monitor(glob string) (*Watch, os.Error) {
-	c := <-cl.c
-	if c == nil {
-		return nil, ErrNoAddrs
-	}
-
-	return c.events(&T{Verb: monitor, Path: &glob})
 }
 
 
