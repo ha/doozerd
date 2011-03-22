@@ -208,20 +208,6 @@ This is indicated by a + sign after the response fields.
 
  * `JOIN` (deprecated)
 
- * `MONITOR` *path* &rArr; {*path*, *cas*, *value*}+
-
-   Returns one response for each file matching *path*,
-   a glob pattern, when the request is received, as well as
-   one response (an *event*) for each subsequent change
-   to a file matching *path*. Each event will have its *rev*
-   field set, in addition to the fields listed above.
-   No events will be sent until all existing files have been sent.
-
-   Equivalent to `WALK` followed by `WATCH`, but guarantees that
-   no two responses will have the same CAS token, and that
-   the *rev* of the first event is one greater than the rev
-   of the `WALK` rev.
-
  * `NOOP` (deprecated)
 
  * `REV` &empty; &rArr; *rev*

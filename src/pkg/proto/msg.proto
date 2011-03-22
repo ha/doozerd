@@ -16,7 +16,6 @@ message Request {
       CANCEL   = 10; // id               => {}
       GETDIR   = 14; // path, id         => {rev, value}+
       STAT     = 16;
-      MONITOR  = 11; // path             => {rev, path, value}+
 
       // future
       SYNCPATH = 12; // path             => rev, value

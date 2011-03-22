@@ -218,7 +218,6 @@ var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_DEL:     (*conn).del,
 	proto.Request_GET:     (*conn).get,
 	proto.Request_GETDIR:  (*conn).getdir,
-	proto.Request_MONITOR: (*conn).monitor,
 	proto.Request_NOOP:    (*conn).noop,
 	proto.Request_REV:     (*conn).rev,
 	proto.Request_SET:     (*conn).set,
@@ -504,69 +503,6 @@ func (c *conn) noop(t *T, tx txn) {
 func (c *conn) rev(t *T, tx txn) {
 	rev := <-c.s.St.Seqns
 	c.respond(t, Valid|Done, nil, &R{Rev: &rev})
-}
-
-
-func (c *conn) monitor(t *T, tx txn) {
-	pat := pb.GetString(t.Path)
-	glob, err := store.CompileGlob(pat)
-	if err != nil {
-		c.respond(t, Valid|Done, nil, errResponse(err))
-		return
-	}
-
-	w := store.NewWatch(c.s.St, glob)
-	rev, g := c.s.St.Snap()
-
-	go func() {
-		defer w.Stop()
-		defer c.closeTxn(*t.Tag)
-
-		var r R
-		stopped := store.Walk(g, glob, func(path, body string, cas int64) (stop bool) {
-			select {
-			case <-tx.cancel:
-				return true
-			default:
-			}
-
-			r.Cas = &cas
-			r.Path = &path
-			r.Value = []byte(body)
-			c.respond(t, Valid|Set, tx.cancel, &r)
-			return false
-		})
-		if stopped {
-			return
-		}
-
-		// TODO buffer (and possibly discard) events
-		for {
-			select {
-			case <-tx.cancel:
-				return
-			case ev := <-w.C:
-				if ev.Seqn <= rev {
-					continue
-				}
-
-				var r R
-				r.Rev = &ev.Seqn
-				r.Cas = &ev.Cas
-				r.Path = &ev.Path
-				r.Value = []byte(ev.Body)
-
-				var flag int32
-				switch {
-				case ev.IsSet():
-					flag = Set
-				case ev.IsDel():
-					flag = Del
-				}
-				c.respond(t, Valid|flag, tx.cancel, &r)
-			}
-		}
-	}()
 }
 
 
