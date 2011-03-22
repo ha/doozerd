@@ -104,11 +104,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	}
 
 	start := <-st.Seqns
-	ch, err := st.Wait(start)
-	if err != nil {
-		panic(err) // can't happen
-	}
-	<-ch
 	cmw := st.Watch(store.Any)
 	in := make(chan consensus.Packet, 50)
 	out := make(chan consensus.Packet, 50)
