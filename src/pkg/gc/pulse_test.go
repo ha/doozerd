@@ -12,7 +12,7 @@ type FakeProposer chan string
 
 func (fs FakeProposer) Propose(v []byte) (e store.Event) {
 	fs <- string(v)
-	e.Cas = 123
+	e.Rev = 123
 	return
 }
 

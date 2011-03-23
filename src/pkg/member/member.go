@@ -38,9 +38,9 @@ func getId(addr string, g store.Getter) string {
 
 
 func clearSlot(p consensus.Proposer, g store.Getter, name string) {
-	store.Walk(g, slots, func(path, body string, cas int64) bool {
+	store.Walk(g, slots, func(path, body string, rev int64) bool {
 		if body == name {
-			consensus.Set(p, path, nil, cas)
+			consensus.Set(p, path, nil, rev)
 		}
 		return false
 	})
@@ -48,9 +48,9 @@ func clearSlot(p consensus.Proposer, g store.Getter, name string) {
 
 func removeMember(p consensus.Proposer, g store.Getter, name string) {
 	k := "/doozer/members/" + name
-	_, cas := g.Get(k)
-	if cas != store.Missing {
-		consensus.Del(p, k, cas)
+	_, rev := g.Get(k)
+	if rev != store.Missing {
+		consensus.Del(p, k, rev)
 	}
 }
 
@@ -60,8 +60,8 @@ func removeInfo(p consensus.Proposer, g store.Getter, name string) {
 		log.Println(err)
 		return
 	}
-	store.Walk(g, glob, func(path, _ string, cas int64) bool {
-		consensus.Del(p, path, cas)
+	store.Walk(g, glob, func(path, _ string, rev int64) bool {
+		consensus.Del(p, path, rev)
 		return false
 	})
 }

@@ -141,7 +141,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	go func() {
 		<-cal
-		go lock.Clean(st, pr)
+		go lock.Clean(pr, st.Watch(lock.SessGlob))
 		go session.Clean(st, pr, time.Tick(sessionPollInterval))
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
 		go gc.Clean(st, 360000, time.Tick(1e9))
@@ -216,9 +216,9 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 
 	for _, base := range store.Getdir(st, slot) {
 		p := slot + "/" + base
-		v, cas := st.Get(p)
-		if cas != store.Dir && v[0] == "" {
-			seqn, err := c.Set(p, cas, []byte(self))
+		v, rev := st.Get(p)
+		if rev != store.Dir && v[0] == "" {
+			seqn, err := c.Set(p, rev, []byte(self))
 			if err != nil {
 				log.Println(err)
 				continue
@@ -232,7 +232,7 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 	for ev := range w.C {
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
-			seqn, err := c.Set(ev.Path, ev.Cas, []byte(self))
+			seqn, err := c.Set(ev.Path, ev.Rev, []byte(self))
 			if err != nil {
 				log.Println(err)
 				continue
@@ -247,17 +247,17 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 
 func advanceUntil(cl *client.Client, ver <-chan int64, done int64) {
 	for <-ver < done {
-		cl.Noop()
+		cl.Nop()
 	}
 }
 
-func set(st *store.Store, path, body string, cas int64) {
-	mut := store.MustEncodeSet(path, body, cas)
+func set(st *store.Store, path, body string, rev int64) {
+	mut := store.MustEncodeSet(path, body, rev)
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
 }
 
-func setC(cl *client.Client, path, body string, cas int64) {
-	_, err := cl.Set(path, cas, []byte(body))
+func setC(cl *client.Client, path, body string, rev int64) {
+	_, err := cl.Set(path, rev, []byte(body))
 	if err != nil {
 		panic(err)
 	}

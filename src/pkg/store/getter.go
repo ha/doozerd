@@ -5,8 +5,8 @@ import (
 )
 
 type Getter interface {
-	Get(path string) (values []string, cas int64)
-	Stat(path string) (ln int32, cas int64)
+	Get(path string) (values []string, rev int64)
+	Stat(path string) (ln int32, rev int64)
 }
 
 // Retrieves the body stored in `g` at `path` and returns it. If `path` is a
@@ -16,11 +16,11 @@ type Getter interface {
 // string stored at `path`, a missing entry, and a directory. If you need to
 // tell the difference, use `g.Get`.
 //
-// Also note, this function does not return the CAS token for `path`. If you
-// need the CAS token, use `g.Get`.
+// Also note, this function does not return the revision for `path`. If you
+// need the revision, use `g.Get`.
 func GetString(g Getter, path string) (body string) {
-	v, cas := g.Get(path)
-	if cas == Missing || cas == Dir {
+	v, rev := g.Get(path)
+	if rev == Missing || rev == Dir {
 		return ""
 	}
 	return v[0]
@@ -33,23 +33,23 @@ func GetString(g Getter, path string) (body string) {
 // stored at `path` and a missing entry. If you need to tell the difference,
 // use `g.Get`.
 func Getdir(g Getter, path string) (entries []string) {
-	v, cas := g.Get(path)
-	if cas != Dir {
+	v, rev := g.Get(path)
+	if rev != Dir {
 		return nil
 	}
 	return v
 }
 
-type Visitor func(path, body string, cas int64) (stop bool)
+type Visitor func(path, body string, rev int64) (stop bool)
 
 func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
-	v, cas := g.Get(path)
-	if cas == Missing {
+	v, rev := g.Get(path)
+	if rev == Missing {
 		return
 	}
 
-	if cas != Dir {
-		return glob.Match(path) && f(path, v[0], cas)
+	if rev != Dir {
+		return glob.Match(path) && f(path, v[0], rev)
 	}
 
 	if path == "/" {

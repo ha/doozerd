@@ -7,20 +7,20 @@ import (
 )
 
 func TestNodeApplySet(t *testing.T) {
-	k, v, seqn, cas := "x", "a", int64(1), int64(1)
+	k, v, seqn, rev := "x", "a", int64(1), int64(1)
 	p := "/" + k
 	m := MustEncodeSet(p, v, Clobber)
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{k: {v, cas, nil}}}
+	exp := node{"", Dir, map[string]node{k: {v, rev, nil}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, p, v, cas, m, nil, n}, e)
+	assert.Equal(t, Event{seqn, p, v, rev, m, nil, n}, e)
 }
 
 func TestNodeApplyDel(t *testing.T) {
-	k, seqn, cas := "x", int64(1), int64(1)
-	r := node{"", Dir, map[string]node{k: {"a", cas, nil}}}
+	k, seqn, rev := "x", int64(1), int64(1)
+	r := node{"", Dir, map[string]node{k: {"a", rev, nil}}}
 	p := "/" + k
-	m := MustEncodeDel(p, cas)
+	m := MustEncodeDel(p, rev)
 	n, e := r.apply(seqn, m)
 	assert.Equal(t, emptyDir, n)
 	assert.Equal(t, Event{seqn, p, "", Missing, m, nil, n}, e)
@@ -35,35 +35,35 @@ func TestNodeApplyNop(t *testing.T) {
 }
 
 func TestNodeApplyBadMutation(t *testing.T) {
-	seqn, cas := int64(1), int64(1)
+	seqn, rev := int64(1), int64(1)
 	m := BadMutations[0]
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrBadMutation.String(), cas, nil}}}}}
+	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrBadMutation.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, ErrBadMutation.String(), cas, m, ErrBadMutation, n}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, ErrBadMutation.String(), rev, m, ErrBadMutation, n}, e)
 }
 
 func TestNodeApplyBadInstruction(t *testing.T) {
-	seqn, cas := int64(1), int64(1)
+	seqn, rev := int64(1), int64(1)
 	m := BadInstructions[0]
 	n, e := emptyDir.apply(seqn, m)
 	err := &BadPathError{""}
-	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {err.String(), cas, nil}}}}}
+	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {err.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, err.String(), cas, m, err, n}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, err.String(), rev, m, err, n}, e)
 }
 
-func TestNodeApplyCasMismatch(t *testing.T) {
-	k, v, seqn, cas := "x", "a", int64(1), int64(1)
+func TestNodeApplyRevMismatch(t *testing.T) {
+	k, v, seqn, rev := "x", "a", int64(1), int64(1)
 	p := "/" + k
 
 	// -123 is less that the current rev, which is zero; and not Clobber.
 	m := MustEncodeSet(p, v, -123)
 	n, e := emptyDir.apply(seqn, m)
 
-	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrCasMismatch.String(), cas, nil}}}}}
+	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrRevMismatch.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
-	assert.Equal(t, Event{seqn, ErrorPath, ErrCasMismatch.String(), cas, m, ErrCasMismatch, n}, e)
+	assert.Equal(t, Event{seqn, ErrorPath, ErrRevMismatch.String(), rev, m, ErrRevMismatch, n}, e)
 }
 
 

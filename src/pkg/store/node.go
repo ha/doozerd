@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-var emptyDir = node{V: "", Ds: make(map[string]node), Cas: Dir}
+var emptyDir = node{V: "", Ds: make(map[string]node), Rev: Dir}
 
 const ErrorPath = "/store/error"
 
@@ -13,7 +13,7 @@ const Nop = "nop:"
 // This structure should be kept immutable.
 type node struct {
 	V   string
-	Cas int64
+	Rev int64
 	Ds  map[string]node
 }
 
@@ -52,9 +52,9 @@ func (n node) get(parts []string) ([]string, int64) {
 		return []string{""}, Missing
 	default:
 		if len(m.Ds) > 0 {
-			return m.readdir(), m.Cas
+			return m.readdir(), m.Rev
 		} else {
-			return []string{m.V}, m.Cas
+			return []string{m.V}, m.Rev
 		}
 	}
 	panic("unreachable")
@@ -75,9 +75,9 @@ func (n node) stat(parts []string) (int32, int64) {
 	default:
 		l := len(m.Ds)
 		if l > 0 {
-			return int32(l), m.Cas
+			return int32(l), m.Rev
 		} else {
-			return int32(len(m.V)), m.Cas
+			return int32(len(m.V)), m.Rev
 		}
 	}
 	panic("unreachable")
@@ -101,49 +101,49 @@ func copyMap(a map[string]node) map[string]node {
 }
 
 // Return value is replacement node
-func (n node) set(parts []string, v string, cas int64, keep bool) (node, bool) {
+func (n node) set(parts []string, v string, rev int64, keep bool) (node, bool) {
 	if len(parts) == 0 {
-		return node{v, cas, n.Ds}, keep
+		return node{v, rev, n.Ds}, keep
 	}
 
 	n.Ds = copyMap(n.Ds)
-	p, ok := n.Ds[parts[0]].set(parts[1:], v, cas, keep)
+	p, ok := n.Ds[parts[0]].set(parts[1:], v, rev, keep)
 	n.Ds[parts[0]] = p, ok
-	n.Cas = Dir
+	n.Rev = Dir
 	return n, len(n.Ds) > 0
 }
 
-func (n node) setp(k, v string, cas int64, keep bool) node {
+func (n node) setp(k, v string, rev int64, keep bool) node {
 	if err := checkPath(k); err != nil {
 		return n
 	}
 
-	n, _ = n.set(split(k), v, cas, keep)
+	n, _ = n.set(split(k), v, rev, keep)
 	return n
 }
 
 func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
-	ev.Seqn, ev.Cas, ev.Mut = seqn, seqn, mut
+	ev.Seqn, ev.Rev, ev.Mut = seqn, seqn, mut
 	if mut == Nop {
 		ev.Path = "/"
-		ev.Cas = nop
+		ev.Rev = nop
 		rep = n
 		ev.Getter = rep
 		return
 	}
 
-	var cas int64
+	var rev int64
 	var keep bool
-	ev.Path, ev.Body, cas, keep, ev.Err = decode(mut)
+	ev.Path, ev.Body, rev, keep, ev.Err = decode(mut)
 
 	if ev.Err == nil && keep {
 		components := split(ev.Path)
 		for i := 0; i < len(components)-1; i++ {
-			_, dirCas := n.get(components[0 : i+1])
-			if dirCas == Missing {
+			_, dirRev := n.get(components[0 : i+1])
+			if dirRev == Missing {
 				break
 			}
-			if dirCas != Dir {
+			if dirRev != Dir {
 				ev.Err = os.ENOTDIR
 				break
 			}
@@ -151,23 +151,23 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 	}
 
 	if ev.Err == nil {
-		_, curCas := n.Get(ev.Path)
-		if cas != Clobber && cas < curCas {
-			ev.Err = ErrCasMismatch
-		} else if curCas == Dir {
+		_, curRev := n.Get(ev.Path)
+		if rev != Clobber && rev < curRev {
+			ev.Err = ErrRevMismatch
+		} else if curRev == Dir {
 			ev.Err = os.EISDIR
 		}
 	}
 
 	if ev.Err != nil {
-		ev.Path, ev.Body, cas, keep = ErrorPath, ev.Err.String(), Clobber, true
+		ev.Path, ev.Body, rev, keep = ErrorPath, ev.Err.String(), Clobber, true
 	}
 
 	if !keep {
-		ev.Cas = Missing
+		ev.Rev = Missing
 	}
 
-	rep = n.setp(ev.Path, ev.Body, ev.Cas, keep)
+	rep = n.setp(ev.Path, ev.Body, ev.Rev, keep)
 	ev.Getter = rep
 	return
 }

@@ -16,7 +16,7 @@ func TestMemberSimple(t *testing.T) {
 	go Clean(c, fp.Store, fp)
 
 	// start our session
-	fp.Propose([]byte(store.MustEncodeSet("/session/a", "foo", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/ctl/sess/a", "foo", store.Missing)))
 
 	fp.Propose([]byte(store.MustEncodeSet("/doozer/info/a/x", "a", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/doozer/info/a/y", "b", store.Missing)))

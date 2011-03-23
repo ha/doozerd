@@ -9,10 +9,10 @@ Equivalent to
 
   set <path> 0
 
-The body is read from stdin. If <cas> does not match the existing CAS token of
-the file, no change will be made.
+The body is read from stdin. If the file already exists,
+no change will be made.
 
-Prints the new CAS token on stdout, or an error message on stderr.
+Prints the new revision on stdout, or an error message on stderr.
 `
 }
 

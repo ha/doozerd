@@ -113,9 +113,9 @@ func walk(path string, st *store.Store, ch chan store.Event) {
 		// TODO generalize and factor this into pkg store.
 		path = path[0 : len(path)-1]
 	}
-	v, cas := st.Get(path)
-	if cas != store.Dir {
-		ch <- store.Event{0, path, v[0], cas, "", nil, nil}
+	v, rev := st.Get(path)
+	if rev != store.Dir {
+		ch <- store.Event{0, path, v[0], rev, "", nil, nil}
 		return
 	}
 	if path == "/" {

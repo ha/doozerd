@@ -108,11 +108,11 @@ func bail(e os.Error) {
 
 
 func mustAtoi64(arg string) int64 {
-	cas, err := strconv.Atoi64(arg)
+	n, err := strconv.Atoi64(arg)
 	if err != nil {
 		bail(err)
 	}
-	return cas
+	return n
 }
 
 

@@ -30,7 +30,7 @@ func mustListenPacket(addr string) net.PacketConn {
 }
 
 
-func TestDoozerNoop(t *testing.T) {
+func TestDoozerNop(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -39,7 +39,7 @@ func TestDoozerNoop(t *testing.T) {
 	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := client.New("foo", l.Addr().String())
-	err := cl.Noop()
+	err := cl.Nop()
 	assert.Equal(t, nil, err)
 }
 
@@ -54,18 +54,18 @@ func TestDoozerGet(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ents, cas, err := cl.Get("/ping", nil)
+	ents, rev, err := cl.Get("/ping", nil)
 	assert.Equal(t, nil, err)
-	assert.NotEqual(t, store.Dir, cas)
+	assert.NotEqual(t, store.Dir, rev)
 	assert.Equal(t, []byte("pong"), ents)
 
 	//cl.Set("/test/a", store.Missing, []byte{'1'})
 	//cl.Set("/test/b", store.Missing, []byte{'2'})
 	//cl.Set("/test/c", store.Missing, []byte{'3'})
 
-	//ents, cas, err = cl.Get("/test", 0)
+	//ents, rev, err = cl.Get("/test", 0)
 	//sort.SortStrings(ents)
-	//assert.Equal(t, store.Dir, cas)
+	//assert.Equal(t, store.Dir, rev)
 	//assert.Equal(t, nil, err)
 	//assert.Equal(t, []string{"a", "b", "c"}, ents)
 }
@@ -81,9 +81,9 @@ func TestDoozerSet(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ents, cas, err := cl.Get("/ping", nil)
+	ents, rev, err := cl.Get("/ping", nil)
 	assert.Equal(t, nil, err)
-	assert.NotEqual(t, store.Dir, cas)
+	assert.NotEqual(t, store.Dir, rev)
 	assert.Equal(t, []byte("pong"), ents)
 
 	for i := byte(0); i < 10; i++ {
@@ -301,16 +301,16 @@ func TestDoozerStat(t *testing.T) {
 	cl := client.New("foo", l.Addr().String())
 
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
-	setCas, _ := cl.Set("/test/fun", store.Clobber, []byte("house"))
+	setRev, _ := cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	ln, cas, err := cl.Stat("/test", nil)
+	ln, rev, err := cl.Stat("/test", nil)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, store.Dir, cas)
+	assert.Equal(t, store.Dir, rev)
 	assert.Equal(t, int32(2), ln)
 
-	ln, cas, err = cl.Stat("/test/fun", nil)
+	ln, rev, err = cl.Stat("/test/fun", nil)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, setCas, cas)
+	assert.Equal(t, setRev, rev)
 	assert.Equal(t, int32(5), ln)
 }
 
@@ -475,22 +475,22 @@ func TestDoozerReconnect(t *testing.T) {
 		time.Sleep(5e8)
 	}
 
-	cas, err := c0.Set("/x", -1, []byte{'a'})
+	rev, err := c0.Set("/x", -1, []byte{'a'})
 	assert.Equal(t, nil, err, err)
 
-	cas, err = c0.Set("/x", -1, []byte{'b'})
+	rev, err = c0.Set("/x", -1, []byte{'b'})
 	assert.Equal(t, nil, err)
 
 	l1.Close()
 
-	ents, cas, err := c0.Get("/ping", nil)
+	ents, rev, err := c0.Get("/ping", nil)
 	assert.Equal(t, nil, err, err)
-	assert.NotEqual(t, store.Dir, cas)
+	assert.NotEqual(t, store.Dir, rev)
 	assert.Equal(t, []byte("pong"), ents)
 
-	cas, err = c0.Set("/x", -1, []byte{'c'})
+	rev, err = c0.Set("/x", -1, []byte{'c'})
 	assert.Equal(t, nil, err, err)
 
-	cas, err = c0.Set("/x", -1, []byte{'d'})
+	rev, err = c0.Set("/x", -1, []byte{'d'})
 	assert.Equal(t, nil, err)
 }

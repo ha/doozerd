@@ -40,7 +40,7 @@ var (
 	notDir      = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOTDIR)}
 	noEnt       = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOENT)}
 	tooLate     = &R{ErrCode: proto.NewResponse_Err(proto.Response_TOO_LATE)}
-	casMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_CAS_MISMATCH)}
+	revMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_REV_MISMATCH)}
 	readonly    = &R{
 		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
 		ErrDetail: pb.String("no known writeable addresses"),
@@ -218,7 +218,7 @@ var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_DEL:     (*conn).del,
 	proto.Request_GET:     (*conn).get,
 	proto.Request_GETDIR:  (*conn).getdir,
-	proto.Request_NOOP:    (*conn).noop,
+	proto.Request_NOP:     (*conn).nop,
 	proto.Request_REV:     (*conn).rev,
 	proto.Request_SET:     (*conn).set,
 	proto.Request_STAT:    (*conn).stat,
@@ -359,8 +359,8 @@ func (c *conn) redirect(t *T) {
 	}
 
 	cal := cals[rand.Intn(len(cals))]
-	parts, cas := c.s.St.Get("/doozer/info/" + cal + "/public-addr")
-	if cas == store.Dir && cas == store.Missing {
+	parts, rev := c.s.St.Get("/doozer/info/" + cal + "/public-addr")
+	if rev == store.Dir && rev == store.Missing {
 		c.respond(t, Valid|Done, nil, readonly)
 		return
 	}
@@ -440,11 +440,11 @@ func (c *conn) set(t *T, tx txn) {
 			default:
 				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
 				return
-			case store.ErrCasMismatch:
-				c.respond(t, Valid|Done, nil, casMismatch)
+			case store.ErrRevMismatch:
+				c.respond(t, Valid|Done, nil, revMismatch)
 				return
 			case nil:
-				c.respond(t, Valid|Done, nil, &R{Cas: &ev.Cas})
+				c.respond(t, Valid|Done, nil, &R{Rev: &ev.Seqn})
 				return
 			}
 		}
@@ -481,7 +481,7 @@ func (c *conn) del(t *T, tx txn) {
 }
 
 
-func (c *conn) noop(t *T, tx txn) {
+func (c *conn) nop(t *T, tx txn) {
 	if !c.cal {
 		c.redirect(t)
 		return
@@ -520,12 +520,12 @@ func (c *conn) checkin(t *T, tx txn) {
 	go func() {
 		deadline := time.Nanoseconds() + sessionLease
 		body := strconv.Itoa64(deadline)
-		cas := *t.Rev
-		path := "/session/" + *t.Path
-		if cas != 0 {
-			_, cas = c.s.St.Get(path)
-			if cas == 0 {
-				c.respond(t, Valid|Done, nil, casMismatch)
+		rev := *t.Rev
+		path := "/ctl/sess/" + *t.Path
+		if rev != 0 {
+			_, rev = c.s.St.Get(path)
+			if rev == 0 {
+				c.respond(t, Valid|Done, nil, revMismatch)
 				return
 			}
 		}
@@ -533,10 +533,10 @@ func (c *conn) checkin(t *T, tx txn) {
 		case <-tx.cancel:
 			c.closeTxn(*t.Tag)
 			return
-		case ev := <-bgSet(c.s.Mg, path, []byte(body), cas):
+		case ev := <-bgSet(c.s.Mg, path, []byte(body), rev):
 			switch {
-			case ev.Err == store.ErrCasMismatch:
-				c.respond(t, Valid|Done, nil, casMismatch)
+			case ev.Err == store.ErrRevMismatch:
+				c.respond(t, Valid|Done, nil, revMismatch)
 				return
 			case ev.Err != nil:
 				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
@@ -554,7 +554,7 @@ func (c *conn) checkin(t *T, tx txn) {
 			}
 		}
 
-		c.respond(t, Valid|Done, nil, &R{Cas: pb.Int64(-1)})
+		c.respond(t, Valid|Done, nil, &R{})
 	}()
 }
 
@@ -630,7 +630,7 @@ func (c *conn) cancelAll() {
 
 
 func (c *conn) cancel(t *T, tx txn) {
-	tag := pb.GetInt32(t.Id)
+	tag := pb.GetInt32(t.OtherTag)
 	c.tl.Lock()
 	otx, ok := c.tx[tag]
 	c.tl.Unlock()
@@ -686,7 +686,6 @@ func (c *conn) watch(t *T, tx txn) {
 				r := R{
 					Path:  &ev.Path,
 					Value: []byte(ev.Body),
-					Cas:   &ev.Cas,
 					Rev:   &ev.Seqn,
 				}
 
@@ -726,7 +725,7 @@ func (c *conn) walk(t *T, tx txn) {
 
 	if g := c.getterFor(t); g != nil {
 		go func() {
-			f := func(path, body string, cas int64) (stop bool) {
+			f := func(path, body string, rev int64) (stop bool) {
 				select {
 				case <-tx.cancel:
 					c.closeTxn(*t.Tag)
@@ -738,8 +737,7 @@ func (c *conn) walk(t *T, tx txn) {
 					var r R
 					r.Path = &path
 					r.Value = []byte(body)
-					r.Cas = &cas
-					r.Rev = &cas
+					r.Rev = &rev
 					c.respond(t, Valid|Set, tx.cancel, &r)
 
 					limit--

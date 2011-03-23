@@ -25,33 +25,8 @@ encoded in [Protocol Buffer][protobuf] format.
 
 Two Protocol Buffer structures, `Request` and
 `Response`, are used for *requests* and *responses*,
-respectively. These structures are defined as follows
-(in Protocol Buffer syntax):
-
-    message Request {
-      required int32 tag = 1;
-      required Verb verb = 2;
-
-      optional string path = 4;
-      optional bytes value = 5;
-      optional int32 id = 6;
-      optional int32 offset = 7;
-      optional int32 limit = 8;
-    }
-
-    message Response {
-      required int32 tag = 1;
-      required int32 flags = 2;
-
-      optional int64 rev = 3;
-      optional int64 cas = 4;
-      optional string path = 5;
-      optional bytes value = 6;
-      optional int32 id = 7;
-
-      optional Err err_code = 100;
-      optional string err_detail = 101;
-    }
+respectively. See `src/pkg/proto/msg.proto` for their
+definitions.
 
 Each request contains at least a tag, described below,
 and a verb, to identify what action is desired.
@@ -114,10 +89,10 @@ For a thorough description of Doozer's data model,
 see [Data Model][data]. Briefly, doozer's store holds
 a tree structure of files identified by paths similar
 to paths in Unix, and performs only whole-file reads
-and writes, which are atomic. The store also records a
-*Compare-and-Set* (CAS) token with each write.
-This token can be given to a subsequent write
-operation on the same file to assure that no
+and writes, which are atomic. The store also records
+the *revision* of each write.
+This number can be given to a subsequent write
+operation to ensure that no
 intervening writes have happened.
 
 ## Verbs
@@ -137,7 +112,7 @@ This is indicated by a + sign after the response fields.
    message arrives in the interim), at which point tag
    *id* may be reused.
 
- * `CHECKIN` *path*, *rev* &rArr; *cas*
+ * `CHECKIN` *path*, *rev* &rArr; &empty;
 
    Used to establish and maintain a session, required if
    the client wishes to create ephemeral files or obtain
@@ -151,7 +126,7 @@ This is indicated by a + sign after the response fields.
    request message was received.
 
    If *rev* is 0, the file will be created only if it did
-   not exist. Otherwise, the request *rev* is customarily
+   not exist. Otherwise, *rev* is customarily
    -1, which means the file should be written
    unconditionally.
 
@@ -172,12 +147,10 @@ This is indicated by a + sign after the response fields.
    request, then immediately issue another checkin
    request.
 
-   The response *cas* field is always -1.
-
  * `DEL` *path*, *rev* &rArr; &empty;
 
    Del deletes the file at *path* if *rev* is greater than
-   or equal to the file's CAS token.
+   or equal to the file's revision.
 
  * `ELOCK` (not yet implemented)
 
@@ -191,14 +164,24 @@ This is indicated by a + sign after the response fields.
 
    Clients usually do not need to use this request.
 
- * `GET` *path*, *id* &rArr; *value*, *cas*
+ * `GET` *path*, *rev* &rArr; *value*, *rev*
 
-   Gets the contents (*value*) and CAS token (*cas*)
-   of the file at *path*, in the *rev*.
-   If *id* is 0 or unset, uses the current revision
-   of the data store.
+   Gets the contents (*value*) and revision (*rev*)
+   of the file at *path* in the specified revision (*rev*).
+   If *rev* is not provided, get uses the current revision.
 
- * `GETDIR` (not yet implemented)
+ * `GETDIR` *path*, *rev*, *offset*, *limit* &rArr; {*path*}+
+
+   Returns a sequence of responses containing the names
+   of entries in *path* (a directory) in the specified
+   revision (*rev*), in lexical order. It is an error
+   if *path* is not a directory.
+
+   If *offset* is given, getdir skips that many entries
+   before returning any.
+
+   If *limit* is given, getdir will send that many
+   responses, at most.
 
  * `LOCK` (not yet implemented)
 
@@ -208,27 +191,25 @@ This is indicated by a + sign after the response fields.
 
  * `JOIN` (deprecated)
 
- * `NOOP` (deprecated)
+ * `NOP` (deprecated)
 
  * `REV` &empty; &rArr; *rev*
 
    Returns the current revision.
 
- * `SET` *path*, *rev*, *value* &rArr; *cas*
+ * `SET` *path*, *rev*, *value* &rArr; *rev*
 
    Sets the contents of the file at *path* to *value*,
    as long as *rev* is greater than or equal to the file's
-   old CAS token.
-   Returns the new CAS token.
+   revision.
+   Returns the file's new revision.
 
- * `SYNCPATH` (not yet implemented)
-
- * `WALK` *path*, *id* &rArr; {*path*, *cas*, *value*}+
+ * `WALK` *path*, *rev* &rArr; {*path*, *rev*, *value*}+
 
    Iterates over all existing files that match *path*, a
-   glob pattern, in *rev*. Sends one response
-   for each matching file. If *id* is 0, uses the current
-   state of the data store.
+   glob pattern, in revision *rev*. Sends one response
+   for each matching file. If *rev* is not provided, walk
+   uses the current revision.
 
    Glob notation:
     - `?` matches a single char in a single path component
@@ -236,7 +217,7 @@ This is indicated by a + sign after the response fields.
     - `**` matches zero or more chars in zero or more components
     - any other sequence matches itself
 
- * `WATCH` *path* &rArr; {*rev*, *path*, *cas*, *value*}+
+ * `WATCH` *path* &rArr; {*path*, *rev*, *value*}+
 
    Arranges for the client to receive notices of changes
    made to any file matching *path*, a glob pattern. One
@@ -279,10 +260,10 @@ Error codes are defined with the following meanings:
 
    The current default of history kept is 360,000 revs.
 
- * `CAS_MISMATCH`
+ * `REV_MISMATCH`
 
-   A set request has failed because the CAS token given
-   did not match the CAS token of the file being set.
+   A write operation has failed because the revision given
+   was less than the revision of the file being set.
 
  * `BAD_PATH`
 
@@ -311,87 +292,8 @@ Error codes are defined with the following meanings:
 
 Error value 0 is reserved.
 
-## Examples
-
-(In these examples, we'll use an informal notation
-similar to JSON to indicate the contents of structures
-sent over the wire.)
-
-### Get
-
-Let's say the client wants to retrieve file `/a`. So it
-sends the following:
-
-    {
-        tag:  0,
-        verb: GET,
-        path: "/a",
-    }
-
-The server replies
-
-    {
-        tag:   0,
-        flags: 3, // 3 == valid|done
-        cas:   5,
-        value: "hello",
-    }
-
-### Set and Get
-
-Set usually takes much longer than get, so here we'll
-see replies come out of order:
-
-    {
-        tag:   0,
-        verb:  SET,
-        path:  "/a",
-        rev:   -1,
-        value: "goodbye",
-    }
-
-    {
-        tag:  1,
-        verb: GET,
-        path: "/a",
-    }
-
-The server replies immediately:
-
-    {
-        tag:   1,
-        flags: 3, // 3 == valid|done
-        cas:   5,
-        value: "hello",
-    }
-
-Some time later, the set operation finishes:
-
-    {
-        tag:   0,
-        flags: 3, // 3 == valid|done
-        cas:   6,
-    }
-
-Now, the client can issue the same get request once
-more:
-
-    {
-        tag:  1,
-        verb: GET,
-        path: "/a",
-    }
-
-This time, the server replies:
-
-    {
-        tag:   1,
-        flags: 3, // 3 == valid|done
-        cas:   6,
-        value: "goodbye",
-    }
-
 <style>
+body { margin: 2em 10em }
 p { max-width: 30em }
 </style>
 

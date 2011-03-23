@@ -48,7 +48,7 @@ func TestConsensusOne(t *testing.T) {
 		Seqn: 4,
 		Path: "/store/error",
 		Body: "bad mutation",
-		Cas:  4,
+		Rev:  4,
 		Mut:  "foo",
 		Err:  os.NewError("bad mutation"),
 	}
@@ -116,7 +116,7 @@ func TestConsensusTwo(t *testing.T) {
 		Seqn: 6,
 		Path: "/store/error",
 		Body: "bad mutation",
-		Cas:  6,
+		Rev:  6,
 		Mut:  "foo",
 		Err:  os.NewError("bad mutation"),
 	}

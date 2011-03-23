@@ -103,7 +103,7 @@ func alphaTest(t *testing.T, alpha int64) {
 	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
 
 	// The only way to generate a run is on an event.
-	// Send a noop here to get things started.
+	// Send a nop here to get things started.
 	st.Ops <- store.Op{3, store.Nop}
 
 	exp := &run{

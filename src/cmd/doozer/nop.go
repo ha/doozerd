@@ -6,18 +6,18 @@ import (
 
 
 func init() {
-	cmds["noop"] = cmd{noop, "", "consensus"}
-	cmdHelp["noop"] = `Performs a consensus operation.
+	cmds["nop"] = cmd{nop, "", "consensus"}
+	cmdHelp["nop"] = `Performs a consensus operation.
 
 No change will be made to the data store.
 `
 }
 
 
-func noop() {
+func nop() {
 	c := client.New("<test>", *addr)
 
-	err := c.Noop()
+	err := c.Nop()
 	if err != nil {
 		bail(err)
 	}

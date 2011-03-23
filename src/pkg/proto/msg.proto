@@ -1,30 +1,28 @@
 package proto;
 
+// see doc/proto.md
 message Request {
   required int32 tag = 1;
 
   enum Verb {
-      CHECKIN  = 0;  // rev, id          => rev
-      GET      = 1;  // path, id         => rev, value
-      SET      = 2;  // rev, path, value => rev
-      DEL      = 3;  // rev, path        => {}
-      ESET     = 4;  // rev, path        => {}
-      REV      = 5;  // {}               => rev
-      NOOP     = 7;  // {}               => {}
-      WATCH    = 8;  // path             => {rev, path, value}+
-      WALK     = 9;  // path, id         => {rev, path, value}+
-      CANCEL   = 10; // id               => {}
-      GETDIR   = 14; // path, id         => {rev, value}+
+      CHECKIN  = 0;
+      GET      = 1;
+      SET      = 2;
+      DEL      = 3;
+      ESET     = 4;
+      REV      = 5;
+      NOP      = 7;
+      WATCH    = 8;
+      WALK     = 9;
+      CANCEL   = 10;
+      GETDIR   = 14;
       STAT     = 16;
-
-      // future
-      SYNCPATH = 12; // path             => rev, value
   }
   required Verb verb = 2;
 
   optional string path = 4;
   optional bytes value = 5;
-  optional int32 id = 6;
+  optional int32 other_tag = 6;
 
   optional int32 offset = 7;
   optional int32 limit = 8;
@@ -32,15 +30,14 @@ message Request {
   optional int64 rev = 9;
 }
 
+// see doc/proto.md
 message Response {
   required int32 tag = 1;
   required int32 flags = 2;
 
   optional int64 rev = 3;
-  optional int64 cas = 4;
   optional string path = 5;
   optional bytes value = 6;
-  optional int32 id = 7;
   optional int32 len = 8;
 
   enum Err {
@@ -50,7 +47,7 @@ message Response {
     UNKNOWN_VERB = 2;
     REDIRECT     = 3;
     TOO_LATE     = 4;
-    CAS_MISMATCH = 5;
+    REV_MISMATCH = 5;
     BAD_PATH     = 6;
     MISSING_ARG  = 7;
     NOTDIR       = 20;

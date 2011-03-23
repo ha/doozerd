@@ -19,13 +19,13 @@ Rules for <glob> pattern-matching:
 
 Output is a sequence of records, one for each change. Format of each record:
 
-  <path> <cas> <len> LF <body> LF
+  <path> <rev> <len> LF <body> LF
 
-Here, <path> is the file's path, <cas> is the cas token, <len> is the number of
+Here, <path> is the file's path, <rev> is the revision, <len> is the number of
 bytes in the body, <body> is the bytes of the body, and LF is an ASCII
 line-feed char.
 
-If a file is deleted, <cas> will be 0.
+If a file is deleted, <rev> will be 0.
 `
 }
 
@@ -43,7 +43,7 @@ func watch(glob string) {
 			fmt.Fprintln(os.Stderr, ev.Err)
 		}
 
-		fmt.Println(ev.Path, ev.Cas, len(ev.Body))
+		fmt.Println(ev.Path, ev.Rev, len(ev.Body))
 		os.Stdout.Write(ev.Body)
 		fmt.Println()
 	}

@@ -9,9 +9,9 @@ type Event struct {
 	Path string
 	Body string
 
-	// the cas token for `Path` as of this event.
+	// the revision for `Path` as of this event. 0 for a delete event.
 	// undefined if the event does not represent a path operation.
-	Cas int64
+	Rev int64
 
 	// the mutation that caused this event
 	Mut string
@@ -38,19 +38,19 @@ func (e Event) Desc() string {
 //
 // Mutually exclusive with `IsDel` and `IsNop`.
 func (e Event) IsSet() bool {
-	return e.Cas > Missing
+	return e.Rev > Missing
 }
 
 // Returns true iff the operation represented by `e` deleted a path.
 //
 // Mutually exclusive with `IsSet` and `IsNop`.
 func (e Event) IsDel() bool {
-	return e.Cas == Missing
+	return e.Rev == Missing
 }
 
 // Returns true iff `e` does not represent a path operation.
 //
 // Mutually exclusive with `IsSet` and `IsDel`.
 func (e Event) IsNop() bool {
-	return e.Cas < Missing
+	return e.Rev < Missing
 }

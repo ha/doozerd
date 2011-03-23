@@ -9,19 +9,19 @@ import (
 
 
 func init() {
-	cmds["set"] = cmd{set, "<path> <cas>", "write a file"}
+	cmds["set"] = cmd{set, "<path> <rev>", "write a file"}
 	cmdHelp["set"] = `Sets the body of the file at <path>.
 
-The body is read from stdin. If <cas> does not match the existing CAS token of
-the file, no change will be made.
+The body is read from stdin. If <rev> is not greater than or equal to
+the revision of the file, no change will be made.
 
-Prints the new CAS token on stdout, or an error message on stderr.
+Prints the new revision on stdout, or an error message on stderr.
 `
 }
 
 
-func set(path, cas string) {
-	oldCas := mustAtoi64(cas)
+func set(path, rev string) {
+	oldRev := mustAtoi64(rev)
 
 	c := client.New("<test>", *addr)
 
@@ -30,10 +30,10 @@ func set(path, cas string) {
 		bail(err)
 	}
 
-	newCas, err := c.Set(path, oldCas, body)
+	newRev, err := c.Set(path, oldRev, body)
 	if err != nil {
 		bail(err)
 	}
 
-	fmt.Println(newCas)
+	fmt.Println(newRev)
 }

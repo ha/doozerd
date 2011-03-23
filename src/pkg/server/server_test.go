@@ -92,7 +92,7 @@ func TestServerCancel(t *testing.T) {
 
 	done := make(chan bool, 1)
 	go func() {
-		c.cancel(&T{Tag: proto.Int32(2), Id: proto.Int32(1)}, cancelTx)
+		c.cancel(&T{Tag: proto.Int32(2), OtherTag: proto.Int32(1)}, cancelTx)
 		done <- true
 	}()
 

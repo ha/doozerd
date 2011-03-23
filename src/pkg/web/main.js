@@ -45,12 +45,12 @@ function apply(ev) {
     var tr = $('<tr class=new>').attr('name', basename);
     insert(dir.children('table').children('tbody'), tr);
     tr.append($('<th>').text(basename)).
-      append('<td class=cas>').
+      append('<td class=rev>').
       append('<td class=eq>').
       append('<td class=body>');
     entry = tr;
   }
-  entry.children('td.cas').text('('+ev.Cas+')');
+  entry.children('td.rev').text('('+ev.Rev+')');
   entry.children('td.body').text(ev.Body);
   entry.addClass('new');
 

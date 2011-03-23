@@ -65,7 +65,7 @@ func TestWalk(t *testing.T) {
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
 	var c int
-	b := Walk(st, glob, func(path, body string, cas int64) bool {
+	b := Walk(st, glob, func(path, body string, rev int64) bool {
 		assert.Equal(t, expPaths[0], path)
 		assert.Equal(t, exp[path], body)
 		c++
@@ -88,7 +88,7 @@ func TestWalkOneLevel(t *testing.T) {
 	st.Ops <- Op{3, MustEncodeSet("/d/a/z", "3", Clobber)}
 	sync(st, 3)
 	got := [][2]string{}
-	Walk(st, MustCompileGlob("/d/*/*"), func(path, body string, cas int64) bool {
+	Walk(st, MustCompileGlob("/d/*/*"), func(path, body string, rev int64) bool {
 		got = append(got, [2]string{path, body})
 		return false
 	})
@@ -117,7 +117,7 @@ func TestWalkStop(t *testing.T) {
 	glob, err := CompileGlob("/d/**")
 	assert.Equal(t, nil, err)
 	var c int
-	b := Walk(st, glob, func(path, body string, cas int64) bool {
+	b := Walk(st, glob, func(path, body string, rev int64) bool {
 		assert.Equal(t, expPaths[0], path)
 		assert.Equal(t, exp[path], body)
 		c++

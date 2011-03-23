@@ -7,7 +7,7 @@ GOFILES=\
 	doozer.go\
 	get.go\
 	help.go\
-	noop.go\
+	nop.go\
 	rev.go\
 	set.go\
 	walk.go\

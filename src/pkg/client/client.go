@@ -30,7 +30,7 @@ var (
 	checkin = proto.NewRequest_Verb(proto.Request_CHECKIN)
 	del     = proto.NewRequest_Verb(proto.Request_DEL)
 	get     = proto.NewRequest_Verb(proto.Request_GET)
-	noop    = proto.NewRequest_Verb(proto.Request_NOOP)
+	nop     = proto.NewRequest_Verb(proto.Request_NOP)
 	rev     = proto.NewRequest_Verb(proto.Request_REV)
 	set     = proto.NewRequest_Verb(proto.Request_SET)
 	walk    = proto.NewRequest_Verb(proto.Request_WALK)
@@ -55,12 +55,12 @@ func (r *ResponseError) String() string {
 var (
 	ErrNotDir      = &ResponseError{proto.Response_NOTDIR, "not a directory"}
 	ErrIsDir       = &ResponseError{proto.Response_ISDIR, "is a directory"}
-	ErrCasMismatch = &ResponseError{proto.Response_CAS_MISMATCH, "cas mismatch"}
+	ErrRevMismatch = &ResponseError{proto.Response_REV_MISMATCH, "rev mismatch"}
 	ErrTooLate     = &ResponseError{proto.Response_TOO_LATE, "that rev is gone"}
 	respErrors     = map[int32]*ResponseError{
 		proto.Response_NOTDIR:       ErrNotDir,
 		proto.Response_ISDIR:        ErrIsDir,
-		proto.Response_CAS_MISMATCH: ErrCasMismatch,
+		proto.Response_REV_MISMATCH: ErrRevMismatch,
 		proto.Response_TOO_LATE:     ErrTooLate,
 	}
 )
@@ -68,7 +68,6 @@ var (
 
 type Event struct {
 	Rev  int64
-	Cas  int64
 	Path string
 	Body []byte
 	Flag int32
@@ -230,7 +229,6 @@ func (c *conn) events(t *T) (*Watch, os.Error) {
 				ev.Err = err
 			} else {
 				ev.Rev = pb.GetInt64(r.Rev)
-				ev.Cas = pb.GetInt64(r.Cas)
 				ev.Path = pb.GetString(r.Path)
 				ev.Body = r.Value
 				ev.Flag = pb.GetInt32(r.Flags)
@@ -314,15 +312,13 @@ func (c *conn) readResponses() {
 
 		if !ok {
 			log.Printf(
-				"%v unexpected: tag=%d flags=%d rev=%d cas=%d path=%q value=%v id=%d len=%d err_code=%v err_detail=%q",
+				"%v unexpected: tag=%d flags=%d rev=%d path=%q value=%v len=%d err_code=%v err_detail=%q",
 				ch,
 				tag,
 				flags,
 				pb.GetInt64(r.Rev),
-				pb.GetInt64(r.Cas),
 				pb.GetString(r.Path),
 				r.Value,
-				pb.GetInt32(r.Id),
 				pb.GetInt32(r.Len),
 				pb.GetInt32((*int32)(r.ErrCode)),
 				pb.GetString(r.ErrDetail),
@@ -354,7 +350,7 @@ func (c *conn) cancel(tag int32, cb chan *R) os.Error {
 	c.cb[tag] = nil
 	c.cblk.Unlock()
 
-	_, err := c.call(&T{Verb: cancel, Id: &tag})
+	_, err := c.call(&T{Verb: cancel, OtherTag: &tag})
 	if err != nil {
 		// Something is very wrong.
 		// Leave a nil entry in the cb map,
@@ -591,17 +587,17 @@ func (cl *Client) retry(t *T) (r *R, err os.Error) {
 }
 
 
-func (cl *Client) Set(path string, oldCas int64, body []byte) (newCas int64, err os.Error) {
-	r, err := cl.call(&T{Verb: set, Path: &path, Value: body, Rev: &oldCas})
+func (cl *Client) Set(path string, oldRev int64, body []byte) (newRev int64, err os.Error) {
+	r, err := cl.call(&T{Verb: set, Path: &path, Value: body, Rev: &oldRev})
 	if err != nil {
 		return 0, err
 	}
 
-	return pb.GetInt64(r.Cas), nil
+	return pb.GetInt64(r.Rev), nil
 }
 
 
-// Returns the body and CAS token of the file at path.
+// Returns the body and revision of the file at path.
 // If rev is 0, uses the current state, otherwise,
 // rev must be a value previously returned buy an operation.
 // If path does not denote a file, returns an error.
@@ -625,8 +621,8 @@ func (cl *Client) Rev() (int64, os.Error) {
 }
 
 
-func (cl *Client) Del(path string, cas int64) os.Error {
-	_, err := cl.call(&T{Verb: del, Path: &path, Rev: &cas})
+func (cl *Client) Del(path string, rev int64) os.Error {
+	_, err := cl.call(&T{Verb: del, Path: &path, Rev: &rev})
 	return err
 }
 
@@ -639,19 +635,15 @@ func (cl *Client) Stat(path string, rev *int64) (int32, int64, os.Error) {
 	return pb.GetInt32(r.Len), pb.GetInt64(r.Rev), nil
 }
 
-func (cl *Client) Noop() os.Error {
-	_, err := cl.call(&T{Verb: noop})
+func (cl *Client) Nop() os.Error {
+	_, err := cl.call(&T{Verb: nop})
 	return err
 }
 
 
-func (cl *Client) Checkin(id string, cas int64) (int64, os.Error) {
-	r, err := cl.retry(&T{Verb: checkin, Path: &id, Rev: &cas})
-	if err != nil {
-		return 0, err
-	}
-
-	return pb.GetInt64(r.Cas), nil
+func (cl *Client) Checkin(id string, rev int64) os.Error {
+	_, err := cl.retry(&T{Verb: checkin, Path: &id, Rev: &rev})
+	return err
 }
 
 

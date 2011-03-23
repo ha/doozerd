@@ -25,8 +25,8 @@ type Proposer interface {
 }
 
 
-func Set(p Proposer, path string, body []byte, cas int64) (e store.Event) {
-	e.Mut, e.Err = store.EncodeSet(path, string(body), cas)
+func Set(p Proposer, path string, body []byte, rev int64) (e store.Event) {
+	e.Mut, e.Err = store.EncodeSet(path, string(body), rev)
 	if e.Err != nil {
 		return
 	}
@@ -35,8 +35,8 @@ func Set(p Proposer, path string, body []byte, cas int64) (e store.Event) {
 }
 
 
-func Del(p Proposer, path string, cas int64) (e store.Event) {
-	e.Mut, e.Err = store.EncodeDel(path, cas)
+func Del(p Proposer, path string, rev int64) (e store.Event) {
+	e.Mut, e.Err = store.EncodeDel(path, rev)
 	if e.Err != nil {
 		return
 	}
