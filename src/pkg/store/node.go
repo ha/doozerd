@@ -6,7 +6,7 @@ import (
 
 var emptyDir = node{V: "", Ds: make(map[string]node), Rev: Dir}
 
-const ErrorPath = "/store/error"
+const ErrorPath = "/ctl/err"
 
 const Nop = "nop:"
 

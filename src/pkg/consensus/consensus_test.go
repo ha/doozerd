@@ -46,7 +46,7 @@ func TestConsensusOne(t *testing.T) {
 
 	exp := store.Event{
 		Seqn: 4,
-		Path: "/store/error",
+		Path: "/ctl/err",
 		Body: "bad mutation",
 		Rev:  4,
 		Mut:  "foo",
@@ -114,7 +114,7 @@ func TestConsensusTwo(t *testing.T) {
 
 	exp := store.Event{
 		Seqn: 6,
-		Path: "/store/error",
+		Path: "/ctl/err",
 		Body: "bad mutation",
 		Rev:  6,
 		Mut:  "foo",

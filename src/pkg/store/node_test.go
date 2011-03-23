@@ -38,7 +38,7 @@ func TestNodeApplyBadMutation(t *testing.T) {
 	seqn, rev := int64(1), int64(1)
 	m := BadMutations[0]
 	n, e := emptyDir.apply(seqn, m)
-	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrBadMutation.String(), rev, nil}}}}}
+	exp := node{"", Dir, map[string]node{"ctl": {"", Dir, map[string]node{"err": {ErrBadMutation.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, ErrBadMutation.String(), rev, m, ErrBadMutation, n}, e)
 }
@@ -48,7 +48,7 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 	m := BadInstructions[0]
 	n, e := emptyDir.apply(seqn, m)
 	err := &BadPathError{""}
-	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {err.String(), rev, nil}}}}}
+	exp := node{"", Dir, map[string]node{"ctl": {"", Dir, map[string]node{"err": {err.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, err.String(), rev, m, err, n}, e)
 }
@@ -61,7 +61,7 @@ func TestNodeApplyRevMismatch(t *testing.T) {
 	m := MustEncodeSet(p, v, -123)
 	n, e := emptyDir.apply(seqn, m)
 
-	exp := node{"", Dir, map[string]node{"store": {"", Dir, map[string]node{"error": {ErrRevMismatch.String(), rev, nil}}}}}
+	exp := node{"", Dir, map[string]node{"ctl": {"", Dir, map[string]node{"err": {ErrRevMismatch.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, ErrRevMismatch.String(), rev, m, ErrRevMismatch, n}, e)
 }
@@ -71,7 +71,7 @@ func TestNodeNotADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y", "b", Clobber)
 	n, e := r.apply(2, m)
-	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
+	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", os.ENOTDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), 2, m, os.ENOTDIR, n}, e)
 }
@@ -80,7 +80,7 @@ func TestNodeNotADirectoryDeeper(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y/z/w", "b", Clobber)
 	n, e := r.apply(2, m)
-	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.ENOTDIR.String(), Clobber))
+	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", os.ENOTDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, os.ENOTDIR.String(), 2, m, os.ENOTDIR, n}, e)
 }
@@ -89,7 +89,7 @@ func TestNodeIsADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x/y", "a", Clobber))
 	m := MustEncodeSet("/x", "b", Clobber)
 	n, e := r.apply(2, m)
-	exp, _ := r.apply(2, MustEncodeSet("/store/error", os.EISDIR.String(), Clobber))
+	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", os.EISDIR.String(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, os.EISDIR.String(), 2, m, os.EISDIR, n}, e)
 }
