@@ -152,18 +152,6 @@ This is indicated by a + sign after the response fields.
    Del deletes the file at *path* if *rev* is greater than
    or equal to the file's revision.
 
- * `ELOCK` (not yet implemented)
-
- * `ESET` (not yet implemented)
-
- * `FLUSH` (not yet implemented)
-
-   Flush causes the server to initiate consensus immediately
-   with its current buffer of update proposals, rather than
-   waiting for the next frame tick.
-
-   Clients usually do not need to use this request.
-
  * `GET` *path*, *rev* &rArr; *value*, *rev*
 
    Gets the contents (*value*) and revision (*rev*)
@@ -182,12 +170,6 @@ This is indicated by a + sign after the response fields.
 
    If *limit* is given, getdir will send that many
    responses, at most.
-
- * `LOCK` (not yet implemented)
-
-   Obtains a lock on the file at *path*, waiting
-   if necessary for the lock to be released by
-   another client.
 
  * `JOIN` (deprecated)
 
