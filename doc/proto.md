@@ -118,7 +118,7 @@ This is indicated by a + sign after the response fields.
    the client wishes to create ephemeral files or obtain
    ephemeral locks.
 
-   Writes a file named *path* in directory `/ctl/session`.
+   Writes a file named *path* in directory `/ctl/sess`.
    The contents of this file will be a decimal number of
    nanoseconds since January 1, 1970. This time is the
    session's *deadline*. It is determined by the server;
