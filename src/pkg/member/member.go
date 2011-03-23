@@ -18,7 +18,6 @@ func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 		if name != "" {
 			go func() {
 				clearSlot(p, g, name)
-				removeMember(p, g, name)
 				removeInfo(p, g, name)
 			}()
 		}
@@ -29,7 +28,7 @@ func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 func getId(addr string, g store.Getter) string {
 	for _, cal := range store.Getdir(g, "/ctl/cal") {
 		id := store.GetString(g, "/ctl/cal/"+cal)
-		if store.GetString(g, "/doozer/members/"+id) == addr {
+		if store.GetString(g, "/ctl/node/"+id+"/addr") == addr {
 			return id
 		}
 	}
@@ -44,14 +43,6 @@ func clearSlot(p consensus.Proposer, g store.Getter, name string) {
 		}
 		return false
 	})
-}
-
-func removeMember(p consensus.Proposer, g store.Getter, name string) {
-	k := "/doozer/members/" + name
-	_, rev := g.Get(k)
-	if rev != store.Missing {
-		consensus.Del(p, k, rev)
-	}
 }
 
 func removeInfo(p consensus.Proposer, g store.Getter, name string) {

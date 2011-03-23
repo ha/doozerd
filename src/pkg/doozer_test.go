@@ -54,10 +54,13 @@ func TestDoozerGet(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ents, rev, err := cl.Get("/ping", nil)
+	_, err := cl.Set("/x", store.Missing, []byte{'a'})
+	assert.Equal(t, nil, err)
+
+	ents, rev, err := cl.Get("/x", nil)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, store.Dir, rev)
-	assert.Equal(t, []byte("pong"), ents)
+	assert.Equal(t, []byte{'a'}, ents)
 
 	//cl.Set("/test/a", store.Missing, []byte{'1'})
 	//cl.Set("/test/b", store.Missing, []byte{'2'})
@@ -81,13 +84,8 @@ func TestDoozerSet(t *testing.T) {
 
 	cl := client.New("foo", l.Addr().String())
 
-	ents, rev, err := cl.Get("/ping", nil)
-	assert.Equal(t, nil, err)
-	assert.NotEqual(t, store.Dir, rev)
-	assert.Equal(t, []byte("pong"), ents)
-
 	for i := byte(0); i < 10; i++ {
-		cl.Set("/x", store.Missing, []byte{'0' + i})
+		_, err := cl.Set("/x", store.Clobber, []byte{'0' + i})
 		assert.Equal(t, nil, err)
 	}
 }
@@ -470,7 +468,7 @@ func TestDoozerReconnect(t *testing.T) {
 	_, err = c0.Set("/ctl/cal/3", 0, []byte{})
 	assert.Equal(t, nil, err)
 
-	// Wait for the other members to become CALs.
+	// Wait for the other nodes to become CALs.
 	for <-c0.Len < 3 {
 		time.Sleep(5e8)
 	}
@@ -483,10 +481,10 @@ func TestDoozerReconnect(t *testing.T) {
 
 	l1.Close()
 
-	ents, rev, err := c0.Get("/ping", nil)
+	ents, rev, err := c0.Get("/x", nil)
 	assert.Equal(t, nil, err, err)
 	assert.NotEqual(t, store.Dir, rev)
-	assert.Equal(t, []byte("pong"), ents)
+	assert.Equal(t, []byte{'b'}, ents)
 
 	rev, err = c0.Set("/x", -1, []byte{'c'})
 	assert.Equal(t, nil, err, err)

@@ -20,11 +20,10 @@ func TestMemberSimple(t *testing.T) {
 
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/x", "a", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/y", "b", store.Missing)))
-	fp.Propose([]byte(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/addr", "addr", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/cal/0", "a", store.Missing)))
 
 	calCh := fp.Watch(store.MustCompileGlob("/ctl/cal/0"))
-	membCh := fp.Watch(store.MustCompileGlob("/doozer/members/a"))
 	nodeCh := fp.Watch(store.MustCompileGlob("/ctl/node/a/?"))
 
 	// end the session
@@ -33,9 +32,6 @@ func TestMemberSimple(t *testing.T) {
 	ev := <-calCh
 	assert.T(t, ev.IsSet())
 	assert.Equal(t, "", ev.Body)
-
-	ev = <-membCh
-	assert.T(t, ev.IsDel())
 
 	cs := []int{}
 

@@ -133,11 +133,11 @@ func getCals(g store.Getter) []string {
 func getAddrs(g store.Getter) map[string]bool {
 	// TODO include only CALs, once followers use TCP for updates.
 
-	members := store.Getdir(g, "/ctl/node")
+	ids := store.Getdir(g, "/ctl/node")
 	addrs := make(map[string]bool)
 
-	for _, member := range members {
-		addrs[store.GetString(g, "/ctl/node/"+member+"/addr")] = true
+	for _, id := range ids {
+		addrs[store.GetString(g, "/ctl/node/"+id+"/addr")] = true
 	}
 
 	return addrs
