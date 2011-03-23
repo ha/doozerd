@@ -41,7 +41,7 @@ done
 i=2
 while test $i -le $c
 do
-    true | doozer -a 127.0.0.1:8041 set /doozer/slot/$i 0
+    true | doozer -a 127.0.0.1:8041 set /ctl/cal/$i 0
     i=$(expr $i + 1)
 done
 

@@ -111,12 +111,12 @@ func generateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
 }
 
 func getCals(g store.Getter) []string {
-	slots := store.Getdir(g, "/doozer/slot")
-	cals := make([]string, len(slots))
+	ents := store.Getdir(g, "/ctl/cal")
+	cals := make([]string, len(ents))
 
 	i := 0
-	for _, slot := range slots {
-		id := store.GetString(g, "/doozer/slot/"+slot)
+	for _, cal := range ents {
+		id := store.GetString(g, "/ctl/cal/"+cal)
 		if id != "" {
 			cals[i] = id
 			i++
@@ -133,11 +133,11 @@ func getCals(g store.Getter) []string {
 func getAddrs(g store.Getter) map[string]bool {
 	// TODO include only CALs, once followers use TCP for updates.
 
-	members := store.Getdir(g, "/doozer/info")
+	members := store.Getdir(g, "/ctl/node")
 	addrs := make(map[string]bool)
 
 	for _, member := range members {
-		addrs[store.GetString(g, "/doozer/info/"+member+"/addr")] = true
+		addrs[store.GetString(g, "/ctl/node/"+member+"/addr")] = true
 	}
 
 	return addrs

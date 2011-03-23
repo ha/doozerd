@@ -9,7 +9,7 @@ import (
 )
 
 func Pulse(node string, seqns <-chan int64, p consensus.Proposer, sleep int64) {
-	path := "/doozer/info/" + node + "/applied"
+	path := "/ctl/node/" + node + "/applied"
 	for {
 		seqn := strconv.Itoa64(<-seqns)
 		if closed(seqns) {

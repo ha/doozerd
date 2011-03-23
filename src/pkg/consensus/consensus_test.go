@@ -14,8 +14,8 @@ func TestConsensusOne(t *testing.T) {
 	alpha := int64(1)
 	st := store.New()
 
-	st.Ops <- store.Op{1, store.MustEncodeSet("/doozer/info/"+self+"/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", self, 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/"+self+"/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", self, 0)}
 	<-st.Seqns
 
 	cmw := st.Watch(store.Any)
@@ -64,10 +64,10 @@ func TestConsensusTwo(t *testing.T) {
 	alpha := int64(1)
 	st := store.New()
 
-	st.Ops <- store.Op{1, store.MustEncodeSet("/doozer/info/"+a+"/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", a, 0)}
-	st.Ops <- store.Op{3, store.MustEncodeSet("/doozer/info/"+b+"/addr", "x", 0)}
-	st.Ops <- store.Op{4, store.MustEncodeSet("/doozer/slot/2", b, 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/"+a+"/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", a, 0)}
+	st.Ops <- store.Op{3, store.MustEncodeSet("/ctl/node/"+b+"/addr", "x", 0)}
+	st.Ops <- store.Op{4, store.MustEncodeSet("/ctl/cal/2", b, 0)}
 	snn := <-st.Seqns
 
 	acmw := st.Watch(store.Any)
@@ -131,8 +131,8 @@ func TestLearnedValueIsLearned(t *testing.T) {
 	alpha := int64(1)
 	st := store.New()
 
-	st.Ops <- store.Op{1, store.MustEncodeSet("/doozer/info/"+self+"/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/doozer/slot/1", self, 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/"+self+"/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", self, 0)}
 	<-st.Seqns
 
 	cmw := st.Watch(store.Any)

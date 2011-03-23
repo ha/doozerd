@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	slots = store.MustCompileGlob("/doozer/slot/*")
+	calGlob = store.MustCompileGlob("/ctl/cal/*")
 )
 
 func Clean(c chan string, st *store.Store, p consensus.Proposer) {
@@ -27,8 +27,8 @@ func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 
 
 func getId(addr string, g store.Getter) string {
-	for _, slot := range store.Getdir(g, "/doozer/slot") {
-		id := store.GetString(g, "/doozer/slot/"+slot)
+	for _, cal := range store.Getdir(g, "/ctl/cal") {
+		id := store.GetString(g, "/ctl/cal/"+cal)
 		if store.GetString(g, "/doozer/members/"+id) == addr {
 			return id
 		}
@@ -38,7 +38,7 @@ func getId(addr string, g store.Getter) string {
 
 
 func clearSlot(p consensus.Proposer, g store.Getter, name string) {
-	store.Walk(g, slots, func(path, body string, rev int64) bool {
+	store.Walk(g, calGlob, func(path, body string, rev int64) bool {
 		if body == name {
 			consensus.Set(p, path, nil, rev)
 		}
@@ -55,7 +55,7 @@ func removeMember(p consensus.Proposer, g store.Getter, name string) {
 }
 
 func removeInfo(p consensus.Proposer, g store.Getter, name string) {
-	glob, err := store.CompileGlob("/doozer/info/" + name + "/**")
+	glob, err := store.CompileGlob("/ctl/node/" + name + "/**")
 	if err != nil {
 		log.Println(err)
 		return

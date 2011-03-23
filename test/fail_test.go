@@ -55,13 +55,13 @@ func TestDoozerNodeFailure(t *testing.T) {
 	cl, err := client.Dial("127.0.0.1:8046")
 	assert.Equal(t, nil, err)
 
-	ch, err := cl.Watch("/doozer/slot/*")
+	ch, err := cl.Watch("/ctl/cal/*")
 	assert.Equal(t, nil, err)
 
-	cl.Set("/doozer/slot/2", "", "")
+	cl.Set("/ctl/cal/2", "", "")
 	<-ch
 	<-ch
-	cl.Set("/doozer/slot/3", "", "")
+	cl.Set("/ctl/cal/3", "", "")
 	<-ch
 	<-ch
 
@@ -98,13 +98,13 @@ func TestDoozerFiveNodeFailure(t *testing.T) {
 	cl, err := client.Dial("127.0.0.1:8040")
 	assert.Equal(t, nil, err)
 
-	ch, err := cl.Watch("/doozer/slot/*")
+	ch, err := cl.Watch("/ctl/cal/*")
 	assert.Equal(t, nil, err)
 
-	cl.Set("/doozer/slot/2", "", "")
+	cl.Set("/ctl/cal/2", "", "")
 	<-ch
 	<-ch
-	cl.Set("/doozer/slot/3", "", "")
+	cl.Set("/ctl/cal/3", "", "")
 	<-ch
 	<-ch
 

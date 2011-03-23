@@ -23,9 +23,9 @@ const (
 	sessionPollInterval = 1e9 // ns == 1s
 )
 
-const slot = "/doozer/slot"
+const calDir = "/ctl/cal"
 
-var slots = store.MustCompileGlob("/doozer/slot/*")
+var calGlob = store.MustCompileGlob(calDir + "/*")
 
 
 type proposer struct {
@@ -59,12 +59,12 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	self := util.RandId()
 	st := store.New()
 	if attachAddr == "" { // we are the only node in a new cluster
-		set(st, "/doozer/info/"+self+"/addr", listenAddr, store.Missing)
-		set(st, "/doozer/info/"+self+"/public-addr", listenAddr, store.Missing)
-		set(st, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
-		set(st, "/doozer/info/"+self+"/version", Version, store.Missing)
+		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
+		set(st, "/ctl/node/"+self+"/public-addr", listenAddr, store.Missing)
+		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
+		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/doozer/members/"+self, listenAddr, store.Missing)
-		set(st, "/doozer/slot/"+"1", self, store.Missing)
+		set(st, "/ctl/cal/"+"1", self, store.Missing)
 		set(st, "/ping", "pong", store.Missing)
 
 		cal <- true
@@ -73,10 +73,10 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		var cl *client.Client
 		cl = client.New("local", attachAddr) // TODO use real cluster name
 
-		setC(cl, "/doozer/info/"+self+"/addr", listenAddr, store.Clobber)
-		setC(cl, "/doozer/info/"+self+"/public-addr", listenAddr, store.Clobber)
-		setC(cl, "/doozer/info/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
-		setC(cl, "/doozer/info/"+self+"/version", Version, store.Clobber)
+		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
+		setC(cl, "/ctl/node/"+self+"/public-addr", listenAddr, store.Clobber)
+		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
+		setC(cl, "/ctl/node/"+self+"/version", Version, store.Clobber)
 
 		rev, err := cl.Rev()
 		if err != nil {
@@ -212,10 +212,10 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 }
 
 func activate(st *store.Store, self string, c *client.Client) int64 {
-	w := store.NewWatch(st, slots)
+	w := store.NewWatch(st, calGlob)
 
-	for _, base := range store.Getdir(st, slot) {
-		p := slot + "/" + base
+	for _, base := range store.Getdir(st, calDir) {
+		p := calDir + "/" + base
 		v, rev := st.Get(p)
 		if rev != store.Dir && v[0] == "" {
 			seqn, err := c.Set(p, rev, []byte(self))

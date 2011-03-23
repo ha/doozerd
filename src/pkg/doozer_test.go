@@ -464,10 +464,10 @@ func TestDoozerReconnect(t *testing.T) {
 
 	c0 := client.New("foo", a)
 
-	_, err := c0.Set("/doozer/slot/2", 0, []byte{})
+	_, err := c0.Set("/ctl/cal/2", 0, []byte{})
 	assert.Equal(t, nil, err)
 
-	_, err = c0.Set("/doozer/slot/3", 0, []byte{})
+	_, err = c0.Set("/ctl/cal/3", 0, []byte{})
 	assert.Equal(t, nil, err)
 
 	// Wait for the other members to become CALs.

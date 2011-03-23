@@ -24,8 +24,8 @@ func TestGcPulse(t *testing.T) {
 	go Pulse("test", seqns, fs, 1)
 
 	seqns <- 0
-	assert.Equal(t, "-1:/doozer/info/test/applied=0", <-fs)
+	assert.Equal(t, "-1:/ctl/node/test/applied=0", <-fs)
 
 	seqns <- 1
-	assert.Equal(t, "-1:/doozer/info/test/applied=1", <-fs)
+	assert.Equal(t, "-1:/ctl/node/test/applied=1", <-fs)
 }

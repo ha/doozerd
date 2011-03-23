@@ -69,7 +69,7 @@ const (
 )
 
 
-var slots = store.MustCompileGlob("/doozer/slot/*")
+var calGlob = store.MustCompileGlob("/ctl/cal/*")
 
 
 type T proto.Request
@@ -147,7 +147,7 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 func (sv *Server) cals() []string {
 	cals := make([]string, 0)
 	_, g := sv.St.Snap()
-	store.Walk(g, slots, func(_, body string, _ int64) bool {
+	store.Walk(g, calGlob, func(_, body string, _ int64) bool {
 		if len(body) > 0 {
 			cals = append(cals, body)
 		}
@@ -359,7 +359,7 @@ func (c *conn) redirect(t *T) {
 	}
 
 	cal := cals[rand.Intn(len(cals))]
-	parts, rev := c.s.St.Get("/doozer/info/" + cal + "/public-addr")
+	parts, rev := c.s.St.Get("/ctl/node/" + cal + "/public-addr")
 	if rev == store.Dir && rev == store.Missing {
 		c.respond(t, Valid|Done, nil, readonly)
 		return

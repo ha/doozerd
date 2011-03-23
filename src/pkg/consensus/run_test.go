@@ -10,8 +10,8 @@ import (
 
 
 const (
-	info = "/doozer/info"
-	slot = "/doozer/slot"
+	node = "/ctl/node"
+	cal  = "/ctl/cal"
 )
 
 
@@ -29,9 +29,9 @@ func TestGetCalsFull(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(slot+"/1", "a", 0)}
-	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(slot+"/2", "c", 0)}
-	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(slot+"/3", "b", 0)}
+	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
+	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(cal+"/2", "c", 0)}
+	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(cal+"/3", "b", 0)}
 	<-st.Seqns
 
 	assert.Equal(t, []string{"a", "b", "c"}, getCals(st))
@@ -42,9 +42,9 @@ func TestGetCalsPartial(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(slot+"/1", "a", 0)}
-	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(slot+"/2", "", 0)}
-	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(slot+"/3", "", 0)}
+	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
+	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(cal+"/2", "", 0)}
+	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(cal+"/3", "", 0)}
 	<-st.Seqns
 
 	assert.Equal(t, []string{"a"}, getCals(st))
@@ -55,9 +55,9 @@ func TestGetAddrs(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(info+"/1/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet(info+"/2/addr", "y", 0)}
-	st.Ops <- store.Op{3, store.MustEncodeSet(info+"/3/addr", "z", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "y", 0)}
+	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "z", 0)}
 	<-st.Seqns
 
 	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, getAddrs(st))
@@ -83,12 +83,12 @@ func alphaTest(t *testing.T, alpha int64) {
 
 	st.Ops <- store.Op{
 		Seqn: 1,
-		Mut:  store.MustEncodeSet(info+"/a/addr", "x", 0),
+		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
 
 	st.Ops <- store.Op{
 		Seqn: 2,
-		Mut:  store.MustEncodeSet(slot+"/1", "a", 0),
+		Mut:  store.MustEncodeSet(cal+"/1", "a", 0),
 	}
 
 	for 2 != <-st.Seqns {
@@ -154,7 +154,7 @@ func TestRunAfterWatch(t *testing.T) {
 
 	st.Ops <- store.Op{
 		Seqn: 1,
-		Mut:  store.MustEncodeSet(info+"/b/addr", "y", 0),
+		Mut:  store.MustEncodeSet(node+"/b/addr", "y", 0),
 	}
 
 	for 1 != <-st.Seqns {
@@ -170,7 +170,7 @@ func TestRunAfterWatch(t *testing.T) {
 
 	st.Ops <- store.Op{
 		Seqn: 2,
-		Mut:  store.MustEncodeSet(slot+"/1", "b", 0),
+		Mut:  store.MustEncodeSet(cal+"/1", "b", 0),
 	}
 
 	exp := &run{

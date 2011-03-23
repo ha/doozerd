@@ -376,7 +376,7 @@ func (c *conn) monitorAddrs(cl *Client) {
 		}
 	}
 
-	addrGlob := pb.String("/doozer/info/*/public-addr")
+	addrGlob := pb.String("/ctl/node/*/public-addr")
 	watchAddr, err := c.events(&T{Verb: watch, Path: addrGlob})
 	if err != nil {
 		log.Println(err)
@@ -402,7 +402,7 @@ init:
 		}
 	}
 
-	glob := pb.String("/doozer/slot/*")
+	glob := pb.String("/ctl/cal/*")
 
 	watch, err := c.events(&T{Verb: watch, Path: glob})
 	if err != nil {
@@ -416,7 +416,7 @@ init:
 		return
 	}
 
-	slots := make(map[string]string)
+	cal := make(map[string]string)
 
 	for {
 		if watchAddr.C == nil && walk.C == nil && watch.C == nil {
@@ -438,13 +438,13 @@ init:
 
 			if len(ev.Body) > 0 {
 				sid := string(ev.Body)
-				path := "/doozer/info/" + sid + "/public-addr"
+				path := "/ctl/node/" + sid + "/public-addr"
 				addr := addrs[path]
-				slots[ev.Path] = addr
+				cal[ev.Path] = addr
 				cl.a <- addr
 			} else {
-				addr := slots[ev.Path]
-				slots[ev.Path] = "", false
+				addr := cal[ev.Path]
+				cal[ev.Path] = "", false
 				cl.r <- addr
 			}
 		case ev := <-watch.C:
@@ -455,13 +455,13 @@ init:
 
 			if len(ev.Body) > 0 {
 				sid := string(ev.Body)
-				path := "/doozer/info/" + sid + "/public-addr"
+				path := "/ctl/node/" + sid + "/public-addr"
 				addr := addrs[path]
-				slots[ev.Path] = addr
+				cal[ev.Path] = addr
 				cl.a <- addr
 			} else {
-				addr := slots[ev.Path]
-				slots[ev.Path] = "", false
+				addr := cal[ev.Path]
+				cal[ev.Path] = "", false
 				cl.r <- addr
 			}
 		}

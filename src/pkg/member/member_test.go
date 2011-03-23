@@ -18,19 +18,19 @@ func TestMemberSimple(t *testing.T) {
 	// start our session
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/sess/a", "foo", store.Missing)))
 
-	fp.Propose([]byte(store.MustEncodeSet("/doozer/info/a/x", "a", store.Missing)))
-	fp.Propose([]byte(store.MustEncodeSet("/doozer/info/a/y", "b", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/x", "a", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/y", "b", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/doozer/members/a", "addr", store.Missing)))
-	fp.Propose([]byte(store.MustEncodeSet("/doozer/slot/0", "a", store.Missing)))
+	fp.Propose([]byte(store.MustEncodeSet("/ctl/cal/0", "a", store.Missing)))
 
-	slotCh := fp.Watch(store.MustCompileGlob("/doozer/slot/0"))
+	calCh := fp.Watch(store.MustCompileGlob("/ctl/cal/0"))
 	membCh := fp.Watch(store.MustCompileGlob("/doozer/members/a"))
-	infoCh := fp.Watch(store.MustCompileGlob("/doozer/info/a/?"))
+	nodeCh := fp.Watch(store.MustCompileGlob("/ctl/node/a/?"))
 
 	// end the session
 	go func() { c <- "addr" }()
 
-	ev := <-slotCh
+	ev := <-calCh
 	assert.T(t, ev.IsSet())
 	assert.Equal(t, "", ev.Body)
 
@@ -39,11 +39,11 @@ func TestMemberSimple(t *testing.T) {
 
 	cs := []int{}
 
-	ev = <-infoCh
+	ev = <-nodeCh
 	assert.T(t, ev.IsDel())
 	cs = append(cs, int(ev.Path[len(ev.Path)-1]))
 
-	ev = <-infoCh
+	ev = <-nodeCh
 	assert.T(t, ev.IsDel())
 	cs = append(cs, int(ev.Path[len(ev.Path)-1]))
 
