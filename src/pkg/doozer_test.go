@@ -492,3 +492,10 @@ func TestDoozerReconnect(t *testing.T) {
 	rev, err = c0.Set("/x", -1, []byte{'d'})
 	assert.Equal(t, nil, err)
 }
+
+
+func TestDoozerRandIdHasNoPadding(t *testing.T) {
+	s := randId()
+	assert.T(t, len(s) > 0)
+	assert.NotEqual(t, s[len(s)-1], '=')
+}

@@ -9,8 +9,9 @@ import (
 	"doozer/server"
 	"doozer/session"
 	"doozer/store"
-	"doozer/util"
 	"doozer/web"
+	"encoding/base32"
+	"io"
 	"net"
 	"os"
 	"time"
@@ -56,7 +57,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	cal := make(chan bool, 1)
 	useSelf := make(chan bool, 1)
 
-	self := util.RandId()
+	self := randId()
 	st := store.New()
 	if attachAddr == "" { // we are the only node in a new cluster
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
@@ -268,4 +269,27 @@ func follow(ops chan<- store.Op, ch <-chan *client.Event) {
 		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
 		ops <- store.Op{ev.Rev, mut}
 	}
+}
+
+
+func randId() string {
+	const bits = 80 // enough for 10**8 ids with p(collision) < 10**-8
+	rnd := make([]byte, bits/8)
+
+	f, err := os.Open("/dev/urandom", os.O_RDONLY, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	n, err := io.ReadFull(f, rnd)
+	if err != nil {
+		panic(err)
+	}
+	if n != len(rnd) {
+		panic("io.ReadFull len mismatch")
+	}
+
+	enc := make([]byte, base32.StdEncoding.EncodedLen(len(rnd)))
+	base32.StdEncoding.Encode(enc, rnd)
+	return string(enc)
 }
