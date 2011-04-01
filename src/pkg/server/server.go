@@ -359,7 +359,7 @@ func (c *conn) redirect(t *T) {
 	}
 
 	cal := cals[rand.Intn(len(cals))]
-	parts, rev := c.s.St.Get("/ctl/node/" + cal + "/public-addr")
+	parts, rev := c.s.St.Get("/ctl/node/" + cal + "/addr")
 	if rev == store.Dir && rev == store.Missing {
 		c.respond(t, Valid|Done, nil, readonly)
 		return

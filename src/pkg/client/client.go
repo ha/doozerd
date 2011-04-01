@@ -376,7 +376,7 @@ func (c *conn) monitorAddrs(cl *Client) {
 		}
 	}
 
-	addrGlob := pb.String("/ctl/node/*/public-addr")
+	addrGlob := pb.String("/ctl/node/*/addr")
 	watchAddr, err := c.events(&T{Verb: watch, Path: addrGlob})
 	if err != nil {
 		log.Println(err)
@@ -438,7 +438,7 @@ init:
 
 			if len(ev.Body) > 0 {
 				sid := string(ev.Body)
-				path := "/ctl/node/" + sid + "/public-addr"
+				path := "/ctl/node/" + sid + "/addr"
 				addr := addrs[path]
 				cal[ev.Path] = addr
 				cl.a <- addr
@@ -455,7 +455,7 @@ init:
 
 			if len(ev.Body) > 0 {
 				sid := string(ev.Body)
-				path := "/ctl/node/" + sid + "/public-addr"
+				path := "/ctl/node/" + sid + "/addr"
 				addr := addrs[path]
 				cal[ev.Path] = addr
 				cl.a <- addr

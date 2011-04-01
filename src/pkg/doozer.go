@@ -61,7 +61,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	st := store.New()
 	if attachAddr == "" { // we are the only node in a new cluster
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
-		set(st, "/ctl/node/"+self+"/public-addr", listenAddr, store.Missing)
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/ctl/cal/0", self, store.Missing)
@@ -73,7 +72,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		cl = client.New("local", attachAddr) // TODO use real cluster name
 
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
-		setC(cl, "/ctl/node/"+self+"/public-addr", listenAddr, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/version", Version, store.Clobber)
 
