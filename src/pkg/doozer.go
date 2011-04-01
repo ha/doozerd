@@ -54,18 +54,29 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	listenAddr := listener.Addr().String()
 
 	var activateSeqn int64
-	cal := make(chan bool, 1)
 	useSelf := make(chan bool, 1)
 
 	self := randId()
 	st := store.New()
+	pr := &proposer{
+		seqns: make(chan int64, alpha),
+		props: make(chan *consensus.Prop),
+		st:    st,
+	}
+
+	calSrv := func() {
+		go lock.Clean(pr, st.Watch(lock.SessGlob))
+		go session.Clean(st, pr, time.Tick(sessionPollInterval))
+		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
+		go gc.Clean(st, 360000, time.Tick(1e9))
+	}
+
 	if attachAddr == "" { // we are the only node in a new cluster
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/ctl/cal/0", self, store.Missing)
-
-		cal <- true
+		calSrv()
 		close(useSelf)
 	} else {
 		var cl *client.Client
@@ -100,7 +111,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 		go func() {
 			activateSeqn = activate(st, self, cl)
-			cal <- true
+			calSrv()
 			advanceUntil(cl, st.Seqns, activateSeqn+alpha)
 			err := watch.Cancel()
 			if err != nil {
@@ -108,12 +119,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 			}
 			close(useSelf)
 		}()
-	}
-
-	pr := &proposer{
-		seqns: make(chan int64, alpha),
-		props: make(chan *consensus.Prop),
-		st:    st,
 	}
 
 	start := <-st.Seqns
@@ -135,14 +140,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 
 	go member.Clean(shun, st, pr)
-
-	go func() {
-		<-cal
-		go lock.Clean(pr, st.Watch(lock.SessGlob))
-		go session.Clean(st, pr, time.Tick(sessionPollInterval))
-		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
-		go gc.Clean(st, 360000, time.Tick(1e9))
-	}()
 
 	sv := &server.Server{listenAddr, st, pr, self, alpha}
 
