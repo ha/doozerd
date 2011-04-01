@@ -79,9 +79,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		calSrv()
 		close(useSelf)
 	} else {
-		var cl *client.Client
-		cl = client.New("local", attachAddr) // TODO use real cluster name
-
+		cl := client.New("local", attachAddr) // TODO use real cluster name
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/version", Version, store.Clobber)
