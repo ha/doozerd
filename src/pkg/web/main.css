@@ -96,6 +96,7 @@ td {
 
 td.rev {
     color: #aaa;
+    text-align: right;
 }
 
 td.body {
