@@ -1,6 +1,7 @@
 package doozer
 
 import (
+	"crypto/rand"
 	"doozer/client"
 	"doozer/consensus"
 	"doozer/gc"
@@ -11,7 +12,6 @@ import (
 	"doozer/store"
 	"doozer/web"
 	"encoding/base32"
-	"io"
 	"net"
 	"os"
 	"time"
@@ -269,12 +269,7 @@ func randId() string {
 	const bits = 80 // enough for 10**8 ids with p(collision) < 10**-8
 	rnd := make([]byte, bits/8)
 
-	f, err := os.Open("/dev/urandom", os.O_RDONLY, 0)
-	if err != nil {
-		panic(err)
-	}
-
-	n, err := io.ReadFull(f, rnd)
+	n, err := rand.Read(rnd)
 	if err != nil {
 		panic(err)
 	}
