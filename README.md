@@ -32,7 +32,7 @@ other users and developers.
 
 5. Open <http://localhost:8080> and see your message
 
-![doozer web view](doc/webview.png)
+![doozer web view](/heroku/doozer/raw/0a3a9c/doc/webview.png)
 
 ## How Does It Work?
 
