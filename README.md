@@ -106,7 +106,7 @@ Doozer is similar to the following pieces of software:
 
 ## Hacking on Doozer
 
- * [hacking on doozer](doc/hacking.md)
+ * [hacking on doozer](/heroku/doozer/blob/master/doc/hacking.md)
  * [mailing list][mail]
 
 ## License and Authors
