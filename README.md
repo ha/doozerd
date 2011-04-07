@@ -1,52 +1,120 @@
 # Doozer
 
-## Installing Go
+## What Is It?
 
-I recommend not using apt, homebrew, or any other packaging system to install
-Go. It's better to install straight from source.
+Doozer is a highly-available, completely consistent
+store for small amounts of extremely important data.
+When the data changes, it can notify connected clients
+immediately (no polling), making it ideal for
+infrequently-updated data for which clients want
+real-time updates. Doozer is good for name service,
+database master elections, and configuration data shared
+between several machines. See *When Should I Use It?*,
+below, for details.
 
-Abridged version:
+See the [mailing list][mail] to discuss doozer with
+other users and developers.
 
-    $ GOROOT=$HOME/src/go # adjust this as you wish
-    $ hg clone -r release.2011-03-07 https://go.googlecode.com/hg/ $GOROOT
-    $ cd $GOROOT/src
-    $ ./all.bash
-    (put the value of $GOROOT/bin in your path)
+## Quick Start
 
-Note: all.bash runs unit tests, and some of the tests
-try to connect to Google servers over the internet.
-If this causes problems, you can skip the network tests
-by setting env var `DISABLE_NET_TESTS` before running
-all.bash.
+1. Download [doozerd](https://github.com/heroku/doozer/downloads)
+2. Unpack the archive
+3. Start a doozerd
 
-For full details, see <http://golang.org/doc/install.html>.
+        $ doozerd
 
-## Installing Dependencies
+4. Set a key and read it back
 
-You need the `protoc` command
-(from <http://code.google.com/p/protobuf/>):
+        $ echo "hello, world" | doozer set /message 0
+        $ doozer get /message
+        11046 13
+        hello, world
 
-    $ sudo apt-get install protobuf-compiler
-    (or)
-    $ brew install protobuf
+5. Open <http://localhost:8080> and see your message
 
-If you want to run doozer's tests, install
-<http://bmizerany.github.com/roundup/>.
+![doozer web view](doc/webview.png)
 
-## Building Doozer
+## How Does It Work?
 
-    $ git clone https://github.com/bmizerany/doozer.git
-    $ cd doozer/src
-    $ ./all.sh
+Doozer is a network service. A handful of machines
+(usually three, five, or seven) each run one doozer
+server process. These processes communicate with each
+other using a standard fully-consistent distributed
+consensus algorithm. Clients dial in to one or more of
+the doozer servers, issue commands, such as GET, SET,
+and WATCH, and receive responses.
 
-This will build the rest of the dependencies and
-all doozer packages and commands,
-copy the commands into `$GOROOT/bin`,
-and run tests.
+(insert network diagram here)
 
-## Try It Out
+Each doozerd process has a complete copy of the
+datastore and serves both read and write requests; there
+is no distinguished "master" or "leader". Doozer is
+designed to store data that fits entirely in memory; it
+never writes data to permanent files. A separate tool
+provides durable storage for backup and recovery.
 
-    $ doozerd >/dev/null 2>&1 &
-    $ open http://localhost:8080/
+## When Should I Use It?
 
-This will start up one doozer process and show a web view of its contents.
+Here are some example scenarios:
+
+1. *Name Service*
+
+   You have a set of machines that serve incoming HTTP
+   requests. Due to hardware failure, occasionally one
+   of these machines will fail and you replace it with a
+   new machine at a new network address. A change to DNS
+   data would take time to reach all clients, because
+   the TTL of the old DNS record would cause it to
+   remain in client caches for some time.
+
+   Instead of DNS, you could use Doozer. Clients can
+   subscribe to the names they are interested in, and
+   they will get notified when any of those names&#8217;
+   addresses change.
+
+2. *Database Master Election*
+
+   You are deploying a MySQL system. You want it to have
+   high availability, so you add slaves on separate
+   physical machines. When the master fails, you might
+   promote one slave to become the new master. At any
+   given time, clients need to know which machine is the
+   master, and the slaves must coordinate with each
+   other during failover.
+
+   You can use doozer to store the address of the
+   current master and all information necessary to
+   coordinate failover.
+
+3. *Configuration*
+
+   You have processes on several different machines, and
+   you want them all to use the same config file, which
+   you must occasionally update. It is important that
+   they all use the same configuration.
+
+   Store the config file in doozer, and have the
+   processes read their configuration directly from
+   doozer.
+
+## Similar Projects
+
+Doozer is similar to the following pieces of software:
+
+ * Apache Zookeeper <http://zookeeper.apache.org/>
+ * Google Chubby <http://labs.google.com/papers/chubby.html>
+
+## Hacking on Doozer
+
+ * [hacking on doozer](doc/hacking.md)
+ * [mailing list][mail]
+
+## License and Authors
+
+Doozer is distributed under the terms of the MIT
+License. See [LICENSE](LICENSE) for details.
+
+Doozer was created by Blake Mizerany and Keith Rarick.
+Type `git shortlog -s` for a full list of contributors.
+
+[mail]: https://groups.google.com/group/doozer
