@@ -10,11 +10,11 @@ var (
 	calGlob = store.MustCompileGlob("/ctl/cal/*")
 )
 
+
 func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 	for addr := range c {
 		_, g := st.Snap()
-		name := getId(addr, g)
-
+		name := getName(addr, g)
 		if name != "" {
 			go func() {
 				clearSlot(p, g, name)
@@ -25,11 +25,10 @@ func Clean(c chan string, st *store.Store, p consensus.Proposer) {
 }
 
 
-func getId(addr string, g store.Getter) string {
-	for _, cal := range store.Getdir(g, "/ctl/cal") {
-		id := store.GetString(g, "/ctl/cal/"+cal)
-		if store.GetString(g, "/ctl/node/"+id+"/addr") == addr {
-			return id
+func getName(addr string, g store.Getter) string {
+	for _, name := range store.Getdir(g, "/ctl/node") {
+		if store.GetString(g, "/ctl/node/"+name+"/addr") == addr {
+			return name
 		}
 	}
 	return ""
