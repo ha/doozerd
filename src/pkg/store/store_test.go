@@ -1126,17 +1126,18 @@ func TestStoreStopWatch(t *testing.T) {
 	wt := NewWatch(st, Any)
 	ch := make(chan Event, 2)
 	wt.C, wt.c = ch, ch
+	assert.Equal(t, 1, <-st.Watches)
 
 	st.Ops <- Op{3, MustEncodeSet("/x", "", Clobber)}
-	<-st.Seqns
+	assert.Equal(t, "/x", (<-wt.C).Path)
 	wt.Stop()
 
 	st.Ops <- Op{4, MustEncodeSet("/y", "", Clobber)}
 	st.Ops <- Op{5, MustEncodeSet("/y", "", Clobber)}
 
 	st.Wait(5)
-	assert.Equal(t, 1, len(wt.C))
 	assert.Equal(t, 0, <-st.Watches)
+	assert.Equal(t, 0, len(wt.C))
 }
 
 func TestStoreStopDrainWatch(t *testing.T) {
