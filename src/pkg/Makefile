@@ -5,6 +5,7 @@ VERSION ?= $(shell git describe | sed s/^v// | tr - +)
 TARG=doozer
 GOFILES=\
 	doozer.go\
+	liveness.go\
 	version.go\
 
 include $(GOROOT)/src/Make.pkg

@@ -134,7 +134,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}
 
-	times := make(map[string]int64)
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 
 	go member.Clean(shun, st, pr)
@@ -168,8 +167,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		}
 	}()
 
-	var pt int64
-	pi := kickTimeout / 2
+	lv := liveness{
+		timeout: kickTimeout,
+		ival:    kickTimeout / 2,
+		times:   make(map[string]int64),
+		self:    self,
+		shun:    shun,
+	}
 	for {
 		t := time.Nanoseconds()
 
@@ -186,22 +190,13 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		buf = buf[:n]
 
 		// Update liveness time stamp for this addr
-		times[addr.String()] = t
-
-		if t > pt+pi {
-			n := t - kickTimeout
-			for addr, s := range times {
-				if n > s && addr != self {
-					times[addr] = 0, false
-					shun <- addr
-				}
-			}
-		}
-		pt = t
+		lv.times[addr.String()] = t
+		lv.check(t)
 
 		in <- consensus.Packet{addr.String(), buf}
 	}
 }
+
 
 func activate(st *store.Store, self string, c *client.Client) int64 {
 	w := store.NewWatch(st, calGlob)
