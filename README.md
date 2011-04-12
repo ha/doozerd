@@ -17,7 +17,7 @@ other users and developers.
 
 ## Quick Start
 
-1. Download [doozerd](https://github.com/heroku/doozer/downloads)
+1. Download [doozerd](https://github.com/ha/doozer/downloads)
 2. Unpack the archive
 3. Start a doozerd
 
@@ -32,7 +32,7 @@ other users and developers.
 
 5. Open <http://localhost:8080> and see your message
 
-![doozer web view](/heroku/doozer/raw/0a3a9c/doc/webview.png)
+![doozer web view](/ha/doozer/raw/0a3a9c/doc/webview.png)
 
 ## How Does It Work?
 
@@ -106,7 +106,7 @@ Doozer is similar to the following pieces of software:
 
 ## Hacking on Doozer
 
- * [hacking on doozer](/heroku/doozer/blob/master/doc/hacking.md)
+ * [hacking on doozer](/ha/doozer/blob/master/doc/hacking.md)
  * [mailing list][mail]
 
 ## License and Authors
@@ -118,4 +118,4 @@ Doozer was created by Blake Mizerany and Keith Rarick.
 Type `git shortlog -s` for a full list of contributors.
 
 [mail]: https://groups.google.com/group/doozer
-[LICENSE]: /heroku/doozer/blob/master/LICENSE
+[LICENSE]: /ha/doozer/blob/master/LICENSE
