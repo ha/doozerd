@@ -59,43 +59,43 @@ Here are some example scenarios:
 
 1. *Name Service*
 
-   You have a set of machines that serve incoming HTTP
-   requests. Due to hardware failure, occasionally one
-   of these machines will fail and you replace it with a
-   new machine at a new network address. A change to DNS
-   data would take time to reach all clients, because
-   the TTL of the old DNS record would cause it to
-   remain in client caches for some time.
+    You have a set of machines that serve incoming HTTP
+    requests. Due to hardware failure, occasionally one
+    of these machines will fail and you replace it with a
+    new machine at a new network address. A change to DNS
+    data would take time to reach all clients, because
+    the TTL of the old DNS record would cause it to
+    remain in client caches for some time.
 
-   Instead of DNS, you could use Doozer. Clients can
-   subscribe to the names they are interested in, and
-   they will get notified when any of those names&#8217;
-   addresses change.
+    Instead of DNS, you could use Doozer. Clients can
+    subscribe to the names they are interested in, and
+    they will get notified when any of those names&#8217;
+    addresses change.
 
 2. *Database Master Election*
 
-   You are deploying a MySQL system. You want it to have
-   high availability, so you add slaves on separate
-   physical machines. When the master fails, you might
-   promote one slave to become the new master. At any
-   given time, clients need to know which machine is the
-   master, and the slaves must coordinate with each
-   other during failover.
+    You are deploying a MySQL system. You want it to have
+    high availability, so you add slaves on separate
+    physical machines. When the master fails, you might
+    promote one slave to become the new master. At any
+    given time, clients need to know which machine is the
+    master, and the slaves must coordinate with each
+    other during failover.
 
-   You can use doozer to store the address of the
-   current master and all information necessary to
-   coordinate failover.
+    You can use doozer to store the address of the
+    current master and all information necessary to
+    coordinate failover.
 
 3. *Configuration*
 
-   You have processes on several different machines, and
-   you want them all to use the same config file, which
-   you must occasionally update. It is important that
-   they all use the same configuration.
+    You have processes on several different machines, and
+    you want them all to use the same config file, which
+    you must occasionally update. It is important that
+    they all use the same configuration.
 
-   Store the config file in doozer, and have the
-   processes read their configuration directly from
-   doozer.
+    Store the config file in doozer, and have the
+    processes read their configuration directly from
+    doozer.
 
 ## What can I do with it?
 
