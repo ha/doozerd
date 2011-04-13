@@ -97,6 +97,10 @@ Here are some example scenarios:
    processes read their configuration directly from
    doozer.
 
+## What can I do with it?
+
+For a list of commands see the [protocol spec](https://github.com/ha/doozer/blob/master/doc/proto.md)
+
 ## Similar Projects
 
 Doozer is similar to the following pieces of software:
