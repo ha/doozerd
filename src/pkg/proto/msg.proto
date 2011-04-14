@@ -5,7 +5,6 @@ message Request {
   required int32 tag = 1;
 
   enum Verb {
-      CHECKIN  = 0;
       GET      = 1;
       SET      = 2;
       DEL      = 3;

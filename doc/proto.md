@@ -112,41 +112,6 @@ This is indicated by a + sign after the response fields.
     message arrives in the interim), at which point tag
     *id* may be reused.
 
- * `CHECKIN` *path*, *rev* &rArr; &empty;
-
-    Used to establish and maintain a session, required if
-    the client wishes to create ephemeral files or obtain
-    ephemeral locks.
-
-    Writes a file named *path* in directory `/ctl/sess`.
-    The contents of this file will be a decimal number of
-    nanoseconds since January 1, 1970. This time is the
-    session's *deadline*. It is determined by the server;
-    and is typically several seconds after the checkin
-    request message was received.
-
-    If *rev* is 0, the file will be created only if it did
-    not exist. Otherwise, *rev* is customarily
-    -1, which means the file should be written
-    unconditionally.
-
-    If the current time passes the session's deadline,
-    the file will be deleted by the doozer cluster. Any
-    process can watch for the file to be deleted; this
-    indicates the session has expired.
-
-    Thus, successive checkin requests change the
-    session's deadline further in the future each time,
-    preventing it from expiring.
-
-    Finally, the server will postpone its response to the
-    client until shortly before the deadline. The client
-    need not create any timers, inspect the value of this
-    file, or otherwise obtain the session's deadline. It
-    suffices to wait for the response to the checkin
-    request, then immediately issue another checkin
-    request.
-
  * `DEL` *path*, *rev* &rArr; &empty;
 
     Del deletes the file at *path* if *rev* is greater than

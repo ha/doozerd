@@ -11,9 +11,7 @@ import (
 	"net"
 	"os"
 	"rand"
-	"strconv"
 	"sync"
-	"time"
 	pb "goprotobuf.googlecode.com/hg/proto"
 )
 
@@ -213,17 +211,16 @@ type conn struct {
 
 
 var ops = map[int32]func(*conn, *T, txn){
-	proto.Request_CANCEL:  (*conn).cancel,
-	proto.Request_CHECKIN: (*conn).checkin,
-	proto.Request_DEL:     (*conn).del,
-	proto.Request_GET:     (*conn).get,
-	proto.Request_GETDIR:  (*conn).getdir,
-	proto.Request_NOP:     (*conn).nop,
-	proto.Request_REV:     (*conn).rev,
-	proto.Request_SET:     (*conn).set,
-	proto.Request_STAT:    (*conn).stat,
-	proto.Request_WALK:    (*conn).walk,
-	proto.Request_WATCH:   (*conn).watch,
+	proto.Request_CANCEL: (*conn).cancel,
+	proto.Request_DEL:    (*conn).del,
+	proto.Request_GET:    (*conn).get,
+	proto.Request_GETDIR: (*conn).getdir,
+	proto.Request_NOP:    (*conn).nop,
+	proto.Request_REV:    (*conn).rev,
+	proto.Request_SET:    (*conn).set,
+	proto.Request_STAT:   (*conn).stat,
+	proto.Request_WALK:   (*conn).walk,
+	proto.Request_WATCH:  (*conn).watch,
 }
 
 
@@ -503,59 +500,6 @@ func (c *conn) nop(t *T, tx txn) {
 func (c *conn) rev(t *T, tx txn) {
 	rev := <-c.s.St.Seqns
 	c.respond(t, Valid|Done, nil, &R{Rev: &rev})
-}
-
-
-func (c *conn) checkin(t *T, tx txn) {
-	if !c.cal {
-		c.redirect(t)
-		return
-	}
-
-	if t.Path == nil || t.Rev == nil {
-		c.respond(t, Valid|Done, nil, missingArg)
-		return
-	}
-
-	go func() {
-		deadline := time.Nanoseconds() + sessionLease
-		body := strconv.Itoa64(deadline)
-		rev := *t.Rev
-		path := "/ctl/sess/" + *t.Path
-		if rev != 0 {
-			_, rev = c.s.St.Get(path)
-			if rev == 0 {
-				c.respond(t, Valid|Done, nil, revMismatch)
-				return
-			}
-		}
-		select {
-		case <-tx.cancel:
-			c.closeTxn(*t.Tag)
-			return
-		case ev := <-bgSet(c.s.Mg, path, []byte(body), rev):
-			switch {
-			case ev.Err == store.ErrRevMismatch:
-				c.respond(t, Valid|Done, nil, revMismatch)
-				return
-			case ev.Err != nil:
-				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
-				return
-			}
-
-			if *t.Rev != 0 {
-				select {
-				case <-time.After(deadline - sessionPad - time.Nanoseconds()):
-					// nothing
-				case <-tx.cancel:
-					c.closeTxn(*t.Tag)
-					return
-				}
-			}
-		}
-
-		c.respond(t, Valid|Done, nil, &R{})
-	}()
 }
 
 

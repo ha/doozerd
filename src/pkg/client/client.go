@@ -26,17 +26,16 @@ var (
 )
 
 var (
-	cancel  = proto.NewRequest_Verb(proto.Request_CANCEL)
-	checkin = proto.NewRequest_Verb(proto.Request_CHECKIN)
-	del     = proto.NewRequest_Verb(proto.Request_DEL)
-	get     = proto.NewRequest_Verb(proto.Request_GET)
-	nop     = proto.NewRequest_Verb(proto.Request_NOP)
-	rev     = proto.NewRequest_Verb(proto.Request_REV)
-	set     = proto.NewRequest_Verb(proto.Request_SET)
-	walk    = proto.NewRequest_Verb(proto.Request_WALK)
-	watch   = proto.NewRequest_Verb(proto.Request_WATCH)
-	stat    = proto.NewRequest_Verb(proto.Request_STAT)
-	getdir  = proto.NewRequest_Verb(proto.Request_GETDIR)
+	cancel = proto.NewRequest_Verb(proto.Request_CANCEL)
+	del    = proto.NewRequest_Verb(proto.Request_DEL)
+	get    = proto.NewRequest_Verb(proto.Request_GET)
+	nop    = proto.NewRequest_Verb(proto.Request_NOP)
+	rev    = proto.NewRequest_Verb(proto.Request_REV)
+	set    = proto.NewRequest_Verb(proto.Request_SET)
+	walk   = proto.NewRequest_Verb(proto.Request_WALK)
+	watch  = proto.NewRequest_Verb(proto.Request_WATCH)
+	stat   = proto.NewRequest_Verb(proto.Request_STAT)
+	getdir = proto.NewRequest_Verb(proto.Request_GETDIR)
 )
 
 
@@ -637,12 +636,6 @@ func (cl *Client) Stat(path string, rev *int64) (int32, int64, os.Error) {
 
 func (cl *Client) Nop() os.Error {
 	_, err := cl.call(&T{Verb: nop})
-	return err
-}
-
-
-func (cl *Client) Checkin(id string, rev int64) os.Error {
-	_, err := cl.retry(&T{Verb: checkin, Path: &id, Rev: &rev})
 	return err
 }
 

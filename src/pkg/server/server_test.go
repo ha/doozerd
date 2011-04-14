@@ -37,18 +37,6 @@ func TestDelNilFields(t *testing.T) {
 }
 
 
-func TestCheckinNilFields(t *testing.T) {
-	c := &conn{
-		c:   &bytes.Buffer{},
-		s:   &Server{},
-		cal: true,
-		tx:  make(map[int32]txn),
-	}
-	c.checkin(&T{Tag: proto.Int32(1)}, newTxn())
-	assertResponse(t, missingArg, c)
-}
-
-
 func TestSetNilFields(t *testing.T) {
 	c := &conn{
 		c:   &bytes.Buffer{},
