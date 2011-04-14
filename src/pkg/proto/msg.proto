@@ -2,7 +2,7 @@ package proto;
 
 // see doc/proto.md
 message Request {
-  required int32 tag = 1;
+  optional int32 tag = 1;
 
   enum Verb {
       GET      = 1;
@@ -17,7 +17,7 @@ message Request {
       GETDIR   = 14;
       STAT     = 16;
   }
-  required Verb verb = 2;
+  optional Verb verb = 2;
 
   optional string path = 4;
   optional bytes value = 5;
@@ -31,8 +31,8 @@ message Request {
 
 // see doc/proto.md
 message Response {
-  required int32 tag = 1;
-  required int32 flags = 2;
+  optional int32 tag = 1;
+  optional int32 flags = 2;
 
   optional int64 rev = 3;
   optional string path = 5;
