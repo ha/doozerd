@@ -55,25 +55,25 @@ following values:
 
  * *valid* = 1
 
-   If this flag is set, the response contains valid data.
-   If unset, the client should ignore all fields except
-   *tag* and *flags*.
+    If this flag is set, the response contains valid data.
+    If unset, the client should ignore all fields except
+    *tag* and *flags*.
 
  * *done* = 2
 
-   This is the last response for the given *tag*.
-   After a response with this flag has been received,
-   the client is free to reuse its tag in another
-   request (unless there is a pending cancel
-   transaction for that tag; see `CANCEL` below).
+    This is the last response for the given *tag*.
+    After a response with this flag has been received,
+    the client is free to reuse its tag in another
+    request (unless there is a pending cancel
+    transaction for that tag; see `CANCEL` below).
 
  * *set* = 4
 
-   This response represents a mutation event that set a key.
+    This response represents a mutation event that set a key.
 
  * *del* = 8
 
-   This response represents a mutation event that deleted a key.
+    This response represents a mutation event that deleted a key.
 
 A client can send multiple requests without waiting for
 the corresponding responses, but all outstanding
@@ -104,72 +104,72 @@ This is indicated by a + sign after the response fields.
 
  * `CANCEL` *id* &rArr; &empty;
 
-   A request can be aborted with a cancel request. When
-   a server receives a cancel, it will not reply to the
-   message with tag *id*, and it will immediately reply
-   to the cancel request. The client must wait until it
-   gets the reply (even if the reply to the original
-   message arrives in the interim), at which point tag
-   *id* may be reused.
+    A request can be aborted with a cancel request. When
+    a server receives a cancel, it will not reply to the
+    message with tag *id*, and it will immediately reply
+    to the cancel request. The client must wait until it
+    gets the reply (even if the reply to the original
+    message arrives in the interim), at which point tag
+    *id* may be reused.
 
  * `CHECKIN` *path*, *rev* &rArr; &empty;
 
-   Used to establish and maintain a session, required if
-   the client wishes to create ephemeral files or obtain
-   ephemeral locks.
+    Used to establish and maintain a session, required if
+    the client wishes to create ephemeral files or obtain
+    ephemeral locks.
 
-   Writes a file named *path* in directory `/ctl/sess`.
-   The contents of this file will be a decimal number of
-   nanoseconds since January 1, 1970. This time is the
-   session's *deadline*. It is determined by the server;
-   and is typically several seconds after the checkin
-   request message was received.
+    Writes a file named *path* in directory `/ctl/sess`.
+    The contents of this file will be a decimal number of
+    nanoseconds since January 1, 1970. This time is the
+    session's *deadline*. It is determined by the server;
+    and is typically several seconds after the checkin
+    request message was received.
 
-   If *rev* is 0, the file will be created only if it did
-   not exist. Otherwise, *rev* is customarily
-   -1, which means the file should be written
-   unconditionally.
+    If *rev* is 0, the file will be created only if it did
+    not exist. Otherwise, *rev* is customarily
+    -1, which means the file should be written
+    unconditionally.
 
-   If the current time passes the session's deadline,
-   the file will be deleted by the doozer cluster. Any
-   process can watch for the file to be deleted; this
-   indicates the session has expired.
+    If the current time passes the session's deadline,
+    the file will be deleted by the doozer cluster. Any
+    process can watch for the file to be deleted; this
+    indicates the session has expired.
 
-   Thus, successive checkin requests change the
-   session's deadline further in the future each time,
-   preventing it from expiring.
+    Thus, successive checkin requests change the
+    session's deadline further in the future each time,
+    preventing it from expiring.
 
-   Finally, the server will postpone its response to the
-   client until shortly before the deadline. The client
-   need not create any timers, inspect the value of this
-   file, or otherwise obtain the session's deadline. It
-   suffices to wait for the response to the checkin
-   request, then immediately issue another checkin
-   request.
+    Finally, the server will postpone its response to the
+    client until shortly before the deadline. The client
+    need not create any timers, inspect the value of this
+    file, or otherwise obtain the session's deadline. It
+    suffices to wait for the response to the checkin
+    request, then immediately issue another checkin
+    request.
 
  * `DEL` *path*, *rev* &rArr; &empty;
 
-   Del deletes the file at *path* if *rev* is greater than
-   or equal to the file's revision.
+    Del deletes the file at *path* if *rev* is greater than
+    or equal to the file's revision.
 
  * `GET` *path*, *rev* &rArr; *value*, *rev*
 
-   Gets the contents (*value*) and revision (*rev*)
-   of the file at *path* in the specified revision (*rev*).
-   If *rev* is not provided, get uses the current revision.
+    Gets the contents (*value*) and revision (*rev*)
+    of the file at *path* in the specified revision (*rev*).
+    If *rev* is not provided, get uses the current revision.
 
  * `GETDIR` *path*, *rev*, *offset*, *limit* &rArr; {*path*}+
 
-   Returns a sequence of responses containing the names
-   of entries in *path* (a directory) in the specified
-   revision (*rev*), in lexical order. It is an error
-   if *path* is not a directory.
+    Returns a sequence of responses containing the names
+    of entries in *path* (a directory) in the specified
+    revision (*rev*), in lexical order. It is an error
+    if *path* is not a directory.
 
-   If *offset* is given, getdir skips that many entries
-   before returning any.
+    If *offset* is given, getdir skips that many entries
+    before returning any.
 
-   If *limit* is given, getdir will send that many
-   responses, at most.
+    If *limit* is given, getdir will send that many
+    responses, at most.
 
  * `JOIN` (deprecated)
 
@@ -177,34 +177,34 @@ This is indicated by a + sign after the response fields.
 
  * `REV` &empty; &rArr; *rev*
 
-   Returns the current revision.
+    Returns the current revision.
 
  * `SET` *path*, *rev*, *value* &rArr; *rev*
 
-   Sets the contents of the file at *path* to *value*,
-   as long as *rev* is greater than or equal to the file's
-   revision.
-   Returns the file's new revision.
+    Sets the contents of the file at *path* to *value*,
+    as long as *rev* is greater than or equal to the file's
+    revision.
+    Returns the file's new revision.
 
  * `WALK` *path*, *rev* &rArr; {*path*, *rev*, *value*}+
 
-   Iterates over all existing files that match *path*, a
-   glob pattern, in revision *rev*. Sends one response
-   for each matching file. If *rev* is not provided, walk
-   uses the current revision.
+    Iterates over all existing files that match *path*, a
+    glob pattern, in revision *rev*. Sends one response
+    for each matching file. If *rev* is not provided, walk
+    uses the current revision.
 
-   Glob notation:
-    - `?` matches a single char in a single path component
-    - `*` matches zero or more chars in a single path component
-    - `**` matches zero or more chars in zero or more components
-    - any other sequence matches itself
+    Glob notation:
+     - `?` matches a single char in a single path component
+     - `*` matches zero or more chars in a single path component
+     - `**` matches zero or more chars in zero or more components
+     - any other sequence matches itself
 
  * `WATCH` *path* &rArr; {*path*, *rev*, *value*}+
 
-   Arranges for the client to receive notices of changes
-   made to any file matching *path*, a glob pattern. One
-   response will be sent for each change (either set or
-   del). See above for glob notation.
+    Arranges for the client to receive notices of changes
+    made to any file matching *path*, a glob pattern. One
+    response will be sent for each change (either set or
+    del). See above for glob notation.
 
 ## Errors
 
@@ -219,58 +219,58 @@ Error codes are defined with the following meanings:
 
  * `TAG_IN_USE`
 
-   The server has noticed that the client sent two
-   or more requests with the same tag. This is a
-   serious error and always indicates a bug in the
-   client.
+    The server has noticed that the client sent two
+    or more requests with the same tag. This is a
+    serious error and always indicates a bug in the
+    client.
 
-   The server is not guaranteed to send this error.
+    The server is not guaranteed to send this error.
 
  * `UNKNOWN_VERB`
 
-   The verb used in the request is not in the list of
-   verbs defined in the server.
+    The verb used in the request is not in the list of
+    verbs defined in the server.
 
  * `REDIRECT`
 
-   Deprecated. Subject to change.
+    Deprecated. Subject to change.
 
  * `TOO_LATE`
 
-   The rev given in the request is invalid;
-   it has been garbage collected.
+    The rev given in the request is invalid;
+    it has been garbage collected.
 
-   The current default of history kept is 360,000 revs.
+    The current default of history kept is 360,000 revs.
 
  * `REV_MISMATCH`
 
-   A write operation has failed because the revision given
-   was less than the revision of the file being set.
+    A write operation has failed because the revision given
+    was less than the revision of the file being set.
 
  * `BAD_PATH`
 
-   The given path contains invalid characters.
+    The given path contains invalid characters.
 
  * `MISSING_ARG`
 
-   The request's verb requires certain fields to be set
-   and at least one of those fields was not set.
+    The request's verb requires certain fields to be set
+    and at least one of those fields was not set.
 
  * `NOTDIR`
 
-   The request operates only on a directory, but the
-   given path is not a directory (either because it is a
-   file or it is missing).
+    The request operates only on a directory, but the
+    given path is not a directory (either because it is a
+    file or it is missing).
 
  * `ISDIR`
 
-   The request operates only on a regular file, but the
-   given path is a directory.
+    The request operates only on a regular file, but the
+    given path is a directory.
 
  * `OTHER`
 
-   Some other error has occurred. The `err_detail`
-   string provides a description.
+    Some other error has occurred. The `err_detail`
+    string provides a description.
 
 Error value 0 is reserved.
 
