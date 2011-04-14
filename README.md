@@ -25,7 +25,7 @@ other users and developers.
 
 4. Set a key and read it back
 
-        $ echo "hello, world" | doozer set /message 0
+        $ echo "hello, world" | doozer add /message
         $ doozer get /message
         11046 13
         hello, world
