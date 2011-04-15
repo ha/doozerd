@@ -10,6 +10,7 @@ GOFILES=\
 	nop.go\
 	rev.go\
 	set.go\
+	stat.go\
 	walk.go\
 	watch.go\
 	find.go\
