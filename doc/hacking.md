@@ -40,7 +40,7 @@ If you want to run doozer's tests, install
 
 ## Building Doozer
 
-    $ git clone https://github.com/bmizerany/doozer.git
+    $ git clone https://github.com/ha/doozer.git
     $ cd doozer/src
     $ ./all.sh
 
