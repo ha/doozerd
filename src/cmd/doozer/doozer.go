@@ -45,7 +45,7 @@ Commands:
 )
 
 
-func Usage() {
+func usage() {
 	fmt.Fprintf(os.Stderr, "Use: %s [options] <command> [options] [args]\n", self)
 	fmt.Fprint(os.Stderr, usage1)
 	flag.PrintDefaults()
@@ -117,11 +117,11 @@ func mustAtoi64(arg string) int64 {
 
 
 func main() {
-	flag.Usage = Usage
+	flag.Usage = usage
 	flag.Parse()
 
 	if *showHelp {
-		Usage()
+		usage()
 		return
 	}
 
@@ -132,7 +132,7 @@ func main() {
 
 	if flag.NArg() < 1 {
 		fmt.Fprintf(os.Stderr, "%s: missing command\n", os.Args[0])
-		Usage()
+		usage()
 		os.Exit(127)
 	}
 
@@ -141,7 +141,7 @@ func main() {
 	c, ok := cmds[cmd]
 	if !ok {
 		fmt.Fprintln(os.Stderr, "Unknown command:", cmd)
-		Usage()
+		usage()
 		os.Exit(127)
 	}
 
