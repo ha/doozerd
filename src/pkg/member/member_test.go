@@ -15,9 +15,6 @@ func TestMemberSimple(t *testing.T) {
 	c := make(chan string)
 	go Clean(c, fp.Store, fp)
 
-	// start our session
-	fp.Propose([]byte(store.MustEncodeSet("/ctl/sess/a", "foo", store.Missing)))
-
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/x", "a", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/y", "b", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/addr", "1.2.3.4", store.Missing)))
@@ -26,7 +23,7 @@ func TestMemberSimple(t *testing.T) {
 	calCh := fp.Watch(store.MustCompileGlob("/ctl/cal/0"))
 	nodeCh := fp.Watch(store.MustCompileGlob("/ctl/node/a/?"))
 
-	// end the session
+	// indicate that this peer is inactive
 	go func() { c <- "1.2.3.4" }()
 
 	ev := <-calCh

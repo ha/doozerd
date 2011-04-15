@@ -5,10 +5,8 @@ import (
 	"doozer/client"
 	"doozer/consensus"
 	"doozer/gc"
-	"doozer/lock"
 	"doozer/member"
 	"doozer/server"
-	"doozer/session"
 	"doozer/store"
 	"doozer/web"
 	"encoding/base32"
@@ -19,9 +17,8 @@ import (
 )
 
 const (
-	alpha               = 50
-	maxUDPLen           = 3000
-	sessionPollInterval = 1e9 // ns == 1s
+	alpha     = 50
+	maxUDPLen = 3000
 )
 
 const calDir = "/ctl/cal"
@@ -65,8 +62,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	}
 
 	calSrv := func() {
-		go lock.Clean(pr, st.Watch(lock.SessGlob))
-		go session.Clean(st, pr, time.Tick(sessionPollInterval))
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
 		go gc.Clean(st, 360000, time.Tick(1e9))
 	}

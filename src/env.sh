@@ -19,12 +19,10 @@ PKGS="
     store
     consensus
     proto
-    lock
     server
     web
     client
     test
-    session
     member
     gc
     .

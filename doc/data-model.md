@@ -1,6 +1,6 @@
 # Data Model
 
-[TODO: rev, cas, sessions, locks, predicates, ephemeral files, cacheing]
+[TODO: explain compare-and-set, rev]
 
 files in a tree structure; each file name can contain
 only ASCII numerals and letters, `.`, and `-`. Files

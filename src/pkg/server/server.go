@@ -19,12 +19,6 @@ import (
 const packetSize = 3000
 
 
-const (
-	sessionLease = 6e9 // ns == 6s
-	sessionPad   = 3e9 // ns == 3s
-)
-
-
 var (
 	ErrPoisoned = os.NewError("poisoned")
 )

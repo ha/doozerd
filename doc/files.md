@@ -6,7 +6,4 @@ it will never read or write other paths unless explicitly asked to.
 
     /ctl/cal   CAL slots
     /ctl/err   mutation errors are written here
-    /ctl/link  ephemereal path session links
-      (e.g. /ctl/link/foo=abc links /foo to session abc)
     /ctl/node  node metadata
-    /ctl/sess  client session files
