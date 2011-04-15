@@ -27,7 +27,6 @@ other users and developers.
 
         $ echo "hello, world" | doozer add /message
         $ doozer get /message
-        11046 13
         hello, world
 
 5. Open <http://localhost:8080> and see your message
