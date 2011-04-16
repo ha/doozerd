@@ -7,6 +7,7 @@ import (
 	"exec"
 	"github.com/bmizerany/assert"
 	"net"
+	"os"
 	"sort"
 	"testing"
 	"time"
@@ -353,9 +354,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 	w, err := cl.Getdir("/test/a", 0, 0, nil)
 	assert.Equal(t, nil, err)
 
-	exp := &client.ResponseError{Code: 20, Detail: "not a directory"}
-	e := <-w.C
-	assert.Equal(t, exp, e.Err)
+	assert.Equal(t, os.ENOTDIR, (<-w.C).Err)
 }
 
 func TestDoozerGetdirMissing(t *testing.T) {
@@ -371,9 +370,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 	w, err := cl.Getdir("/not/here", 0, 0, nil)
 	assert.Equal(t, nil, err)
 
-	e := <-w.C
-	exp := &client.ResponseError{Code: 22, Detail: "NOENT"}
-	assert.Equal(t, exp, e.Err)
+	assert.Equal(t, os.ENOENT, (<-w.C).Err)
 }
 
 func TestDoozerGetdirOffsetLimit(t *testing.T) {

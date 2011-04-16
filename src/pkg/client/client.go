@@ -23,6 +23,7 @@ const (
 var (
 	ErrNoAddrs = os.NewError("no known address")
 	ErrBadTag  = os.NewError("bad tag")
+	ErrOldRev  = os.NewError("old rev given")
 )
 
 var (
@@ -39,30 +40,28 @@ var (
 )
 
 
-type ResponseError struct {
+type Error struct {
 	Code   int32
 	Detail string
 }
 
 
-func (r *ResponseError) String() string {
-	return "response: " + proto.Response_Err_name[r.Code] + ": " + r.Detail
+func (r *Error) String() (s string) {
+	s = "response: " + proto.Response_Err_name[r.Code]
+	if r.Detail != "" {
+		s += ": " + r.Detail
+	}
+	return s
 }
 
 
-// Response errors
-var (
-	ErrNotDir      = &ResponseError{proto.Response_NOTDIR, "not a directory"}
-	ErrIsDir       = &ResponseError{proto.Response_ISDIR, "is a directory"}
-	ErrRevMismatch = &ResponseError{proto.Response_REV_MISMATCH, "rev mismatch"}
-	ErrTooLate     = &ResponseError{proto.Response_TOO_LATE, "that rev is gone"}
-	respErrors     = map[int32]*ResponseError{
-		proto.Response_NOTDIR:       ErrNotDir,
-		proto.Response_ISDIR:        ErrIsDir,
-		proto.Response_REV_MISMATCH: ErrRevMismatch,
-		proto.Response_TOO_LATE:     ErrTooLate,
-	}
-)
+var errs = map[int32]os.Error{
+	proto.Response_NOTDIR:       os.ENOTDIR,
+	proto.Response_ISDIR:        os.EISDIR,
+	proto.Response_NOENT:        os.ENOENT,
+	proto.Response_REV_MISMATCH: ErrOldRev,
+	proto.Response_TOO_LATE:     os.NewError("too late"),
+}
 
 
 type Event struct {
@@ -98,14 +97,14 @@ func (r *R) err() os.Error {
 		c := int32(*r.ErrCode)
 
 		if r.ErrDetail != nil {
-			return &ResponseError{c, *r.ErrDetail}
+			return &Error{c, *r.ErrDetail}
 		}
 
-		if r, ok := respErrors[c]; ok {
+		if r, ok := errs[c]; ok {
 			return r
 		}
 
-		return &ResponseError{c, proto.Response_Err_name[c]}
+		return &Error{c, ""}
 	}
 	return nil
 }

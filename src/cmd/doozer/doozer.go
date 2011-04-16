@@ -71,7 +71,7 @@ func usage() {
 
 func bail(e os.Error) {
 	fmt.Fprintln(os.Stderr, "Error:", e)
-	if e == client.ErrRevMismatch {
+	if e == client.ErrOldRev {
 		os.Exit(1)
 	}
 	os.Exit(2)
