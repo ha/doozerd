@@ -3,14 +3,12 @@ package main
 import (
 	"doozer"
 	"doozer/client"
-	"doozer/proto"
 	"flag"
 	"fmt"
 	"os"
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 var (
@@ -35,7 +33,7 @@ const (
 	usage1 = `
 Each command takes zero or more options and zero or more arguments.
 In addition, there are some global options that can be used with any command.
-The exit status is 0 on success, or an error code on failure.
+The exit status is 0 on success, 1 for a rev mismatch, and 2 otherwise.
 
 Global Options:
 `
@@ -50,33 +48,6 @@ func usage() {
 	fmt.Fprint(os.Stderr, usage1)
 	flag.PrintDefaults()
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, "Exit Status (not an exhaustive list):")
-	fmt.Fprintf(os.Stderr, "  %3d: %s\n", 0, "success")
-
-	var ns []int
-	for n := range proto.Response_Err_name {
-		ns = append(ns, int(n))
-	}
-	sort.SortInts(ns)
-	for _, n := range ns {
-		name := proto.Response_Err_name[int32(n)]
-		switch name {
-		// These errors should never be exposed to the user,
-		// so don't show them in the usage output.
-		case "TAG_IN_USE", "UNKNOWN_VERB", "REDIRECT", "INVALID_SNAP":
-			continue
-		}
-		var s string
-		switch name {
-		case "NOTDIR":
-			s = "not a directory"
-		case "ISDIR":
-			s = "is a directory"
-		default:
-			s = strings.Replace(strings.ToLower(name), "_", " ", -1)
-		}
-		fmt.Fprintf(os.Stderr, "  %3d: %s\n", n, s)
-	}
 
 	fmt.Fprint(os.Stderr, usage2)
 	var max int
@@ -100,10 +71,10 @@ func usage() {
 
 func bail(e os.Error) {
 	fmt.Fprintln(os.Stderr, "Error:", e)
-	if r, ok := e.(*client.ResponseError); ok {
-		os.Exit(int(r.Code))
+	if e == client.ErrRevMismatch {
+		os.Exit(1)
 	}
-	os.Exit(127)
+	os.Exit(2)
 }
 
 
