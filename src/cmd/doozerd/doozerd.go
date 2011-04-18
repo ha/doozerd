@@ -14,7 +14,8 @@ import (
 
 var (
 	listenAddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
-	attachAddr  = flag.String("a", "", "The address of another node to attach to.")
+	bootAddr    = flag.String("b", "", "boot cluster address (overrides -a)")
+	attachAddr  = flag.String("a", "", "The address of another node to attach to. (overridden by -b)")
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
 	clusterName = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
@@ -44,6 +45,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "require a listen address")
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	if *bootAddr != "" {
+		*attachAddr = claim(*clusterName, *bootAddr, *listenAddr)
 	}
 
 	log.SetPrefix("DOOZER ")

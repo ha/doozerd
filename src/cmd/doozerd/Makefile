@@ -1,7 +1,8 @@
-include $(GOROOT)/src/Make.inc
+include ../../Make.inc
 
 TARG=doozerd
 GOFILES=\
+	boot.go\
 	doozerd.go\
 
 include $(GOROOT)/src/Make.cmd
