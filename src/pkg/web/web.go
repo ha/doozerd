@@ -14,7 +14,7 @@ import (
 )
 
 var Store *store.Store
-var ClusterName, evPrefix string
+var ClusterName string
 
 var (
 	mainTpl  = template.MustParse(main_html, nil)
@@ -22,6 +22,7 @@ var (
 )
 
 type info struct {
+	Name string
 	Path string
 }
 
@@ -36,15 +37,11 @@ func (sh stringHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func Serve(listener net.Listener) {
-	prefix := "/d/" + ClusterName
-	evPrefix = "/events" + prefix
-
-	http.Handle("/", http.RedirectHandler("/view/d/"+ClusterName+"/", 307))
-	http.HandleFunc("/stats.html", statsHtml)
-	http.HandleFunc("/view/", viewHtml)
-	http.Handle("/main.js", stringHandler{"application/javascript", main_js})
-	http.Handle("/main.css", stringHandler{"text/css", main_css})
-	http.HandleFunc(evPrefix+"/", evServer)
+	http.HandleFunc("/", viewHtml)
+	http.HandleFunc("/$stats.html", statsHtml)
+	http.Handle("/$main.js", stringHandler{"application/javascript", main_js})
+	http.Handle("/$main.css", stringHandler{"text/css", main_css})
+	http.HandleFunc("/$events/", evServer)
 
 	http.Serve(listener, nil)
 }
@@ -69,7 +66,7 @@ func send(ws *websocket.Conn, path string, evs <-chan store.Event) {
 
 func evServer(w http.ResponseWriter, r *http.Request) {
 	wevs := make(chan store.Event)
-	path := r.URL.Path[len(evPrefix):]
+	path := r.URL.Path[len("/$events"):]
 
 	glob, err := store.CompileGlob(path + "**")
 	if err != nil {
@@ -98,7 +95,8 @@ func viewHtml(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var x info
-	x.Path = r.URL.Path[len("/view"):]
+	x.Name = ClusterName
+	x.Path = r.URL.Path
 	w.SetHeader("content-type", "text/html")
 	mainTpl.Execute(w, x)
 }
