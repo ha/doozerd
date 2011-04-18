@@ -67,6 +67,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 	}
 
 	if attachAddr == "" { // we are the only node in a new cluster
+		set(st, "/ctl/name", clusterName, store.Missing)
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
