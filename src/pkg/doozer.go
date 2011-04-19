@@ -2,7 +2,6 @@ package doozer
 
 import (
 	"crypto/rand"
-	"doozer/client"
 	"doozer/consensus"
 	"doozer/gc"
 	"doozer/member"
@@ -10,6 +9,7 @@ import (
 	"doozer/store"
 	"doozer/web"
 	"encoding/base32"
+	"github.com/ha/doozer"
 	"net"
 	"os"
 	"time"
@@ -75,7 +75,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		calSrv()
 		close(useSelf)
 	} else {
-		cl := client.New("local", attachAddr) // TODO use real cluster name
+		cl := doozer.New("local", attachAddr) // TODO use real cluster name
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/version", Version, store.Clobber)
@@ -194,7 +194,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 }
 
 
-func activate(st *store.Store, self string, c *client.Client) int64 {
+func activate(st *store.Store, self string, c *doozer.Client) int64 {
 	w := store.NewWatch(st, calGlob)
 
 	for _, base := range store.Getdir(st, calDir) {
@@ -228,7 +228,7 @@ func activate(st *store.Store, self string, c *client.Client) int64 {
 	return 0
 }
 
-func advanceUntil(cl *client.Client, ver <-chan int64, done int64) {
+func advanceUntil(cl *doozer.Client, ver <-chan int64, done int64) {
 	for <-ver < done {
 		cl.Nop()
 	}
@@ -239,14 +239,14 @@ func set(st *store.Store, path, body string, rev int64) {
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
 }
 
-func setC(cl *client.Client, path, body string, rev int64) {
+func setC(cl *doozer.Client, path, body string, rev int64) {
 	_, err := cl.Set(path, rev, []byte(body))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func follow(ops chan<- store.Op, ch <-chan *client.Event) {
+func follow(ops chan<- store.Op, ch <-chan *doozer.Event) {
 	for ev := range ch {
 		// store.Clobber is okay here because the event
 		// has already passed through another store

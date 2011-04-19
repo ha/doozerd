@@ -21,7 +21,6 @@ PKGS="
     proto
     server
     web
-    client
     test
     member
     gc
@@ -30,5 +29,4 @@ PKGS="
 
 CMDS="
     doozerd
-    doozer
 "

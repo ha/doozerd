@@ -1,8 +1,8 @@
 package doozer
 
 import (
-	"doozer/client"
 	"doozer/store"
+	"github.com/ha/doozer"
 	"testing"
 )
 
@@ -17,7 +17,7 @@ func Benchmark1DoozerClientSet(b *testing.B) {
 
 	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := client.New("foo", l.Addr().String())
+	cl := doozer.New("foo", l.Addr().String())
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -36,7 +36,7 @@ func Benchmark1DoozerConClientSet(b *testing.B) {
 
 	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := client.New("foo", l.Addr().String())
+	cl := doozer.New("foo", l.Addr().String())
 
 	c := make(chan bool, b.N)
 	b.StartTimer()
@@ -83,7 +83,7 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 	go Main("a", a, u3, l3, nil, 1e9, 1e8, 3e9)
 	go Main("a", a, u4, l4, nil, 1e9, 1e8, 3e9)
 
-	cl := client.New("foo", l.Addr().String())
+	cl := doozer.New("foo", l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)
 	cl.Set("/ctl/cal/2", store.Missing, nil)
 	cl.Set("/ctl/cal/3", store.Missing, nil)
@@ -127,18 +127,18 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 	go Main("a", a, u3, l3, nil, 1e9, 1e8, 3e9)
 	go Main("a", a, u4, l4, nil, 1e9, 1e8, 3e9)
 
-	cl := client.New("foo", l.Addr().String())
+	cl := doozer.New("foo", l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)
 	cl.Set("/ctl/cal/2", store.Missing, nil)
 	cl.Set("/ctl/cal/3", store.Missing, nil)
 	cl.Set("/ctl/cal/4", store.Missing, nil)
 
-	cls := []*client.Client{
+	cls := []*doozer.Client{
 		cl,
-		client.New("foo", l1.Addr().String()),
-		client.New("foo", l2.Addr().String()),
-		client.New("foo", l3.Addr().String()),
-		client.New("foo", l4.Addr().String()),
+		doozer.New("foo", l1.Addr().String()),
+		doozer.New("foo", l2.Addr().String()),
+		doozer.New("foo", l3.Addr().String()),
+		doozer.New("foo", l4.Addr().String()),
 	}
 
 	c := make(chan bool, b.N)
