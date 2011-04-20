@@ -1,4 +1,4 @@
-package doozer
+package peer
 
 
 type liveness struct {

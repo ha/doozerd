@@ -1,4 +1,4 @@
-package doozer
+package peer
 
 import (
 	"doozer/store"
@@ -15,7 +15,7 @@ func Benchmark1DoozerClientSet(b *testing.B) {
 	u := mustListenPacket(a)
 	defer u.Close()
 
-	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := doozer.New("foo", l.Addr().String())
 
@@ -34,7 +34,7 @@ func Benchmark1DoozerConClientSet(b *testing.B) {
 	u := mustListenPacket(a)
 	defer u.Close()
 
-	go Main("a", "", u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := doozer.New("foo", l.Addr().String())
 
@@ -77,11 +77,11 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 	u4 := mustListenPacket(l4.Addr().String())
 	defer u4.Close()
 
-	go Main("a", "", u, l, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u1, l1, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u2, l2, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u3, l3, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u4, l4, nil, 1e9, 1e8, 3e9)
+	go Main("a", "X", "", nil, u, l, nil, 1e9, 1e8, 3e9)
+	go Main("a", "Y", "", doozer.New("a", a), u1, l1, nil, 1e9, 1e8, 3e9)
+	go Main("a", "Z", "", doozer.New("a", a), u2, l2, nil, 1e9, 1e8, 3e9)
+	go Main("a", "V", "", doozer.New("a", a), u3, l3, nil, 1e9, 1e8, 3e9)
+	go Main("a", "W", "", doozer.New("a", a), u4, l4, nil, 1e9, 1e8, 3e9)
 
 	cl := doozer.New("foo", l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)
@@ -121,11 +121,11 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 	u4 := mustListenPacket(l4.Addr().String())
 	defer u4.Close()
 
-	go Main("a", "", u, l, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u1, l1, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u2, l2, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u3, l3, nil, 1e9, 1e8, 3e9)
-	go Main("a", a, u4, l4, nil, 1e9, 1e8, 3e9)
+	go Main("a", "X", "", nil, u, l, nil, 1e9, 1e8, 3e9)
+	go Main("a", "Y", "", doozer.New("a", a), u1, l1, nil, 1e9, 1e8, 3e9)
+	go Main("a", "Z", "", doozer.New("a", a), u2, l2, nil, 1e9, 1e8, 3e9)
+	go Main("a", "V", "", doozer.New("a", a), u3, l3, nil, 1e9, 1e8, 3e9)
+	go Main("a", "W", "", doozer.New("a", a), u4, l4, nil, 1e9, 1e8, 3e9)
 
 	cl := doozer.New("foo", l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)

@@ -1,14 +1,12 @@
-package doozer
+package peer
 
 import (
-	"crypto/rand"
 	"doozer/consensus"
 	"doozer/gc"
 	"doozer/member"
 	"doozer/server"
 	"doozer/store"
 	"doozer/web"
-	"encoding/base32"
 	"github.com/ha/doozer"
 	"net"
 	"os"
@@ -47,13 +45,12 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
+func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	listenAddr := listener.Addr().String()
 
 	var activateSeqn int64
 	useSelf := make(chan bool, 1)
 
-	self := randId()
 	st := store.New()
 	pr := &proposer{
 		seqns: make(chan int64, alpha),
@@ -66,7 +63,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		go gc.Clean(st, 360000, time.Tick(1e9))
 	}
 
-	if attachAddr == "" { // we are the only node in a new cluster
+	if cl == nil { // we are the only node in a new cluster
 		set(st, "/ctl/name", clusterName, store.Missing)
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
@@ -75,7 +72,6 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 		calSrv()
 		close(useSelf)
 	} else {
-		cl := doozer.New("local", attachAddr) // TODO use real cluster name
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/version", Version, store.Clobber)
@@ -112,6 +108,15 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 				panic(err)
 			}
 			close(useSelf)
+			if baddr != "" {
+				b := doozer.New("<boot>", baddr)
+				setC(
+					b,
+					"/ctl/ns/"+clusterName+"/"+self,
+					listenAddr,
+					store.Missing,
+				)
+			}
 		}()
 	}
 
@@ -122,7 +127,7 @@ func Main(clusterName, attachAddr string, udpConn net.PacketConn, listener, webL
 
 	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw, fillDelay, st)
 
-	if attachAddr == "" {
+	if cl == nil {
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
 		for i := start + 1; i < start+alpha+1; i++ {
@@ -253,22 +258,4 @@ func follow(ops chan<- store.Op, ch <-chan *doozer.Event) {
 		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
 		ops <- store.Op{ev.Rev, mut}
 	}
-}
-
-
-func randId() string {
-	const bits = 80 // enough for 10**8 ids with p(collision) < 10**-8
-	rnd := make([]byte, bits/8)
-
-	n, err := rand.Read(rnd)
-	if err != nil {
-		panic(err)
-	}
-	if n != len(rnd) {
-		panic("io.ReadFull len mismatch")
-	}
-
-	enc := make([]byte, base32.StdEncoding.EncodedLen(len(rnd)))
-	base32.StdEncoding.Encode(enc, rnd)
-	return string(enc)
 }

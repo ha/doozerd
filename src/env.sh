@@ -24,7 +24,7 @@ PKGS="
     test
     member
     gc
-    .
+    peer
 "
 
 CMDS="

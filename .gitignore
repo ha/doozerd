@@ -5,7 +5,7 @@ _test
 _testmain.go
 *.out
 *.[568]
-src/pkg/version.go
+src/pkg/peer/version.go
 src/cmd/doozerd/doozerd
 src/cmd/doozer/doozer
 *.css.go

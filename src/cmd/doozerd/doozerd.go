@@ -2,9 +2,10 @@ package main
 
 
 import (
-	"doozer"
+	"doozer/peer"
 	"flag"
 	"fmt"
+	"github.com/ha/doozer"
 	"net"
 	"os"
 	"log"
@@ -12,17 +13,36 @@ import (
 	_ "http/pprof"
 )
 
+type strings []string
+
+
+func (a *strings) Set(s string) bool {
+	*a = append(*a, s)
+	return true
+}
+
+
+func (a *strings) String() string {
+	return fmt.Sprint(*a)
+}
+
+
 var (
-	listenAddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
-	bootAddr    = flag.String("b", "", "boot cluster address (overrides -a)")
-	attachAddr  = flag.String("a", "", "The address of another node to attach to. (overridden by -b)")
+	laddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
+	aaddrs  = strings{}
+	baddr    = flag.String("b", "", "boot cluster address (tried after -a)")
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
-	clusterName = flag.String("c", "local", "The non-empty cluster name.")
+	name = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
 	pi          = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
 	fd          = flag.Float64("fill", .1, "delay (in seconds) to fill unowned seqns")
 	kt          = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
 )
+
+
+func init() {
+	flag.Var(&aaddrs, "a", "attach address (may be given multiple times)")
+}
 
 
 func Usage() {
@@ -37,42 +57,55 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("doozerd", doozer.Version)
+		fmt.Println("doozerd", peer.Version)
 		return
 	}
 
-	if *listenAddr == "" {
+	if *laddr == "" {
 		fmt.Fprintln(os.Stderr, "require a listen address")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	if *bootAddr != "" {
-		*attachAddr = claim(*clusterName, *bootAddr, *listenAddr)
-	}
-
 	log.SetPrefix("DOOZER ")
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 
-	listener, err := net.Listen("tcp", *listenAddr)
+	tsock, err := net.Listen("tcp", *laddr)
 	if err != nil {
 		panic(err)
 	}
 
-	conn, err := net.ListenPacket("udp", *listenAddr)
+	usock, err := net.ListenPacket("udp", *laddr)
 	if err != nil {
 		panic(err)
 	}
 
-	var wl net.Listener
+	var wsock net.Listener
 	if *webAddr != "" {
-		wl, err = net.Listen("tcp", *webAddr)
+		wsock, err = net.Listen("tcp", *webAddr)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	doozer.Main(*clusterName, *attachAddr, conn, listener, wl, ns(*pi), ns(*fd), ns(*kt))
+	id := randId()
+	var cl *doozer.Client
+	switch {
+	case len(aaddrs) > 0 && *baddr != "":
+		cl = attach(*name, aaddrs)
+		if cl == nil {
+			cl = boot(*name, id, *laddr, *baddr)
+		}
+	case len(aaddrs) > 0:
+		cl = attach(*name, aaddrs)
+		if cl == nil {
+			panic("failed to attach")
+		}
+	case *baddr != "":
+		cl = boot(*name, id, *laddr, *baddr)
+	}
+
+	peer.Main(*name, id, *baddr, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
 	panic("main exit")
 }
 

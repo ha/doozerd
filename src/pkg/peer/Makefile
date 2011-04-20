@@ -1,10 +1,10 @@
-include ../Make.inc
+include ../../Make.inc
 
 VERSION ?= $(shell git describe | sed s/^v// | tr - +)
 
-TARG=doozer
+TARG=doozer/peer
 GOFILES=\
-	doozer.go\
+	peer.go\
 	liveness.go\
 	version.go\
 
@@ -12,4 +12,4 @@ include $(GOROOT)/src/Make.pkg
 
 .PHONY: version.go
 version.go:
-	printf 'package doozer\nconst Version = `%s`\n' '$(VERSION)' > $@
+	printf 'package peer\n\nconst Version = `%s`\n' '$(VERSION)' > $@

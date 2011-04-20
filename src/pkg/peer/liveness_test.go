@@ -1,4 +1,4 @@
-package doozer
+package peer
 
 import (
 	"github.com/bmizerany/assert"
