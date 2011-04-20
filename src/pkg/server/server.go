@@ -422,8 +422,17 @@ func (c *conn) set(t *T, tx txn) {
 			return
 		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Rev):
 			switch e := ev.Err.(type) {
-			case *store.BadPathError:
-				c.respond(t, Valid|Done, nil, &R{ErrCode: badPath, ErrDetail: &e.Path})
+			case *store.PathError:
+				switch e.Err {
+				case store.ErrBadPath:
+					c.respond(t, Valid|Done, nil, &R{ErrCode: badPath, ErrDetail: &e.Path})
+				case os.EISDIR:
+					c.respond(t, Valid|Done, nil, isDir)
+				case os.ENOTDIR:
+					c.respond(t, Valid|Done, nil, notDir)
+				case store.ErrRevMismatch:
+					c.respond(t, Valid|Done, nil, revMismatch)
+				}
 				return
 			}
 

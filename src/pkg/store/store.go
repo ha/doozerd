@@ -30,15 +30,19 @@ var ErrTooLate = os.NewError("too late")
 var (
 	ErrBadMutation = os.NewError("bad mutation")
 	ErrRevMismatch = os.NewError("rev mismatch")
+	ErrBadPath     = os.NewError("bad path")
 )
 
-type BadPathError struct {
+type PathError struct {
 	Path string
+	Err  os.Error
 }
 
-func (e *BadPathError) String() string {
-	return "bad path: " + e.Path
+
+func (e PathError) String() string {
+	return e.Err.String() + ": " + e.Path
 }
+
 
 func mustBuildRe(p string) *regexp.Regexp {
 	return regexp.MustCompile(`^/$|^(/` + p + `+)+$`)
@@ -158,7 +162,7 @@ func join(parts []string) string {
 
 func checkPath(k string) os.Error {
 	if !pathRe.MatchString(k) {
-		return &BadPathError{k}
+		return &PathError{k, ErrBadPath}
 	}
 	return nil
 }
@@ -167,8 +171,6 @@ func checkPath(k string) os.Error {
 // the contents of the file at `path` to `body` iff `rev` is greater than
 // of equal to the file's revision at the time of application, with
 // one exception: if `rev` is Clobber, the file will be set unconditionally.
-//
-// If `path` is not valid, returns a `BadPathError`.
 func EncodeSet(path, body string, rev int64) (mutation string, err os.Error) {
 	if err = checkPath(path); err != nil {
 		return
@@ -181,8 +183,6 @@ func EncodeSet(path, body string, rev int64) (mutation string, err os.Error) {
 // of equal to the file's revision at the time of application, with
 // one exception: if `rev` is Clobber, the file will be deleted
 // unconditionally.
-//
-// If `path` is not valid, returns a `BadPathError`.
 func EncodeDel(path string, rev int64) (mutation string, err os.Error) {
 	if err := checkPath(path); err != nil {
 		return
