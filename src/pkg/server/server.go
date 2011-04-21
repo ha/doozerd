@@ -213,6 +213,7 @@ var ops = map[int32]func(*conn, *T, txn){
 	proto.Request_REV:    (*conn).rev,
 	proto.Request_SET:    (*conn).set,
 	proto.Request_STAT:   (*conn).stat,
+	proto.Request_WAIT:   (*conn).wait,
 	proto.Request_WALK:   (*conn).walk,
 	proto.Request_WATCH:  (*conn).watch,
 }
@@ -591,6 +592,53 @@ func (c *conn) cancel(t *T, tx txn) {
 	} else {
 		c.respond(t, Valid|Done, nil, badTag)
 	}
+}
+
+
+func (c *conn) wait(t *T, tx txn) {
+	pat := pb.GetString(t.Path)
+	glob, err := store.CompileGlob(pat)
+	if err != nil {
+		c.respond(t, Valid|Done, nil, errResponse(err))
+		return
+	}
+
+	var w *store.Watch
+	rev := pb.GetInt64(t.Rev)
+	if rev == 0 {
+		w, err = store.NewWatch(c.s.St, glob), nil
+	} else {
+		w, err = store.NewWatchFrom(c.s.St, glob, rev)
+	}
+
+	switch err {
+	case nil:
+		// nothing
+	case store.ErrTooLate:
+		c.respond(t, Valid|Done, nil, tooLate)
+	default:
+		c.respond(t, Valid|Done, nil, errResponse(err))
+	}
+
+	go func() {
+		defer w.Stop()
+		ev := <-w.C
+		r := R{
+			Path:  &ev.Path,
+			Value: []byte(ev.Body),
+			Rev:   &ev.Seqn,
+		}
+
+		var flag int32
+		switch {
+		case ev.IsSet():
+			flag = Set
+		case ev.IsDel():
+			flag = Del
+		}
+
+		c.respond(t, Valid|flag, nil, &r)
+	}()
 }
 
 

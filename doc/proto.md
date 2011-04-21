@@ -95,6 +95,16 @@ This number can be given to a subsequent write
 operation to ensure that no
 intervening writes have happened.
 
+## Glob Notation
+
+Some of the requests take a glob pattern that can match
+zero or more concrete path names.
+
+ - `?` matches a single char in a single path component
+ - `*` matches zero or more chars in a single path component
+ - `**` matches zero or more chars in zero or more components
+ - any other sequence matches itself
+
 ## Verbs
 
 Each verb shows the set of request fields it uses,
@@ -151,6 +161,11 @@ This is indicated by a + sign after the response fields.
     revision.
     Returns the file's new revision.
 
+ * `WAIT` *path*, *rev* &rArr; *path*, *rev*, *value*
+
+    Responds with the first change made to any file
+    matching *path*, a glob pattern, on or after *rev*.
+
  * `WALK` *path*, *rev* &rArr; {*path*, *rev*, *value*}+
 
     Iterates over all existing files that match *path*, a
@@ -158,18 +173,12 @@ This is indicated by a + sign after the response fields.
     for each matching file. If *rev* is not provided, walk
     uses the current revision.
 
-    Glob notation:
-     - `?` matches a single char in a single path component
-     - `*` matches zero or more chars in a single path component
-     - `**` matches zero or more chars in zero or more components
-     - any other sequence matches itself
-
  * `WATCH` *path* &rArr; {*path*, *rev*, *value*}+
 
     Arranges for the client to receive notices of changes
     made to any file matching *path*, a glob pattern. One
     response will be sent for each change (either set or
-    del). See above for glob notation.
+    del).
 
 ## Errors
 

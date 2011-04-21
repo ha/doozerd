@@ -10,6 +10,7 @@ message Request {
       DEL      = 3;
       ESET     = 4;
       REV      = 5;
+      WAIT     = 6;
       NOP      = 7;
       WATCH    = 8;
       WALK     = 9;
