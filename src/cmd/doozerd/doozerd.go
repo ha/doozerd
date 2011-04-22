@@ -28,11 +28,11 @@ func (a *strings) String() string {
 
 
 var (
-	laddr  = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
-	aaddrs  = strings{}
-	baddr    = flag.String("b", "", "boot cluster address (tried after -a)")
+	laddr       = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
+	aaddrs      = strings{}
+	baddr       = flag.String("b", "", "boot cluster address (tried after -a)")
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
-	name = flag.String("c", "local", "The non-empty cluster name.")
+	name        = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
 	pi          = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
 	fd          = flag.Float64("fill", .1, "delay (in seconds) to fill unowned seqns")
