@@ -3,6 +3,7 @@ _gotest_.*
 _obj
 _test
 _testmain.go
+_pb
 *.out
 *.[568]
 src/pkg/peer/version.go

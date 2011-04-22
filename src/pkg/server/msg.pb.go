@@ -13,24 +13,24 @@ var _ = math.Inf
 var _ os.Error
 
 
-type Request_Verb int32
+type request_Verb int32
 
 const (
-	Request_GET    = 1
-	Request_SET    = 2
-	Request_DEL    = 3
-	Request_ESET   = 4
-	Request_REV    = 5
-	Request_WAIT   = 6
-	Request_NOP    = 7
-	Request_WATCH  = 8
-	Request_WALK   = 9
-	Request_CANCEL = 10
-	Request_GETDIR = 14
-	Request_STAT   = 16
+	request_GET    = 1
+	request_SET    = 2
+	request_DEL    = 3
+	request_ESET   = 4
+	request_REV    = 5
+	request_WAIT   = 6
+	request_NOP    = 7
+	request_WATCH  = 8
+	request_WALK   = 9
+	request_CANCEL = 10
+	request_GETDIR = 14
+	request_STAT   = 16
 )
 
-var Request_Verb_name = map[int32]string{
+var request_Verb_name = map[int32]string{
 	1:  "GET",
 	2:  "SET",
 	3:  "DEL",
@@ -44,7 +44,7 @@ var Request_Verb_name = map[int32]string{
 	14: "GETDIR",
 	16: "STAT",
 }
-var Request_Verb_value = map[string]int32{
+var request_Verb_value = map[string]int32{
 	"GET":    1,
 	"SET":    2,
 	"DEL":    3,
@@ -59,29 +59,29 @@ var Request_Verb_value = map[string]int32{
 	"STAT":   16,
 }
 
-func NewRequest_Verb(x int32) *Request_Verb {
-	e := Request_Verb(x)
+func newRequest_Verb(x int32) *request_Verb {
+	e := request_Verb(x)
 	return &e
 }
 
-type Response_Err int32
+type response_Err int32
 
 const (
-	Response_OTHER        = 127
-	Response_TAG_IN_USE   = 1
-	Response_UNKNOWN_VERB = 2
-	Response_REDIRECT     = 3
-	Response_TOO_LATE     = 4
-	Response_REV_MISMATCH = 5
-	Response_BAD_PATH     = 6
-	Response_MISSING_ARG  = 7
-	Response_RANGE        = 8
-	Response_NOTDIR       = 20
-	Response_ISDIR        = 21
-	Response_NOENT        = 22
+	response_OTHER        = 127
+	response_TAG_IN_USE   = 1
+	response_UNKNOWN_VERB = 2
+	response_REDIRECT     = 3
+	response_TOO_LATE     = 4
+	response_REV_MISMATCH = 5
+	response_BAD_PATH     = 6
+	response_MISSING_ARG  = 7
+	response_RANGE        = 8
+	response_NOTDIR       = 20
+	response_ISDIR        = 21
+	response_NOENT        = 22
 )
 
-var Response_Err_name = map[int32]string{
+var response_Err_name = map[int32]string{
 	127: "OTHER",
 	1:   "TAG_IN_USE",
 	2:   "UNKNOWN_VERB",
@@ -95,7 +95,7 @@ var Response_Err_name = map[int32]string{
 	21:  "ISDIR",
 	22:  "NOENT",
 }
-var Response_Err_value = map[string]int32{
+var response_Err_value = map[string]int32{
 	"OTHER":        127,
 	"TAG_IN_USE":   1,
 	"UNKNOWN_VERB": 2,
@@ -110,14 +110,14 @@ var Response_Err_value = map[string]int32{
 	"NOENT":        22,
 }
 
-func NewResponse_Err(x int32) *Response_Err {
-	e := Response_Err(x)
+func newResponse_Err(x int32) *response_Err {
+	e := response_Err(x)
 	return &e
 }
 
-type Request struct {
+type request struct {
 	Tag              *int32        "PB(varint,1,opt,name=tag)"
-	Verb             *Request_Verb "PB(varint,2,opt,name=verb,enum=server.Request_Verb)"
+	Verb             *request_Verb "PB(varint,2,opt,name=verb,enum=server.request_Verb)"
 	Path             *string       "PB(bytes,4,opt,name=path)"
 	Value            []byte        "PB(bytes,5,opt,name=value)"
 	OtherTag         *int32        "PB(varint,6,opt,name=other_tag)"
@@ -127,27 +127,27 @@ type Request struct {
 	XXX_unrecognized []byte
 }
 
-func (this *Request) Reset() {
-	*this = Request{}
+func (this *request) Reset() {
+	*this = request{}
 }
 
-type Response struct {
+type response struct {
 	Tag              *int32        "PB(varint,1,opt,name=tag)"
 	Flags            *int32        "PB(varint,2,opt,name=flags)"
 	Rev              *int64        "PB(varint,3,opt,name=rev)"
 	Path             *string       "PB(bytes,5,opt,name=path)"
 	Value            []byte        "PB(bytes,6,opt,name=value)"
 	Len              *int32        "PB(varint,8,opt,name=len)"
-	ErrCode          *Response_Err "PB(varint,100,opt,name=err_code,enum=server.Response_Err)"
+	ErrCode          *response_Err "PB(varint,100,opt,name=err_code,enum=server.response_Err)"
 	ErrDetail        *string       "PB(bytes,101,opt,name=err_detail)"
 	XXX_unrecognized []byte
 }
 
-func (this *Response) Reset() {
-	*this = Response{}
+func (this *response) Reset() {
+	*this = response{}
 }
 
 func init() {
-	proto.RegisterEnum("server.Request_Verb", Request_Verb_name, Request_Verb_value)
-	proto.RegisterEnum("server.Response_Err", Response_Err_name, Response_Err_value)
+	proto.RegisterEnum("server.request_Verb", request_Verb_name, request_Verb_value)
+	proto.RegisterEnum("server.response_Err", response_Err_name, response_Err_value)
 }

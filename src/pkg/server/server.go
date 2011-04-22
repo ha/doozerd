@@ -24,21 +24,21 @@ var (
 
 
 var (
-	badPath     = NewResponse_Err(Response_BAD_PATH)
-	missingArg  = &R{ErrCode: NewResponse_Err(Response_MISSING_ARG)}
-	tagInUse    = &R{ErrCode: NewResponse_Err(Response_TAG_IN_USE)}
-	isDir       = &R{ErrCode: NewResponse_Err(Response_ISDIR)}
-	notDir      = &R{ErrCode: NewResponse_Err(Response_NOTDIR)}
-	noEnt       = &R{ErrCode: NewResponse_Err(Response_NOENT)}
-	tooLate     = &R{ErrCode: NewResponse_Err(Response_TOO_LATE)}
-	erange      = &R{ErrCode: NewResponse_Err(Response_RANGE)}
-	revMismatch = &R{ErrCode: NewResponse_Err(Response_REV_MISMATCH)}
+	badPath     = newResponse_Err(response_BAD_PATH)
+	missingArg  = &R{ErrCode: newResponse_Err(response_MISSING_ARG)}
+	tagInUse    = &R{ErrCode: newResponse_Err(response_TAG_IN_USE)}
+	isDir       = &R{ErrCode: newResponse_Err(response_ISDIR)}
+	notDir      = &R{ErrCode: newResponse_Err(response_NOTDIR)}
+	noEnt       = &R{ErrCode: newResponse_Err(response_NOENT)}
+	tooLate     = &R{ErrCode: newResponse_Err(response_TOO_LATE)}
+	erange      = &R{ErrCode: newResponse_Err(response_RANGE)}
+	revMismatch = &R{ErrCode: newResponse_Err(response_REV_MISMATCH)}
 	readonly    = &R{
-		ErrCode:   NewResponse_Err(Response_OTHER),
+		ErrCode:   newResponse_Err(response_OTHER),
 		ErrDetail: pb.String("no known writeable addresses"),
 	}
 	badTag = &R{
-		ErrCode:   NewResponse_Err(Response_OTHER),
+		ErrCode:   newResponse_Err(response_OTHER),
 		ErrDetail: pb.String("unknown tag"),
 	}
 )
@@ -46,13 +46,13 @@ var (
 
 func errResponse(e os.Error) *R {
 	return &R{
-		ErrCode:   NewResponse_Err(Response_OTHER),
+		ErrCode:   newResponse_Err(response_OTHER),
 		ErrDetail: pb.String(e.String()),
 	}
 }
 
 
-// Response flags
+// response flags
 const (
 	Valid = 1 << iota
 	Done
@@ -64,8 +64,8 @@ const (
 var calGlob = store.MustCompileGlob("/ctl/cal/*")
 
 
-type T Request
-type R Response
+type T request
+type R response
 
 
 type OpError struct {
@@ -205,17 +205,17 @@ type conn struct {
 
 
 var ops = map[int32]func(*conn, *T, txn){
-	Request_CANCEL: (*conn).cancel,
-	Request_DEL:    (*conn).del,
-	Request_GET:    (*conn).get,
-	Request_GETDIR: (*conn).getdir,
-	Request_NOP:    (*conn).nop,
-	Request_REV:    (*conn).rev,
-	Request_SET:    (*conn).set,
-	Request_STAT:   (*conn).stat,
-	Request_WAIT:   (*conn).wait,
-	Request_WALK:   (*conn).walk,
-	Request_WATCH:  (*conn).watch,
+	request_CANCEL: (*conn).cancel,
+	request_DEL:    (*conn).del,
+	request_GET:    (*conn).get,
+	request_GETDIR: (*conn).getdir,
+	request_NOP:    (*conn).nop,
+	request_REV:    (*conn).rev,
+	request_SET:    (*conn).set,
+	request_STAT:   (*conn).stat,
+	request_WAIT:   (*conn).wait,
+	request_WALK:   (*conn).walk,
+	request_WATCH:  (*conn).watch,
 }
 
 
@@ -257,7 +257,7 @@ func (c *conn) serve() {
 		f, ok := ops[verb]
 		if !ok {
 			var r R
-			r.ErrCode = NewResponse_Err(Response_UNKNOWN_VERB)
+			r.ErrCode = newResponse_Err(response_UNKNOWN_VERB)
 			c.respond(t, Valid|Done, nil, &r)
 			continue
 		}
@@ -358,7 +358,7 @@ func (c *conn) redirect(t *T) {
 	}
 
 	r := &R{
-		ErrCode:   NewResponse_Err(Response_REDIRECT),
+		ErrCode:   newResponse_Err(response_REDIRECT),
 		ErrDetail: &parts[0],
 	}
 	c.respond(t, Valid|Done, nil, r)
