@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"rand"
+	"sort"
 	"sync"
 	pb "goprotobuf.googlecode.com/hg/proto"
 )
@@ -548,6 +549,7 @@ func (c *conn) getdir(t *T, tx txn) {
 				end = len(ents)
 			}
 
+			sort.SortStrings(ents)
 			for _, e := range ents[offset:end] {
 				select {
 				case <-tx.cancel:
