@@ -603,21 +603,16 @@ func (c *conn) wait(t *T, tx txn) {
 		return
 	}
 
-	var w *store.Watch
-	rev := pb.GetInt64(t.Rev)
-	if rev == 0 {
-		w, err = store.NewWatch(c.s.St, glob), nil
-	} else {
-		w, err = store.NewWatchFrom(c.s.St, glob, rev)
-	}
-
+	w, err := store.NewWatchFrom(c.s.St, glob, pb.GetInt64(t.Rev))
 	switch err {
 	case nil:
 		// nothing
 	case store.ErrTooLate:
 		c.respond(t, Valid|Done, nil, tooLate)
+		return
 	default:
 		c.respond(t, Valid|Done, nil, errResponse(err))
+		return
 	}
 
 	go func() {
