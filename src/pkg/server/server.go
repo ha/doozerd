@@ -2,7 +2,6 @@ package server
 
 import (
 	"doozer/consensus"
-	"doozer/proto"
 	"doozer/store"
 	"encoding/binary"
 	"io"
@@ -25,21 +24,21 @@ var (
 
 
 var (
-	badPath     = proto.NewResponse_Err(proto.Response_BAD_PATH)
-	missingArg  = &R{ErrCode: proto.NewResponse_Err(proto.Response_MISSING_ARG)}
-	tagInUse    = &R{ErrCode: proto.NewResponse_Err(proto.Response_TAG_IN_USE)}
-	isDir       = &R{ErrCode: proto.NewResponse_Err(proto.Response_ISDIR)}
-	notDir      = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOTDIR)}
-	noEnt       = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOENT)}
-	tooLate     = &R{ErrCode: proto.NewResponse_Err(proto.Response_TOO_LATE)}
-	erange      = &R{ErrCode: proto.NewResponse_Err(proto.Response_RANGE)}
-	revMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_REV_MISMATCH)}
+	badPath     = NewResponse_Err(Response_BAD_PATH)
+	missingArg  = &R{ErrCode: NewResponse_Err(Response_MISSING_ARG)}
+	tagInUse    = &R{ErrCode: NewResponse_Err(Response_TAG_IN_USE)}
+	isDir       = &R{ErrCode: NewResponse_Err(Response_ISDIR)}
+	notDir      = &R{ErrCode: NewResponse_Err(Response_NOTDIR)}
+	noEnt       = &R{ErrCode: NewResponse_Err(Response_NOENT)}
+	tooLate     = &R{ErrCode: NewResponse_Err(Response_TOO_LATE)}
+	erange      = &R{ErrCode: NewResponse_Err(Response_RANGE)}
+	revMismatch = &R{ErrCode: NewResponse_Err(Response_REV_MISMATCH)}
 	readonly    = &R{
-		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
+		ErrCode:   NewResponse_Err(Response_OTHER),
 		ErrDetail: pb.String("no known writeable addresses"),
 	}
 	badTag = &R{
-		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
+		ErrCode:   NewResponse_Err(Response_OTHER),
 		ErrDetail: pb.String("unknown tag"),
 	}
 )
@@ -47,7 +46,7 @@ var (
 
 func errResponse(e os.Error) *R {
 	return &R{
-		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
+		ErrCode:   NewResponse_Err(Response_OTHER),
 		ErrDetail: pb.String(e.String()),
 	}
 }
@@ -65,8 +64,8 @@ const (
 var calGlob = store.MustCompileGlob("/ctl/cal/*")
 
 
-type T proto.Request
-type R proto.Response
+type T Request
+type R Response
 
 
 type OpError struct {
@@ -206,17 +205,17 @@ type conn struct {
 
 
 var ops = map[int32]func(*conn, *T, txn){
-	proto.Request_CANCEL: (*conn).cancel,
-	proto.Request_DEL:    (*conn).del,
-	proto.Request_GET:    (*conn).get,
-	proto.Request_GETDIR: (*conn).getdir,
-	proto.Request_NOP:    (*conn).nop,
-	proto.Request_REV:    (*conn).rev,
-	proto.Request_SET:    (*conn).set,
-	proto.Request_STAT:   (*conn).stat,
-	proto.Request_WAIT:   (*conn).wait,
-	proto.Request_WALK:   (*conn).walk,
-	proto.Request_WATCH:  (*conn).watch,
+	Request_CANCEL: (*conn).cancel,
+	Request_DEL:    (*conn).del,
+	Request_GET:    (*conn).get,
+	Request_GETDIR: (*conn).getdir,
+	Request_NOP:    (*conn).nop,
+	Request_REV:    (*conn).rev,
+	Request_SET:    (*conn).set,
+	Request_STAT:   (*conn).stat,
+	Request_WAIT:   (*conn).wait,
+	Request_WALK:   (*conn).walk,
+	Request_WATCH:  (*conn).watch,
 }
 
 
@@ -258,7 +257,7 @@ func (c *conn) serve() {
 		f, ok := ops[verb]
 		if !ok {
 			var r R
-			r.ErrCode = proto.NewResponse_Err(proto.Response_UNKNOWN_VERB)
+			r.ErrCode = NewResponse_Err(Response_UNKNOWN_VERB)
 			c.respond(t, Valid|Done, nil, &r)
 			continue
 		}
@@ -359,7 +358,7 @@ func (c *conn) redirect(t *T) {
 	}
 
 	r := &R{
-		ErrCode:   proto.NewResponse_Err(proto.Response_REDIRECT),
+		ErrCode:   NewResponse_Err(Response_REDIRECT),
 		ErrDetail: &parts[0],
 	}
 	c.respond(t, Valid|Done, nil, r)

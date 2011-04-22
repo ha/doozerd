@@ -1,4 +1,4 @@
-package proto;
+package server;
 
 // see doc/proto.md
 message Request {

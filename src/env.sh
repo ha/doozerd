@@ -18,7 +18,6 @@ PKGS="
     quiet
     store
     consensus
-    proto
     server
     web
     test
