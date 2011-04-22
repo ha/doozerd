@@ -136,9 +136,7 @@ func TestDoozerWaitSimple(t *testing.T) {
 	var rev int64 = 1
 
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
-	println("set")
 	ev, err := cl.Wait("/test/**", rev)
-	println("wait")
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
