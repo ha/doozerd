@@ -1,7 +1,5 @@
 include ../../Make.inc
 
-VERSION ?= $(shell git describe | sed s/^v// | tr - +)
-
 TARG=doozer/peer
 GOFILES=\
 	peer.go\
@@ -10,6 +8,13 @@ GOFILES=\
 
 include $(GOROOT)/src/Make.pkg
 
-.PHONY: version.go
+VERS ?= $(shell ./version.sh)
+GVERS := $(shell sed 's/[^`]*`//' <version.go | sed 's/`.*//')
 version.go:
-	printf 'package peer\n\nconst Version = `%s`\n' '$(VERSION)' > $@
+	printf 'package peer;const Version = `%s`\n' '$(VERS)' > $@
+
+ifneq ($(VERS),$(GVERS))
+.PHONY: version.go
+endif
+
+CLEANFILES+=version.go

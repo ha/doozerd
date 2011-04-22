@@ -10,10 +10,6 @@ PKG_REQS="
     github.com/bmizerany/assert
 "
 
-CMD_REQS="
-    $GOROOT/src/pkg/goprotobuf.googlecode.com/hg/compiler
-"
-
 PKGS="
     quiet
     store

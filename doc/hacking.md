@@ -28,12 +28,21 @@ For full details, see <http://golang.org/doc/install.html>.
 
 ## Installing Dependencies
 
-You need the `protoc` command
-(from <http://code.google.com/p/protobuf/>):
+If you want to change .proto files, you need two things:
 
-    $ sudo apt-get install protobuf-compiler
-    (or)
-    $ brew install protobuf
+1. Install the `protoc` command (from
+   <http://code.google.com/p/protobuf/>):
+
+       $ sudo apt-get install protobuf-compiler
+       (or)
+       $ brew install protobuf
+
+2. Install the Go protobuf compiler plugin (from
+   <http://code.google.com/p/goprotobuf/>):
+
+       $ goinstall goprotobuf.googlecode.com/hg/proto
+       $ cd $GOROOT/src/pkg/goprotobuf.googlecode.com/hg/compiler
+       $ make install
 
 If you want to run doozer's tests, install
 <http://bmizerany.github.com/roundup/>.
