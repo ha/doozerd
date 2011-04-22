@@ -11,7 +11,6 @@ src/cmd/doozer/doozer
 *.css.go
 *.js.go
 *.html.go
-*.pb.go
 *.pem
 *.agree
 *-test.sh
