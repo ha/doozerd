@@ -133,18 +133,12 @@ This is indicated by a + sign after the response fields.
     of the file at *path* in the specified revision (*rev*).
     If *rev* is not provided, get uses the current revision.
 
- * `GETDIR` *path*, *rev*, *offset*, *limit* &rArr; {*path*}+
+ * `GETDIR` *path*, *rev*, *offset* &rArr; {*path*}+
 
-    Returns a sequence of responses containing the names
-    of entries in *path* (a directory) in the specified
-    revision (*rev*), in lexical order. It is an error
-    if *path* is not a directory.
-
-    If *offset* is given, getdir skips that many entries
-    before returning any.
-
-    If *limit* is given, getdir will send that many
-    responses, at most.
+    Returns the *n*th entry in *path* (a directory) in
+    the specified revision (*rev*), where *n* is
+    *offset*. It is an error if *path* is not a
+    directory.
 
  * `JOIN` (deprecated)
 
@@ -166,12 +160,11 @@ This is indicated by a + sign after the response fields.
     Responds with the first change made to any file
     matching *path*, a glob pattern, on or after *rev*.
 
- * `WALK` *path*, *rev* &rArr; {*path*, *rev*, *value*}+
+ * `WALK` *path*, *rev*, *offset* &rArr; {*path*, *rev*, *value*}+
 
-    Iterates over all existing files that match *path*, a
-    glob pattern, in revision *rev*. Sends one response
-    for each matching file. If *rev* is not provided, walk
-    uses the current revision.
+    Returns the *n*th file with a name matching *path*
+    (a glob pattern) in the specified revision (*rev*),
+    where *n* is *offset*.
 
  * `WATCH` *path* &rArr; {*path*, *rev*, *value*}+
 

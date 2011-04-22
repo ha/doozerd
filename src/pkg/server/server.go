@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
-	"math"
 	"net"
 	"os"
 	"rand"
@@ -33,6 +32,7 @@ var (
 	notDir      = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOTDIR)}
 	noEnt       = &R{ErrCode: proto.NewResponse_Err(proto.Response_NOENT)}
 	tooLate     = &R{ErrCode: proto.NewResponse_Err(proto.Response_TOO_LATE)}
+	erange      = &R{ErrCode: proto.NewResponse_Err(proto.Response_RANGE)}
 	revMismatch = &R{ErrCode: proto.NewResponse_Err(proto.Response_REV_MISMATCH)}
 	readonly    = &R{
 		ErrCode:   proto.NewResponse_Err(proto.Response_OTHER),
@@ -520,49 +520,27 @@ func (c *conn) getdir(t *T, tx txn) {
 	path := pb.GetString(t.Path)
 
 	if g := c.getterFor(t); g != nil {
-		go func() {
-			ents, rev := g.Get(path)
+		ents, rev := g.Get(path)
 
-			if rev == store.Missing {
-				c.respond(t, Valid|Done, nil, noEnt)
-				return
-			}
+		if rev == store.Missing {
+			c.respond(t, Valid|Done, nil, noEnt)
+			return
+		}
 
-			if rev != store.Dir {
-				c.respond(t, Valid|Done, nil, notDir)
-				return
-			}
+		if rev != store.Dir {
+			c.respond(t, Valid|Done, nil, notDir)
+			return
+		}
 
-			offset := int(pb.GetInt32(t.Offset))
-			limit := int(pb.GetInt32(t.Limit))
+		sort.SortStrings(ents)
+		offset := int(pb.GetInt32(t.Offset))
+		if offset < 0 || offset >= len(ents) {
+			c.respond(t, Valid|Done, nil, erange)
+			return
+		}
 
-			if limit <= 0 {
-				limit = len(ents)
-			}
-
-			if offset < 0 {
-				offset = 0
-			}
-
-			end := offset + limit
-			if end > len(ents) {
-				end = len(ents)
-			}
-
-			sort.SortStrings(ents)
-			for _, e := range ents[offset:end] {
-				select {
-				case <-tx.cancel:
-					c.closeTxn(*t.Tag)
-					return
-				default:
-				}
-
-				c.respond(t, Valid, tx.cancel, &R{Path: &e})
-			}
-
-			c.respond(t, Done, nil, &R{})
-		}()
+		e := ents[offset]
+		c.respond(t, Valid|Done, tx.cancel, &R{Path: &e})
 	}
 }
 
@@ -709,41 +687,27 @@ func (c *conn) walk(t *T, tx txn) {
 	}
 
 	offset := pb.GetInt32(t.Offset)
-
-	var limit int32 = math.MaxInt32
-	if t.Limit != nil {
-		limit = pb.GetInt32(t.Limit)
+	if offset < 0 {
+		c.respond(t, Valid|Done, nil, erange)
+		return
 	}
 
 	if g := c.getterFor(t); g != nil {
-		go func() {
-			f := func(path, body string, rev int64) (stop bool) {
-				select {
-				case <-tx.cancel:
-					c.closeTxn(*t.Tag)
-					return true
-				default:
-				}
-
-				if offset <= 0 && limit > 0 {
-					var r R
-					r.Path = &path
-					r.Value = []byte(body)
-					r.Rev = &rev
-					c.respond(t, Valid|Set, tx.cancel, &r)
-
-					limit--
-				}
-
-				offset--
-				return false
+		var r R
+		f := func(path, body string, rev int64) (stop bool) {
+			if offset == 0 {
+				r.Path = &path
+				r.Value = []byte(body)
+				r.Rev = &rev
+				return true
 			}
-
-			stopped := store.Walk(g, glob, f)
-
-			if !stopped {
-				c.respond(t, Done, nil, &R{})
-			}
-		}()
+			offset--
+			return false
+		}
+		if store.Walk(g, glob, f) {
+			c.respond(t, Set|Valid|Done, nil, &r)
+		} else {
+			c.respond(t, Valid|Done, nil, erange)
+		}
 	}
 }

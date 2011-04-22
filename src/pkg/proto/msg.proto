@@ -50,6 +50,7 @@ message Response {
     REV_MISMATCH = 5;
     BAD_PATH     = 6;
     MISSING_ARG  = 7;
+    RANGE        = 8;
     NOTDIR       = 20;
     ISDIR        = 21;
     NOENT        = 22;
