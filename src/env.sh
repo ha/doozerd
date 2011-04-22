@@ -8,6 +8,7 @@ fi
 PKG_REQS="
     goprotobuf.googlecode.com/hg/proto
     github.com/bmizerany/assert
+    github.com/ha/doozer
 "
 
 CMD_REQS="
