@@ -25,7 +25,6 @@ message Request {
   optional int32 other_tag = 6;
 
   optional int32 offset = 7;
-  optional int32 limit = 8;
 
   optional int64 rev = 9;
 }

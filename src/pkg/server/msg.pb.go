@@ -122,7 +122,6 @@ type request struct {
 	Value            []byte        "PB(bytes,5,opt,name=value)"
 	OtherTag         *int32        "PB(varint,6,opt,name=other_tag)"
 	Offset           *int32        "PB(varint,7,opt,name=offset)"
-	Limit            *int32        "PB(varint,8,opt,name=limit)"
 	Rev              *int64        "PB(varint,9,opt,name=rev)"
 	XXX_unrecognized []byte
 }
