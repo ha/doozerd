@@ -98,12 +98,12 @@ func isCal(name, addr string) *doozer.Client {
 	}
 
 	var cals []string
-	w, err := c.Getdir("/ctl/cal", 0, 10, nil)
+	names, err := c.Getdir("/ctl/cal", nil, 0, -1)
 	if err != nil {
 		panic(err)
 	}
-	for e := range w.C {
-		cals = append(cals, e.Path)
+	for _, name := range names {
+		cals = append(cals, name)
 	}
 
 	for _, cal := range cals {
@@ -129,11 +129,11 @@ func isCal(name, addr string) *doozer.Client {
 
 // Find possible addresses for cluster named name.
 func lookup(b *doozer.Client, name string) (as []string) {
-	w, err := b.Walk("/ctl/ns/"+name+"/*", nil, nil, nil)
+	info, err := b.Walk("/ctl/ns/"+name+"/*", nil, 0, -1)
 	if err != nil {
 		panic(err)
 	}
-	for e := range w.C {
+	for _, e := range info {
 		as = append(as, string(e.Body))
 	}
 	return as

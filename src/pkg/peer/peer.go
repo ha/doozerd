@@ -81,19 +81,28 @@ func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.Packet
 			panic(err)
 		}
 
-		walk, err := cl.Walk("/**", &rev, nil, nil)
-		if err != nil {
-			panic(err)
-		}
+		stop := make(chan bool, 1)
+		go follow(st, cl, rev+1, stop)
 
-		watch, err := cl.Watch("/**", rev+1)
-		if err != nil {
-			panic(err)
+		off := 0
+		for {
+			info, err := cl.Walk("/**", &rev, off, 10)
+			if err != nil {
+				panic(err)
+			}
+			if len(info) == 0 {
+				break
+			}
+			off += len(info)
+			for _, ev := range info {
+				// store.Clobber is okay here because the event
+				// has already passed through another store
+				mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
+				st.Ops <- store.Op{ev.Rev, mut}
+			}
 		}
-
-		go follow(st.Ops, watch.C)
-		follow(st.Ops, walk.C)
 		st.Flush()
+
 		ch, err := st.Wait(rev + 1)
 		if err == nil {
 			<-ch
@@ -103,10 +112,7 @@ func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.Packet
 			activateSeqn = activate(st, self, cl)
 			calSrv()
 			advanceUntil(cl, st.Seqns, activateSeqn+alpha)
-			err := watch.Cancel()
-			if err != nil {
-				panic(err)
-			}
+			stop <- true
 			close(useSelf)
 			if baddr != "" {
 				b := doozer.New("<boot>", baddr)
@@ -251,11 +257,23 @@ func setC(cl *doozer.Client, path, body string, rev int64) {
 	}
 }
 
-func follow(ops chan<- store.Op, ch <-chan *doozer.Event) {
-	for ev := range ch {
+func follow(st *store.Store, cl *doozer.Client, rev int64, stop chan bool) {
+	for {
+		ev, err := cl.Wait("/**", rev)
+		if err != nil {
+			panic(err)
+		}
+
 		// store.Clobber is okay here because the event
 		// has already passed through another store
 		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
-		ops <- store.Op{ev.Rev, mut}
+		st.Ops <- store.Op{ev.Rev, mut}
+		rev = ev.Rev + 1
+
+		select {
+		case <-stop:
+			return
+		default:
+		}
 	}
 }

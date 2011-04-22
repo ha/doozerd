@@ -8,7 +8,6 @@ import (
 	"github.com/ha/doozer"
 	"net"
 	"os"
-	"sort"
 	"testing"
 	"time"
 )
@@ -125,7 +124,7 @@ func TestDoozerGetWithRev(t *testing.T) {
 }
 
 
-func TestDoozerWatchSimple(t *testing.T) {
+func TestDoozerWaitSimple(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -134,35 +133,35 @@ func TestDoozerWatchSimple(t *testing.T) {
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := doozer.New("foo", l.Addr().String())
-
-	w, err := cl.Watch("/test/**", 0)
-	assert.Equal(t, nil, err, err)
-	defer w.Cancel()
+	var rev int64 = 1
 
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
-	ev := <-w.C
+	println("set")
+	ev, err := cl.Wait("/test/**", rev)
+	println("wait")
+	assert.Equal(t, nil, err)
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
 	assert.T(t, ev.IsSet())
+	rev = ev.Rev + 1
 
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
-	ev = <-w.C
+	ev, err = cl.Wait("/test/**", rev)
+	assert.Equal(t, nil, err)
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
 	assert.T(t, ev.IsSet())
+	rev = ev.Rev + 1
 
 	cl.Del("/test/foo", store.Clobber)
-	ev = <-w.C
+	ev, err = cl.Wait("/test/**", rev)
+	assert.Equal(t, nil, err)
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.T(t, ev.IsDel())
-
-	w.Cancel()
-	ev = <-w.C
-	assert.Tf(t, closed(w.C), "got %v", ev)
 }
 
 
-func TestDoozerWatchWithRev(t *testing.T) {
+func TestDoozerWaitWithRev(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
 	u := mustListenPacket(l.Addr().String())
@@ -176,17 +175,15 @@ func TestDoozerWatchWithRev(t *testing.T) {
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	// Ask doozer for the history
-	w, err := cl.Watch("/test/**", 1)
-	assert.Equal(t, nil, err, err)
-	defer w.Cancel()
-
-	ev := <-w.C
+	ev, err := cl.Wait("/test/**", 1)
+	assert.Equal(t, nil, err)
 	assert.Equal(t, "/test/foo", ev.Path)
 	assert.Equal(t, []byte("bar"), ev.Body)
 	assert.T(t, ev.IsSet())
+	rev := ev.Rev + 1
 
-	ev = <-w.C
+	ev, err = cl.Wait("/test/**", rev)
+	assert.Equal(t, nil, err)
 	assert.Equal(t, "/test/fun", ev.Path)
 	assert.Equal(t, []byte("house"), ev.Body)
 	assert.T(t, ev.IsSet())
@@ -206,23 +203,17 @@ func TestDoozerWalk(t *testing.T) {
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	w, err := cl.Walk("/test/**", nil, nil, nil)
-	assert.Equal(t, nil, err, err)
+	info, err := cl.Walk("/test/**", nil, 0, -1)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 2, len(info))
 
-	ev := <-w.C
-	assert.NotEqual(t, (*doozer.Event)(nil), ev)
-	assert.Equal(t, "/test/foo", ev.Path)
-	assert.Equal(t, "bar", string(ev.Body))
-	assert.T(t, ev.IsSet())
+	assert.Equal(t, "/test/foo", info[0].Path)
+	assert.Equal(t, "bar", string(info[0].Body))
+	assert.T(t, info[0].IsSet())
 
-	ev = <-w.C
-	assert.NotEqual(t, (*doozer.Event)(nil), ev)
-	assert.Equal(t, "/test/fun", ev.Path)
-	assert.Equal(t, "house", string(ev.Body))
-	assert.T(t, ev.IsSet())
-
-	ev = <-w.C
-	assert.Tf(t, closed(w.C), "got %v", ev)
+	assert.Equal(t, "/test/fun", info[1].Path)
+	assert.Equal(t, "house", string(info[1].Body))
+	assert.T(t, info[1].IsSet())
 }
 
 
@@ -240,16 +231,10 @@ func TestDoozerWalkWithRev(t *testing.T) {
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 	cl.Set("/test/fab", store.Clobber, []byte("ulous"))
 
-	w, err := cl.Walk("/test/**", &rev, nil, nil)
-	assert.Equal(t, nil, err, err)
-
-	ls := []string{}
-	for e := range w.C {
-		ls = append(ls, e.Path)
-	}
-
-	sort.SortStrings(ls)
-	assert.Equal(t, []string{"/test/foo"}, ls)
+	info, err := cl.Walk("/test/**", &rev, 0, -1)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1, len(info))
+	assert.Equal(t, "/test/foo", info[0].Path)
 }
 
 func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
@@ -267,26 +252,17 @@ func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
 	cl.Set("/test/c", store.Clobber, []byte("ghi"))
 	cl.Set("/test/d", store.Clobber, []byte("jkl"))
 
-	offset := int32(1)
-	limit := int32(2)
+	info, err := cl.Walk("/test/**", nil, 1, 2)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 2, len(info))
 
-	w, err := cl.Walk("/test/**", nil, &offset, &limit)
-	assert.Equal(t, nil, err, err)
+	assert.Equal(t, "/test/b", info[0].Path)
+	assert.Equal(t, "def", string(info[0].Body))
+	assert.T(t, info[0].IsSet())
 
-	ev := <-w.C
-	assert.NotEqual(t, (*doozer.Event)(nil), ev)
-	assert.Equal(t, "/test/b", ev.Path)
-	assert.Equal(t, "def", string(ev.Body))
-	assert.T(t, ev.IsSet())
-
-	ev = <-w.C
-	assert.NotEqual(t, (*doozer.Event)(nil), ev)
-	assert.Equal(t, "/test/c", ev.Path)
-	assert.Equal(t, "ghi", string(ev.Body))
-	assert.T(t, ev.IsSet())
-
-	ev = <-w.C
-	assert.Tf(t, closed(w.C), "got %v", ev)
+	assert.Equal(t, "/test/c", info[1].Path)
+	assert.Equal(t, "ghi", string(info[1].Body))
+	assert.T(t, info[1].IsSet())
 }
 
 func TestDoozerStat(t *testing.T) {
@@ -327,15 +303,8 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 	cl.Set("/test/b", store.Clobber, []byte("2"))
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 
-	w, err := cl.Getdir("/test", 0, 0, nil)
+	got, err := cl.Getdir("/test", nil, 0, -1)
 	assert.Equal(t, nil, err)
-
-	got := make([]string, 0)
-	for e := range w.C {
-		got = append(got, e.Path)
-	}
-
-	sort.SortStrings(got)
 	assert.Equal(t, []string{"a", "b", "c"}, got)
 }
 
@@ -351,10 +320,9 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 
 	cl.Set("/test/a", store.Clobber, []byte("1"))
 
-	w, err := cl.Getdir("/test/a", 0, 0, nil)
-	assert.Equal(t, nil, err)
-
-	assert.Equal(t, os.ENOTDIR, (<-w.C).Err)
+	names, err := cl.Getdir("/test/a", nil, 0, -1)
+	assert.Equal(t, os.ENOTDIR, err)
+	assert.Equal(t, []string{}, names)
 }
 
 func TestDoozerGetdirMissing(t *testing.T) {
@@ -367,10 +335,9 @@ func TestDoozerGetdirMissing(t *testing.T) {
 
 	cl := doozer.New("foo", l.Addr().String())
 
-	w, err := cl.Getdir("/not/here", 0, 0, nil)
-	assert.Equal(t, nil, err)
-
-	assert.Equal(t, os.ENOENT, (<-w.C).Err)
+	names, err := cl.Getdir("/not/here", nil, 0, -1)
+	assert.Equal(t, os.ENOENT, err)
+	assert.Equal(t, []string{}, names)
 }
 
 func TestDoozerGetdirOffsetLimit(t *testing.T) {
@@ -387,42 +354,9 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 	cl.Set("/test/d", store.Clobber, []byte("4"))
 
-	// The order is arbitrary.  We need to collect them
-	// because it's not safe to assume the order.
-	w, _ := cl.Getdir("/test", 0, 0, nil)
-	ents := make([]string, 0)
-	for e := range w.C {
-		ents = append(ents, e.Path)
-	}
-
-	w, _ = cl.Getdir("/test", 1, 2, nil)
-	assert.Equal(t, ents[1], (<-w.C).Path)
-	assert.Equal(t, ents[2], (<-w.C).Path)
-	assert.Equal(t, (*doozer.Event)(nil), <-w.C)
-	assert.T(t, closed(w.C))
-}
-
-
-func TestDoozerGetdirOffsetLimitBounds(t *testing.T) {
-	l := mustListen()
-	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
-	defer u.Close()
-
-	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
-
-	cl := doozer.New("foo", l.Addr().String())
-	cl.Set("/test/a", store.Clobber, []byte("1"))
-	cl.Set("/test/b", store.Clobber, []byte("2"))
-	cl.Set("/test/c", store.Clobber, []byte("3"))
-	cl.Set("/test/d", store.Clobber, []byte("4"))
-
-	w, _ := cl.Getdir("/test", 1, 5, nil)
-	assert.NotEqual(t, (*doozer.Event)(nil), <-w.C)
-	assert.NotEqual(t, (*doozer.Event)(nil), <-w.C)
-	assert.NotEqual(t, (*doozer.Event)(nil), <-w.C)
-	assert.Equal(t, (*doozer.Event)(nil), <-w.C)
-	assert.T(t, closed(w.C))
+	names, err := cl.Getdir("/test", nil, 1, 2)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, []string{"b", "c"}, names)
 }
 
 
