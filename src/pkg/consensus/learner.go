@@ -17,21 +17,21 @@ func (ln *learner) init(quorum int64) {
 	ln.quorum = quorum
 }
 
-func (ln *learner) update(p packet) (m *M, v []byte, ok bool) {
+func (ln *learner) update(p packet) (m *msg, v []byte, ok bool) {
 	if ln.done {
 		return
 	}
 
-	in := p.M
+	in := p.msg
 	if in.Cmd == nil {
 		return
 	}
 
 	switch *in.Cmd {
-	case M_LEARN:
+	case msg_LEARN:
 		ln.done, ln.v = true, string(in.Value)
 		return nil, in.Value, true
-	case M_VOTE:
+	case msg_VOTE:
 		if in.Vrnd == nil {
 			break
 		}
@@ -58,7 +58,7 @@ func (ln *learner) update(p packet) (m *M, v []byte, ok bool) {
 			if ln.votes[k] >= ln.quorum {
 				// winner!
 				ln.done, ln.v = true, string(v)
-				return &M{Cmd: learn, Value: v}, v, true
+				return &msg{Cmd: learn, Value: v}, v, true
 			}
 		}
 	}

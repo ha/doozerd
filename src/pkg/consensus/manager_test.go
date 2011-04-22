@@ -49,7 +49,7 @@ func TestManagerPacketQueue(t *testing.T) {
 	out := make(chan Packet, 100)
 	m := newManager("", 0, nil, in, nil, nil, nil, 0, st, out)
 
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
 }
@@ -67,7 +67,7 @@ func TestManagerDropsOldPackets(t *testing.T) {
 	run := run{seqn: 2, ops: make(chan store.Op, 100)}
 	runs <- &run
 
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
 	assert.Equal(t, 0, (<-m).WaitPackets)
 }
@@ -76,9 +76,9 @@ func TestManagerDropsOldPackets(t *testing.T) {
 func TestRecvPacket(t *testing.T) {
 	q := new(vector.Vector)
 
-	recvPacket(q, Packet{"x", mustMarshal(&M{Seqn: proto.Int64(1)})})
-	recvPacket(q, Packet{"x", mustMarshal(&M{Seqn: proto.Int64(2)})})
-	recvPacket(q, Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3)})})
+	recvPacket(q, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})})
+	recvPacket(q, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(2)})})
+	recvPacket(q, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3)})})
 
 	assert.Equal(t, 3, q.Len())
 }
@@ -133,7 +133,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 	runs <- &run
 
 	in <- Packet{
-		Data: mustMarshal(&M{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
+		Data: mustMarshal(&msg{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 
@@ -155,7 +155,7 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 	runs <- &run
 
 	in <- Packet{
-		Data: mustMarshal(&M{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
+		Data: mustMarshal(&msg{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 
@@ -179,7 +179,7 @@ func TestManagerTickQueue(t *testing.T) {
 	}
 
 	// get it to tick for seqn 2
-	in <- Packet{Data: mustMarshal(&M{Seqn: proto.Int64(1), Cmd: propose})}
+	in <- Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(1), Cmd: propose})}
 
 	assert.Equal(t, 1, (<-m).WaitTicks)
 
@@ -251,16 +251,16 @@ func TestApplyTriggers(t *testing.T) {
 	heap.Push(triggers, trigger{t: 8, n: 8})
 	heap.Push(triggers, trigger{t: 9, n: 9})
 
-	n := applyTriggers(packets, triggers, 5, &M{Cmd: tick})
+	n := applyTriggers(packets, triggers, 5, &msg{Cmd: tick})
 	assert.Equal(t, 5, n)
 
 	expTriggers := new(vector.Vector)
 	expPackets := new(vector.Vector)
-	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(1)}})
-	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(2)}})
-	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(3)}})
-	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(4)}})
-	heap.Push(expPackets, packet{M: M{Cmd: tick, Seqn: proto.Int64(5)}})
+	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(1)}})
+	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(2)}})
+	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(3)}})
+	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(4)}})
+	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(5)}})
 	heap.Push(expTriggers, trigger{t: 6, n: 6})
 	heap.Push(expTriggers, trigger{t: 7, n: 7})
 	heap.Push(expTriggers, trigger{t: 8, n: 8})

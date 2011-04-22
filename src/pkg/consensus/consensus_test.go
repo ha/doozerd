@@ -146,15 +146,15 @@ func TestLearnedValueIsLearned(t *testing.T) {
 	v := store.MustEncodeSet("/foo", "bar", -1)
 	st.Ops <- store.Op{Seqn: 3, Mut: v}
 
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: rsvp})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: nominate})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: vote})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: nop})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: tick})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: learn})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: propose})}
-	in <- Packet{"x", mustMarshal(&M{Seqn: proto.Int64(3), Cmd: invite})}
-	exp := Packet{"x", mustMarshal(&M{
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: rsvp})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: nominate})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: vote})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: nop})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: tick})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: learn})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: propose})}
+	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: invite})}
+	exp := Packet{"x", mustMarshal(&msg{
 		Cmd:   learn,
 		Seqn:  proto.Int64(3),
 		Value: []byte(v),

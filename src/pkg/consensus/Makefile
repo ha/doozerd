@@ -12,4 +12,14 @@ GOFILES=\
 	manager.go\
 
 include $(GOROOT)/src/Make.pkg
-include $(GOROOT)/src/pkg/goprotobuf.googlecode.com/hg/Make.protobuf
+
+m.pb.go: m.proto
+	mkdir -p _pb
+	protoc --go_out=_pb $<
+	cat _pb/$@\
+	|sed s/\\bMsg/msg/g\
+	|sed s/\\bNewMsg/newMsg/g\
+	|gofmt >$@
+	rm -rf _pb
+
+CLEANFILES+=_pb

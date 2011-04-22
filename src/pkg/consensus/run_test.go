@@ -16,12 +16,12 @@ const (
 
 
 type msgSlot struct {
-	*M
+	*msg
 }
 
 
-func (ms msgSlot) Put(m *M) {
-	*ms.M = *m
+func (ms msgSlot) Put(m *msg) {
+	*ms.msg = *m
 }
 
 
@@ -205,7 +205,7 @@ func TestRunVoteDelivered(t *testing.T) {
 	r.l.init(1)
 
 	p := packet{
-		M: M{
+		msg: msg{
 			Seqn:  proto.Int64(1),
 			Cmd:   vote,
 			Vrnd:  proto.Int64(1),
@@ -226,7 +226,7 @@ func TestRunInviteDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{M: *newInviteSeqn1(1)}, new(vector.Vector))
+	r.update(packet{msg: *newInviteSeqn1(1)}, new(vector.Vector))
 
 	assert.Equal(t, int64(1), r.a.rnd)
 }
@@ -237,7 +237,7 @@ func TestRunProposeDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{M: M{Cmd: propose}}, new(vector.Vector))
+	r.update(packet{msg: msg{Cmd: propose}}, new(vector.Vector))
 	assert.Equal(t, true, r.c.begun)
 }
 
@@ -252,14 +252,14 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		"y": true,
 	}
 
-	var got M
-	exp := M{
+	var got msg
+	exp := msg{
 		Seqn: proto.Int64(0),
 		Cmd:  invite,
 		Crnd: proto.Int64(1),
 	}
 
-	r.update(packet{M: *newPropose("foo")}, new(vector.Vector))
+	r.update(packet{msg: *newPropose("foo")}, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -275,7 +275,7 @@ func TestRunSchedulesTick(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	ticks := new(vector.Vector)
 
-	r.update(packet{M: *newPropose("foo")}, ticks)
+	r.update(packet{msg: *newPropose("foo")}, ticks)
 
 	assert.Equal(t, 1, ticks.Len())
 }
@@ -290,15 +290,15 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		"y": true,
 	}
 
-	var got M
-	exp := M{
+	var got msg
+	exp := msg{
 		Seqn: proto.Int64(0),
 		Cmd:  rsvp,
 		Crnd: proto.Int64(1),
 		Vrnd: proto.Int64(0),
 	}
 
-	r.update(packet{M: *newInviteSeqn1(1)}, new(vector.Vector))
+	r.update(packet{msg: *newInviteSeqn1(1)}, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -317,14 +317,14 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		"y": true,
 	}
 
-	var got M
-	exp := M{
+	var got msg
+	exp := msg{
 		Seqn:  proto.Int64(0),
 		Cmd:   learn,
 		Value: []byte("foo"),
 	}
 
-	r.update(packet{M: *newVote(1, "foo")}, new(vector.Vector))
+	r.update(packet{msg: *newVote(1, "foo")}, new(vector.Vector))
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -343,7 +343,7 @@ func TestRunAppliesOp(t *testing.T) {
 		"y": true,
 	}
 
-	r.update(packet{M: *newVote(1, "foo")}, new(vector.Vector))
+	r.update(packet{msg: *newVote(1, "foo")}, new(vector.Vector))
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
@@ -363,7 +363,7 @@ func TestRunBroadcastThree(t *testing.T) {
 	r.broadcast(newInvite(1))
 	c <- sentinel
 
-	exp := M{
+	exp := msg{
 		Seqn: proto.Int64(1),
 		Cmd:  invite,
 		Crnd: proto.Int64(1),
@@ -373,7 +373,7 @@ func TestRunBroadcastThree(t *testing.T) {
 	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
-		var got M
+		var got msg
 		err := proto.Unmarshal(p.Data, &got)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
@@ -401,7 +401,7 @@ func TestRunBroadcastFive(t *testing.T) {
 	r.broadcast(newInvite(1))
 	c <- sentinel
 
-	exp := M{
+	exp := msg{
 		Seqn: proto.Int64(1),
 		Cmd:  invite,
 		Crnd: proto.Int64(1),
@@ -411,7 +411,7 @@ func TestRunBroadcastFive(t *testing.T) {
 	for i := 0; i < len(r.addrs); i++ {
 		p := <-c
 		addrs[p.Addr] = true
-		var got M
+		var got msg
 		err := proto.Unmarshal(p.Data, &got)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
@@ -464,7 +464,7 @@ func TestRunVoteDoneAndNotDelivered(t *testing.T) {
 	exp := r.l
 
 	p := packet{
-		M: M{
+		msg: msg{
 			Seqn:  proto.Int64(1),
 			Cmd:   vote,
 			Vrnd:  proto.Int64(1),
@@ -487,7 +487,7 @@ func TestRunInviteDoneAndNotDelivered(t *testing.T) {
 	r.l.done = true
 	exp := r.a
 
-	r.update(packet{M: *newInviteSeqn1(1)}, new(vector.Vector))
+	r.update(packet{msg: *newInviteSeqn1(1)}, new(vector.Vector))
 
 	assert.Equal(t, exp, r.a)
 }
@@ -501,7 +501,7 @@ func TestRunProposeDoneAndNotDelivered(t *testing.T) {
 
 	exp := r.c
 
-	r.update(packet{M: M{Cmd: propose}}, new(vector.Vector))
+	r.update(packet{msg: msg{Cmd: propose}}, new(vector.Vector))
 	assert.Equal(t, exp, r.c)
 }
 
@@ -512,7 +512,7 @@ func TestRunReturnTrueIfLearned(t *testing.T) {
 	r.ops = make(chan store.Op, 100)
 
 	p := packet{
-		M: M{
+		msg: msg{
 			Seqn:  proto.Int64(1),
 			Cmd:   learn,
 			Value: []byte("foo"),
@@ -531,7 +531,7 @@ func TestRunReturnFalseIfNotLearned(t *testing.T) {
 	r.ops = make(chan store.Op, 100)
 
 	p := packet{
-		M: M{
+		msg: msg{
 			Seqn:  proto.Int64(1),
 			Cmd:   invite,
 			Value: []byte("foo"),

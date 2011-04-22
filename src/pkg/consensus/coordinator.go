@@ -16,15 +16,15 @@ type coordinator struct {
 	sched bool
 }
 
-func (co *coordinator) update(p packet) (m *M, wantTick bool) {
-	in := &p.M
+func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
+	in := &p.msg
 
 	if in.Cmd == nil {
 		return
 	}
 
 	switch *in.Cmd {
-	case M_PROPOSE:
+	case msg_PROPOSE:
 		if co.begun {
 			break
 		}
@@ -35,8 +35,8 @@ func (co *coordinator) update(p packet) (m *M, wantTick bool) {
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
-		return &M{Cmd: invite, Crnd: &co.crnd}, true
-	case M_RSVP:
+		return &msg{Cmd: invite, Crnd: &co.crnd}, true
+	case msg_RSVP:
 		if !co.begun {
 			break
 		}
@@ -71,16 +71,16 @@ func (co *coordinator) update(p packet) (m *M, wantTick bool) {
 			}
 			co.cval = v
 
-			return &M{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}, false
+			return &msg{Cmd: nominate, Crnd: &co.crnd, Value: []byte(v)}, false
 		}
-	case M_TICK:
+	case msg_TICK:
 		co.crnd += int64(co.size)
 		co.vr = 0
 		co.vv = ""
 		co.rsvps = make(map[string]bool)
 		co.cval = ""
 		co.sched = false
-		return &M{Cmd: invite, Crnd: &co.crnd}, true
+		return &msg{Cmd: invite, Crnd: &co.crnd}, true
 	}
 
 	return

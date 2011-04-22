@@ -5,9 +5,9 @@ import (
 	"goprotobuf.googlecode.com/hg/proto"
 )
 
-func (x *M_Cmd) Format(f fmt.State, c int) {
+func (x *msg_Cmd) Format(f fmt.State, c int) {
 	if c == 'v' && f.Flag('#') && x != nil {
-		fmt.Fprintf(f, "M_%s", M_Cmd_name[int32(*x)])
+		fmt.Fprintf(f, "msg_%s", msg_Cmd_name[int32(*x)])
 		return
 	}
 
@@ -28,8 +28,8 @@ func (x *M_Cmd) Format(f fmt.State, c int) {
 }
 
 // For testing convenience
-func newVote(i int64, vval string) *M {
-	return &M{Cmd: vote, Vrnd: &i, Value: []byte(vval)}
+func newVote(i int64, vval string) *msg {
+	return &msg{Cmd: vote, Vrnd: &i, Value: []byte(vval)}
 }
 
 // For testing convenience
@@ -40,20 +40,20 @@ func newVoteFrom(from string, i int64, vval string) packet {
 }
 
 // For testing convenience
-func newNominate(crnd int64, v string) *M {
-	return &M{Cmd: nominate, Crnd: &crnd, Value: []byte(v)}
+func newNominate(crnd int64, v string) *msg {
+	return &msg{Cmd: nominate, Crnd: &crnd, Value: []byte(v)}
 }
 
 // For testing convenience
-func newNominateSeqn1(crnd int64, v string) *M {
+func newNominateSeqn1(crnd int64, v string) *msg {
 	m := newNominate(crnd, v)
 	m.Seqn = proto.Int64(1)
 	return m
 }
 
 // For testing convenience
-func newRsvp(i, vrnd int64, vval string) *M {
-	return &M{
+func newRsvp(i, vrnd int64, vval string) *msg {
+	return &msg{
 		Cmd:   rsvp,
 		Crnd:  &i,
 		Vrnd:  &vrnd,
@@ -69,23 +69,23 @@ func newRsvpFrom(from string, i, vrnd int64, vval string) packet {
 }
 
 // For testing convenience
-func newInvite(crnd int64) *M {
-	return &M{Cmd: invite, Crnd: &crnd}
+func newInvite(crnd int64) *msg {
+	return &msg{Cmd: invite, Crnd: &crnd}
 }
 
 // For testing convenience
-func newInviteSeqn1(rnd int64) *M {
+func newInviteSeqn1(rnd int64) *msg {
 	m := newInvite(rnd)
 	m.Seqn = proto.Int64(1)
 	return m
 }
 
 // For testing convenience
-func newPropose(val string) *M {
-	return &M{Cmd: propose, Value: []byte(val)}
+func newPropose(val string) *msg {
+	return &msg{Cmd: propose, Value: []byte(val)}
 }
 
 // For testing convenience
-func newLearn(val string) *M {
-	return &M{Cmd: learn, Value: []byte(val)}
+func newLearn(val string) *msg {
+	return &msg{Cmd: learn, Value: []byte(val)}
 }

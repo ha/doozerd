@@ -7,7 +7,7 @@ import (
 )
 
 func TestIgnoreOldMessages(t *testing.T) {
-	tests := [][]*M{
+	tests := [][]*msg{
 		{newInviteSeqn1(11), newNominateSeqn1(1, "v")},
 		{newNominateSeqn1(11, "v"), newInviteSeqn1(1)},
 		{newInviteSeqn1(11), newInviteSeqn1(1)},
@@ -20,7 +20,7 @@ func TestIgnoreOldMessages(t *testing.T) {
 		ac.update(test[0])
 
 		got := ac.update(test[1])
-		assert.Equal(t, (*M)(nil), got)
+		assert.Equal(t, (*msg)(nil), got)
 	}
 }
 
@@ -31,7 +31,7 @@ func TestAcceptsInvite(t *testing.T) {
 }
 
 func TestItVotes(t *testing.T) {
-	totest := [][]*M{
+	totest := [][]*msg{
 		{newNominateSeqn1(1, "foo"), newVote(1, "foo")},
 		{newNominateSeqn1(1, "bar"), newVote(1, "bar")},
 	}
@@ -77,19 +77,19 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	assert.Equal(t, newVote(1, "v"), got)
 
 	got = ac.update(newNominateSeqn1(1, "v"))
-	assert.Equal(t, (*M)(nil), got)
+	assert.Equal(t, (*msg)(nil), got)
 }
 
 
 func TestAcceptorIgnoresBadMessages(t *testing.T) {
 	ac := acceptor{}
 
-	got := ac.update(&M{})
-	assert.Equal(t, (*M)(nil), got)
+	got := ac.update(&msg{})
+	assert.Equal(t, (*msg)(nil), got)
 
-	got = ac.update(&M{Cmd: invite}) // missing Crnd
-	assert.Equal(t, (*M)(nil), got)
+	got = ac.update(&msg{Cmd: invite}) // missing Crnd
+	assert.Equal(t, (*msg)(nil), got)
 
-	got = ac.update(&M{Cmd: nominate}) // missing Crnd
-	assert.Equal(t, (*M)(nil), got)
+	got = ac.update(&msg{Cmd: nominate}) // missing Crnd
+	assert.Equal(t, (*msg)(nil), got)
 }

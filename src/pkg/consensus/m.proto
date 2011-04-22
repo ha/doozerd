@@ -1,6 +1,6 @@
 package consensus;
 
-message M {
+message Msg {
     enum Cmd {
         NOP = 0;
         INVITE = 1;

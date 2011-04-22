@@ -13,20 +13,20 @@ var _ = math.Inf
 var _ os.Error
 
 
-type M_Cmd int32
+type msg_Cmd int32
 
 const (
-	M_NOP      = 0
-	M_INVITE   = 1
-	M_RSVP     = 2
-	M_NOMINATE = 3
-	M_VOTE     = 4
-	M_TICK     = 5
-	M_PROPOSE  = 6
-	M_LEARN    = 7
+	msg_NOP      = 0
+	msg_INVITE   = 1
+	msg_RSVP     = 2
+	msg_NOMINATE = 3
+	msg_VOTE     = 4
+	msg_TICK     = 5
+	msg_PROPOSE  = 6
+	msg_LEARN    = 7
 )
 
-var M_Cmd_name = map[int32]string{
+var msg_Cmd_name = map[int32]string{
 	0: "NOP",
 	1: "INVITE",
 	2: "RSVP",
@@ -36,7 +36,7 @@ var M_Cmd_name = map[int32]string{
 	6: "PROPOSE",
 	7: "LEARN",
 }
-var M_Cmd_value = map[string]int32{
+var msg_Cmd_value = map[string]int32{
 	"NOP":      0,
 	"INVITE":   1,
 	"RSVP":     2,
@@ -47,24 +47,24 @@ var M_Cmd_value = map[string]int32{
 	"LEARN":    7,
 }
 
-func NewM_Cmd(x int32) *M_Cmd {
-	e := M_Cmd(x)
+func newMsg_Cmd(x int32) *msg_Cmd {
+	e := msg_Cmd(x)
 	return &e
 }
 
-type M struct {
-	Cmd              *M_Cmd "PB(varint,1,opt,name=cmd,enum=consensus.M_Cmd)"
-	Seqn             *int64 "PB(varint,2,opt,name=seqn)"
-	Crnd             *int64 "PB(varint,3,opt,name=crnd)"
-	Vrnd             *int64 "PB(varint,4,opt,name=vrnd)"
-	Value            []byte "PB(bytes,5,opt,name=value)"
+type msg struct {
+	Cmd              *msg_Cmd "PB(varint,1,opt,name=cmd,enum=consensus.msg_Cmd)"
+	Seqn             *int64   "PB(varint,2,opt,name=seqn)"
+	Crnd             *int64   "PB(varint,3,opt,name=crnd)"
+	Vrnd             *int64   "PB(varint,4,opt,name=vrnd)"
+	Value            []byte   "PB(bytes,5,opt,name=value)"
 	XXX_unrecognized []byte
 }
 
-func (this *M) Reset() {
-	*this = M{}
+func (this *msg) Reset() {
+	*this = msg{}
 }
 
 func init() {
-	proto.RegisterEnum("consensus.M_Cmd", M_Cmd_name, M_Cmd_value)
+	proto.RegisterEnum("consensus.msg_Cmd", msg_Cmd_name, msg_Cmd_value)
 }

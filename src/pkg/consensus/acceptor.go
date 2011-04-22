@@ -5,13 +5,13 @@ type acceptor struct {
 	vval      string
 }
 
-func (ac *acceptor) update(m *M) *M {
+func (ac *acceptor) update(m *msg) *msg {
 	if m.Cmd == nil {
 		return nil
 	}
 
 	switch *m.Cmd {
-	case M_INVITE:
+	case msg_INVITE:
 		if m.Crnd == nil {
 			break
 		}
@@ -21,14 +21,14 @@ func (ac *acceptor) update(m *M) *M {
 		if i > ac.rnd {
 			ac.rnd = i
 
-			return &M{
+			return &msg{
 				Cmd:   rsvp,
 				Crnd:  &i,
 				Vrnd:  &ac.vrnd,
 				Value: []byte(ac.vval),
 			}
 		}
-	case M_NOMINATE:
+	case msg_NOMINATE:
 		if m.Crnd == nil {
 			break
 		}
@@ -41,7 +41,7 @@ func (ac *acceptor) update(m *M) *M {
 			ac.vrnd = i
 			ac.vval = string(v)
 
-			broadcast := &M{
+			broadcast := &msg{
 				Cmd:   vote,
 				Vrnd:  &i,
 				Value: []byte(ac.vval),

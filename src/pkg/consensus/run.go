@@ -35,7 +35,7 @@ func (r *run) quorum() int {
 
 
 func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
-	if p.M.Cmd != nil && *p.M.Cmd == M_TICK {
+	if p.msg.Cmd != nil && *p.msg.Cmd == msg_TICK {
 		log.Printf("tick wasteful=%v", r.l.done)
 	}
 
@@ -50,7 +50,7 @@ func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
 		schedTrigger(ticks, r.seqn, rand.Int63n(r.bound))
 	}
 
-	m = r.a.update(&p.M)
+	m = r.a.update(&p.msg)
 	r.broadcast(m)
 
 	m, v, ok := r.l.update(p)
@@ -65,7 +65,7 @@ func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
 }
 
 
-func (r *run) broadcast(m *M) {
+func (r *run) broadcast(m *msg) {
 	if m != nil {
 		m.Seqn = &r.seqn
 		b, _ := proto.Marshal(m)
