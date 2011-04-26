@@ -49,8 +49,8 @@ If you want to run doozer's tests, install
 
 ## Building Doozer
 
-    $ git clone https://github.com/ha/doozer.git
-    $ cd doozer/src
+    $ git clone https://github.com/ha/doozerd.git
+    $ cd doozerd/src
     $ ./all.sh
 
 This will build the rest of the dependencies and
