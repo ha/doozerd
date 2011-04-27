@@ -34,46 +34,14 @@ The other fields may or may not be required; their
 meanings depend on the verb, as described below.
 
 The tag is chosen and used by the client to identify
-the message. The reply (or replies) to the message
+the message. The reply to the message
 will have the same tag. Clients must arrange that no
 two outstanding requests on the same connection have
 the same tag.
 
-Each response contains at least a tag and a flags field.
+Each response contains at least a tag.
 Other response fields may or may not be present,
 depending on the verb of the request.
-
-Some requests will cause the server to send
-more than one response, depending on the verb.
-A request is considered outstanding until
-the last response has been received by the client.
-The last response will be marked with the *done* flag,
-described below.
-
-The flags field is a bitwise combination of the
-following values:
-
- * *valid* = 1
-
-    If this flag is set, the response contains valid data.
-    If unset, the client should ignore all fields except
-    *tag* and *flags*.
-
- * *done* = 2
-
-    This is the last response for the given *tag*.
-    After a response with this flag has been received,
-    the client is free to reuse its tag in another
-    request (unless there is a pending cancel
-    transaction for that tag; see `CANCEL` below).
-
- * *set* = 4
-
-    This response represents a mutation event that set a key.
-
- * *del* = 8
-
-    This response represents a mutation event that deleted a key.
 
 A client can send multiple requests without waiting for
 the corresponding responses, but all outstanding
@@ -141,10 +109,21 @@ followed by the set of response fields it provides.
     revision.
     Returns the file's new revision.
 
- * `WAIT` *path*, *rev* &rArr; *path*, *rev*, *value*
+ * `WAIT` *path*, *rev* &rArr; *path*, *rev*, *value*, *flags*
 
     Responds with the first change made to any file
     matching *path*, a glob pattern, on or after *rev*.
+
+    The `flags` field is a bitwise combination of the
+    following values (1 and 2 are reserved):
+
+     * *set* = 4
+
+        This response represents a mutation event that set a key.
+
+     * *del* = 8
+
+        This response represents a mutation event that deleted a key.
 
  * `WALK` *path*, *rev*, *offset* &rArr; *path*, *rev*, *value*
 
@@ -177,9 +156,10 @@ Error codes are defined with the following meanings:
     The verb used in the request is not in the list of
     verbs defined in the server.
 
- * `REDIRECT`
+ * `READONLY`
 
-    Deprecated. Subject to change.
+    The Doozer connection is read-only. Clients can attempt a
+    connection to a new server if writes a needed.
 
  * `TOO_LATE`
 
@@ -202,6 +182,10 @@ Error codes are defined with the following meanings:
     The request's verb requires certain fields to be set
     and at least one of those fields was not set.
 
+ * `RANGE`
+
+    The `offset` provided is out of range.
+
  * `NOTDIR`
 
     The request operates only on a directory, but the
@@ -212,6 +196,10 @@ Error codes are defined with the following meanings:
 
     The request operates only on a regular file, but the
     given path is a directory.
+
+ * `NOENT`
+
+    Some component of `path` doesn't exist.
 
  * `OTHER`
 
