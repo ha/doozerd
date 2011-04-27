@@ -98,7 +98,9 @@ Here are some example scenarios:
 
 ## What can I do with it?
 
-For a list of commands see the [protocol spec](https://github.com/ha/doozerd/blob/master/doc/proto.md)
+We have a detailed description of the [data model](https://github.com/ha/doozerd/blob/master/doc/data-model.md).
+
+For ways to manipulate or read the data, see the [protocol spec](https://github.com/ha/doozerd/blob/master/doc/proto.md).
 
 ## Similar Projects
 
