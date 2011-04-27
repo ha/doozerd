@@ -208,11 +208,6 @@ Error codes are defined with the following meanings:
 
 Error value 0 is reserved.
 
-<style>
-body { margin: 2em 10em }
-p { max-width: 30em }
-</style>
-
 [protobuf]: http://code.google.com/p/protobuf/
 [9P]: http://plan9.bell-labs.com/magic/man2html/5/intro
 [data]: data-model.md
