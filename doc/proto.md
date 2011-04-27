@@ -4,8 +4,8 @@
 
 Doozer is a highly-available, consistent lock service.
 It also lets you store small amounts of metadata as
-files in a directory tree. See below for a complete
-description of the data model.
+files in a directory tree. See [data model](https://github.com/ha/doozerd/blob/master/data-model.md) for a complete
+description.
 
 The doozer protocol is used for messages between clients
 and servers. A client connects to doozerd by TCP and
