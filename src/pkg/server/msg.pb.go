@@ -70,7 +70,7 @@ const (
 	response_OTHER        = 127
 	response_TAG_IN_USE   = 1
 	response_UNKNOWN_VERB = 2
-	response_REDIRECT     = 3
+	response_READONLY     = 3
 	response_TOO_LATE     = 4
 	response_REV_MISMATCH = 5
 	response_BAD_PATH     = 6
@@ -85,7 +85,7 @@ var response_Err_name = map[int32]string{
 	127: "OTHER",
 	1:   "TAG_IN_USE",
 	2:   "UNKNOWN_VERB",
-	3:   "REDIRECT",
+	3:   "READONLY",
 	4:   "TOO_LATE",
 	5:   "REV_MISMATCH",
 	6:   "BAD_PATH",
@@ -99,7 +99,7 @@ var response_Err_value = map[string]int32{
 	"OTHER":        127,
 	"TAG_IN_USE":   1,
 	"UNKNOWN_VERB": 2,
-	"REDIRECT":     3,
+	"READONLY":     3,
 	"TOO_LATE":     4,
 	"REV_MISMATCH": 5,
 	"BAD_PATH":     6,

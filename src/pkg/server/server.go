@@ -8,7 +8,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"rand"
 	"sort"
 	"sync"
 	pb "goprotobuf.googlecode.com/hg/proto"
@@ -33,11 +32,8 @@ var (
 	tooLate     = &R{ErrCode: newResponse_Err(response_TOO_LATE)}
 	erange      = &R{ErrCode: newResponse_Err(response_RANGE)}
 	revMismatch = &R{ErrCode: newResponse_Err(response_REV_MISMATCH)}
-	readonly    = &R{
-		ErrCode:   newResponse_Err(response_OTHER),
-		ErrDetail: pb.String("no known writeable addresses"),
-	}
-	badTag = &R{
+	readonly    = &R{ErrCode: newResponse_Err(response_READONLY)}
+	badTag      = &R{
 		ErrCode:   newResponse_Err(response_OTHER),
 		ErrDetail: pb.String("unknown tag"),
 	}
@@ -133,19 +129,6 @@ func (s *Server) Serve(l net.Listener, cal chan bool) {
 			w = true
 		}
 	}
-}
-
-
-func (sv *Server) cals() []string {
-	cals := make([]string, 0)
-	_, g := sv.St.Snap()
-	store.Walk(g, calGlob, func(_, body string, _ int64) bool {
-		if len(body) > 0 {
-			cals = append(cals, body)
-		}
-		return false
-	})
-	return cals
 }
 
 
@@ -344,24 +327,7 @@ func (c *conn) respond(t *T, flag int32, cc chan bool, r *R) {
 
 
 func (c *conn) redirect(t *T) {
-	cals := c.s.cals()
-	if len(cals) < 1 {
-		c.respond(t, Valid|Done, nil, readonly)
-		return
-	}
-
-	cal := cals[rand.Intn(len(cals))]
-	parts, rev := c.s.St.Get("/ctl/node/" + cal + "/addr")
-	if rev == store.Dir && rev == store.Missing {
-		c.respond(t, Valid|Done, nil, readonly)
-		return
-	}
-
-	r := &R{
-		ErrCode:   newResponse_Err(response_REDIRECT),
-		ErrDetail: &parts[0],
-	}
-	c.respond(t, Valid|Done, nil, r)
+	c.respond(t, Valid|Done, nil, readonly)
 }
 
 
