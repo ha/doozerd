@@ -19,13 +19,10 @@ const (
 	request_GET    = 1
 	request_SET    = 2
 	request_DEL    = 3
-	request_ESET   = 4
 	request_REV    = 5
 	request_WAIT   = 6
 	request_NOP    = 7
-	request_WATCH  = 8
 	request_WALK   = 9
-	request_CANCEL = 10
 	request_GETDIR = 14
 	request_STAT   = 16
 )
@@ -34,13 +31,10 @@ var request_Verb_name = map[int32]string{
 	1:  "GET",
 	2:  "SET",
 	3:  "DEL",
-	4:  "ESET",
 	5:  "REV",
 	6:  "WAIT",
 	7:  "NOP",
-	8:  "WATCH",
 	9:  "WALK",
-	10: "CANCEL",
 	14: "GETDIR",
 	16: "STAT",
 }
@@ -48,13 +42,10 @@ var request_Verb_value = map[string]int32{
 	"GET":    1,
 	"SET":    2,
 	"DEL":    3,
-	"ESET":   4,
 	"REV":    5,
 	"WAIT":   6,
 	"NOP":    7,
-	"WATCH":  8,
 	"WALK":   9,
-	"CANCEL": 10,
 	"GETDIR": 14,
 	"STAT":   16,
 }

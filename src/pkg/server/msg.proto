@@ -8,13 +8,10 @@ message Request {
       GET      = 1;
       SET      = 2;
       DEL      = 3;
-      ESET     = 4;
       REV      = 5;
       WAIT     = 6;
       NOP      = 7;
-      WATCH    = 8;
       WALK     = 9;
-      CANCEL   = 10;
       GETDIR   = 14;
       STAT     = 16;
   }

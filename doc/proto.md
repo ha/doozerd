@@ -80,8 +80,8 @@ the corresponding responses, but all outstanding
 requests must specify different tags. The server may
 delay the response to a request and respond to later
 ones; this is sometimes necessary, for example when the
-client has issued a `WATCH` request and the responses
-are sent after files are modified in the future.
+client has issued a `WAIT` request and the response
+is sent after a file is modified in the future.
 
 ### Data Model
 
@@ -109,18 +109,6 @@ zero or more concrete path names.
 
 Each verb shows the set of request fields it uses,
 followed by the set of response fields it provides.
-Some requests can result in more than one response.
-This is indicated by a + sign after the response fields.
-
- * `CANCEL` *id* &rArr; &empty;
-
-    A request can be aborted with a cancel request. When
-    a server receives a cancel, it will not reply to the
-    message with tag *id*, and it will immediately reply
-    to the cancel request. The client must wait until it
-    gets the reply (even if the reply to the original
-    message arrives in the interim), at which point tag
-    *id* may be reused.
 
  * `DEL` *path*, *rev* &rArr; &empty;
 
@@ -139,8 +127,6 @@ This is indicated by a + sign after the response fields.
     the specified revision (*rev*), where *n* is
     *offset*. It is an error if *path* is not a
     directory.
-
- * `JOIN` (deprecated)
 
  * `NOP` (deprecated)
 
@@ -165,13 +151,6 @@ This is indicated by a + sign after the response fields.
     Returns the *n*th file with a name matching *path*
     (a glob pattern) in the specified revision (*rev*),
     where *n* is *offset*.
-
- * `WATCH` *path* &rArr; {*path*, *rev*, *value*}+
-
-    Arranges for the client to receive notices of changes
-    made to any file matching *path*, a glob pattern. One
-    response will be sent for each change (either set or
-    del).
 
 ## Errors
 

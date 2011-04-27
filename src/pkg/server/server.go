@@ -188,7 +188,6 @@ type conn struct {
 
 
 var ops = map[int32]func(*conn, *T, txn){
-	request_CANCEL: (*conn).cancel,
 	request_DEL:    (*conn).del,
 	request_GET:    (*conn).get,
 	request_GETDIR: (*conn).getdir,
@@ -198,7 +197,6 @@ var ops = map[int32]func(*conn, *T, txn){
 	request_STAT:   (*conn).stat,
 	request_WAIT:   (*conn).wait,
 	request_WALK:   (*conn).walk,
-	request_WATCH:  (*conn).watch,
 }
 
 
@@ -522,24 +520,6 @@ func (c *conn) cancelAll() {
 }
 
 
-func (c *conn) cancel(t *T, tx txn) {
-	tag := pb.GetInt32(t.OtherTag)
-	c.tl.Lock()
-	otx, ok := c.tx[tag]
-	c.tl.Unlock()
-	if ok {
-		select {
-		case otx.cancel <- true:
-		default:
-		}
-		<-otx.done
-		c.respond(t, Valid|Done, nil, &R{})
-	} else {
-		c.respond(t, Valid|Done, nil, badTag)
-	}
-}
-
-
 func (c *conn) wait(t *T, tx txn) {
 	pat := pb.GetString(t.Path)
 	glob, err := store.CompileGlob(pat)
@@ -578,67 +558,6 @@ func (c *conn) wait(t *T, tx txn) {
 		}
 
 		c.respond(t, Valid|flag, nil, &r)
-	}()
-}
-
-
-func (c *conn) watch(t *T, tx txn) {
-	pat := pb.GetString(t.Path)
-	glob, err := store.CompileGlob(pat)
-	if err != nil {
-		c.respond(t, Valid|Done, nil, errResponse(err))
-		return
-	}
-
-	var w *store.Watch
-	rev := pb.GetInt64(t.Rev)
-	if rev == 0 {
-		w, err = store.NewWatch(c.s.St, glob), nil
-	} else {
-		w, err = store.NewWatchFrom(c.s.St, glob, rev)
-	}
-
-	switch err {
-	case nil:
-		// nothing
-	case store.ErrTooLate:
-		c.respond(t, Valid|Done, nil, tooLate)
-	default:
-		c.respond(t, Valid|Done, nil, errResponse(err))
-	}
-
-	go func() {
-		defer w.Stop()
-
-		// TODO buffer (and possibly discard) events
-		for {
-			select {
-			case ev := <-w.C:
-				if closed(w.C) {
-					return
-				}
-
-				r := R{
-					Path:  &ev.Path,
-					Value: []byte(ev.Body),
-					Rev:   &ev.Seqn,
-				}
-
-				var flag int32
-				switch {
-				case ev.IsSet():
-					flag = Set
-				case ev.IsDel():
-					flag = Del
-				}
-
-				c.respond(t, Valid|flag, tx.cancel, &r)
-
-			case <-tx.cancel:
-				c.closeTxn(*t.Tag)
-				return
-			}
-		}
 	}()
 }
 
