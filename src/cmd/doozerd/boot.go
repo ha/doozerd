@@ -4,14 +4,18 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"github.com/ha/doozer"
+	"os"
 	"time"
 )
 
 const attachTimeout = 1e9
 
 
-func boot(name, id, laddr, baddr string) *doozer.Client {
-	b := doozer.New("<boot>", baddr)
+func boot(name, id, laddr, baddr string) *doozer.Conn {
+	b, err := doozer.Dial(baddr)
+	if err != nil {
+		panic(err)
+	}
 	cl := lookupAndAttach(b, name)
 	if cl == nil {
 		return elect(name, id, laddr, b)
@@ -23,7 +27,7 @@ func boot(name, id, laddr, baddr string) *doozer.Client {
 
 // Elect chooses a seed node, and returns a connection to a cal.
 // If this process is the seed, returns nil.
-func elect(name, id, laddr string, b *doozer.Client) *doozer.Client {
+func elect(name, id, laddr string, b *doozer.Conn) *doozer.Conn {
 	// advertise our presence, since we might become a cal
 	nspath := "/ctl/ns/" + name + "/" + id
 	r, err := b.Set(nspath, 0, []byte(laddr))
@@ -34,7 +38,7 @@ func elect(name, id, laddr string, b *doozer.Client) *doozer.Client {
 	// fight to be the seed
 	_, err = b.Set("/ctl/boot/"+name, 0, []byte(id))
 	switch err {
-	case doozer.ErrOldRev:
+	case os.Error(doozer.ErrOldRev):
 		// we lost, lookup addresses again
 		cl := lookupAndAttach(b, name)
 		if cl == nil {
@@ -56,7 +60,7 @@ func elect(name, id, laddr string, b *doozer.Client) *doozer.Client {
 }
 
 
-func lookupAndAttach(b *doozer.Client, name string) *doozer.Client {
+func lookupAndAttach(b *doozer.Conn, name string) *doozer.Conn {
 	as := lookup(b, name)
 	if len(as) > 0 {
 		cl := attach(name, as)
@@ -68,8 +72,8 @@ func lookupAndAttach(b *doozer.Client, name string) *doozer.Client {
 }
 
 
-func attach(name string, addrs []string) *doozer.Client {
-	ch := make(chan *doozer.Client, 1)
+func attach(name string, addrs []string) *doozer.Conn {
+	ch := make(chan *doozer.Conn, 1)
 
 	for _, a := range addrs {
 		go func(a string) {
@@ -90,15 +94,23 @@ func attach(name string, addrs []string) *doozer.Client {
 
 // IsCal checks if addr is a CAL in the cluster named name.
 // Returns a client if so, nil if not.
-func isCal(name, addr string) *doozer.Client {
-	c := doozer.New(name, addr)
+func isCal(name, addr string) *doozer.Conn {
+	c, err := doozer.Dial(addr)
+	if err != nil {
+		panic(err)
+	}
 	v, _, _ := c.Get("/ctl/name", nil)
 	if string(v) != name {
 		return nil
 	}
 
+	rev, err := c.Rev()
+	if err != nil {
+		panic(err)
+	}
+
 	var cals []string
-	names, err := c.Getdir("/ctl/cal", nil, 0, -1)
+	names, err := c.Getdir("/ctl/cal", rev, 0, -1)
 	if err != nil {
 		panic(err)
 	}
@@ -128,8 +140,13 @@ func isCal(name, addr string) *doozer.Client {
 
 
 // Find possible addresses for cluster named name.
-func lookup(b *doozer.Client, name string) (as []string) {
-	info, err := b.Walk("/ctl/ns/"+name+"/*", nil, 0, -1)
+func lookup(b *doozer.Conn, name string) (as []string) {
+	rev, err := b.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	info, err := b.Walk("/ctl/ns/"+name+"/*", rev, 0, -1)
 	if err != nil {
 		panic(err)
 	}

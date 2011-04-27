@@ -3,13 +3,11 @@ package peer
 import (
 	"doozer/store"
 	_ "doozer/quiet"
+	"github.com/ha/doozer"
 	"exec"
 	"github.com/bmizerany/assert"
-	"github.com/ha/doozer"
 	"net"
-	"os"
 	"testing"
-	"time"
 )
 
 func mustListen() net.Listener {
@@ -38,7 +36,7 @@ func TestDoozerNop(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 	err := cl.Nop()
 	assert.Equal(t, nil, err)
 }
@@ -52,7 +50,7 @@ func TestDoozerGet(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	_, err := cl.Set("/x", store.Missing, []byte{'a'})
 	assert.Equal(t, nil, err)
@@ -82,7 +80,7 @@ func TestDoozerSet(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	for i := byte(0); i < 10; i++ {
 		_, err := cl.Set("/x", store.Clobber, []byte{'0' + i})
@@ -99,7 +97,7 @@ func TestDoozerGetWithRev(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	rev1, err := cl.Set("/x", store.Missing, []byte{'a'})
 	assert.Equal(t, nil, err)
@@ -132,7 +130,7 @@ func TestDoozerWaitSimple(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 	var rev int64 = 1
 
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
@@ -167,7 +165,7 @@ func TestDoozerWaitWithRev(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	// Create some history
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
@@ -196,12 +194,17 @@ func TestDoozerWalk(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 
-	info, err := cl.Walk("/test/**", nil, 0, -1)
+	rev, err := cl.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	info, err := cl.Walk("/test/**", rev, 0, -1)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 2, len(info))
 
@@ -223,13 +226,13 @@ func TestDoozerWalkWithRev(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	rev, _ := cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	cl.Set("/test/fun", store.Clobber, []byte("house"))
 	cl.Set("/test/fab", store.Clobber, []byte("ulous"))
 
-	info, err := cl.Walk("/test/**", &rev, 0, -1)
+	info, err := cl.Walk("/test/**", rev, 0, -1)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 1, len(info))
 	assert.Equal(t, "/test/foo", info[0].Path)
@@ -243,14 +246,19 @@ func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	cl.Set("/test/a", store.Clobber, []byte("abc"))
 	cl.Set("/test/b", store.Clobber, []byte("def"))
 	cl.Set("/test/c", store.Clobber, []byte("ghi"))
 	cl.Set("/test/d", store.Clobber, []byte("jkl"))
 
-	info, err := cl.Walk("/test/**", nil, 1, 2)
+	rev, err := cl.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	info, err := cl.Walk("/test/**", rev, 1, 2)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 2, len(info))
 
@@ -271,7 +279,7 @@ func TestDoozerStat(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	cl.Set("/test/foo", store.Clobber, []byte("bar"))
 	setRev, _ := cl.Set("/test/fun", store.Clobber, []byte("house"))
@@ -295,13 +303,18 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	cl.Set("/test/a", store.Clobber, []byte("1"))
 	cl.Set("/test/b", store.Clobber, []byte("2"))
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 
-	got, err := cl.Getdir("/test", nil, 0, -1)
+	rev, err := cl.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	got, err := cl.Getdir("/test", rev, 0, -1)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, []string{"a", "b", "c"}, got)
 }
@@ -314,12 +327,17 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
 	cl.Set("/test/a", store.Clobber, []byte("1"))
 
-	names, err := cl.Getdir("/test/a", nil, 0, -1)
-	assert.Equal(t, os.ENOTDIR, err)
+	rev, err := cl.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	names, err := cl.Getdir("/test/a", rev, 0, -1)
+	assert.Equal(t, &doozer.Error{doozer.ErrNotDir, ""}, err)
 	assert.Equal(t, []string{}, names)
 }
 
@@ -331,10 +349,15 @@ func TestDoozerGetdirMissing(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 
-	names, err := cl.Getdir("/not/here", nil, 0, -1)
-	assert.Equal(t, os.ENOENT, err)
+	rev, err := cl.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	names, err := cl.Getdir("/not/here", rev, 0, -1)
+	assert.Equal(t, &doozer.Error{doozer.ErrNoEnt, ""}, err)
 	assert.Equal(t, []string{}, names)
 }
 
@@ -346,13 +369,18 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 
 	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
-	cl := doozer.New("foo", l.Addr().String())
+	cl := dial(l.Addr().String())
 	cl.Set("/test/a", store.Clobber, []byte("1"))
 	cl.Set("/test/b", store.Clobber, []byte("2"))
 	cl.Set("/test/c", store.Clobber, []byte("3"))
 	cl.Set("/test/d", store.Clobber, []byte("4"))
 
-	names, err := cl.Getdir("/test", nil, 1, 2)
+	rev, err := cl.Rev()
+	if err != nil {
+		panic(err)
+	}
+
+	names, err := cl.Getdir("/test", rev, 1, 2)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, []string{"b", "c"}, names)
 }
@@ -373,51 +401,4 @@ func runDoozer(a ...string) *exec.Cmd {
 		panic(err)
 	}
 	return p
-}
-
-func TestDoozerReconnect(t *testing.T) {
-	l := mustListen()
-	defer l.Close()
-	a := l.Addr().String()
-	u := mustListenPacket(a)
-	defer u.Close()
-	go Main("a", "X", "", nil, u, l, nil, 1e9, 2e9, 3e9)
-
-	l1 := mustListen()
-	go Main("a", "Y", "", doozer.New("a", a), mustListenPacket(l1.Addr().String()), l1, nil, 1e9, 2e9, 3e9)
-
-	l2 := mustListen()
-	go Main("a", "Z", "", doozer.New("a", a), mustListenPacket(l2.Addr().String()), l2, nil, 1e9, 2e9, 3e9)
-
-	c0 := doozer.New("foo", a)
-
-	_, err := c0.Set("/ctl/cal/2", 0, []byte{})
-	assert.Equal(t, nil, err)
-
-	_, err = c0.Set("/ctl/cal/3", 0, []byte{})
-	assert.Equal(t, nil, err)
-
-	// Wait for the other nodes to become CALs.
-	for <-c0.Len < 3 {
-		time.Sleep(5e8)
-	}
-
-	rev, err := c0.Set("/x", -1, []byte{'a'})
-	assert.Equal(t, nil, err, err)
-
-	rev, err = c0.Set("/x", -1, []byte{'b'})
-	assert.Equal(t, nil, err)
-
-	l1.Close()
-
-	ents, rev, err := c0.Get("/x", nil)
-	assert.Equal(t, nil, err, err)
-	assert.NotEqual(t, store.Dir, rev)
-	assert.Equal(t, []byte{'b'}, ents)
-
-	rev, err = c0.Set("/x", -1, []byte{'c'})
-	assert.Equal(t, nil, err, err)
-
-	rev, err = c0.Set("/x", -1, []byte{'d'})
-	assert.Equal(t, nil, err)
 }

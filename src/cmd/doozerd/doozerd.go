@@ -89,7 +89,7 @@ func main() {
 	}
 
 	id := randId()
-	var cl *doozer.Client
+	var cl *doozer.Conn
 	switch {
 	case len(aaddrs) > 0 && *baddr != "":
 		cl = attach(*name, aaddrs)

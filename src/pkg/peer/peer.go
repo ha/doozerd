@@ -45,7 +45,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
+func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	listenAddr := listener.Addr().String()
 
 	var activateSeqn int64
@@ -84,22 +84,15 @@ func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.Packet
 		stop := make(chan bool, 1)
 		go follow(st, cl, rev+1, stop)
 
-		off := 0
-		for {
-			info, err := cl.Walk("/**", &rev, off, 10)
-			if err != nil {
-				panic(err)
-			}
-			if len(info) == 0 {
-				break
-			}
-			off += len(info)
-			for _, ev := range info {
-				// store.Clobber is okay here because the event
-				// has already passed through another store
-				mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
-				st.Ops <- store.Op{ev.Rev, mut}
-			}
+		info, err := cl.Walk("/**", rev, 0, -1)
+		if err != nil {
+			panic(err)
+		}
+		for _, ev := range info {
+			// store.Clobber is okay here because the event
+			// has already passed through another store
+			mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
+			st.Ops <- store.Op{ev.Rev, mut}
 		}
 		st.Flush()
 
@@ -115,7 +108,10 @@ func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.Packet
 			stop <- true
 			close(useSelf)
 			if baddr != "" {
-				b := doozer.New("<boot>", baddr)
+				b, err := doozer.Dial(baddr)
+				if err != nil {
+					panic(err)
+				}
 				setC(
 					b,
 					"/ctl/ns/"+clusterName+"/"+self,
@@ -205,7 +201,7 @@ func Main(clusterName, self, baddr string, cl *doozer.Client, udpConn net.Packet
 }
 
 
-func activate(st *store.Store, self string, c *doozer.Client) int64 {
+func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 	w := store.NewWatch(st, calGlob)
 
 	for _, base := range store.Getdir(st, calDir) {
@@ -239,7 +235,7 @@ func activate(st *store.Store, self string, c *doozer.Client) int64 {
 	return 0
 }
 
-func advanceUntil(cl *doozer.Client, ver <-chan int64, done int64) {
+func advanceUntil(cl *doozer.Conn, ver <-chan int64, done int64) {
 	for <-ver < done {
 		cl.Nop()
 	}
@@ -250,14 +246,14 @@ func set(st *store.Store, path, body string, rev int64) {
 	st.Ops <- store.Op{1 + <-st.Seqns, mut}
 }
 
-func setC(cl *doozer.Client, path, body string, rev int64) {
+func setC(cl *doozer.Conn, path, body string, rev int64) {
 	_, err := cl.Set(path, rev, []byte(body))
 	if err != nil {
 		panic(err)
 	}
 }
 
-func follow(st *store.Store, cl *doozer.Client, rev int64, stop chan bool) {
+func follow(st *store.Store, cl *doozer.Conn, rev int64, stop chan bool) {
 	for {
 		ev, err := cl.Wait("/**", rev)
 		if err != nil {
