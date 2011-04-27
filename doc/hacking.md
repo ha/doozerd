@@ -1,9 +1,10 @@
 # Hacking on Doozer
 
-If you want to hack on doozer, the first step is to
-discuss your plans on the [mailing list][mail].
-Here are some instructions for building doozer from
-source.
+If you want to hack on doozer, we suggest discussing your plans on the
+[mailing list][mail] to avoid duplicating effort.
+But if not, that's cool too.  Just have fun.
+
+Here are some instructions for building doozer from source:
 
 ## Installing Go
 
