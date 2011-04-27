@@ -133,7 +133,7 @@ This is indicated by a + sign after the response fields.
     of the file at *path* in the specified revision (*rev*).
     If *rev* is not provided, get uses the current revision.
 
- * `GETDIR` *path*, *rev*, *offset* &rArr; {*path*}+
+ * `GETDIR` *path*, *rev*, *offset* &rArr; *path*
 
     Returns the *n*th entry in *path* (a directory) in
     the specified revision (*rev*), where *n* is
@@ -160,7 +160,7 @@ This is indicated by a + sign after the response fields.
     Responds with the first change made to any file
     matching *path*, a glob pattern, on or after *rev*.
 
- * `WALK` *path*, *rev*, *offset* &rArr; {*path*, *rev*, *value*}+
+ * `WALK` *path*, *rev*, *offset* &rArr; *path*, *rev*, *value*
 
     Returns the *n*th file with a name matching *path*
     (a glob pattern) in the specified revision (*rev*),
