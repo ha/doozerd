@@ -41,7 +41,7 @@ If you want to change .proto files, you need two things:
 
         $ goinstall goprotobuf.googlecode.com/hg/proto
         $ cd $GOROOT/src/pkg/goprotobuf.googlecode.com/hg/compiler
-        $ make install
+        $ gomake install
 
 If you want to run doozer's tests, install
 <http://bmizerany.github.com/roundup/>.
