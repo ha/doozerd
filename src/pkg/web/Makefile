@@ -21,3 +21,5 @@ include $(GOROOT)/src/Make.pkg
 %.js.go: %.js file2gostring
 	./file2gostring $(TARG) $< < $< > $@.part
 	mv $@.part $@
+
+CLEANFILES+=*.css.go *.html.go *.js.go
