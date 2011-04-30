@@ -113,17 +113,20 @@ followed by the set of response fields it provides.
 
     Responds with the first change made to any file
     matching *path*, a glob pattern, on or after *rev*.
+    The response *path* is the file that was changed;
+    the response *rev* is the revision of the change.
+    *Value* is the new contents of the file.
 
-    *Flags* is a bitwise combination of the
-    following (values 1 and 2 are reserved):
+    *Flags* is a bitwise combination of values with the
+    following meanings (values 1 and 2 are not used):
 
      * *set* = 4
 
-        The response represents a mutation event that wrote a file.
+        The file was changed or created.
 
      * *del* = 8
 
-        The response represents a mutation event that deleted a file.
+        The file was deleted.
 
  * `WALK` *path*, *rev*, *offset* &rArr; *path*, *rev*, *value*
 
