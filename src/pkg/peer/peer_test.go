@@ -86,6 +86,9 @@ func TestDoozerSet(t *testing.T) {
 		_, err := cl.Set("/x", store.Clobber, []byte{'0' + i})
 		assert.Equal(t, nil, err)
 	}
+
+	_, err := cl.Set("/x", 0, []byte{'X'})
+	assert.Equal(t, &doozer.Error{doozer.ErrOldRev, ""}, err)
 }
 
 

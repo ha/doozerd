@@ -387,7 +387,7 @@ func (c *conn) set(t *T, tx txn) {
 			return
 		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Rev):
 			switch e := ev.Err.(type) {
-			case *store.PathError:
+			case store.PathError:
 				switch e.Err {
 				case store.ErrBadPath:
 					c.respond(t, Valid|Done, nil, &R{ErrCode: badPath, ErrDetail: &e.Path})
