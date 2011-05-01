@@ -93,9 +93,7 @@ func TestSplit(t *testing.T) {
 func TestCheckBadPaths(t *testing.T) {
 	for _, k := range BadPaths {
 		err := checkPath(k)
-		e, ok := err.(*PathError)
-		assert.Tf(t, ok, "for path %q, got %T: %v", k, err, err)
-		assert.Equal(t, ErrBadPath, e.Err)
+		assert.Equal(t, ErrBadPath, err)
 	}
 }
 
@@ -159,9 +157,7 @@ func TestDecodeDel(t *testing.T) {
 func TestDecodeBadInstructions(t *testing.T) {
 	for _, m := range BadInstructions {
 		_, _, _, _, err := decode(m)
-		e, ok := err.(*PathError)
-		assert.Tf(t, ok, "for mut %q, got %T: %v", m, err, err)
-		assert.Equal(t, ErrBadPath, e.Err)
+		assert.Equal(t, ErrBadPath, err)
 	}
 }
 
@@ -834,9 +830,7 @@ func TestStoreWaitBadInstruction(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, int64(1), got.Seqn)
-	e, ok := got.Err.(*PathError)
-	assert.Tf(t, ok, "for mut %q, got %T: %v", mut, got.Err, got.Err)
-	assert.Equal(t, ErrBadPath, e.Err)
+	assert.Equal(t, ErrBadPath, got.Err)
 	assert.Equal(t, mut, got.Mut)
 }
 
@@ -883,7 +877,7 @@ func TestStoreWaitRevMismatchMissing(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, int64(1), got.Seqn)
-	assert.Equal(t, PathError{"/a", ErrRevMismatch}, got.Err)
+	assert.Equal(t, ErrRevMismatch, got.Err)
 	assert.Equal(t, mut, got.Mut)
 }
 
@@ -900,7 +894,7 @@ func TestStoreWaitRevMismatchReplace(t *testing.T) {
 
 	got := <-statusCh
 	assert.Equal(t, int64(2), got.Seqn)
-	assert.Equal(t, PathError{"/a", ErrRevMismatch}, got.Err)
+	assert.Equal(t, ErrRevMismatch, got.Err)
 	assert.Equal(t, mut2, got.Mut)
 }
 

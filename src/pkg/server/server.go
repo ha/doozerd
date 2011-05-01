@@ -23,7 +23,7 @@ var (
 
 
 var (
-	badPath     = newResponse_Err(response_BAD_PATH)
+	badPath     = &R{ErrCode: newResponse_Err(response_BAD_PATH)}
 	missingArg  = &R{ErrCode: newResponse_Err(response_MISSING_ARG)}
 	tagInUse    = &R{ErrCode: newResponse_Err(response_TAG_IN_USE)}
 	isDir       = &R{ErrCode: newResponse_Err(response_ISDIR)}
@@ -386,32 +386,22 @@ func (c *conn) set(t *T, tx txn) {
 			c.closeTxn(*t.Tag)
 			return
 		case ev := <-bgSet(c.s.Mg, *t.Path, t.Value, *t.Rev):
-			switch e := ev.Err.(type) {
-			case store.PathError:
-				switch e.Err {
-				case store.ErrBadPath:
-					c.respond(t, Valid|Done, nil, &R{ErrCode: badPath, ErrDetail: &e.Path})
-				case os.EISDIR:
-					c.respond(t, Valid|Done, nil, isDir)
-				case os.ENOTDIR:
-					c.respond(t, Valid|Done, nil, notDir)
-				case store.ErrRevMismatch:
-					c.respond(t, Valid|Done, nil, revMismatch)
-				}
-				return
-			}
-
 			switch ev.Err {
 			default:
 				c.respond(t, Valid|Done, nil, errResponse(ev.Err))
-				return
+			case store.ErrBadPath:
+				c.respond(t, Valid|Done, nil, badPath)
+			case os.EISDIR:
+				c.respond(t, Valid|Done, nil, isDir)
+			case os.ENOTDIR:
+				c.respond(t, Valid|Done, nil, notDir)
 			case store.ErrRevMismatch:
 				c.respond(t, Valid|Done, nil, revMismatch)
-				return
 			case nil:
 				c.respond(t, Valid|Done, nil, &R{Rev: &ev.Seqn})
-				return
 			}
+
+			return
 		}
 
 		panic("not reached")

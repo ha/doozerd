@@ -47,7 +47,7 @@ func TestNodeApplyBadInstruction(t *testing.T) {
 	seqn, rev := int64(1), int64(1)
 	m := "-1:x"
 	n, e := emptyDir.apply(seqn, m)
-	err := &PathError{"x", ErrBadPath}
+	err := ErrBadPath
 	exp := node{"", Dir, map[string]node{"ctl": {"", Dir, map[string]node{"err": {err.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, err.String(), rev, m, err, n}, e)
@@ -61,7 +61,7 @@ func TestNodeApplyRevMismatch(t *testing.T) {
 	m := MustEncodeSet(p, v, -123)
 	n, e := emptyDir.apply(seqn, m)
 
-	err := PathError{p, ErrRevMismatch}
+	err := ErrRevMismatch
 	exp := node{"", Dir, map[string]node{"ctl": {"", Dir, map[string]node{"err": {err.String(), rev, nil}}}}}
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{seqn, ErrorPath, err.String(), rev, m, err, n}, e)
@@ -72,7 +72,7 @@ func TestNodeNotADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y", "b", Clobber)
 	n, e := r.apply(2, m)
-	err := PathError{"/x/y", os.ENOTDIR}
+	err := os.ENOTDIR
 	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", err.String(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, err.String(), 2, m, err, n}, e)
@@ -82,7 +82,7 @@ func TestNodeNotADirectoryDeeper(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y/z/w", "b", Clobber)
 	n, e := r.apply(2, m)
-	err := PathError{"/x/y/z/w", os.ENOTDIR}
+	err := os.ENOTDIR
 	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", err.String(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, err.String(), 2, m, err, n}, e)
@@ -92,7 +92,7 @@ func TestNodeIsADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x/y", "a", Clobber))
 	m := MustEncodeSet("/x", "b", Clobber)
 	n, e := r.apply(2, m)
-	err := PathError{"/x", os.EISDIR}
+	err := os.EISDIR
 	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", err.String(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, err.String(), 2, m, err, n}, e)

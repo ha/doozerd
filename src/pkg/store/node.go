@@ -144,7 +144,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 				break
 			}
 			if dirRev != Dir {
-				ev.Err = PathError{ev.Path, os.ENOTDIR}
+				ev.Err = os.ENOTDIR
 				break
 			}
 		}
@@ -153,9 +153,9 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 	if ev.Err == nil {
 		_, curRev := n.Get(ev.Path)
 		if rev != Clobber && rev < curRev {
-			ev.Err = PathError{ev.Path, ErrRevMismatch}
+			ev.Err = ErrRevMismatch
 		} else if curRev == Dir {
-			ev.Err = PathError{ev.Path, os.EISDIR}
+			ev.Err = os.EISDIR
 		}
 	}
 

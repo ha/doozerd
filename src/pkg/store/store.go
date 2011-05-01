@@ -33,16 +33,6 @@ var (
 	ErrBadPath     = os.NewError("bad path")
 )
 
-type PathError struct {
-	Path string
-	Err  os.Error
-}
-
-
-func (e PathError) String() string {
-	return e.Err.String() + ": " + e.Path
-}
-
 
 func mustBuildRe(p string) *regexp.Regexp {
 	return regexp.MustCompile(`^/$|^(/` + p + `+)+$`)
@@ -162,7 +152,7 @@ func join(parts []string) string {
 
 func checkPath(k string) os.Error {
 	if !pathRe.MatchString(k) {
-		return &PathError{k, ErrBadPath}
+		return ErrBadPath
 	}
 	return nil
 }
