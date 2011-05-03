@@ -49,8 +49,9 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 	listenAddr := listener.Addr().String()
 
 	useSelf := make(chan bool, 1)
+	in := make(chan consensus.Packet, 50)
+	out := make(chan consensus.Packet, 50)
 
-	var start int64
 	st := store.New()
 	pr := &proposer{
 		seqns: make(chan int64, alpha),
@@ -58,9 +59,10 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		st:    st,
 	}
 
-	calSrv := func() {
+	calSrv := func(start int64) {
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
 		go gc.Clean(st, 360000, time.Tick(1e9))
+		consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, fillDelay, st)
 	}
 
 	if cl == nil { // we are the only node in a new cluster
@@ -69,8 +71,12 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/ctl/cal/0", self, store.Missing)
-		start = <-st.Seqns
-		calSrv()
+		calSrv(<-st.Seqns)
+		// Skip ahead alpha steps so that the registrar can provide a
+		// meaningful cluster.
+		for i := 0; i < alpha; i++ {
+			st.Ops <- store.Op{1 + <-st.Seqns, store.Nop}
+		}
 		close(useSelf)
 	} else {
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
@@ -103,9 +109,9 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		}
 
 		go func() {
-			start = activate(st, self, cl)
-			calSrv()
-			advanceUntil(cl, st.Seqns, start+alpha)
+			n := activate(st, self, cl)
+			calSrv(n)
+			advanceUntil(cl, st.Seqns, n+alpha)
 			stop <- true
 			close(useSelf)
 			if baddr != "" {
@@ -121,18 +127,6 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 				)
 			}
 		}()
-	}
-
-	in := make(chan consensus.Packet, 50)
-	out := make(chan consensus.Packet, 50)
-	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, fillDelay, st)
-
-	if cl == nil {
-		// Skip ahead alpha steps so that the registrar can provide a
-		// meaningful cluster.
-		for i := start + 1; i < start+alpha+1; i++ {
-			st.Ops <- store.Op{i, store.Nop}
-		}
 	}
 
 	shun := make(chan string, 3) // sufficient for a cluster of 7
