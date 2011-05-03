@@ -17,8 +17,8 @@ m.pb.go: m.proto
 	mkdir -p _pb
 	protoc --go_out=_pb $<
 	cat _pb/$@\
-	|sed s/\\bMsg/msg/g\
-	|sed s/\\bNewMsg/newMsg/g\
+	|sed s/Msg/msg/g\
+	|sed s/Newmsg/newMsg/g\
 	|gofmt >$@
 	rm -rf _pb
 
