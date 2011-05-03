@@ -91,24 +91,17 @@ func alphaTest(t *testing.T, alpha int64) {
 		Mut:  store.MustEncodeSet(cal+"/1", "a", 0),
 	}
 
-	for 2 != <-st.Seqns {
-	}
-
 	tr := run{
 		self:  "a",
 		ops:   st.Ops,
 		out:   make(chan Packet),
 		bound: initialWaitBound,
 	}
-	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
-
-	// The only way to generate a run is on an event.
-	// Send a nop here to get things started.
-	st.Ops <- store.Op{3, store.Nop}
+	go generateRuns(2, alpha, st, runs, tr)
 
 	exp := &run{
 		self:  "a",
-		seqn:  3 + alpha,
+		seqn:  2 + alpha,
 		cals:  []string{"a"},
 		addrs: map[string]bool{"x": true},
 		ops:   st.Ops,
@@ -143,58 +136,6 @@ func TestRunAlphaOfThree(t *testing.T) {
 
 func TestRunAlphaOfFifty(t *testing.T) {
 	alphaTest(t, 50)
-}
-
-
-func TestRunAfterWatch(t *testing.T) {
-	alpha := int64(3)
-	runs := make(chan *run)
-	st := store.New()
-	defer close(st.Ops)
-
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/b/addr", "y", 0),
-	}
-
-	for 1 != <-st.Seqns {
-	}
-
-	tr := run{
-		self:  "b",
-		ops:   st.Ops,
-		out:   make(chan Packet),
-		bound: initialWaitBound,
-	}
-	go generateRuns(alpha, st.Watch(store.Any), runs, tr)
-
-	st.Ops <- store.Op{
-		Seqn: 2,
-		Mut:  store.MustEncodeSet(cal+"/1", "b", 0),
-	}
-
-	exp := &run{
-		self:  "b",
-		seqn:  2 + alpha,
-		cals:  []string{"b"},
-		addrs: map[string]bool{"y": true},
-		ops:   st.Ops,
-		out:   tr.out,
-		bound: initialWaitBound,
-	}
-	exp.c = coordinator{
-		crnd: 1,
-		size: 1,
-		quor: exp.quorum(),
-	}
-	exp.l = learner{
-		round:  1,
-		quorum: int64(exp.quorum()),
-		votes:  map[string]int64{},
-		voted:  map[string]bool{},
-	}
-
-	assert.Equal(t, exp, <-runs)
 }
 
 

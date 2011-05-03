@@ -7,7 +7,9 @@ import (
 
 
 // propSeqns must be buffered with capacity >= alpha
-func NewManager(self string, start int64, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, w <-chan store.Event, fillDelay int64, st *store.Store) Manager {
+// defRev is the rev in which this manager was defined;
+// it will participate starting at defRev+alpha
+func NewManager(self string, defRev int64, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, fillDelay int64, st *store.Store) Manager {
 	runs := make(chan *run)
 	t := run{
 		self:  self,
@@ -15,8 +17,8 @@ func NewManager(self string, start int64, alpha int64, in <-chan Packet, out cha
 		ops:   ops,
 		bound: initialWaitBound,
 	}
-	go generateRuns(alpha, w, runs, t)
-	return newManager(self, start, propSeqns, in, runs, props, time.Tick(10e6), fillDelay, st, out)
+	go generateRuns(defRev, alpha, st, runs, t)
+	return newManager(self, defRev+alpha, propSeqns, in, runs, props, time.Tick(10e6), fillDelay, st, out)
 }
 
 

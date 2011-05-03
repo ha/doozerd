@@ -74,17 +74,27 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wt := store.NewWatch(Store, glob)
+	rev, _ := Store.Snap()
 
 	go func() {
 		walk(path, Store, wevs)
+		for {
+			ch, err := Store.Wait(glob, rev+1)
+			if err != nil {
+				break
+			}
+			ev := <-ch
+			if closed(ch) {
+				break
+			}
+			wevs <- ev
+			rev = ev.Rev
+		}
 		close(wevs)
 	}()
 
 	websocket.Handler(func(ws *websocket.Conn) {
 		send(ws, path, wevs)
-		send(ws, path, wt.C)
-		wt.Stop()
 		ws.Close()
 	}).ServeHTTP(w, r)
 }

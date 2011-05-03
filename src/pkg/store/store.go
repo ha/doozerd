@@ -3,7 +3,6 @@ package store
 import (
 	"container/heap"
 	"container/vector"
-	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -44,15 +43,14 @@ func mustBuildRe(p string) *regexp.Regexp {
 type Store struct {
 	Ops     chan<- Op
 	Seqns   <-chan int64
-	Watches <-chan int
-	watchCh chan *Watch
-	watches []*Watch
+	Waiting <-chan int
+	watchCh chan *watch
+	watches []*watch
 	todo    *vector.Vector
 	state   *state
 	head    int64
 	log     map[int64]Event
 	cleanCh chan int64
-	notices []notice
 	flush   chan bool
 }
 
@@ -76,43 +74,12 @@ type state struct {
 	root node
 }
 
-type Watch struct {
-	C        <-chan Event
-	c        chan<- Event
-	glob     *Glob
-	from, to int64
-	shutdown chan bool
-	stopped  bool
+type watch struct {
+	glob *Glob
+	rev  int64
+	c    chan<- Event
 }
 
-
-func (w *Watch) isStopped() bool {
-	if w.stopped {
-		return true
-	}
-
-	select {
-	case <-w.shutdown:
-		w.stopped = true
-		return true
-	default:
-	}
-
-	return false
-}
-
-
-func (wt *Watch) Stop() {
-	select {
-	case wt.shutdown <- true:
-	default:
-	}
-}
-
-type notice struct {
-	w  *Watch
-	ev Event
-}
 
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
@@ -125,10 +92,10 @@ func New() *Store {
 	st := &Store{
 		Ops:     ops,
 		Seqns:   seqns,
-		Watches: watches,
-		watchCh: make(chan *Watch),
+		Waiting: watches,
+		watchCh: make(chan *watch),
 		todo:    new(vector.Vector),
-		watches: []*Watch{},
+		watches: []*watch{},
 		state:   &state{0, emptyDir},
 		log:     map[int64]Event{},
 		cleanCh: make(chan int64),
@@ -230,35 +197,16 @@ func decode(mutation string) (path, v string, rev int64, keep bool, err os.Error
 	panic("unreachable")
 }
 
-func (st *Store) notify(e Event, ws []*Watch) []*Watch {
-	nwatches := make([]*Watch, len(ws))
-
-	i := 0
+func (st *Store) notify(e Event, ws []*watch) (nws []*watch) {
 	for _, w := range ws {
-		if w.isStopped() {
-			continue
-		}
-
-		if e.Seqn >= w.to {
-			continue
-		}
-
-		last := w.to - 1
-		if e.Seqn != last {
-			nwatches[i] = w
-			i++
-		}
-
-		if e.Seqn < w.from {
-			continue
-		}
-
-		if w.glob.Match(e.Path) {
-			st.notices = append(st.notices, notice{w, e})
+		if e.Seqn >= w.rev && w.glob.Match(e.Path) {
+			w.c <- e
+		} else {
+			nws = append(nws, w)
 		}
 	}
 
-	return nwatches[0:i]
+	return nws
 }
 
 func (st *Store) closeWatches() {
@@ -274,17 +222,6 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 		var flush bool
 		ver, values := st.state.ver, st.state.root
 
-		for len(st.notices) > 0 && st.notices[0].w.isStopped() {
-			st.notices = st.notices[1:]
-		}
-
-		var nc chan<- Event
-		var ne Event
-		if len(st.notices) > 0 {
-			nc = st.notices[0].w.c
-			ne = st.notices[0].ev
-		}
-
 		// Take any incoming requests and queue them up.
 		select {
 		case a := <-ops:
@@ -296,9 +233,9 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 				heap.Push(st.todo, a)
 			}
 		case w := <-st.watchCh:
-			n, ws := w.from, []*Watch{w}
+			n, ws := w.rev, []*watch{w}
 			for ; len(ws) > 0 && n < st.head; n++ {
-				ws = []*Watch{}
+				ws = []*watch{}
 			}
 			for ; len(ws) > 0 && n <= ver; n++ {
 				ws = st.notify(st.log[n], ws)
@@ -313,8 +250,6 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			// nothing to do here
 		case watches <- len(st.watches):
 			// nothing to do here
-		case nc <- ne:
-			st.notices = st.notices[1:]
 		case flush = <-st.flush:
 			// nothing
 		}
@@ -390,102 +325,30 @@ func (st *Store) Flush() {
 }
 
 
-// A convenience wrapper for NewWatch that returns only the channel. Useful for
-// code that never needs to stop the Watch.
-func (st *Store) Watch(glob *Glob) <-chan Event {
-	return NewWatch(st, glob).C
-}
-
-// Arranges for w to receive notifications when mutations are applied to st.
-// One event e will be received from w.C for each mutation iff
-// glob.Match(e.Path).
+// Returns a chan that will receive a single event representing the
+// first change made to any file matching glob on or after rev.
 //
-// Notifications will not be sent for changes that were made by calling
-// st.Flush.
-func NewWatch(st *Store, glob *Glob) *Watch {
-	rev, _ := st.Snap()
-	w, err := NewWatchFrom(st, glob, rev+1)
-	if err != nil {
-		panic(err)
-	}
-	return w
-}
-
-// Arranges for w to receive notifications when mutations are applied to st.
-// One event e will be received from w.C for each mutation iff
-// glob.Match(e.Path).
-//
-// Notifications will not be sent for changes that were made by calling
-// st.Flush.
-//
-// If `from` is less than any value passed to st.Clean, NewWatchFrom
-// will return `ErrTooLate`.
-func NewWatchFrom(st *Store, glob *Glob, from int64) (*Watch, os.Error) {
-	ch := make(chan Event)
-	return st.watchOn(glob, ch, from, math.MaxInt64)
-}
-
-func (st *Store) watchOn(glob *Glob, ch chan Event, from, to int64) (*Watch, os.Error) {
-	if from < 1 {
+// If rev is less than any value passed to st.Clean, WaitGlob will return
+// ErrTooLate.
+func (st *Store) Wait(glob *Glob, rev int64) (<-chan Event, os.Error) {
+	if rev < 1 {
 		return nil, ErrTooLate
 	}
-	wt := &Watch{
-		C:        ch,
-		c:        ch,
-		glob:     glob,
-		from:     from,
-		to:       to,
-		shutdown: make(chan bool, 1),
+
+	ch := make(chan Event, 1)
+	wt := &watch{
+		glob: glob,
+		rev:  rev,
+		c:    ch,
 	}
 	st.watchCh <- wt
-	head := st.head
-	if head > from {
-		wt.Stop()
+
+	if rev < st.head {
 		return nil, ErrTooLate
 	}
-	return wt, nil
+	return ch, nil
 }
 
-// Returns a read-only chan that will receive a single event representing the
-// change made at position `seqn`.
-//
-// If `seqn` is less than any value passed to st.Clean, Wait will return
-// `ErrTooLate`.
-func (st *Store) Wait(seqn int64) (<-chan Event, os.Error) {
-	w, err := st.watchOn(Any, make(chan Event, 1), seqn, seqn+1)
-	if err != nil {
-		return nil, err
-	}
-	return w.C, nil
-}
-
-// Returns an immutable copy of `st` in which `path` exists as a regular file
-// (not a dir). Waits for `path` to be set, if necessary.
-//
-// Returns nil, nil if the store is closed.
-func (st *Store) SyncPath(path string) (Getter, os.Error) {
-	glob, err := CompileGlob(path)
-	if err != nil {
-		return nil, err
-	}
-
-	wt := NewWatch(st, glob)
-	defer wt.Stop()
-
-	_, g := st.Snap()
-	_, rev := g.Get(path)
-	if rev != Dir && rev != Missing {
-		return g, nil
-	}
-
-	for ev := range wt.C {
-		if ev.IsSet() {
-			return ev, nil
-		}
-	}
-
-	return nil, nil
-}
 
 func (st *Store) Clean(seqn int64) {
 	st.cleanCh <- seqn

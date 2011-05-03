@@ -9,7 +9,6 @@ import (
 	"log"
 )
 
-
 const initialWaitBound = 1e6 // ns == 1ms
 
 
@@ -96,8 +95,19 @@ func (r *run) isLeader(self string) bool {
 }
 
 
-func generateRuns(alpha int64, w <-chan store.Event, runs chan<- *run, t run) {
-	for e := range w {
+func generateRuns(rev, alpha int64, st *store.Store, runs chan<- *run, t run) {
+	for {
+		ch, err := st.Wait(store.Any, rev)
+		if err != nil {
+			panic(err) // can't happen
+		}
+
+		e := <-ch
+		if closed(ch) {
+			break
+		}
+		rev = e.Seqn + 1
+
 		r := t
 		r.seqn = e.Seqn + alpha
 		r.cals = getCals(e)

@@ -145,7 +145,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 
 func sendLearn(out chan<- Packet, p packet, st *store.Store) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_INVITE {
-		ch, err := st.Wait(*p.Seqn)
+		ch, err := st.Wait(store.Any, *p.Seqn)
 
 		if err == store.ErrTooLate {
 			log.Println(err)

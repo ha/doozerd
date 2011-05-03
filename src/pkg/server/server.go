@@ -335,7 +335,7 @@ func (c *conn) getterFor(t *T) store.Getter {
 		return g
 	}
 
-	ch, err := c.s.St.Wait(*t.Rev)
+	ch, err := c.s.St.Wait(store.Any, *t.Rev)
 	switch err {
 	default:
 		c.respond(t, Valid|Done, nil, errResponse(err))
@@ -518,7 +518,7 @@ func (c *conn) wait(t *T, tx txn) {
 		return
 	}
 
-	w, err := store.NewWatchFrom(c.s.St, glob, pb.GetInt64(t.Rev))
+	ch, err := c.s.St.Wait(glob, pb.GetInt64(t.Rev))
 	switch err {
 	case nil:
 		// nothing
@@ -531,8 +531,7 @@ func (c *conn) wait(t *T, tx txn) {
 	}
 
 	go func() {
-		defer w.Stop()
-		ev := <-w.C
+		ev := <-ch
 		r := R{
 			Path:  &ev.Path,
 			Value: []byte(ev.Body),

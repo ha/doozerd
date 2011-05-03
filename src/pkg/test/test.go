@@ -14,7 +14,7 @@ type FakeProposer struct {
 func (fp *FakeProposer) Propose(v []byte) store.Event {
 	n := atomic.AddInt64(&fp.seqn, 1)
 
-	ch, err := fp.Wait(n)
+	ch, err := fp.Wait(store.Any, n)
 	if err != nil {
 		panic(err)
 	}

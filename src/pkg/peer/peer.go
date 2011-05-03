@@ -34,7 +34,7 @@ type proposer struct {
 func (p *proposer) Propose(v []byte) (e store.Event) {
 	for e.Mut != string(v) {
 		n := <-p.seqns
-		w, err := p.st.Wait(n)
+		w, err := p.st.Wait(store.Any, n)
 		if err != nil {
 			panic(err) // can't happen
 		}
@@ -48,9 +48,9 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	listenAddr := listener.Addr().String()
 
-	var activateSeqn int64
 	useSelf := make(chan bool, 1)
 
+	var start int64
 	st := store.New()
 	pr := &proposer{
 		seqns: make(chan int64, alpha),
@@ -69,6 +69,7 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/ctl/cal/0", self, store.Missing)
+		start = <-st.Seqns
 		calSrv()
 		close(useSelf)
 	} else {
@@ -96,15 +97,15 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		}
 		st.Flush()
 
-		ch, err := st.Wait(rev + 1)
+		ch, err := st.Wait(store.Any, rev+1)
 		if err == nil {
 			<-ch
 		}
 
 		go func() {
-			activateSeqn = activate(st, self, cl)
+			start = activate(st, self, cl)
 			calSrv()
-			advanceUntil(cl, st.Seqns, activateSeqn+alpha)
+			advanceUntil(cl, st.Seqns, start+alpha)
 			stop <- true
 			close(useSelf)
 			if baddr != "" {
@@ -122,12 +123,9 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		}()
 	}
 
-	start := <-st.Seqns
-	cmw := st.Watch(store.Any)
 	in := make(chan consensus.Packet, 50)
 	out := make(chan consensus.Packet, 50)
-
-	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, cmw, fillDelay, st)
+	consensus.NewManager(self, start, alpha, in, out, st.Ops, pr.seqns, pr.props, fillDelay, st)
 
 	if cl == nil {
 		// Skip ahead alpha steps so that the registrar can provide a
@@ -202,7 +200,7 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 
 
 func activate(st *store.Store, self string, c *doozer.Conn) int64 {
-	w := store.NewWatch(st, calGlob)
+	rev, _ := st.Snap()
 
 	for _, base := range store.Getdir(st, calDir) {
 		p := calDir + "/" + base
@@ -214,12 +212,20 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 				continue
 			}
 
-			w.Stop()
 			return seqn
 		}
 	}
 
-	for ev := range w.C {
+	for {
+		ch, err := st.Wait(calGlob, rev+1)
+		if err != nil {
+			panic(err)
+		}
+		ev := <-ch
+		if closed(ch) {
+			panic(os.EOF)
+		}
+		rev = ev.Rev
 		// TODO ev.IsEmpty()
 		if ev.IsSet() && ev.Body == "" {
 			seqn, err := c.Set(ev.Path, ev.Rev, []byte(self))
@@ -227,7 +233,6 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 				log.Println(err)
 				continue
 			}
-			w.Stop()
 			return seqn
 		}
 	}

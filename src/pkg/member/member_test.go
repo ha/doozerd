@@ -20,8 +20,14 @@ func TestMemberSimple(t *testing.T) {
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/node/a/addr", "1.2.3.4", store.Missing)))
 	fp.Propose([]byte(store.MustEncodeSet("/ctl/cal/0", "a", store.Missing)))
 
-	calCh := fp.Watch(store.MustCompileGlob("/ctl/cal/0"))
-	nodeCh := fp.Watch(store.MustCompileGlob("/ctl/node/a/?"))
+	calCh, err := fp.Wait(store.MustCompileGlob("/ctl/cal/0"), 1+<-fp.Seqns)
+	if err != nil {
+		panic(err)
+	}
+	nodeCh, err := fp.Wait(store.MustCompileGlob("/ctl/node/a/?"), 1+<-fp.Seqns)
+	if err != nil {
+		panic(err)
+	}
 
 	// indicate that this peer is inactive
 	go func() { c <- "1.2.3.4" }()
@@ -35,6 +41,10 @@ func TestMemberSimple(t *testing.T) {
 	ev = <-nodeCh
 	assert.T(t, ev.IsDel())
 	cs = append(cs, int(ev.Path[len(ev.Path)-1]))
+	nodeCh, err = fp.Wait(store.MustCompileGlob("/ctl/node/a/?"), ev.Seqn+1)
+	if err != nil {
+		panic(err)
+	}
 
 	ev = <-nodeCh
 	assert.T(t, ev.IsDel())
