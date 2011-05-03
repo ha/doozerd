@@ -39,6 +39,10 @@ var (
 	kt          = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
 )
 
+var (
+	token = os.Getenv("DOOZER_SECRET")
+)
+
 
 func init() {
 	flag.Var(&aaddrs, "a", "attach address (may be given multiple times)")
@@ -105,7 +109,7 @@ func main() {
 		cl = boot(*name, id, *laddr, *baddr)
 	}
 
-	peer.Main(*name, id, *baddr, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
+	peer.Main(*name, id, *baddr, token, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
 	panic("main exit")
 }
 

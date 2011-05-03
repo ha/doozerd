@@ -10,12 +10,17 @@ import (
 
 const attachTimeout = 1e9
 
-
 func boot(name, id, laddr, baddr string) *doozer.Conn {
 	b, err := doozer.Dial(baddr)
 	if err != nil {
 		panic(err)
 	}
+
+	err = b.Access(token)
+	if err != nil {
+		panic(err)
+	}
+
 	cl := lookupAndAttach(b, name)
 	if cl == nil {
 		return elect(name, id, laddr, b)
@@ -99,6 +104,12 @@ func isCal(name, addr string) *doozer.Conn {
 	if err != nil {
 		panic(err)
 	}
+
+	err = c.Access(token)
+	if err != nil {
+		panic(err)
+	}
+
 	v, _, _ := c.Get("/ctl/name", nil)
 	if string(v) != name {
 		return nil

@@ -26,6 +26,7 @@ var ops = map[int32]func(*txn){
 	request_STAT:   (*txn).stat,
 	request_WAIT:   (*txn).wait,
 	request_WALK:   (*txn).walk,
+	request_ACCESS: (*txn).access,
 }
 
 // response flags
@@ -48,6 +49,11 @@ func (t *txn) run() {
 
 
 func (t *txn) get() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if t.req.Path == nil {
 		t.respondErrCode(response_MISSING_ARG)
 		return
@@ -76,6 +82,11 @@ func (t *txn) get() {
 
 
 func (t *txn) set() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if !t.c.canWrite {
 		t.respondErrCode(response_READONLY)
 		return
@@ -99,6 +110,11 @@ func (t *txn) set() {
 
 
 func (t *txn) del() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if !t.c.canWrite {
 		t.respondErrCode(response_READONLY)
 		return
@@ -121,6 +137,11 @@ func (t *txn) del() {
 
 
 func (t *txn) nop() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if !t.c.canWrite {
 		t.respondErrCode(response_READONLY)
 		return
@@ -141,6 +162,11 @@ func (t *txn) rev() {
 
 
 func (t *txn) stat() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	go func() {
 		g, err := t.getter()
 		if err != nil {
@@ -157,6 +183,11 @@ func (t *txn) stat() {
 
 
 func (t *txn) getdir() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if t.req.Path == nil || t.req.Offset == nil {
 		t.respondErrCode(response_MISSING_ARG)
 		return
@@ -193,6 +224,11 @@ func (t *txn) getdir() {
 
 
 func (t *txn) wait() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if t.req.Path == nil || t.req.Rev == nil {
 		t.respondErrCode(response_MISSING_ARG)
 		return
@@ -229,6 +265,11 @@ func (t *txn) wait() {
 
 
 func (t *txn) walk() {
+	if t.c.access == false {
+		t.respondOsError(os.EACCES)
+		return
+	}
+
 	if t.req.Path == nil || t.req.Offset == nil {
 		t.respondErrCode(response_MISSING_ARG)
 		return
@@ -269,6 +310,16 @@ func (t *txn) walk() {
 			t.respondErrCode(response_RANGE)
 		}
 	}()
+}
+
+
+func (t *txn) access() {
+	if string(t.req.Value) == t.c.token {
+		t.c.access = true
+		t.respond()
+	} else {
+		t.respondOsError(os.EACCES)
+	}
 }
 
 

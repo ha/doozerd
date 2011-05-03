@@ -14,6 +14,7 @@ message Request {
       WALK     = 9;
       GETDIR   = 14;
       STAT     = 16;
+      ACCESS   = 99;
   }
   optional Verb verb = 2;
 

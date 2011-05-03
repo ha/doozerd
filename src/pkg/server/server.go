@@ -11,7 +11,7 @@ import (
 
 // ListenAndServe listens on l, accepts network connections, and
 // handles requests according to the doozer protocol.
-func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p consensus.Proposer) {
+func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p consensus.Proposer, tk string) {
 	var w bool
 	for {
 		c, err := l.Accept()
@@ -33,19 +33,22 @@ func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p conse
 		default:
 		}
 
-		go serve(c, st, p, w)
+		go serve(c, st, p, w, tk)
 	}
 }
 
 
-func serve(nc net.Conn, st *store.Store, p consensus.Proposer, w bool) {
+func serve(nc net.Conn, st *store.Store, p consensus.Proposer, w bool, tk string) {
 	c := &conn{
 		c:        nc,
 		addr:     nc.RemoteAddr().String(),
 		st:       st,
 		p:        p,
 		canWrite: w,
+		token:    tk,
+		access:   tk == "",
 	}
+
 	c.serve()
 	nc.Close()
 }

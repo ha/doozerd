@@ -19,6 +19,8 @@ type conn struct {
 	p        consensus.Proposer
 	st       *store.Store
 	canWrite bool
+	token    string
+	access   bool
 }
 
 

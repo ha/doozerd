@@ -25,6 +25,7 @@ const (
 	request_WALK   = 9
 	request_GETDIR = 14
 	request_STAT   = 16
+	request_ACCESS = 99
 )
 
 var request_Verb_name = map[int32]string{
@@ -37,6 +38,7 @@ var request_Verb_name = map[int32]string{
 	9:  "WALK",
 	14: "GETDIR",
 	16: "STAT",
+	99: "ACCESS",
 }
 var request_Verb_value = map[string]int32{
 	"GET":    1,
@@ -48,6 +50,7 @@ var request_Verb_value = map[string]int32{
 	"WALK":   9,
 	"GETDIR": 14,
 	"STAT":   16,
+	"ACCESS": 99,
 }
 
 func newRequest_Verb(x int32) *request_Verb {
