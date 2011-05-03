@@ -8,8 +8,8 @@ import (
 )
 
 
-func mustUnmarshal(b []byte) (r *R) {
-	r = new(R)
+func mustUnmarshal(b []byte) (r *response) {
+	r = new(response)
 	err := proto.Unmarshal(b, r)
 	if err != nil {
 		panic(err)
@@ -18,46 +18,36 @@ func mustUnmarshal(b []byte) (r *R) {
 }
 
 
-func assertResponse(t *testing.T, exp *R, c *conn) {
+func assertResponseErrCode(t *testing.T, exp response_Err, c *conn) {
 	b := c.c.(*bytes.Buffer).Bytes()
 	assert.T(t, len(b) > 4, b)
-	assert.Equal(t, exp, mustUnmarshal(b[4:]))
+	assert.Equal(t, &exp, mustUnmarshal(b[4:]).ErrCode)
 }
 
 
 func TestDelNilFields(t *testing.T) {
 	c := &conn{
-		c:   &bytes.Buffer{},
-		s:   &Server{},
-		cal: true,
-		tx:  make(map[int32]txn),
+		c:        &bytes.Buffer{},
+		canWrite: true,
 	}
-	c.del(&T{Tag: proto.Int32(1)}, newTxn())
-	assertResponse(t, missingArg, c)
+	tx := &txn{
+		c:   c,
+		req: request{Tag: proto.Int32(1)},
+	}
+	tx.del()
+	assertResponseErrCode(t, response_MISSING_ARG, c)
 }
 
 
 func TestSetNilFields(t *testing.T) {
 	c := &conn{
-		c:   &bytes.Buffer{},
-		s:   &Server{},
-		cal: true,
-		tx:  make(map[int32]txn),
+		c:        &bytes.Buffer{},
+		canWrite: true,
 	}
-	c.set(&T{Tag: proto.Int32(1)}, newTxn())
-	assertResponse(t, missingArg, c)
-}
-
-func TestServerCloseTxn(t *testing.T) {
-	c := &conn{
-		tx: make(map[int32]txn),
+	tx := &txn{
+		c:   c,
+		req: request{Tag: proto.Int32(1)},
 	}
-
-	tx := newTxn()
-	c.tx[1] = tx
-
-	c.closeTxn(1)
-
-	assert.Equal(t, map[int32]txn{}, c.tx)
-	assert.Equal(t, false, <-tx.done)
+	tx.set()
+	assertResponseErrCode(t, response_MISSING_ARG, c)
 }

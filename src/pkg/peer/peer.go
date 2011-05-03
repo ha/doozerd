@@ -48,7 +48,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	listenAddr := listener.Addr().String()
 
-	useSelf := make(chan bool, 1)
+	canWrite := make(chan bool, 1)
 	in := make(chan consensus.Packet, 50)
 	out := make(chan consensus.Packet, 50)
 
@@ -77,7 +77,7 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 		for i := 0; i < alpha; i++ {
 			st.Ops <- store.Op{1 + <-st.Seqns, store.Nop}
 		}
-		close(useSelf)
+		canWrite <- true
 	} else {
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
@@ -113,7 +113,7 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 			calSrv(n)
 			advanceUntil(cl, st.Seqns, n+alpha)
 			stop <- true
-			close(useSelf)
+			canWrite <- true
 			if baddr != "" {
 				b, err := doozer.Dial(baddr)
 				if err != nil {
@@ -130,12 +130,8 @@ func Main(clusterName, self, baddr string, cl *doozer.Conn, udpConn net.PacketCo
 	}
 
 	shun := make(chan string, 3) // sufficient for a cluster of 7
-
 	go member.Clean(shun, st, pr)
-
-	sv := &server.Server{listenAddr, st, pr, self, alpha}
-
-	go sv.Serve(listener, useSelf)
+	go server.ListenAndServe(listener, canWrite, st, pr)
 
 	if webListener != nil {
 		web.Store = st

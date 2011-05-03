@@ -2,6 +2,7 @@ include ../../Make.inc
 
 TARG=doozer/server
 GOFILES=\
+	conn.go\
 	msg.pb.go\
 	server.go\
 	txn.go\
