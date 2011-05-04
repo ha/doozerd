@@ -124,7 +124,7 @@ function dr() {
   if ("WebSocket" in window) {
     open();
   } else {
-    $('#status').text("no websockets");
+    $('#status').text("your browser does not provide websockets");
     $('body').addClass('error nows').removeClass('loading open closed wereback');
   }
 }
