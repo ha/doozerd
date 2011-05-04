@@ -332,7 +332,7 @@ func (st *Store) Flush() {
 // ErrTooLate.
 func (st *Store) Wait(glob *Glob, rev int64) (<-chan Event, os.Error) {
 	if rev < 1 {
-		return nil, ErrTooLate
+		rev = 1
 	}
 
 	ch := make(chan Event, 1)

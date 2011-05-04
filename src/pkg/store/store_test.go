@@ -303,7 +303,6 @@ func TestGetSyncExtra(t *testing.T) {
 	defer close(st.Ops)
 
 	go func() {
-		sync(st, 0)
 		v, rev := st.Get("/x")
 		chV <- v
 		chRev <- rev
@@ -572,14 +571,6 @@ func TestWaitGlobAfterPost(t *testing.T) {
 	assert.Equal(t, Event{2, "/x", "b", 2, mut2, nil, nil}, exp)
 }
 
-func TestStoreWaitZero(t *testing.T) {
-	st := New()
-	defer close(st.Ops)
-
-	ch, err := st.Wait(Any, 0)
-	assert.Equal(t, ErrTooLate, err)
-	assert.Equal(t, (<-chan Event)(nil), ch)
-}
 
 func TestStoreNopEvent(t *testing.T) {
 	st := New()
