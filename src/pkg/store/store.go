@@ -328,7 +328,7 @@ func (st *Store) Flush() {
 // Returns a chan that will receive a single event representing the
 // first change made to any file matching glob on or after rev.
 //
-// If rev is less than any value passed to st.Clean, WaitGlob will return
+// If rev is less than any value passed to st.Clean, Wait will return
 // ErrTooLate.
 func (st *Store) Wait(glob *Glob, rev int64) (<-chan Event, os.Error) {
 	if rev < 1 {
