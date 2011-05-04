@@ -10,8 +10,8 @@ import (
 
 const attachTimeout = 1e9
 
-func boot(name, id, laddr, baddr string) *doozer.Conn {
-	b, err := doozer.Dial(baddr)
+func boot(name, id, laddr, buri string) *doozer.Conn {
+	b, err := doozer.DialUri(buri)
 	if err != nil {
 		panic(err)
 	}

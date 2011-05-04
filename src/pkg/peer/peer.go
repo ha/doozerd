@@ -45,7 +45,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, self, baddr, secret string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
+func Main(clusterName, self, buri, secret string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	listenAddr := listener.Addr().String()
 
 	canWrite := make(chan bool, 1)
@@ -114,8 +114,8 @@ func Main(clusterName, self, baddr, secret string, cl *doozer.Conn, udpConn net.
 			advanceUntil(cl, st.Seqns, n+alpha)
 			stop <- true
 			canWrite <- true
-			if baddr != "" {
-				b, err := doozer.Dial(baddr)
+			if buri != "" {
+				b, err := doozer.DialUri(buri)
 				if err != nil {
 					panic(err)
 				}

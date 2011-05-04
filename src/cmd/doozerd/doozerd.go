@@ -30,7 +30,7 @@ func (a *strings) String() string {
 var (
 	laddr       = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
 	aaddrs      = strings{}
-	baddr       = flag.String("b", "", "boot cluster address (tried after -a)")
+	buri        = flag.String("b", "", "boot cluster uri (tried after -a)")
 	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
 	name        = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
@@ -57,6 +57,8 @@ func Usage() {
 
 
 func main() {
+	*buri = os.Getenv("DOOZER_BOOT_URI")
+
 	flag.Usage = Usage
 	flag.Parse()
 
@@ -95,21 +97,21 @@ func main() {
 	id := randId()
 	var cl *doozer.Conn
 	switch {
-	case len(aaddrs) > 0 && *baddr != "":
+	case len(aaddrs) > 0 && *buri != "":
 		cl = attach(*name, aaddrs)
 		if cl == nil {
-			cl = boot(*name, id, *laddr, *baddr)
+			cl = boot(*name, id, *laddr, *buri)
 		}
 	case len(aaddrs) > 0:
 		cl = attach(*name, aaddrs)
 		if cl == nil {
 			panic("failed to attach")
 		}
-	case *baddr != "":
-		cl = boot(*name, id, *laddr, *baddr)
+	case *buri != "":
+		cl = boot(*name, id, *laddr, *buri)
 	}
 
-	peer.Main(*name, id, *baddr, secret, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
+	peer.Main(*name, id, *buri, secret, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
 	panic("main exit")
 }
 
