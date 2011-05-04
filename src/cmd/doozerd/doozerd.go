@@ -40,7 +40,7 @@ var (
 )
 
 var (
-	token = os.Getenv("DOOZER_SECRET")
+	secret = os.Getenv("DOOZER_SECRET")
 )
 
 
@@ -109,7 +109,7 @@ func main() {
 		cl = boot(*name, id, *laddr, *baddr)
 	}
 
-	peer.Main(*name, id, *baddr, token, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
+	peer.Main(*name, id, *baddr, secret, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt))
 	panic("main exit")
 }
 

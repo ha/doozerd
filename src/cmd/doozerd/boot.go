@@ -16,7 +16,7 @@ func boot(name, id, laddr, baddr string) *doozer.Conn {
 		panic(err)
 	}
 
-	err = b.Access(token)
+	err = b.Access(secret)
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +105,7 @@ func isCal(name, addr string) *doozer.Conn {
 		panic(err)
 	}
 
-	err = c.Access(token)
+	err = c.Access(secret)
 	if err != nil {
 		panic(err)
 	}

@@ -19,7 +19,7 @@ type conn struct {
 	p        consensus.Proposer
 	st       *store.Store
 	canWrite bool
-	token    string
+	secret   string
 	access   bool
 }
 

@@ -45,7 +45,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, self, baddr, token string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
+func Main(clusterName, self, baddr, secret string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
 	listenAddr := listener.Addr().String()
 
 	canWrite := make(chan bool, 1)
@@ -131,9 +131,9 @@ func Main(clusterName, self, baddr, token string, cl *doozer.Conn, udpConn net.P
 
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 	go member.Clean(shun, st, pr)
-	go server.ListenAndServe(listener, canWrite, st, pr, token)
+	go server.ListenAndServe(listener, canWrite, st, pr, secret)
 
-	if token == "" && webListener != nil {
+	if secret == "" && webListener != nil {
 		web.Store = st
 		web.ClusterName = clusterName
 		go web.Serve(webListener)

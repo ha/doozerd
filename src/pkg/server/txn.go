@@ -314,7 +314,7 @@ func (t *txn) walk() {
 
 
 func (t *txn) access() {
-	if string(t.req.Value) == t.c.token {
+	if string(t.req.Value) == t.c.secret {
 		t.c.access = true
 		t.respond()
 	} else {

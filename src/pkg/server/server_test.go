@@ -104,7 +104,7 @@ func TestServerInvalidAccessToken(t *testing.T) {
 		c:        b,
 		canWrite: true,
 		st:       store.New(),
-		token:    "abc",
+		secret:   "abc",
 	}
 	tx := &txn{
 		c:   c,
@@ -126,11 +126,11 @@ func TestServerValidAccessToken(t *testing.T) {
 		c:        b,
 		canWrite: true,
 		st:       store.New(),
-		token:    "abc",
+		secret:   "abc",
 	}
 	tx := &txn{
 		c:   c,
-		req: request{Tag: proto.Int32(1), Value: []byte(c.token)},
+		req: request{Tag: proto.Int32(1), Value: []byte(c.secret)},
 	}
 
 	tx.access()
