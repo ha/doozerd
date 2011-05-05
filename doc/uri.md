@@ -50,6 +50,13 @@ There are three parameters:
        ca=10.0.0.1:5003
        ca=d.example.net
 
+  * *sk* ("secret key"): an arbitrary string of characters clients must send to
+    the server (via the `ACCESS` verb) before reading or writing.
+
+  Example:
+
+      sk=eXampl3
+
 Full Example:
 
     doozer:?un=BCIRJYENEZYYYA5K65TY3C2SSZLGKW2K&ca=10.0.1.1&ca=10.0.1.2&ca=10.0.1.3
