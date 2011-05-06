@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	dn, err := os.Open(os.DevNull, 0, 0)
+	dn, err := os.OpenFile(os.DevNull, 0, 0)
 	if err != nil {
 		panic(err)
 	}

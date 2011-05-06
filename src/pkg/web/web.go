@@ -32,7 +32,7 @@ type stringHandler struct {
 }
 
 func (sh stringHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.SetHeader("content-type", sh.contentType)
+	w.Header().Set("content-type", sh.contentType)
 	io.WriteString(w, sh.body)
 }
 
@@ -83,8 +83,8 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				break
 			}
-			ev := <-ch
-			if closed(ch) {
+			ev, ok := <-ch
+			if !ok {
 				break
 			}
 			wevs <- ev
@@ -107,12 +107,12 @@ func viewHtml(w http.ResponseWriter, r *http.Request) {
 	var x info
 	x.Name = ClusterName
 	x.Path = r.URL.Path
-	w.SetHeader("content-type", "text/html")
+	w.Header().Set("content-type", "text/html")
 	mainTpl.Execute(w, x)
 }
 
 func statsHtml(w http.ResponseWriter, r *http.Request) {
-	w.SetHeader("content-type", "text/html")
+	w.Header().Set("content-type", "text/html")
 	statsTpl.Execute(w, runtime.MemStats)
 }
 

@@ -141,7 +141,7 @@ func Main(clusterName, self, buri, secret string, cl *doozer.Conn, udpConn net.P
 
 	go func() {
 		for p := range out {
-			addr, err := net.ResolveUDPAddr(p.Addr)
+			addr, err := net.ResolveUDPAddr("udp", p.Addr)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -211,8 +211,8 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 		if err != nil {
 			panic(err)
 		}
-		ev := <-ch
-		if closed(ch) {
+		ev, ok := <-ch
+		if !ok {
 			panic(os.EOF)
 		}
 		rev = ev.Rev

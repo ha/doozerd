@@ -83,8 +83,8 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 			stats.Running = len(running)
 
 			select {
-			case run := <-runs:
-				if closed(runs) {
+			case run, ok := <-runs:
+				if !ok {
 					return
 				}
 

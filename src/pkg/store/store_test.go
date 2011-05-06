@@ -733,8 +733,9 @@ func TestStoreClose(t *testing.T) {
 		panic(err)
 	}
 	close(st.Ops)
-	assert.Equal(t, Event{}, <-ch)
-	assert.T(t, closed(ch))
+	v, ok := <-ch
+	assert.Equal(t, Event{}, v)
+	assert.T(t, !ok)
 }
 
 func TestStoreKeepsLog(t *testing.T) {

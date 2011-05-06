@@ -102,8 +102,8 @@ func generateRuns(rev, alpha int64, st *store.Store, runs chan<- *run, t run) {
 			panic(err) // can't happen
 		}
 
-		e := <-ch
-		if closed(ch) {
+		e, ok := <-ch
+		if !ok {
 			break
 		}
 		rev = e.Seqn + 1

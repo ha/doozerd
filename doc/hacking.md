@@ -14,7 +14,7 @@ Go. It's better to install straight from source.
 Abridged version:
 
     $ GOROOT=$HOME/src/go # adjust this as you wish
-    $ hg clone -r release.r56 https://go.googlecode.com/hg/ $GOROOT
+    $ hg clone -r release.r57.1 https://go.googlecode.com/hg/ $GOROOT
     $ cd $GOROOT/src
     $ ./all.bash
     (put the value of $GOROOT/bin in your path)

@@ -224,8 +224,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 
 		// Take any incoming requests and queue them up.
 		select {
-		case a := <-ops:
-			if closed(ops) {
+		case a, ok := <-ops:
+			if !ok {
 				return
 			}
 
