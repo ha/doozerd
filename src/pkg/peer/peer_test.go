@@ -35,7 +35,7 @@ func TestDoozerNop(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 	err := cl.Nop()
@@ -49,7 +49,7 @@ func TestDoozerGet(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -79,7 +79,7 @@ func TestDoozerSet(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -99,7 +99,7 @@ func TestDoozerGetWithRev(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -132,7 +132,7 @@ func TestDoozerWaitSimple(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 	var rev int64 = 1
@@ -167,7 +167,7 @@ func TestDoozerWaitWithRev(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -196,7 +196,7 @@ func TestDoozerWalk(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -228,7 +228,7 @@ func TestDoozerWalkWithRev(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -248,7 +248,7 @@ func TestDoozerWalkWithOffsetAndLimit(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -281,7 +281,7 @@ func TestDoozerStat(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -305,7 +305,7 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -329,7 +329,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -351,7 +351,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 
@@ -371,7 +371,7 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	u := mustListenPacket(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9)
 
 	cl := dial(l.Addr().String())
 	cl.Set("/test/a", store.Clobber, []byte("1"))
@@ -394,28 +394,6 @@ func assertDenied(t *testing.T, err os.Error) {
 	assert.NotEqual(t, nil, err)
 	assert.Equal(t, doozer.ErrOther, err.(*doozer.Error).Err)
 	assert.Equal(t, "permission denied", err.(*doozer.Error).Detail)
-}
-
-var ErrNoAccess = &doozer.Error{Err: doozer.ErrOther, Detail: "permission denied"}
-
-
-func TestDoozerAccess(t *testing.T) {
-	l := mustListen()
-	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
-	defer u.Close()
-
-	go Main("a", "X", "", "abc", nil, u, l, nil, 1e9, 2e9, 3e9)
-
-	cl := dial(l.Addr().String())
-
-	var err os.Error
-
-	err = cl.Access("not_it")
-	assert.Equal(t, ErrNoAccess, err)
-
-	err = cl.Access("abc")
-	assert.Equal(t, nil, err)
 }
 
 

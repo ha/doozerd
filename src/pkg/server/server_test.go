@@ -50,7 +50,7 @@ func TestDelNilFields(t *testing.T) {
 	c := &conn{
 		c:        &bytes.Buffer{},
 		canWrite: true,
-		access:   true,
+		waccess:  true,
 	}
 	tx := &txn{
 		c:   c,
@@ -65,7 +65,7 @@ func TestSetNilFields(t *testing.T) {
 	c := &conn{
 		c:        &bytes.Buffer{},
 		canWrite: true,
-		access:   true,
+		waccess:  true,
 	}
 	tx := &txn{
 		c:   c,
@@ -98,45 +98,26 @@ func TestServerNoAccess(t *testing.T) {
 	}
 }
 
-func TestServerInvalidAccessToken(t *testing.T) {
+
+func TestServerRo(t *testing.T) {
 	b := make(bchan, 2)
 	c := &conn{
 		c:        b,
 		canWrite: true,
 		st:       store.New(),
-		secret:   "abc",
 	}
 	tx := &txn{
 		c:   c,
-		req: request{Tag: proto.Int32(1), Value: []byte("bad")},
+		req: request{Tag: proto.Int32(1)},
 	}
 
-	tx.access()
+	wops := []int32{request_DEL, request_NOP, request_SET}
 
-	var exp response_Err = response_OTHER
-	assert.Equal(t, 4, len(<-b))
-	assert.Equal(t, &exp, mustUnmarshal(<-b).ErrCode)
-
-	assert.T(t, !c.access)
-}
-
-func TestServerValidAccessToken(t *testing.T) {
-	b := make(bchan, 2)
-	c := &conn{
-		c:        b,
-		canWrite: true,
-		st:       store.New(),
-		secret:   "abc",
+	for _, i := range wops {
+		op := ops[i]
+		op(tx)
+		var exp response_Err = response_OTHER
+		assert.Equal(t, 4, len(<-b), request_Verb_name[i])
+		assert.Equal(t, &exp, mustUnmarshal(<-b).ErrCode, request_Verb_name[i])
 	}
-	tx := &txn{
-		c:   c,
-		req: request{Tag: proto.Int32(1), Value: []byte(c.secret)},
-	}
-
-	tx.access()
-
-	assert.Equal(t, 4, len(<-b))
-	assert.Equal(t, (*response_Err)(nil), mustUnmarshal(<-b).ErrCode)
-
-	assert.T(t, c.access)
 }

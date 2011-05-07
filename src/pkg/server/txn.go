@@ -49,7 +49,7 @@ func (t *txn) run() {
 
 
 func (t *txn) get() {
-	if t.c.access == false {
+	if !t.c.raccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -82,7 +82,7 @@ func (t *txn) get() {
 
 
 func (t *txn) set() {
-	if t.c.access == false {
+	if !t.c.waccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -110,7 +110,7 @@ func (t *txn) set() {
 
 
 func (t *txn) del() {
-	if t.c.access == false {
+	if !t.c.waccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -137,7 +137,7 @@ func (t *txn) del() {
 
 
 func (t *txn) nop() {
-	if t.c.access == false {
+	if !t.c.waccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -162,7 +162,7 @@ func (t *txn) rev() {
 
 
 func (t *txn) stat() {
-	if t.c.access == false {
+	if !t.c.raccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -183,7 +183,7 @@ func (t *txn) stat() {
 
 
 func (t *txn) getdir() {
-	if t.c.access == false {
+	if !t.c.raccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -224,7 +224,7 @@ func (t *txn) getdir() {
 
 
 func (t *txn) wait() {
-	if t.c.access == false {
+	if !t.c.raccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -265,7 +265,7 @@ func (t *txn) wait() {
 
 
 func (t *txn) walk() {
-	if t.c.access == false {
+	if !t.c.raccess {
 		t.respondOsError(os.EACCES)
 		return
 	}
@@ -314,8 +314,7 @@ func (t *txn) walk() {
 
 
 func (t *txn) access() {
-	if string(t.req.Value) == t.c.secret {
-		t.c.access = true
+	if t.c.grant(string(t.req.Value)) {
 		t.respond()
 	} else {
 		t.respondOsError(os.EACCES)

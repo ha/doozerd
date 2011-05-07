@@ -19,8 +19,10 @@ type conn struct {
 	p        consensus.Proposer
 	st       *store.Store
 	canWrite bool
-	secret   string
-	access   bool
+	rwsk     string
+	rosk     string
+	waccess  bool
+	raccess  bool
 }
 
 
@@ -73,4 +75,21 @@ func (c *conn) write(r *response) os.Error {
 
 	_, err = c.c.Write(buf)
 	return err
+}
+
+
+// Grant compares sk against c.rwsk and c.rosk and
+// updates c.waccess and c.raccess as necessary.
+// It returns true if sk matched either password.
+func (c *conn) grant(sk string) bool {
+	switch sk {
+	case c.rwsk:
+		c.waccess = true
+		c.raccess = true
+		return true
+	case c.rosk:
+		c.raccess = true
+		return true
+	}
+	return false
 }
