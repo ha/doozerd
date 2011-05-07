@@ -157,12 +157,19 @@ func lookup(b *doozer.Conn, name string) (as []string) {
 		panic(err)
 	}
 
-	info, err := b.Walk("/ctl/ns/"+name+"/*", rev, 0, -1)
+	path := "/ctl/ns/" + name
+	names, err := b.Getdir(path, rev, 0, -1)
 	if err != nil {
 		panic(err)
 	}
-	for _, e := range info {
-		as = append(as, string(e.Body))
+
+	path += "/"
+	for _, name := range names {
+		body, _, err := b.Get(path+name, &rev)
+		if err != nil {
+			panic(err)
+		}
+		as = append(as, string(body))
 	}
 	return as
 }
