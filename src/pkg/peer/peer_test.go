@@ -291,12 +291,12 @@ func TestDoozerStat(t *testing.T) {
 	ln, rev, err := cl.Stat("/test", nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, store.Dir, rev)
-	assert.Equal(t, int32(2), ln)
+	assert.Equal(t, int(2), ln)
 
 	ln, rev, err = cl.Stat("/test/fun", nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, setRev, rev)
-	assert.Equal(t, int32(5), ln)
+	assert.Equal(t, int(5), ln)
 }
 
 func TestDoozerGetdirOnDir(t *testing.T) {
