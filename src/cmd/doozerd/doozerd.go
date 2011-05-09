@@ -2,6 +2,7 @@ package main
 
 
 import (
+	"crypto/tls"
 	"doozer/peer"
 	"flag"
 	"fmt"
@@ -37,6 +38,8 @@ var (
 	pi          = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
 	fd          = flag.Float64("fill", .1, "delay (in seconds) to fill unowned seqns")
 	kt          = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
+	certFile    = flag.String("tlscert", "", "TLS public certificate")
+	keyFile     = flag.String("tlskey", "", "TLS private key")
 )
 
 var (
@@ -82,6 +85,10 @@ func main() {
 		panic(err)
 	}
 
+	if *certFile != "" || *keyFile != "" {
+		tsock = tlsWrap(tsock, *certFile, *keyFile)
+	}
+
 	usock, err := net.ListenPacket("udp", *laddr)
 	if err != nil {
 		panic(err)
@@ -118,4 +125,20 @@ func main() {
 
 func ns(x float64) int64 {
 	return int64(x * 1e9)
+}
+
+
+func tlsWrap(l net.Listener, cfile, kfile string) net.Listener {
+	if cfile == "" || kfile == "" {
+		panic("need both cert file and key file")
+	}
+
+	cert, err := tls.LoadX509KeyPair(cfile, kfile)
+	if err != nil {
+		panic(err)
+	}
+
+	tc := new(tls.Config)
+	tc.Certificates = append(tc.Certificates, cert)
+	return tls.NewListener(l, tc)
 }
