@@ -1,6 +1,6 @@
 # Doozer
 
-![logo](https://github.com/ha/doozerd/raw/master/doc/doozer.png)
+![logo](/ha/doozerd/raw/master/doc/doozer.png)
 
 ## What Is It?
 
@@ -33,7 +33,7 @@ other users and developers.
 
 5. Open <http://localhost:8080> and see your message
 
-![doozer web view](/ha/doozerd/raw/0a3a9c/doc/webview.png)
+![doozer web view](/ha/doozerd/raw/master/doc/webview.png)
 
 ## How Does It Work?
 
