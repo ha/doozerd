@@ -1,5 +1,7 @@
 # Doozer
 
+![logo](https://github.com/ha/doozerd/raw/master/doc/doozer.png)
+
 ## What Is It?
 
 Doozer is a highly-available, completely consistent
