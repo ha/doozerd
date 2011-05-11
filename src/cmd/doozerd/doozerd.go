@@ -12,7 +12,10 @@ import (
 	"log"
 	_ "expvar"
 	_ "http/pprof"
+	"strconv"
 )
+
+const defWebPort = 8000
 
 type strings []string
 
@@ -32,7 +35,7 @@ var (
 	laddr       = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
 	aaddrs      = strings{}
 	buri        = flag.String("b", "", "boot cluster uri (tried after -a)")
-	webAddr     = flag.String("w", ":8080", "Serve web requests on this address.")
+	waddr       = flag.String("w", "", "web listen addr (default: see below)")
 	name        = flag.String("c", "local", "The non-empty cluster name.")
 	showVersion = flag.Bool("v", false, "print doozerd's version string")
 	pi          = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
@@ -57,6 +60,11 @@ func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "\nOptions:\n")
 	flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, `
+The default for -w is to use the addr from -l,
+and change the port to 8000. If you give "-w false",
+doozerd will not listen for for web connections.
+`)
 }
 
 
@@ -95,8 +103,16 @@ func main() {
 	}
 
 	var wsock net.Listener
-	if *webAddr != "" {
-		wsock, err = net.Listen("tcp", *webAddr)
+	if *waddr == "" {
+		wa, err := net.ResolveTCPAddr("tcp", *laddr)
+		if err != nil {
+			panic(err)
+		}
+		wa.Port = defWebPort
+		*waddr = wa.String()
+	}
+	if b, err := strconv.Atob(*waddr); err != nil && !b {
+		wsock, err = net.Listen("tcp", *waddr)
 		if err != nil {
 			panic(err)
 		}
