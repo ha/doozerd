@@ -104,6 +104,9 @@ We have a detailed description of the [data model](https://github.com/ha/doozerd
 
 For ways to manipulate or read the data, see the [protocol spec](https://github.com/ha/doozerd/blob/master/doc/proto.md).
 
+Try out doozer's fault-tolerance with some [fire
+drills][firedrill].
+
 ## Similar Projects
 
 Doozer is similar to the following pieces of software:
@@ -126,3 +129,4 @@ Type `git shortlog -s` for a full list of contributors.
 
 [mail]: https://groups.google.com/group/doozer
 [LICENSE]: /ha/doozerd/blob/master/LICENSE
+[firedrill]: /ha/doozerd/blob/master/doc/firedrill.md
