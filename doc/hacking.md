@@ -16,13 +16,8 @@ Abridged version:
     $ GOROOT=$HOME/src/go # adjust this as you wish
     $ hg clone -r release.r57.1 https://go.googlecode.com/hg/ $GOROOT
     $ cd $GOROOT/src
-    $ ./all.bash # or all-qemu.bash (see note below)
+    $ ./all.bash
     (put the value of $GOROOT/bin in your path)
-
-Note: all.bash runs unit tests, and some of the tests
-try to connect to Google servers over the internet.
-If this causes problems, you can skip the network tests
-by running `all-qemu.bash` instead.
 
 For full details, see <http://golang.org/doc/install.html>.
 
