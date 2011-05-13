@@ -32,7 +32,8 @@ func TestManagerRuns(t *testing.T) {
 		Store: st,
 		Out:   out,
 	}
-	m := newManager(cfg, runs)
+	m := make(chan Stats)
+	go manage(cfg, runs, m)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -56,7 +57,8 @@ func TestManagerPacketQueue(t *testing.T) {
 		In:    in,
 		Out:   out,
 	}
-	m := newManager(cfg, nil)
+	m := make(chan Stats)
+	go manage(cfg, nil, m)
 
 	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
@@ -76,7 +78,8 @@ func TestManagerDropsOldPackets(t *testing.T) {
 		In:    in,
 		Out:   out,
 	}
-	m := newManager(cfg, runs)
+	m := make(chan Stats)
+	go manage(cfg, runs, m)
 
 	run := run{seqn: 2, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -146,7 +149,8 @@ func TestManagerPacketProcessing(t *testing.T) {
 		In:    in,
 		Out:   out,
 	}
-	m := newManager(cfg, runs)
+	m := make(chan Stats)
+	go manage(cfg, runs, m)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -173,7 +177,8 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 		In:    in,
 		Out:   out,
 	}
-	m := newManager(cfg, runs)
+	m := make(chan Stats)
+	go manage(cfg, runs, m)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -201,7 +206,8 @@ func TestManagerTickQueue(t *testing.T) {
 		In:     in,
 		Ticker: ticker,
 	}
-	m := newManager(cfg, runs)
+	m := make(chan Stats)
+	go manage(cfg, runs, m)
 
 	runs <- &run{seqn: 1}
 	for (<-m).Runs < 1 {
@@ -227,7 +233,7 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 		Self:  "b",
 		PSeqn: ps,
 	}
-	newManager(cfg, runs)
+	go manage(cfg, runs, nil)
 
 	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
 	runs <- &run{seqn: 4, cals: []string{"a", "b"}}
@@ -251,7 +257,8 @@ func TestManagerProposalQueue(t *testing.T) {
 		Out:   out,
 		Props: props,
 	}
-	m := newManager(cfg, nil)
+	m := make(chan Stats)
+	go manage(cfg, nil, m)
 	props <- &Prop{Seqn: 1, Mut: []byte("foo")}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
@@ -272,7 +279,8 @@ func TestManagerFillQueue(t *testing.T) {
 		Props:  props,
 		Ticker: ticker,
 	}
-	m := newManager(cfg, nil)
+	m := make(chan Stats)
+	go manage(cfg, nil, m)
 	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
 
 	assert.Equal(t, 6, (<-m).WaitFills)

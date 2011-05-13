@@ -64,83 +64,93 @@ type Prop struct {
 var tickTemplate = &msg{Cmd: tick}
 var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 
-func newManager(c *Config, runs <-chan *run) Manager {
-	statCh := make(chan Stats)
 
-	go func() {
-		running := make(map[int64]*run)
-		packets := new(vector.Vector)
-		fills := new(vector.Vector)
-		ticks := new(vector.Vector)
-		nextFill := c.DefRev + c.Alpha
-		var nextRun int64
-		var stats Stats
+func NewManager(c *Config) Manager {
+	runs := make(chan *run)
+	t := run{
+		self:  c.Self,
+		out:   c.Out,
+		ops:   c.Ops,
+		bound: initialWaitBound,
+	}
+	go generateRuns(c.DefRev, c.Alpha, c.Store, runs, t)
+	stat := make(chan Stats)
+	go manage(c, runs, stat)
+	return stat
+}
 
-		for {
-			stats.Runs = len(running)
-			stats.WaitPackets = packets.Len()
-			stats.WaitFills = fills.Len()
-			stats.WaitTicks = ticks.Len()
-			stats.Running = len(running)
 
-			select {
-			case run, ok := <-runs:
-				if !ok {
-					return
-				}
+func manage(c *Config, runs <-chan *run, statCh chan Stats) {
+	running := make(map[int64]*run)
+	packets := new(vector.Vector)
+	fills := new(vector.Vector)
+	ticks := new(vector.Vector)
+	nextFill := c.DefRev + c.Alpha
+	var nextRun int64
+	var stats Stats
 
-				running[run.seqn] = run
-				nextRun = run.seqn + 1
-				if run.isLeader(c.Self) {
-					c.PSeqn <- run.seqn
-				}
-			case p := <-c.In:
-				recvPacket(packets, p)
-			case statCh <- stats:
-			case pr := <-c.Props:
-				log.Printf("propose seqn=%d", pr.Seqn)
-				m := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
-				heap.Push(packets, packet{msg: m})
+	for {
+		stats.Runs = len(running)
+		stats.WaitPackets = packets.Len()
+		stats.WaitFills = fills.Len()
+		stats.WaitTicks = ticks.Len()
+		stats.Running = len(running)
 
-				for nextFill < pr.Seqn {
-					schedTrigger(fills, nextFill, c.TFill)
-					nextFill++
-				}
-				nextFill++
-			case t := <-c.Ticker:
-				n := applyTriggers(packets, fills, t, fillTemplate)
-				stats.TotalFills += int64(n)
-
-				n = applyTriggers(packets, ticks, t, tickTemplate)
-				stats.TotalTicks += int64(n)
+		select {
+		case run, ok := <-runs:
+			if !ok {
+				return
 			}
 
-			for packets.Len() > 0 {
-				p := packets.At(0).(packet)
+			running[run.seqn] = run
+			nextRun = run.seqn + 1
+			if run.isLeader(c.Self) {
+				c.PSeqn <- run.seqn
+			}
+		case p := <-c.In:
+			recvPacket(packets, p)
+		case statCh <- stats:
+		case pr := <-c.Props:
+			log.Printf("propose seqn=%d", pr.Seqn)
+			m := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
+			heap.Push(packets, packet{msg: m})
 
-				seqn := *p.Seqn
+			for nextFill < pr.Seqn {
+				schedTrigger(fills, nextFill, c.TFill)
+				nextFill++
+			}
+			nextFill++
+		case t := <-c.Ticker:
+			n := applyTriggers(packets, fills, t, fillTemplate)
+			stats.TotalFills += int64(n)
 
-				if seqn >= nextRun {
-					break
-				}
+			n = applyTriggers(packets, ticks, t, tickTemplate)
+			stats.TotalTicks += int64(n)
+		}
 
-				heap.Pop(packets)
+		for packets.Len() > 0 {
+			p := packets.At(0).(packet)
 
-				r := running[seqn]
-				if r == nil {
-					go sendLearn(c.Out, p, c.Store)
-					continue
-				}
+			seqn := *p.Seqn
 
-				learned := r.update(p, ticks)
-				if learned {
-					running[seqn] = nil, false
-				}
+			if seqn >= nextRun {
+				break
+			}
+
+			heap.Pop(packets)
+
+			r := running[seqn]
+			if r == nil {
+				go sendLearn(c.Out, p, c.Store)
+				continue
+			}
+
+			learned := r.update(p, ticks)
+			if learned {
+				running[seqn] = nil, false
 			}
 		}
-	}()
-
-	return statCh
+	}
 }
 
 

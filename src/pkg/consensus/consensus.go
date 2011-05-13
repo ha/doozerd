@@ -22,19 +22,6 @@ type Config struct {
 }
 
 
-func NewManager(c *Config) Manager {
-	runs := make(chan *run)
-	t := run{
-		self:  c.Self,
-		out:   c.Out,
-		ops:   c.Ops,
-		bound: initialWaitBound,
-	}
-	go generateRuns(c.DefRev, c.Alpha, c.Store, runs, t)
-	return newManager(c, runs)
-}
-
-
 type Proposer interface {
 	Propose(v []byte) store.Event
 }
