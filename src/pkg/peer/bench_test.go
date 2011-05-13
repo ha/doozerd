@@ -4,6 +4,7 @@ import (
 	"doozer/store"
 	"github.com/ha/doozer"
 	"testing"
+	"time"
 )
 
 
@@ -141,17 +142,35 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 		dial(l4.Addr().String()),
 	}
 
-	c := make(chan bool, b.N)
+	const con = 2000
+	c := make(chan int, b.N)
+	times := make([]int64, b.N)
+	done := make(chan bool, con)
+	f := func() {
+		for i := range c {
+			a := time.Nanoseconds()
+			cls[i%len(cls)].Set("/test", store.Clobber, nil)
+			b := time.Nanoseconds()
+			times[i] = b - a
+		}
+		done <- true
+	}
+	for i := 0; i < con; i++ {
+		go f()
+	}
+
+	println("---")
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		i := i
-		go func() {
-			cls[i%len(cls)].Set("/test", store.Clobber, nil)
-			c <- true
-		}()
+		c <- i
 	}
-	for i := 0; i < b.N; i++ {
-		<-c
+	close(c)
+	for i := 0; i < con; i++ {
+		<-done
+	}
+	b.StopTimer()
+	for _, t := range times {
+		println("el", t)
 	}
 }
 
