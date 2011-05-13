@@ -25,45 +25,6 @@ func (ms msgSlot) Put(m *msg) {
 }
 
 
-func TestGetCalsFull(t *testing.T) {
-	st := store.New()
-	defer close(st.Ops)
-
-	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
-	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(cal+"/2", "c", 0)}
-	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(cal+"/3", "b", 0)}
-	<-st.Seqns
-
-	assert.Equal(t, []string{"a", "b", "c"}, getCals(st))
-}
-
-
-func TestGetCalsPartial(t *testing.T) {
-	st := store.New()
-	defer close(st.Ops)
-
-	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
-	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(cal+"/2", "", 0)}
-	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(cal+"/3", "", 0)}
-	<-st.Seqns
-
-	assert.Equal(t, []string{"a"}, getCals(st))
-}
-
-
-func TestGetAddrs(t *testing.T) {
-	st := store.New()
-	defer close(st.Ops)
-
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "y", 0)}
-	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "z", 0)}
-	<-st.Seqns
-
-	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, getAddrs(st))
-}
-
-
 func TestQuorum(t *testing.T) {
 	assert.Equal(t, 1, (&run{cals: []string{"a"}}).quorum())
 	assert.Equal(t, 2, (&run{cals: []string{"a", "b"}}).quorum())
@@ -73,69 +34,6 @@ func TestQuorum(t *testing.T) {
 	assert.Equal(t, 4, (&run{cals: []string{"a", "b", "c", "d", "e", "f"}}).quorum())
 	assert.Equal(t, 4, (&run{cals: []string{"a", "b", "c", "d", "e", "f", "g"}}).quorum())
 	assert.Equal(t, 5, (&run{cals: []string{"a", "b", "c", "d", "e", "f", "g", "h"}}).quorum())
-}
-
-
-func alphaTest(t *testing.T, alpha int64) {
-	runs := make(chan *run)
-	st := store.New()
-	defer close(st.Ops)
-
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
-
-	st.Ops <- store.Op{
-		Seqn: 2,
-		Mut:  store.MustEncodeSet(cal+"/1", "a", 0),
-	}
-
-	tr := run{
-		self:  "a",
-		ops:   st.Ops,
-		out:   make(chan Packet),
-		bound: initialWaitBound,
-	}
-	go generateRuns(2, alpha, st, runs, tr)
-
-	exp := &run{
-		self:  "a",
-		seqn:  2 + alpha,
-		cals:  []string{"a"},
-		addrs: map[string]bool{"x": true},
-		ops:   st.Ops,
-		out:   tr.out,
-		bound: initialWaitBound,
-	}
-	exp.c = coordinator{
-		crnd: 1,
-		size: 1,
-		quor: exp.quorum(),
-	}
-	exp.l = learner{
-		round:  1,
-		quorum: int64(exp.quorum()),
-		votes:  map[string]int64{},
-		voted:  map[string]bool{},
-	}
-
-	assert.Equal(t, exp, <-runs)
-}
-
-
-func TestRunAlphaOfOne(t *testing.T) {
-	alphaTest(t, 1)
-}
-
-
-func TestRunAlphaOfThree(t *testing.T) {
-	alphaTest(t, 3)
-}
-
-
-func TestRunAlphaOfFifty(t *testing.T) {
-	alphaTest(t, 50)
 }
 
 

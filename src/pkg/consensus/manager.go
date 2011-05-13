@@ -7,6 +7,7 @@ import (
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"log"
+	"sort"
 	"time"
 )
 
@@ -45,7 +46,6 @@ type Stats struct {
 	WaitPackets int
 	WaitFills   int
 	WaitTicks   int
-	Running     int
 
 	// Totals over all time
 	TotalFills int64
@@ -66,47 +66,43 @@ var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 
 
 func NewManager(c *Config) Manager {
-	runs := make(chan *run)
-	t := run{
-		self:  c.Self,
-		out:   c.Out,
-		ops:   c.Ops,
-		bound: initialWaitBound,
-	}
-	go generateRuns(c.DefRev, c.Alpha, c.Store, runs, t)
 	stat := make(chan Stats)
-	go manage(c, runs, stat)
+	go manage(c, stat)
 	return stat
 }
 
 
-func manage(c *Config, runs <-chan *run, statCh chan Stats) {
-	running := make(map[int64]*run)
+func manage(c *Config, statCh chan Stats) {
+	runs := make(map[int64]*run)
 	packets := new(vector.Vector)
 	fills := new(vector.Vector)
 	ticks := new(vector.Vector)
 	nextFill := c.DefRev + c.Alpha
 	var nextRun int64
 	var stats Stats
+	runCh, err := c.Store.Wait(store.Any, c.DefRev)
+	if err != nil {
+		panic(err) // can't happen
+	}
 
 	for {
-		stats.Runs = len(running)
+		stats.Runs = len(runs)
 		stats.WaitPackets = packets.Len()
 		stats.WaitFills = fills.Len()
 		stats.WaitTicks = ticks.Len()
-		stats.Running = len(running)
 
 		select {
-		case run, ok := <-runs:
+		case e, ok := <-runCh:
 			if !ok {
 				return
 			}
 
-			running[run.seqn] = run
-			nextRun = run.seqn + 1
-			if run.isLeader(c.Self) {
-				c.PSeqn <- run.seqn
+			runCh, err = c.Store.Wait(store.Any, e.Seqn+1)
+			if err != nil {
+				panic(err) // can't happen
 			}
+
+			nextRun = addRun(c, runs, e).seqn + 1
 		case p := <-c.In:
 			recvPacket(packets, p)
 		case statCh <- stats:
@@ -130,24 +126,19 @@ func manage(c *Config, runs <-chan *run, statCh chan Stats) {
 
 		for packets.Len() > 0 {
 			p := packets.At(0).(packet)
-
-			seqn := *p.Seqn
-
-			if seqn >= nextRun {
+			if *p.Seqn >= nextRun {
 				break
 			}
-
 			heap.Pop(packets)
 
-			r := running[seqn]
+			r := runs[*p.Seqn]
 			if r == nil {
 				go sendLearn(c.Out, p, c.Store)
 				continue
 			}
-
 			learned := r.update(p, ticks)
 			if learned {
-				running[seqn] = nil, false
+				runs[*p.Seqn] = nil, false
 			}
 		}
 	}
@@ -211,4 +202,59 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 		n++
 	}
 	return
+}
+
+
+func addRun(c *Config, runs map[int64]*run, e store.Event) (r *run) {
+	r = new(run)
+	r.self = c.Self
+	r.out = c.Out
+	r.ops = c.Ops
+	r.bound = initialWaitBound
+	r.seqn = e.Seqn + c.Alpha
+	r.cals = getCals(e)
+	r.addrs = getAddrs(e)
+	r.c.size = len(r.cals)
+	r.c.quor = r.quorum()
+	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
+	r.l.init(int64(r.quorum()))
+	runs[r.seqn] = r
+	if r.isLeader(c.Self) {
+		c.PSeqn <- r.seqn
+	}
+	return r
+}
+
+
+func getCals(g store.Getter) []string {
+	ents := store.Getdir(g, "/ctl/cal")
+	cals := make([]string, len(ents))
+
+	i := 0
+	for _, cal := range ents {
+		id := store.GetString(g, "/ctl/cal/"+cal)
+		if id != "" {
+			cals[i] = id
+			i++
+		}
+	}
+
+	cals = cals[0:i]
+	sort.SortStrings(cals)
+
+	return cals
+}
+
+
+func getAddrs(g store.Getter) map[string]bool {
+	// TODO include only CALs, once followers use TCP for updates.
+
+	ids := store.Getdir(g, "/ctl/node")
+	addrs := make(map[string]bool)
+
+	for _, id := range ids {
+		addrs[store.GetString(g, "/ctl/node/"+id+"/addr")] = true
+	}
+
+	return addrs
 }

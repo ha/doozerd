@@ -22,31 +22,6 @@ func mustMarshal(p interface{}) []byte {
 }
 
 
-func TestManagerRuns(t *testing.T) {
-	runs := make(chan *run)
-	defer close(runs)
-
-	st := store.New()
-	out := make(chan Packet, 100)
-	cfg := &Config{
-		Store: st,
-		Out:   out,
-	}
-	m := make(chan Stats)
-	go manage(cfg, runs, m)
-
-	r1 := &run{seqn: 1}
-	r2 := &run{seqn: 2}
-	r3 := &run{seqn: 3}
-
-	runs <- r1
-	runs <- r2
-	runs <- r3
-
-	assert.Equal(t, 3, (<-m).Runs)
-}
-
-
 func TestManagerPacketQueue(t *testing.T) {
 	in := make(chan Packet)
 
@@ -58,7 +33,7 @@ func TestManagerPacketQueue(t *testing.T) {
 		Out:   out,
 	}
 	m := make(chan Stats)
-	go manage(cfg, nil, m)
+	go manage(cfg, m)
 
 	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
@@ -67,10 +42,8 @@ func TestManagerPacketQueue(t *testing.T) {
 
 
 func TestManagerDropsOldPackets(t *testing.T) {
-	runs := make(chan *run)
-	defer close(runs)
-
 	st := store.New()
+	defer close(st.Ops)
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
 	cfg := &Config{
@@ -79,10 +52,14 @@ func TestManagerDropsOldPackets(t *testing.T) {
 		Out:   out,
 	}
 	m := make(chan Stats)
-	go manage(cfg, runs, m)
+	go manage(cfg, m)
 
-	run := run{seqn: 2, ops: make(chan store.Op, 100)}
-	runs <- &run
+	st.Ops <- store.Op{
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
+	}
+	for (<-m).Runs < 1 {
+	}
 
 	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
@@ -138,111 +115,120 @@ func TestSchedTrigger(t *testing.T) {
 
 
 func TestManagerPacketProcessing(t *testing.T) {
-	runs := make(chan *run)
-	defer close(runs)
-
 	st := store.New()
+	defer close(st.Ops)
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
 	cfg := &Config{
+		Alpha: 1,
 		Store: st,
 		In:    in,
 		Out:   out,
+		Ops:   st.Ops,
 	}
 	m := make(chan Stats)
-	go manage(cfg, runs, m)
+	go manage(cfg, m)
 
-	run := run{seqn: 1, ops: make(chan store.Op, 100)}
-	runs <- &run
+	st.Ops <- store.Op{
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
+	}
+	for (<-m).Runs < 1 {
+	}
 
 	in <- Packet{
-		Data: mustMarshal(&msg{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
+		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 
-	<-m
-	assert.Equal(t, true, run.l.done)
+	assert.Equal(t, 0, (<-m).Runs)
 }
 
 
 func TestManagerDeletesSuccessfulRun(t *testing.T) {
-	runs := make(chan *run)
-	defer close(runs)
-
 	st := store.New()
+	defer close(st.Ops)
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
 	cfg := &Config{
+		Alpha: 1,
 		Store: st,
 		In:    in,
 		Out:   out,
+		Ops:   st.Ops,
 	}
 	m := make(chan Stats)
-	go manage(cfg, runs, m)
+	go manage(cfg, m)
 
-	run := run{seqn: 1, ops: make(chan store.Op, 100)}
-	runs <- &run
+	st.Ops <- store.Op{
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
+	}
+	for (<-m).Runs < 1 {
+	}
 
 	in <- Packet{
-		Data: mustMarshal(&msg{Seqn: proto.Int64(1), Cmd: learn, Value: []byte("foo")}),
+		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 
-	stat := <-m
-	assert.Equal(t, 0, stat.Running)
+	assert.Equal(t, 0, (<-m).Runs)
 }
 
 
 func TestManagerTickQueue(t *testing.T) {
 	ticker := make(chan int64)
-	runs := make(chan *run)
-	defer close(runs)
-
 	st := store.New()
 	defer close(st.Ops)
 	in := make(chan Packet)
 	cfg := &Config{
+		Alpha:  1,
 		Store:  st,
 		In:     in,
 		Ticker: ticker,
+		Out:    make(chan Packet, 100),
 	}
 	m := make(chan Stats)
-	go manage(cfg, runs, m)
-
-	runs <- &run{seqn: 1}
+	go manage(cfg, m)
+	st.Ops <- store.Op{
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
+	}
 	for (<-m).Runs < 1 {
 	}
 
 	// get it to tick for seqn 2
-	in <- Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(1), Cmd: propose})}
-
+	in <- Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: propose})}
 	assert.Equal(t, 1, (<-m).WaitTicks)
 
-	ticker <- time.Nanoseconds()
-
+	ticker <- time.Nanoseconds() + initialWaitBound*2
 	assert.Equal(t, int64(1), (<-m).TotalTicks)
 }
 
 
 func TestManagerFilterPropSeqn(t *testing.T) {
 	ps := make(chan int64, 100)
-	runs := make(chan *run)
-	defer close(runs)
+	st := store.New()
+	defer close(st.Ops)
 
 	cfg := &Config{
-		Self:  "b",
-		PSeqn: ps,
+		DefRev: 2,
+		Alpha:  1,
+		Self:   "b",
+		PSeqn:  ps,
+		Store:  st,
 	}
-	go manage(cfg, runs, nil)
+	go manage(cfg, nil)
 
-	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
-	runs <- &run{seqn: 4, cals: []string{"a", "b"}}
-	runs <- &run{seqn: 5, cals: []string{"a", "b"}}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", "b", 0)}
+	st.Ops <- store.Op{3, store.Nop}
+	st.Ops <- store.Op{4, store.Nop}
 	assert.Equal(t, int64(3), <-ps)
 	assert.Equal(t, int64(5), <-ps)
 
-	runs <- &run{seqn: 6, cals: []string{"a", "b"}}
-	runs <- &run{seqn: 7, cals: []string{"a", "b"}}
+	st.Ops <- store.Op{5, store.Nop}
+	st.Ops <- store.Op{6, store.Nop}
 	assert.Equal(t, int64(7), <-ps)
 }
 
@@ -258,7 +244,7 @@ func TestManagerProposalQueue(t *testing.T) {
 		Props: props,
 	}
 	m := make(chan Stats)
-	go manage(cfg, nil, m)
+	go manage(cfg, m)
 	props <- &Prop{Seqn: 1, Mut: []byte("foo")}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
@@ -280,13 +266,11 @@ func TestManagerFillQueue(t *testing.T) {
 		Ticker: ticker,
 	}
 	m := make(chan Stats)
-	go manage(cfg, nil, m)
+	go manage(cfg, m)
 	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
-
 	assert.Equal(t, 6, (<-m).WaitFills)
 
 	ticker <- time.Nanoseconds()
-
 	assert.Equal(t, 7, (<-m).WaitPackets)
 }
 
@@ -327,4 +311,102 @@ func TestApplyTriggers(t *testing.T) {
 
 	assert.Equal(t, expTriggers, triggers)
 	assert.Equal(t, expPackets, packets)
+}
+
+
+func TestAddRun(t *testing.T) {
+	const alpha = 2
+	runs := make(map[int64]*run)
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{
+		Seqn: 1,
+		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
+	}
+
+	st.Ops <- store.Op{
+		Seqn: 2,
+		Mut:  store.MustEncodeSet(cal+"/1", "a", 0),
+	}
+
+	ch, err := st.Wait(store.Any, 2)
+	if err != nil {
+		panic(err)
+	}
+
+	pseqn := make(chan int64, 1)
+	c := &Config{
+		Alpha: alpha,
+		Self:  "a",
+		PSeqn: pseqn,
+		Ops:   st.Ops,
+		Out:   make(chan Packet),
+	}
+	got := addRun(c, runs, <-ch)
+
+	exp := &run{
+		self:  "a",
+		seqn:  2 + alpha,
+		cals:  []string{"a"},
+		addrs: map[string]bool{"x": true},
+		ops:   st.Ops,
+		out:   c.Out,
+		bound: initialWaitBound,
+	}
+	exp.c = coordinator{
+		crnd: 1,
+		size: 1,
+		quor: exp.quorum(),
+	}
+	exp.l = learner{
+		round:  1,
+		quorum: int64(exp.quorum()),
+		votes:  map[string]int64{},
+		voted:  map[string]bool{},
+	}
+
+	assert.Equal(t, exp, got)
+	assert.Equal(t, exp, runs[got.seqn])
+	assert.Equal(t, 1, len(runs))
+	assert.Equal(t, exp.seqn, <-pseqn)
+}
+
+
+func TestGetCalsFull(t *testing.T) {
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
+	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(cal+"/2", "c", 0)}
+	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(cal+"/3", "b", 0)}
+	<-st.Seqns
+
+	assert.Equal(t, []string{"a", "b", "c"}, getCals(st))
+}
+
+
+func TestGetCalsPartial(t *testing.T) {
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
+	st.Ops <- store.Op{Seqn: 2, Mut: store.MustEncodeSet(cal+"/2", "", 0)}
+	st.Ops <- store.Op{Seqn: 3, Mut: store.MustEncodeSet(cal+"/3", "", 0)}
+	<-st.Seqns
+
+	assert.Equal(t, []string{"a"}, getCals(st))
+}
+
+
+func TestGetAddrs(t *testing.T) {
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "y", 0)}
+	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "z", 0)}
+	<-st.Seqns
+
+	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, getAddrs(st))
 }

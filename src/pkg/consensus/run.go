@@ -5,7 +5,6 @@ import (
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"rand"
-	"sort"
 	"log"
 )
 
@@ -92,63 +91,4 @@ func (r *run) isLeader(self string) bool {
 		}
 	}
 	return false
-}
-
-
-func generateRuns(rev, alpha int64, st *store.Store, runs chan<- *run, t run) {
-	for {
-		ch, err := st.Wait(store.Any, rev)
-		if err != nil {
-			panic(err) // can't happen
-		}
-
-		e, ok := <-ch
-		if !ok {
-			break
-		}
-		rev = e.Seqn + 1
-
-		r := t
-		r.seqn = e.Seqn + alpha
-		r.cals = getCals(e)
-		r.addrs = getAddrs(e)
-		r.c.size = len(r.cals)
-		r.c.quor = r.quorum()
-		r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
-		r.l.init(int64(r.quorum()))
-		runs <- &r
-	}
-}
-
-func getCals(g store.Getter) []string {
-	ents := store.Getdir(g, "/ctl/cal")
-	cals := make([]string, len(ents))
-
-	i := 0
-	for _, cal := range ents {
-		id := store.GetString(g, "/ctl/cal/"+cal)
-		if id != "" {
-			cals[i] = id
-			i++
-		}
-	}
-
-	cals = cals[0:i]
-	sort.SortStrings(cals)
-
-	return cals
-}
-
-
-func getAddrs(g store.Getter) map[string]bool {
-	// TODO include only CALs, once followers use TCP for updates.
-
-	ids := store.Getdir(g, "/ctl/node")
-	addrs := make(map[string]bool)
-
-	for _, id := range ids {
-		addrs[store.GetString(g, "/ctl/node/"+id+"/addr")] = true
-	}
-
-	return addrs
 }
