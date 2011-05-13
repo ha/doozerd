@@ -2,23 +2,36 @@ package consensus
 
 import (
 	"doozer/store"
-	"time"
 )
 
 
-// propSeqns must be buffered with capacity >= alpha
-// defRev is the rev in which this manager was defined;
-// it will participate starting at defRev+alpha
-func NewManager(self string, defRev int64, alpha int64, in <-chan Packet, out chan<- Packet, ops chan<- store.Op, propSeqns chan<- int64, props <-chan *Prop, fillDelay int64, st *store.Store) Manager {
+// DefRev is the rev in which this manager was defined;
+// it will participate starting at DefRev+Alpha.
+type Config struct {
+	Self   string
+	DefRev int64
+	Alpha  int64
+	In     <-chan Packet
+	Out    chan<- Packet
+	Ops    chan<- store.Op
+	PSeqn  chan<- int64
+	Props  <-chan *Prop
+	TFill  int64
+	Store  *store.Store
+	Ticker <-chan int64
+}
+
+
+func NewManager(c *Config) Manager {
 	runs := make(chan *run)
 	t := run{
-		self:  self,
-		out:   out,
-		ops:   ops,
+		self:  c.Self,
+		out:   c.Out,
+		ops:   c.Ops,
 		bound: initialWaitBound,
 	}
-	go generateRuns(defRev, alpha, st, runs, t)
-	return newManager(self, defRev+alpha, propSeqns, in, runs, props, time.Tick(10e6), fillDelay, st, out)
+	go generateRuns(c.DefRev, c.Alpha, c.Store, runs, t)
+	return newManager(c, runs)
 }
 
 

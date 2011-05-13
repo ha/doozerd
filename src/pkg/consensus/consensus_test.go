@@ -5,6 +5,7 @@ import (
 	"github.com/bmizerany/assert"
 	"os"
 	"testing"
+	"time"
 )
 
 
@@ -22,7 +23,20 @@ func TestConsensusOne(t *testing.T) {
 	seqns := make(chan int64, alpha)
 	props := make(chan *Prop)
 
-	NewManager(self, 2, alpha, in, out, st.Ops, seqns, props, 10e9, st)
+	cfg := &Config{
+		self,
+		2,
+		alpha,
+		in,
+		out,
+		st.Ops,
+		seqns,
+		props,
+		10e9,
+		st,
+		time.Tick(10e6),
+	}
+	NewManager(cfg)
 
 	go func() {
 		for o := range out {
@@ -68,13 +82,39 @@ func TestConsensusTwo(t *testing.T) {
 	aout := make(chan Packet)
 	aseqns := make(chan int64, alpha)
 	aprops := make(chan *Prop)
-	NewManager(a, 5, alpha, ain, aout, st.Ops, aseqns, aprops, 10e9, st)
+	acfg := &Config{
+		a,
+		5,
+		alpha,
+		ain,
+		aout,
+		st.Ops,
+		aseqns,
+		aprops,
+		10e9,
+		st,
+		time.Tick(10e6),
+	}
+	NewManager(acfg)
 
 	bin := make(chan Packet)
 	bout := make(chan Packet)
 	bseqns := make(chan int64, alpha)
 	bprops := make(chan *Prop)
-	NewManager(b, 5, alpha, bin, bout, st.Ops, bseqns, bprops, 10e9, st)
+	bcfg := &Config{
+		b,
+		5,
+		alpha,
+		bin,
+		bout,
+		st.Ops,
+		bseqns,
+		bprops,
+		10e9,
+		st,
+		time.Tick(10e6),
+	}
+	NewManager(bcfg)
 
 	go func() {
 		for o := range aout {

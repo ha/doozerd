@@ -28,7 +28,11 @@ func TestManagerRuns(t *testing.T) {
 
 	st := store.New()
 	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, nil, runs, nil, nil, 0, st, out)
+	cfg := &Config{
+		Store: st,
+		Out:   out,
+	}
+	m := newManager(cfg, runs)
 
 	r1 := &run{seqn: 1}
 	r2 := &run{seqn: 2}
@@ -47,7 +51,12 @@ func TestManagerPacketQueue(t *testing.T) {
 
 	st := store.New()
 	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, in, nil, nil, nil, 0, st, out)
+	cfg := &Config{
+		Store: st,
+		In:    in,
+		Out:   out,
+	}
+	m := newManager(cfg, nil)
 
 	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
@@ -62,7 +71,12 @@ func TestManagerDropsOldPackets(t *testing.T) {
 	st := store.New()
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, in, runs, nil, nil, 0, st, out)
+	cfg := &Config{
+		Store: st,
+		In:    in,
+		Out:   out,
+	}
+	m := newManager(cfg, runs)
 
 	run := run{seqn: 2, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -127,7 +141,12 @@ func TestManagerPacketProcessing(t *testing.T) {
 	st := store.New()
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, in, runs, nil, nil, 0, st, out)
+	cfg := &Config{
+		Store: st,
+		In:    in,
+		Out:   out,
+	}
+	m := newManager(cfg, runs)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -149,7 +168,12 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 	st := store.New()
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, in, runs, nil, nil, 0, st, out)
+	cfg := &Config{
+		Store: st,
+		In:    in,
+		Out:   out,
+	}
+	m := newManager(cfg, runs)
 
 	run := run{seqn: 1, ops: make(chan store.Op, 100)}
 	runs <- &run
@@ -172,7 +196,12 @@ func TestManagerTickQueue(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 	in := make(chan Packet)
-	m := newManager("", 0, nil, in, runs, nil, ticker, 0, st, nil)
+	cfg := &Config{
+		Store:  st,
+		In:     in,
+		Ticker: ticker,
+	}
+	m := newManager(cfg, runs)
 
 	runs <- &run{seqn: 1}
 	for (<-m).Runs < 1 {
@@ -194,7 +223,11 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 	runs := make(chan *run)
 	defer close(runs)
 
-	newManager("b", 0, ps, nil, runs, nil, nil, 0, nil, nil)
+	cfg := &Config{
+		Self:  "b",
+		PSeqn: ps,
+	}
+	newManager(cfg, runs)
 
 	runs <- &run{seqn: 3, cals: []string{"a", "b"}}
 	runs <- &run{seqn: 4, cals: []string{"a", "b"}}
@@ -213,7 +246,12 @@ func TestManagerProposalQueue(t *testing.T) {
 
 	st := store.New()
 	out := make(chan Packet, 100)
-	m := newManager("", 0, nil, nil, nil, props, nil, 0, st, out)
+	cfg := &Config{
+		Store: st,
+		Out:   out,
+		Props: props,
+	}
+	m := newManager(cfg, nil)
 	props <- &Prop{Seqn: 1, Mut: []byte("foo")}
 
 	assert.Equal(t, 1, (<-m).WaitPackets)
@@ -226,7 +264,15 @@ func TestManagerFillQueue(t *testing.T) {
 
 	st := store.New()
 	out := make(chan Packet, 100)
-	m := newManager("", 3, nil, nil, nil, props, ticker, 0, st, out)
+	cfg := &Config{
+		Store:  st,
+		Out:    out,
+		DefRev: 2,
+		Alpha:  1,
+		Props:  props,
+		Ticker: ticker,
+	}
+	m := newManager(cfg, nil)
 	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
 
 	assert.Equal(t, 6, (<-m).WaitFills)

@@ -64,7 +64,7 @@ type Prop struct {
 var tickTemplate = &msg{Cmd: tick}
 var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 
-func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan Packet, runs <-chan *run, props <-chan *Prop, ticker <-chan int64, fillDelay int64, st *store.Store, out chan<- Packet) Manager {
+func newManager(c *Config, runs <-chan *run) Manager {
 	statCh := make(chan Stats)
 
 	go func() {
@@ -72,6 +72,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 		packets := new(vector.Vector)
 		fills := new(vector.Vector)
 		ticks := new(vector.Vector)
+		nextFill := c.DefRev + c.Alpha
 		var nextRun int64
 		var stats Stats
 
@@ -90,23 +91,23 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 
 				running[run.seqn] = run
 				nextRun = run.seqn + 1
-				if run.isLeader(self) {
-					propSeqns <- run.seqn
+				if run.isLeader(c.Self) {
+					c.PSeqn <- run.seqn
 				}
-			case p := <-in:
+			case p := <-c.In:
 				recvPacket(packets, p)
 			case statCh <- stats:
-			case pr := <-props:
+			case pr := <-c.Props:
 				log.Printf("propose seqn=%d", pr.Seqn)
 				m := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
 				heap.Push(packets, packet{msg: m})
 
 				for nextFill < pr.Seqn {
-					schedTrigger(fills, nextFill, fillDelay)
+					schedTrigger(fills, nextFill, c.TFill)
 					nextFill++
 				}
 				nextFill++
-			case t := <-ticker:
+			case t := <-c.Ticker:
 				n := applyTriggers(packets, fills, t, fillTemplate)
 				stats.TotalFills += int64(n)
 
@@ -127,7 +128,7 @@ func newManager(self string, nextFill int64, propSeqns chan<- int64, in <-chan P
 
 				r := running[seqn]
 				if r == nil {
-					go sendLearn(out, p, st)
+					go sendLearn(c.Out, p, c.Store)
 					continue
 				}
 
@@ -180,8 +181,8 @@ func recvPacket(q heap.Interface, P Packet) {
 }
 
 
-func schedTrigger(q heap.Interface, n, fillDelay int64) {
-	heap.Push(q, trigger{n: n, t: time.Nanoseconds() + fillDelay})
+func schedTrigger(q heap.Interface, n, tfill int64) {
+	heap.Push(q, trigger{n: n, t: time.Nanoseconds() + tfill})
 }
 
 
