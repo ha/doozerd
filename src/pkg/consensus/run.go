@@ -32,13 +32,9 @@ func (r *run) quorum() int {
 }
 
 
-func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
+func (r *run) update(p packet, ticks heap.Interface) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_TICK {
 		log.Printf("tick wasteful=%v", r.l.done)
-	}
-
-	if r.l.done {
-		return false
 	}
 
 	m, tick := r.c.update(p)
@@ -56,10 +52,7 @@ func (r *run) update(p packet, ticks heap.Interface) (learned bool) {
 	if ok {
 		log.Printf("learn seqn=%d", r.seqn)
 		r.ops <- store.Op{r.seqn, string(v)}
-		return true
 	}
-
-	return false
 }
 
 

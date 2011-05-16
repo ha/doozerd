@@ -48,6 +48,7 @@ type Stats struct {
 	WaitTicks   int
 
 	// Totals over all time
+	TotalRuns  int64
 	TotalFills int64
 	TotalTicks int64
 }
@@ -102,7 +103,9 @@ func manage(c *Config, statCh chan Stats) {
 				panic(err) // can't happen
 			}
 
+			runs[e.Seqn] = nil, false
 			nextRun = addRun(c, runs, e).seqn + 1
+			stats.TotalRuns++
 		case p := <-c.In:
 			recvPacket(packets, p)
 		case statCh <- stats:
@@ -131,14 +134,12 @@ func manage(c *Config, statCh chan Stats) {
 			}
 			heap.Pop(packets)
 
-			r := runs[*p.Seqn]
-			if r == nil {
-				go sendLearn(c.Out, p, c.Store)
-				continue
-			}
-			learned := r.update(p, ticks)
-			if learned {
-				runs[*p.Seqn] = nil, false
+			if r := runs[*p.Seqn]; r != nil {
+				if r.l.done {
+					go sendLearn(c.Out, p, c.Store)
+				} else {
+					r.update(p, ticks)
+				}
 			}
 		}
 	}

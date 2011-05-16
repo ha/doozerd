@@ -292,59 +292,6 @@ func TestRunIsLeader(t *testing.T) {
 }
 
 
-func TestRunVoteDoneAndNotDelivered(t *testing.T) {
-	r := run{}
-	r.out = make(chan Packet, 100)
-	r.ops = make(chan store.Op, 100)
-
-	r.l.init(1)
-	r.l.done = true
-
-	exp := r.l
-
-	p := packet{
-		msg: msg{
-			Seqn:  proto.Int64(1),
-			Cmd:   vote,
-			Vrnd:  proto.Int64(1),
-			Value: []byte("foo"),
-		},
-		Addr: "X",
-	}
-
-	r.update(p, new(vector.Vector))
-
-	assert.Equal(t, exp, r.l)
-}
-
-
-func TestRunInviteDoneAndNotDelivered(t *testing.T) {
-	var r run
-	r.out = make(chan Packet, 100)
-	r.ops = make(chan store.Op, 100)
-
-	r.l.done = true
-	exp := r.a
-
-	r.update(packet{msg: *newInviteSeqn1(1)}, new(vector.Vector))
-
-	assert.Equal(t, exp, r.a)
-}
-
-
-func TestRunProposeDoneAndNotDelivered(t *testing.T) {
-	var r run
-	r.out = make(chan Packet, 100)
-	r.ops = make(chan store.Op, 100)
-	r.l.done = true
-
-	exp := r.c
-
-	r.update(packet{msg: msg{Cmd: propose}}, new(vector.Vector))
-	assert.Equal(t, exp, r.c)
-}
-
-
 func TestRunReturnTrueIfLearned(t *testing.T) {
 	r := run{}
 	r.out = make(chan Packet, 100)
@@ -359,8 +306,8 @@ func TestRunReturnTrueIfLearned(t *testing.T) {
 		Addr: "X",
 	}
 
-	learned := r.update(p, new(vector.Vector))
-	assert.T(t, learned)
+	r.update(p, new(vector.Vector))
+	assert.T(t, r.l.done)
 }
 
 
@@ -378,6 +325,6 @@ func TestRunReturnFalseIfNotLearned(t *testing.T) {
 		Addr: "X",
 	}
 
-	learned := r.update(p, new(vector.Vector))
-	assert.T(t, !learned)
+	r.update(p, new(vector.Vector))
+	assert.T(t, !r.l.done)
 }

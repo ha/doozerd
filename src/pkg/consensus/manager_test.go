@@ -133,15 +133,18 @@ func TestManagerPacketProcessing(t *testing.T) {
 		Seqn: 1,
 		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
-	for (<-m).Runs < 1 {
+	for (<-m).TotalRuns < 1 {
 	}
 
 	in <- Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
+	assert.Equal(t, 0, (<-m).WaitPackets)
 
-	assert.Equal(t, 0, (<-m).Runs)
+	for (<-m).TotalRuns < 2 {
+	}
+	assert.Equal(t, 1, (<-m).Runs)
 }
 
 
@@ -164,15 +167,16 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 		Seqn: 1,
 		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
-	for (<-m).Runs < 1 {
+	for (<-m).TotalRuns < 1 {
 	}
 
 	in <- Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
-
-	assert.Equal(t, 0, (<-m).Runs)
+	for (<-m).TotalRuns < 2 {
+	}
+	assert.Equal(t, 1, (<-m).Runs)
 }
 
 
