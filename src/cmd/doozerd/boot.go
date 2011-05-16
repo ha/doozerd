@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"github.com/ha/doozer"
+	"os"
 	"time"
 )
 
@@ -81,7 +82,7 @@ func attach(name string, addrs []string) *doozer.Conn {
 
 	for _, a := range addrs {
 		go func(a string) {
-			if c := isCal(name, a); c != nil {
+			if c, _ := isCal(name, a); c != nil {
 				ch <- c
 			}
 		}(a)
@@ -98,31 +99,31 @@ func attach(name string, addrs []string) *doozer.Conn {
 
 // IsCal checks if addr is a CAL in the cluster named name.
 // Returns a client if so, nil if not.
-func isCal(name, addr string) *doozer.Conn {
+func isCal(name, addr string) (*doozer.Conn, os.Error) {
 	c, err := doozer.Dial(addr)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	err = c.Access(rwsk)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	v, _, _ := c.Get("/ctl/name", nil)
 	if string(v) != name {
-		return nil
+		return nil, nil
 	}
 
 	rev, err := c.Rev()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var cals []string
 	names, err := c.Getdir("/ctl/cal", rev, 0, -1)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	for _, name := range names {
 		cals = append(cals, name)
@@ -138,14 +139,14 @@ func isCal(name, addr string) *doozer.Conn {
 
 		v, _, err := c.Get("/ctl/node/"+id+"/addr", nil)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		if string(v) == addr {
-			return c
+			return c, nil
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 
