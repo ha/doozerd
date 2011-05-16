@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"github.com/ha/doozer"
-	"os"
 	"time"
 )
 
@@ -42,8 +41,7 @@ func elect(name, id, laddr string, b *doozer.Conn) *doozer.Conn {
 
 	// fight to be the seed
 	_, err = b.Set("/ctl/boot/"+name, 0, []byte(id))
-	switch err {
-	case os.Error(doozer.ErrOldRev):
+	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrOldRev {
 		// we lost, lookup addresses again
 		cl := lookupAndAttach(b, name)
 		if cl == nil {
@@ -58,10 +56,11 @@ func elect(name, id, laddr string, b *doozer.Conn) *doozer.Conn {
 		}
 
 		return cl
-	case nil:
-		return nil // we are the seed node -- don't attach
+	} else if err != nil {
+		panic(err)
 	}
-	panic(err)
+
+	return nil // we are the seed node -- don't attach
 }
 
 
@@ -159,7 +158,9 @@ func lookup(b *doozer.Conn, name string) (as []string) {
 
 	path := "/ctl/ns/" + name
 	names, err := b.Getdir(path, rev, 0, -1)
-	if err != nil {
+	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
+		return nil
+	} else if err != nil {
 		panic(err)
 	}
 
