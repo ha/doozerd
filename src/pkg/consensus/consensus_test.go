@@ -75,7 +75,7 @@ func TestConsensusTwo(t *testing.T) {
 	st.Ops <- store.Op{1, store.Nop}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/node/"+a+"/addr", "x", 0)}
 	st.Ops <- store.Op{3, store.MustEncodeSet("/ctl/cal/1", a, 0)}
-	st.Ops <- store.Op{4, store.MustEncodeSet("/ctl/node/"+b+"/addr", "x", 0)}
+	st.Ops <- store.Op{4, store.MustEncodeSet("/ctl/node/"+b+"/addr", "y", 0)}
 	st.Ops <- store.Op{5, store.MustEncodeSet("/ctl/cal/2", b, 0)}
 
 	ain := make(chan Packet)
@@ -118,17 +118,24 @@ func TestConsensusTwo(t *testing.T) {
 
 	go func() {
 		for o := range aout {
-			o.Addr = a
-			ain <- o
-			bin <- o
+			o := o
+			if o.Addr == "x" {
+				go func() { ain <- o }()
+			} else {
+				o.Addr = "x"
+				go func() { bin <- o }()
+			}
 		}
 	}()
 
 	go func() {
 		for o := range bout {
-			o.Addr = b
-			ain <- o
-			bin <- o
+			if o.Addr == "y" {
+				go func() { bin <- o }()
+			} else {
+				o.Addr = "y"
+				go func() { ain <- o }()
+			}
 		}
 	}()
 

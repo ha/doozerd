@@ -349,7 +349,7 @@ func TestAddRun(t *testing.T) {
 		self:  "a",
 		seqn:  2 + alpha,
 		cals:  []string{"a"},
-		addrs: map[string]bool{"x": true},
+		addr:  []string{"x"},
 		ops:   st.Ops,
 		out:   c.Out,
 		bound: initialWaitBound,
@@ -409,5 +409,5 @@ func TestGetAddrs(t *testing.T) {
 	<-st.Seqns
 
 	addrs := getAddrs(st, []string{"1", "2", "3"})
-	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, addrs)
+	assert.Equal(t, []string{"x", "y", "z"}, addrs)
 }

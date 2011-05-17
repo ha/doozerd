@@ -12,10 +12,10 @@ const initialWaitBound = 1e6 // ns == 1ms
 
 
 type run struct {
-	seqn  int64
-	self  string
-	cals  []string
-	addrs map[string]bool
+	seqn int64
+	self string
+	cals []string
+	addr []string
 
 	c coordinator
 	a acceptor
@@ -60,7 +60,7 @@ func (r *run) broadcast(m *msg) {
 	if m != nil {
 		m.Seqn = &r.seqn
 		b, _ := proto.Marshal(m)
-		for addr := range r.addrs {
+		for _, addr := range r.addr {
 			r.out <- Packet{addr, b}
 		}
 	}

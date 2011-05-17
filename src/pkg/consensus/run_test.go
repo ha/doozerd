@@ -86,10 +86,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 	var r run
 	r.c.crnd = 1
 	r.out = c
-	r.addrs = map[string]bool{
-		"x": true,
-		"y": true,
-	}
+	r.addr = []string{"x", "y"}
 
 	var got msg
 	exp := msg{
@@ -124,10 +121,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 	c := make(chan Packet, 100)
 	var r run
 	r.out = c
-	r.addrs = map[string]bool{
-		"x": true,
-		"y": true,
-	}
+	r.addr = []string{"x", "y"}
 
 	var got msg
 	exp := msg{
@@ -151,10 +145,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 	var r run
 	r.out = c
 	r.ops = make(chan store.Op, 100)
-	r.addrs = map[string]bool{
-		"x": true,
-		"y": true,
-	}
+	r.addr = []string{"x", "y"}
 
 	var got msg
 	exp := msg{
@@ -177,10 +168,7 @@ func TestRunAppliesOp(t *testing.T) {
 	r.seqn = 1
 	r.out = make(chan Packet, 100)
 	r.ops = c
-	r.addrs = map[string]bool{
-		"x": true,
-		"y": true,
-	}
+	r.addr = []string{"x", "y"}
 
 	r.update(packet{msg: *newVote(1, "foo")}, new(vector.Vector))
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
@@ -193,11 +181,7 @@ func TestRunBroadcastThree(t *testing.T) {
 	var r run
 	r.seqn = 1
 	r.out = c
-	r.addrs = map[string]bool{
-		"x": true,
-		"y": true,
-		"z": true,
-	}
+	r.addr = []string{"x", "y", "z"}
 
 	r.broadcast(newInvite(1))
 	c <- sentinel
@@ -208,10 +192,10 @@ func TestRunBroadcastThree(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	addrs := map[string]bool{}
-	for i := 0; i < len(r.addrs); i++ {
+	addrs := make([]string, len(r.addr))
+	for i := 0; i < len(r.addr); i++ {
 		p := <-c
-		addrs[p.Addr] = true
+		addrs[i] = p.Addr
 		var got msg
 		err := proto.Unmarshal(p.Data, &got)
 		assert.Equal(t, nil, err)
@@ -219,7 +203,7 @@ func TestRunBroadcastThree(t *testing.T) {
 	}
 
 	assert.Equal(t, sentinel, <-c)
-	assert.Equal(t, r.addrs, addrs)
+	assert.Equal(t, r.addr, addrs)
 }
 
 
@@ -229,13 +213,7 @@ func TestRunBroadcastFive(t *testing.T) {
 	var r run
 	r.seqn = 1
 	r.out = c
-	r.addrs = map[string]bool{
-		"v": true,
-		"w": true,
-		"x": true,
-		"y": true,
-		"z": true,
-	}
+	r.addr = []string{"v", "w", "x", "y", "z"}
 
 	r.broadcast(newInvite(1))
 	c <- sentinel
@@ -246,10 +224,10 @@ func TestRunBroadcastFive(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	addrs := map[string]bool{}
-	for i := 0; i < len(r.addrs); i++ {
+	addrs := make([]string, len(r.addr))
+	for i := 0; i < len(r.addr); i++ {
 		p := <-c
-		addrs[p.Addr] = true
+		addrs[i] = p.Addr
 		var got msg
 		err := proto.Unmarshal(p.Data, &got)
 		assert.Equal(t, nil, err)
@@ -257,7 +235,7 @@ func TestRunBroadcastFive(t *testing.T) {
 	}
 
 	assert.Equal(t, sentinel, <-c)
-	assert.Equal(t, r.addrs, addrs)
+	assert.Equal(t, r.addr, addrs)
 }
 
 
@@ -266,11 +244,7 @@ func TestRunBroadcastNil(t *testing.T) {
 	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.out = c
-	r.addrs = map[string]bool{
-		"x": true,
-		"y": true,
-		"z": true,
-	}
+	r.addr = []string{"x", "y", "z"}
 
 	r.broadcast(nil)
 	c <- sentinel

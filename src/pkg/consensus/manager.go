@@ -221,7 +221,7 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.bound = initialWaitBound
 	r.seqn = e.Seqn + m.cfg.Alpha
 	r.cals = getCals(e)
-	r.addrs = getAddrs(e, r.cals)
+	r.addr = getAddrs(e, r.cals)
 	r.c.size = len(r.cals)
 	r.c.quor = r.quorum()
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
@@ -254,12 +254,10 @@ func getCals(g store.Getter) []string {
 }
 
 
-func getAddrs(g store.Getter, cals []string) map[string]bool {
-	addrs := make(map[string]bool)
-
-	for _, id := range cals {
-		addrs[store.GetString(g, "/ctl/node/"+id+"/addr")] = true
+func getAddrs(g store.Getter, cals []string) (a []string) {
+	a = make([]string, len(cals))
+	for i, id := range cals {
+		a[i] = store.GetString(g, "/ctl/node/"+id+"/addr")
 	}
-
-	return addrs
+	return
 }
