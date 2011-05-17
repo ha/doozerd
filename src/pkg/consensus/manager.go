@@ -221,7 +221,7 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.bound = initialWaitBound
 	r.seqn = e.Seqn + m.cfg.Alpha
 	r.cals = getCals(e)
-	r.addrs = getAddrs(e)
+	r.addrs = getAddrs(e, r.cals)
 	r.c.size = len(r.cals)
 	r.c.quor = r.quorum()
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
@@ -254,13 +254,10 @@ func getCals(g store.Getter) []string {
 }
 
 
-func getAddrs(g store.Getter) map[string]bool {
-	// TODO include only CALs, once followers use TCP for updates.
-
-	ids := store.Getdir(g, "/ctl/node")
+func getAddrs(g store.Getter, cals []string) map[string]bool {
 	addrs := make(map[string]bool)
 
-	for _, id := range ids {
+	for _, id := range cals {
 		addrs[store.GetString(g, "/ctl/node/"+id+"/addr")] = true
 	}
 

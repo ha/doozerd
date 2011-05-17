@@ -408,5 +408,6 @@ func TestGetAddrs(t *testing.T) {
 	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "z", 0)}
 	<-st.Seqns
 
-	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, getAddrs(st))
+	addrs := getAddrs(st, []string{"1", "2", "3"})
+	assert.Equal(t, map[string]bool{"x": true, "y": true, "z": true}, addrs)
 }
