@@ -342,8 +342,8 @@ func TestAddRun(t *testing.T) {
 		Ops:   st.Ops,
 		Out:   make(chan Packet),
 	}
-	m := &Manager{cfg: *c}
-	got := m.addRun(runs, <-ch)
+	m := &Manager{cfg: *c, run: runs}
+	got := m.addRun(<-ch)
 
 	exp := &run{
 		self:  "a",

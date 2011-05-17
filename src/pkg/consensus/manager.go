@@ -57,6 +57,7 @@ type Stats struct {
 type Manager struct {
 	Stats <-chan Stats
 	cfg   Config
+	run   map[int64]*run
 }
 
 
@@ -72,15 +73,15 @@ var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 func NewManager(c *Config) (m *Manager) {
 	m = new(Manager)
 	s := make(chan Stats)
-	m.cfg = *c
 	m.Stats = s
+	m.cfg = *c
+	m.run = make(map[int64]*run)
 	go m.manage(s)
 	return m
 }
 
 
 func (m *Manager) manage(statCh chan<- Stats) {
-	runs := make(map[int64]*run)
 	packets := new(vector.Vector)
 	fills := new(vector.Vector)
 	ticks := new(vector.Vector)
@@ -93,7 +94,7 @@ func (m *Manager) manage(statCh chan<- Stats) {
 	}
 
 	for {
-		stats.Runs = len(runs)
+		stats.Runs = len(m.run)
 		stats.WaitPackets = packets.Len()
 		stats.WaitFills = fills.Len()
 		stats.WaitTicks = ticks.Len()
@@ -109,8 +110,8 @@ func (m *Manager) manage(statCh chan<- Stats) {
 				panic(err) // can't happen
 			}
 
-			runs[e.Seqn] = nil, false
-			nextRun = m.addRun(runs, e).seqn + 1
+			m.run[e.Seqn] = nil, false
+			nextRun = m.addRun(e).seqn + 1
 			stats.TotalRuns++
 		case p := <-m.cfg.In:
 			recvPacket(packets, p)
@@ -140,7 +141,7 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			}
 			heap.Pop(packets)
 
-			if r := runs[*p.Seqn]; r != nil {
+			if r := m.run[*p.Seqn]; r != nil {
 				if r.l.done {
 					go sendLearn(m.cfg.Out, p, m.cfg.Store)
 				} else {
@@ -212,7 +213,7 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 }
 
 
-func (m *Manager) addRun(runs map[int64]*run, e store.Event) (r *run) {
+func (m *Manager) addRun(e store.Event) (r *run) {
 	r = new(run)
 	r.self = m.cfg.Self
 	r.out = m.cfg.Out
@@ -225,7 +226,7 @@ func (m *Manager) addRun(runs map[int64]*run, e store.Event) (r *run) {
 	r.c.quor = r.quorum()
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
 	r.l.init(int64(r.quorum()))
-	runs[r.seqn] = r
+	m.run[r.seqn] = r
 	if r.isLeader(m.cfg.Self) {
 		m.cfg.PSeqn <- r.seqn
 	}
