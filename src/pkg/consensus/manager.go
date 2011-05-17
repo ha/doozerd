@@ -54,7 +54,10 @@ type Stats struct {
 }
 
 
-type Manager <-chan Stats
+type Manager struct {
+	Stats <-chan Stats
+	cfg   Config
+}
 
 
 type Prop struct {
@@ -66,22 +69,25 @@ var tickTemplate = &msg{Cmd: tick}
 var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 
 
-func NewManager(c *Config) Manager {
-	stat := make(chan Stats)
-	go manage(c, stat)
-	return stat
+func NewManager(c *Config) (m *Manager) {
+	m = new(Manager)
+	s := make(chan Stats)
+	m.cfg = *c
+	m.Stats = s
+	go m.manage(s)
+	return m
 }
 
 
-func manage(c *Config, statCh chan Stats) {
+func (m *Manager) manage(statCh chan<- Stats) {
 	runs := make(map[int64]*run)
 	packets := new(vector.Vector)
 	fills := new(vector.Vector)
 	ticks := new(vector.Vector)
-	nextFill := c.DefRev + c.Alpha
+	nextFill := m.cfg.DefRev + m.cfg.Alpha
 	var nextRun int64
 	var stats Stats
-	runCh, err := c.Store.Wait(store.Any, c.DefRev)
+	runCh, err := m.cfg.Store.Wait(store.Any, m.cfg.DefRev)
 	if err != nil {
 		panic(err) // can't happen
 	}
@@ -98,28 +104,28 @@ func manage(c *Config, statCh chan Stats) {
 				return
 			}
 
-			runCh, err = c.Store.Wait(store.Any, e.Seqn+1)
+			runCh, err = m.cfg.Store.Wait(store.Any, e.Seqn+1)
 			if err != nil {
 				panic(err) // can't happen
 			}
 
 			runs[e.Seqn] = nil, false
-			nextRun = addRun(c, runs, e).seqn + 1
+			nextRun = m.addRun(runs, e).seqn + 1
 			stats.TotalRuns++
-		case p := <-c.In:
+		case p := <-m.cfg.In:
 			recvPacket(packets, p)
 		case statCh <- stats:
-		case pr := <-c.Props:
+		case pr := <-m.cfg.Props:
 			log.Printf("propose seqn=%d", pr.Seqn)
-			m := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
-			heap.Push(packets, packet{msg: m})
+			msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
+			heap.Push(packets, packet{msg: msg})
 
 			for nextFill < pr.Seqn {
-				schedTrigger(fills, nextFill, c.TFill)
+				schedTrigger(fills, nextFill, m.cfg.TFill)
 				nextFill++
 			}
 			nextFill++
-		case t := <-c.Ticker:
+		case t := <-m.cfg.Ticker:
 			n := applyTriggers(packets, fills, t, fillTemplate)
 			stats.TotalFills += int64(n)
 
@@ -136,7 +142,7 @@ func manage(c *Config, statCh chan Stats) {
 
 			if r := runs[*p.Seqn]; r != nil {
 				if r.l.done {
-					go sendLearn(c.Out, p, c.Store)
+					go sendLearn(m.cfg.Out, p, m.cfg.Store)
 				} else {
 					r.update(p, ticks)
 				}
@@ -206,13 +212,13 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 }
 
 
-func addRun(c *Config, runs map[int64]*run, e store.Event) (r *run) {
+func (m *Manager) addRun(runs map[int64]*run, e store.Event) (r *run) {
 	r = new(run)
-	r.self = c.Self
-	r.out = c.Out
-	r.ops = c.Ops
+	r.self = m.cfg.Self
+	r.out = m.cfg.Out
+	r.ops = m.cfg.Ops
 	r.bound = initialWaitBound
-	r.seqn = e.Seqn + c.Alpha
+	r.seqn = e.Seqn + m.cfg.Alpha
 	r.cals = getCals(e)
 	r.addrs = getAddrs(e)
 	r.c.size = len(r.cals)
@@ -220,8 +226,8 @@ func addRun(c *Config, runs map[int64]*run, e store.Event) (r *run) {
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
 	r.l.init(int64(r.quorum()))
 	runs[r.seqn] = r
-	if r.isLeader(c.Self) {
-		c.PSeqn <- r.seqn
+	if r.isLeader(m.cfg.Self) {
+		m.cfg.PSeqn <- r.seqn
 	}
 	return r
 }

@@ -32,12 +32,13 @@ func TestManagerPacketQueue(t *testing.T) {
 		In:    in,
 		Out:   out,
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	s := make(chan Stats)
+	m := &Manager{Stats: s, cfg: *cfg}
+	go m.manage(s)
 
 	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
-	assert.Equal(t, 1, (<-m).WaitPackets)
+	assert.Equal(t, 1, (<-m.Stats).WaitPackets)
 }
 
 
@@ -51,19 +52,18 @@ func TestManagerDropsOldPackets(t *testing.T) {
 		In:    in,
 		Out:   out,
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	m := NewManager(cfg)
 
 	st.Ops <- store.Op{
 		Seqn: 1,
 		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
-	for (<-m).Runs < 1 {
+	for (<-m.Stats).Runs < 1 {
 	}
 
 	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
 
-	assert.Equal(t, 0, (<-m).WaitPackets)
+	assert.Equal(t, 0, (<-m.Stats).WaitPackets)
 }
 
 
@@ -126,25 +126,24 @@ func TestManagerPacketProcessing(t *testing.T) {
 		Out:   out,
 		Ops:   st.Ops,
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	m := NewManager(cfg)
 
 	st.Ops <- store.Op{
 		Seqn: 1,
 		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
-	for (<-m).TotalRuns < 1 {
+	for (<-m.Stats).TotalRuns < 1 {
 	}
 
 	in <- Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
-	assert.Equal(t, 0, (<-m).WaitPackets)
+	assert.Equal(t, 0, (<-m.Stats).WaitPackets)
 
-	for (<-m).TotalRuns < 2 {
+	for (<-m.Stats).TotalRuns < 2 {
 	}
-	assert.Equal(t, 1, (<-m).Runs)
+	assert.Equal(t, 1, (<-m.Stats).Runs)
 }
 
 
@@ -160,23 +159,22 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 		Out:   out,
 		Ops:   st.Ops,
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	m := NewManager(cfg)
 
 	st.Ops <- store.Op{
 		Seqn: 1,
 		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
-	for (<-m).TotalRuns < 1 {
+	for (<-m.Stats).TotalRuns < 1 {
 	}
 
 	in <- Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
-	for (<-m).TotalRuns < 2 {
+	for (<-m.Stats).TotalRuns < 2 {
 	}
-	assert.Equal(t, 1, (<-m).Runs)
+	assert.Equal(t, 1, (<-m.Stats).Runs)
 }
 
 
@@ -192,21 +190,20 @@ func TestManagerTickQueue(t *testing.T) {
 		Ticker: ticker,
 		Out:    make(chan Packet, 100),
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	m := NewManager(cfg)
 	st.Ops <- store.Op{
 		Seqn: 1,
 		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
 	}
-	for (<-m).Runs < 1 {
+	for (<-m.Stats).Runs < 1 {
 	}
 
 	// get it to tick for seqn 2
 	in <- Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: propose})}
-	assert.Equal(t, 1, (<-m).WaitTicks)
+	assert.Equal(t, 1, (<-m.Stats).WaitTicks)
 
 	ticker <- time.Nanoseconds() + initialWaitBound*2
-	assert.Equal(t, int64(1), (<-m).TotalTicks)
+	assert.Equal(t, int64(1), (<-m.Stats).TotalTicks)
 }
 
 
@@ -222,7 +219,7 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 		PSeqn:  ps,
 		Store:  st,
 	}
-	go manage(cfg, nil)
+	NewManager(cfg)
 
 	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", "b", 0)}
@@ -247,11 +244,10 @@ func TestManagerProposalQueue(t *testing.T) {
 		Out:   out,
 		Props: props,
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	m := NewManager(cfg)
 	props <- &Prop{Seqn: 1, Mut: []byte("foo")}
 
-	assert.Equal(t, 1, (<-m).WaitPackets)
+	assert.Equal(t, 1, (<-m.Stats).WaitPackets)
 }
 
 
@@ -269,13 +265,12 @@ func TestManagerFillQueue(t *testing.T) {
 		Props:  props,
 		Ticker: ticker,
 	}
-	m := make(chan Stats)
-	go manage(cfg, m)
+	m := NewManager(cfg)
 	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
-	assert.Equal(t, 6, (<-m).WaitFills)
+	assert.Equal(t, 6, (<-m.Stats).WaitFills)
 
 	ticker <- time.Nanoseconds()
-	assert.Equal(t, 7, (<-m).WaitPackets)
+	assert.Equal(t, 7, (<-m.Stats).WaitPackets)
 }
 
 
@@ -347,7 +342,8 @@ func TestAddRun(t *testing.T) {
 		Ops:   st.Ops,
 		Out:   make(chan Packet),
 	}
-	got := addRun(c, runs, <-ch)
+	m := &Manager{cfg: *c}
+	got := m.addRun(runs, <-ch)
 
 	exp := &run{
 		self:  "a",
