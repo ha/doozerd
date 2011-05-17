@@ -262,13 +262,7 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
 func TestLearnerIgnoresBadMessages(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{})
-	assert.Equal(t, false, ln.done)
-	assert.Equal(t, []byte{}, v)
-	assert.Equal(t, false, ok)
-	assert.Equal(t, (*msg)(nil), m)
-
-	m, v, ok = ln.update(packet{msg: msg{Cmd: vote}}) // missing Vrnd
+	m, v, ok := ln.update(packet{msg: msg{Cmd: vote}}) // missing Vrnd
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)

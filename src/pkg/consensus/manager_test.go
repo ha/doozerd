@@ -36,7 +36,10 @@ func TestManagerPacketQueue(t *testing.T) {
 	m := &Manager{Stats: s, cfg: *cfg}
 	go m.manage(s)
 
-	in <- Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})}
+	in <- Packet{"x", mustMarshal(&msg{
+		Seqn: proto.Int64(1),
+		Cmd:  invite,
+	})}
 
 	assert.Equal(t, 1, (<-m.Stats).WaitPackets)
 }
@@ -70,9 +73,18 @@ func TestManagerDropsOldPackets(t *testing.T) {
 func TestRecvPacket(t *testing.T) {
 	q := new(vector.Vector)
 
-	recvPacket(q, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})})
-	recvPacket(q, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(2)})})
-	recvPacket(q, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(3)})})
+	recvPacket(q, Packet{"x", mustMarshal(&msg{
+		Seqn: proto.Int64(1),
+		Cmd:  invite,
+	})})
+	recvPacket(q, Packet{"x", mustMarshal(&msg{
+		Seqn: proto.Int64(2),
+		Cmd:  invite,
+	})})
+	recvPacket(q, Packet{"x", mustMarshal(&msg{
+		Seqn: proto.Int64(3),
+		Cmd:  invite,
+	})})
 
 	assert.Equal(t, 3, q.Len())
 }

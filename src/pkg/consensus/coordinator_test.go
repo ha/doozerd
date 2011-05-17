@@ -306,13 +306,8 @@ func TestCoordDuel(t *testing.T) {
 func TestCoordinatorIgnoresBadMessages(t *testing.T) {
 	co := coordinator{begun: true}
 
-	got, tick := co.update(packet{})
-	assert.Equal(t, (*msg)(nil), got)
-	assert.Equal(t, false, tick)
-	assert.Equal(t, coordinator{begun: true}, co)
-
 	// missing Crnd
-	got, tick = co.update(packet{msg: msg{Cmd: rsvp, Vrnd: new(int64)}})
+	got, tick := co.update(packet{msg: msg{Cmd: rsvp, Vrnd: new(int64)}})
 	assert.Equal(t, (*msg)(nil), got)
 	assert.Equal(t, false, tick)
 	assert.Equal(t, coordinator{begun: true}, co)

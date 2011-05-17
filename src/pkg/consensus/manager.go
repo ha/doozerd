@@ -182,7 +182,7 @@ func recvPacket(q heap.Interface, P Packet) {
 		return
 	}
 
-	if p.msg.Seqn == nil {
+	if p.msg.Seqn == nil || p.msg.Cmd == nil {
 		return
 	}
 

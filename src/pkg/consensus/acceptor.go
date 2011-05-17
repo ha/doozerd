@@ -6,10 +6,6 @@ type acceptor struct {
 }
 
 func (ac *acceptor) update(m *msg) *msg {
-	if m.Cmd == nil {
-		return nil
-	}
-
 	switch *m.Cmd {
 	case msg_INVITE:
 		if m.Crnd == nil {

@@ -23,10 +23,6 @@ func (ln *learner) update(p packet) (m *msg, v []byte, ok bool) {
 	}
 
 	in := p.msg
-	if in.Cmd == nil {
-		return
-	}
-
 	switch *in.Cmd {
 	case msg_LEARN:
 		ln.done, ln.v = true, string(in.Value)

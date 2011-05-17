@@ -84,10 +84,7 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 func TestAcceptorIgnoresBadMessages(t *testing.T) {
 	ac := acceptor{}
 
-	got := ac.update(&msg{})
-	assert.Equal(t, (*msg)(nil), got)
-
-	got = ac.update(&msg{Cmd: invite}) // missing Crnd
+	got := ac.update(&msg{Cmd: invite}) // missing Crnd
 	assert.Equal(t, (*msg)(nil), got)
 
 	got = ac.update(&msg{Cmd: nominate}) // missing Crnd

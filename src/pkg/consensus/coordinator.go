@@ -18,11 +18,6 @@ type coordinator struct {
 
 func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
 	in := &p.msg
-
-	if in.Cmd == nil {
-		return
-	}
-
 	switch *in.Cmd {
 	case msg_PROPOSE:
 		if co.begun {
