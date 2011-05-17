@@ -3,6 +3,7 @@ package main
 
 import (
 	"crypto/tls"
+	"doozer/consensus"
 	"doozer/peer"
 	"flag"
 	"fmt"
@@ -53,6 +54,7 @@ var (
 
 func init() {
 	flag.Var(&aaddrs, "a", "attach address (may be given multiple times)")
+	flag.BoolVar(&consensus.UseMulti, "multi", true, "use multi-paxos")
 }
 
 

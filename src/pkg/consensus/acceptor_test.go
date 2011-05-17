@@ -3,6 +3,7 @@ package consensus
 import (
 	_ "doozer/quiet"
 	"github.com/bmizerany/assert"
+	"goprotobuf.googlecode.com/hg/proto"
 	"testing"
 )
 
@@ -28,7 +29,16 @@ func TestAcceptsInvite(t *testing.T) {
 	ac := acceptor{}
 	got := ac.update(newInviteSeqn1(1))
 	assert.Equal(t, newRsvp(1, 0, ""), got)
+	assert.Equal(t, int64(1), ac.rnd)
 }
+
+
+func TestAcceptsMInvite(t *testing.T) {
+	ac := acceptor{}
+	got := ac.update(&msg{Cmd: newMsg_Cmd(msg_MINVITE), Crnd: proto.Int64(1)})
+	assert.Equal(t, newRsvp(1, 0, ""), got)
+}
+
 
 func TestItVotes(t *testing.T) {
 	totest := [][]*msg{

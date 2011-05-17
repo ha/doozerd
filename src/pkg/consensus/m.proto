@@ -10,6 +10,8 @@ message Msg {
         TICK = 5;
         PROPOSE = 6;
         LEARN = 7;
+        MINVITE = 8;
+        MRSVP = 9;
     }
 
     optional Cmd cmd = 1;

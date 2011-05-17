@@ -7,7 +7,7 @@ type acceptor struct {
 
 func (ac *acceptor) update(m *msg) *msg {
 	switch *m.Cmd {
-	case msg_INVITE:
+	case msg_INVITE, msg_MINVITE:
 		if m.Crnd == nil {
 			break
 		}

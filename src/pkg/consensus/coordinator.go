@@ -80,3 +80,11 @@ func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
 
 	return
 }
+
+
+func (c *coordinator) multiPropose(v []byte) *msg {
+	c.begun = true
+	c.target = string(v)
+	c.cval = c.target
+	return &msg{Cmd: nominate, Crnd: &c.crnd, Value: v}
+}

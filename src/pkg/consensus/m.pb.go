@@ -24,6 +24,8 @@ const (
 	msg_TICK     = 5
 	msg_PROPOSE  = 6
 	msg_LEARN    = 7
+	msg_MINVITE  = 8
+	msg_MRSVP    = 9
 )
 
 var msg_Cmd_name = map[int32]string{
@@ -35,6 +37,8 @@ var msg_Cmd_name = map[int32]string{
 	5: "TICK",
 	6: "PROPOSE",
 	7: "LEARN",
+	8: "MINVITE",
+	9: "MRSVP",
 }
 var msg_Cmd_value = map[string]int32{
 	"NOP":      0,
@@ -45,6 +49,8 @@ var msg_Cmd_value = map[string]int32{
 	"TICK":     5,
 	"PROPOSE":  6,
 	"LEARN":    7,
+	"MINVITE":  8,
+	"MRSVP":    9,
 }
 
 func newMsg_Cmd(x int32) *msg_Cmd {

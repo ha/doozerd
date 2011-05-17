@@ -259,10 +259,37 @@ func TestRunIsLeader(t *testing.T) {
 		seqn: 3,                       // 3 % 3 == 0
 	}
 
-	assert.T(t, r.isLeader("a"))  // index == 0
-	assert.T(t, !r.isLeader("b")) // index == 1
-	assert.T(t, !r.isLeader("c")) // index == 2
-	assert.T(t, !r.isLeader("x")) // index DNE
+	assert.Equal(t, int64(0), r.iLeader())
+	assert.Equal(t, int64(0), r.iId("a"))
+	assert.Equal(t, int64(1), r.iId("b"))
+	assert.Equal(t, int64(2), r.iId("c"))
+	assert.Equal(t, int64(-1), r.iId("x"))
+}
+
+
+func TestRunNextLeaderSeqn(t *testing.T) {
+	for _, seqn := range []int64{3, 4, 5} {
+		r := &run{
+			cals: []string{"a", "b", "c"},
+			seqn: seqn,
+		}
+		k := int64(len(r.cals))
+
+		a := r.nextLeaderSeqn("a")
+		assert.T(t, a%k == r.iId("a"), seqn)
+		assert.T(t, a >= r.seqn, seqn)
+		assert.T(t, a-r.seqn < 2*k, seqn)
+
+		b := r.nextLeaderSeqn("b")
+		assert.T(t, b%k == r.iId("b"), seqn)
+		assert.T(t, b >= r.seqn, seqn)
+		assert.T(t, b-r.seqn < 2*k, seqn)
+
+		c := r.nextLeaderSeqn("c")
+		assert.T(t, c%k == r.iId("c"), seqn)
+		assert.T(t, c >= r.seqn, seqn)
+		assert.T(t, c-r.seqn < 2*k, seqn)
+	}
 }
 
 

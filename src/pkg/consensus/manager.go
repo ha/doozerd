@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+const minviteTickTime = 1e8
+
+var tfill int64
+
+var UseMulti bool
+
 
 type packet struct {
 	Addr string
@@ -62,7 +68,13 @@ type Manager struct {
 	Stats <-chan Stats
 	cfg   Config
 	run   map[int64]*run
+	base  int64 // minimum seqn in Manager.run
+	next  int64 // minimum seqn > those in Manager.run
 	fill  vector.Vector
+	tick  vector.Vector
+	mult  run     // multi-paxos run (from most recent reconfiguration)
+	mrnd  []int64 // initial values for acceptor.rnd
+	mdone bool    // runs can skip phase 1
 }
 
 
@@ -76,6 +88,7 @@ var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 
 
 func NewManager(c *Config) (m *Manager) {
+	tfill = c.TFill
 	m = new(Manager)
 	s := make(chan Stats)
 	m.Stats = s
@@ -87,9 +100,8 @@ func NewManager(c *Config) (m *Manager) {
 
 
 func (m *Manager) manage(statCh chan<- Stats) {
+	var minviteAt int64
 	packets := new(vector.Vector)
-	ticks := new(vector.Vector)
-	var nextRun int64
 	var stats Stats
 	runCh, err := m.cfg.Store.Wait(store.Any, m.cfg.DefRev)
 	if err != nil {
@@ -99,7 +111,7 @@ func (m *Manager) manage(statCh chan<- Stats) {
 	for {
 		stats.Runs = len(m.run)
 		stats.WaitPackets = packets.Len()
-		stats.WaitTicks = ticks.Len()
+		stats.WaitTicks = m.tick.Len()
 
 		select {
 		case e, ok := <-runCh:
@@ -117,10 +129,11 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			log.Printf("del run %d", e.Seqn)
 			r := m.addRun(e)
 			log.Printf("add run %d", r.seqn)
-			nextRun = r.seqn + 1
+			m.next = r.seqn + 1
+			m.base = m.next - int64(len(m.run))
 			stats.TotalRuns++
 			log.Println("runs:", fmtRuns(m.run))
-			log.Println("avg tick delay:", avg(ticks))
+			log.Println("avg tick delay:", avg(&m.tick))
 			log.Println("avg fill delay:", avg(&m.fill))
 		case p := <-m.cfg.In:
 			recvPacket(packets, p)
@@ -134,27 +147,88 @@ func (m *Manager) manage(statCh chan<- Stats) {
 				log.Println("applied fills", n)
 			}
 
-			n = applyTriggers(packets, ticks, t, tickTemplate)
+			n = applyTriggers(packets, &m.tick, t, tickTemplate)
 			stats.TotalTicks += int64(n)
 			if n > 0 {
 				log.Println("applied ticks", n)
+			}
+
+			if UseMulti && !m.mdone && m.mult.seqn < m.next && t > minviteAt {
+				m.mult.broadcast(&msg{
+					Cmd:  newMsg_Cmd(msg_MINVITE),
+					Crnd: &m.mult.c.crnd,
+				})
+				minviteAt = t + minviteTickTime
 			}
 		}
 
 		for packets.Len() > 0 {
 			p := packets.At(0).(packet)
-			log.Printf("p.seqn=%d nextRun=%d", *p.Seqn, nextRun)
-			if *p.Seqn >= nextRun {
+			log.Printf("p.seqn=%d m.next=%d", *p.Seqn, m.next)
+			if *p.Seqn >= m.next {
 				break
 			}
 			heap.Pop(packets)
-
-			r := m.run[*p.Seqn]
-			if r == nil || r.l.done {
-				go sendLearn(m.cfg.Out, p, m.cfg.Store)
-			} else {
-				r.update(p, ticks)
+			switch *p.Cmd {
+			case msg_MINVITE:
+				m.handleMInvite(p)
+			case msg_MRSVP:
+				m.handleMRsvp(p)
+			default:
+				r := m.run[*p.Seqn]
+				if r == nil || r.l.done {
+					go sendLearn(m.cfg.Out, p, m.cfg.Store)
+				} else {
+					r.update(p, &m.tick)
+				}
 			}
+		}
+	}
+}
+
+
+// apply p to m.run and m.mrnd
+func (m *Manager) handleMInvite(p packet) {
+	if p.Crnd == nil {
+		return
+	}
+
+	n := *p.Seqn
+	if n < m.base {
+		n = m.base
+	}
+	for ; n < m.next; n++ {
+		r := m.run[n]
+		if *p.Seqn < r.cfg {
+			return
+		}
+		if r.iAddr(p.Addr) == r.iLeader() {
+			m := r.a.update(&p.msg)
+			r.broadcast(m)
+		}
+	}
+	i := *p.Seqn % int64(len(m.mrnd))
+	if *p.Seqn >= m.mult.cfg && *p.Crnd > m.mrnd[i] {
+		m.mrnd[i] = *p.Crnd
+	}
+	b, err := proto.Marshal(&msg{
+		Seqn: p.Seqn,
+		Cmd:  newMsg_Cmd(msg_MRSVP),
+		Crnd: p.Crnd,
+	})
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	m.cfg.Out <- Packet{p.Addr, b}
+}
+
+
+func (m *Manager) handleMRsvp(p packet) {
+	if p.Crnd != nil && *p.Seqn >= m.mult.cfg {
+		m.mult.c.rsvps[p.Addr] = true
+		if len(m.mult.c.rsvps) >= m.mult.c.quor {
+			m.mdone = true
 		}
 	}
 }
@@ -162,11 +236,19 @@ func (m *Manager) manage(statCh chan<- Stats) {
 
 func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
 	log.Println("prop", pr)
-	msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
-	heap.Push(q, packet{msg: msg})
+	if m.mdone && pr.Seqn >= m.mult.seqn {
+		log.Println("multi prop for", pr.Seqn, "mult.seqn is", m.mult.seqn)
+		m.run[pr.Seqn].multiPropose(pr.Mut, &m.tick)
+	} else {
+		msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
+		r := m.run[pr.Seqn]
+		r.c.crnd += int64(r.c.size)
+		log.Println("r.c.crnd now", r.c.crnd)
+		heap.Push(q, packet{msg: msg})
+	}
 	for n := pr.Seqn - 1; ; n-- {
 		r := m.run[n]
-		if r == nil || r.isLeader(m.cfg.Self) {
+		if r == nil || r.iLeader() == r.iId(r.self) {
 			break
 		} else {
 			schedTrigger(&m.fill, n, t, m.cfg.TFill)
@@ -260,12 +342,28 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.seqn = e.Seqn + m.cfg.Alpha
 	r.cals = getCals(e)
 	r.addr = getAddrs(e, r.cals)
+	if !r.eqCals(m.run[r.seqn-1]) {
+		m.mrnd = make([]int64, int64(len(r.cals)))
+		m.mult.cfg = r.seqn
+		m.mult.seqn = r.nextLeaderSeqn(r.self)
+		m.mult.out = r.out
+		m.mult.cals = r.cals
+		log.Println("m", m.mult.seqn, "cals", m.mult.cals)
+		m.mult.addr = r.addr
+		log.Println("m", m.mult.seqn, "addr", m.mult.addr)
+		m.mult.c.rsvps = make(map[string]bool)
+		m.mult.c.quor = r.quorum()
+		m.mult.c.crnd = r.iId(r.self) + int64(len(r.cals))
+		m.mdone = false
+	}
+	r.cfg = m.mult.cfg
+	r.a.rnd = m.mrnd[r.seqn%int64(len(r.cals))]
 	r.c.size = len(r.cals)
 	r.c.quor = r.quorum()
-	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
+	r.c.crnd = m.mult.c.crnd
 	r.l.init(int64(r.quorum()))
 	m.run[r.seqn] = r
-	if r.isLeader(m.cfg.Self) {
+	if r.iId(r.self) == r.iLeader() {
 		log.Printf("pseqn %d", r.seqn)
 		m.cfg.PSeqn <- r.seqn
 	}

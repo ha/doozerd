@@ -58,16 +58,15 @@ func TestManagerDropsOldPackets(t *testing.T) {
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
 	cfg := &Config{
-		Store: st,
-		In:    in,
-		Out:   out,
+		DefRev: 2,
+		Store:  st,
+		In:     in,
+		Out:    out,
 	}
 	m := NewManager(cfg)
 
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	for (<-m.Stats).Runs < 1 {
 	}
 
@@ -134,23 +133,22 @@ func TestManagerPacketProcessing(t *testing.T) {
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
 	cfg := &Config{
-		Alpha: 1,
-		Store: st,
-		In:    in,
-		Out:   out,
-		Ops:   st.Ops,
+		DefRev: 2,
+		Alpha:  1,
+		Store:  st,
+		In:     in,
+		Out:    out,
+		Ops:    st.Ops,
 	}
 	m := NewManager(cfg)
 
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	for (<-m.Stats).TotalRuns < 1 {
 	}
 
 	in <- Packet{
-		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
+		Data: mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 	assert.Equal(t, 0, (<-m.Stats).WaitPackets)
@@ -167,23 +165,22 @@ func TestManagerDeletesSuccessfulRun(t *testing.T) {
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
 	cfg := &Config{
-		Alpha: 1,
-		Store: st,
-		In:    in,
-		Out:   out,
-		Ops:   st.Ops,
+		DefRev: 2,
+		Alpha:  1,
+		Store:  st,
+		In:     in,
+		Out:    out,
+		Ops:    st.Ops,
 	}
 	m := NewManager(cfg)
 
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	for (<-m.Stats).TotalRuns < 1 {
 	}
 
 	in <- Packet{
-		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
+		Data: mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	}
 	for (<-m.Stats).TotalRuns < 2 {
@@ -198,6 +195,7 @@ func TestManagerTickQueue(t *testing.T) {
 	defer close(st.Ops)
 	in := make(chan Packet)
 	cfg := &Config{
+		DefRev: 2,
 		Alpha:  1,
 		Store:  st,
 		In:     in,
@@ -205,15 +203,13 @@ func TestManagerTickQueue(t *testing.T) {
 		Out:    make(chan Packet, 100),
 	}
 	m := NewManager(cfg)
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/node/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	for (<-m.Stats).Runs < 1 {
 	}
 
-	// get it to tick for seqn 2
-	in <- Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: propose})}
+	// get it to tick for seqn 3
+	in <- Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: propose})}
 	assert.Equal(t, 1, (<-m.Stats).WaitTicks)
 
 	ticker <- time.Nanoseconds() + initialWaitBound*2
@@ -281,9 +277,9 @@ func TestManagerProposeFill(t *testing.T) {
 	}
 	m := NewManager(cfg)
 	m.run = map[int64]*run{
-		6: &run{seqn: 6, cals: []string{"a", "b", "c"}},
-		7: &run{seqn: 7, cals: []string{"a", "b", "c"}},
-		8: &run{seqn: 8, cals: []string{"a", "b", "c"}},
+		6: &run{self: "a", seqn: 6, cals: []string{"a", "b", "c"}},
+		7: &run{self: "a", seqn: 7, cals: []string{"a", "b", "c"}},
+		8: &run{self: "a", seqn: 8, cals: []string{"a", "b", "c"}},
 	}
 	exp := vector.Vector{
 		trigger{123, 7},
@@ -368,6 +364,7 @@ func TestAddRun(t *testing.T) {
 	exp := &run{
 		self:  "a",
 		seqn:  2 + alpha,
+		cfg:   2 + alpha,
 		cals:  []string{"a"},
 		addr:  []string{"x"},
 		ops:   st.Ops,
@@ -386,10 +383,23 @@ func TestAddRun(t *testing.T) {
 		voted:  map[string]bool{},
 	}
 
+	expMult := run{
+		seqn: 5,
+		cfg:  4,
+		cals: []string{"a"},
+		addr: []string{"x"},
+		out:  c.Out,
+	}
+	expMult.c = coordinator{
+		crnd: 1,
+		quor: expMult.quorum(),
+	}
+
 	assert.Equal(t, exp, got)
 	assert.Equal(t, exp, runs[got.seqn])
 	assert.Equal(t, 1, len(runs))
 	assert.Equal(t, exp.seqn, <-pseqn)
+	assert.Equal(t, expMult, m.mult)
 }
 
 
