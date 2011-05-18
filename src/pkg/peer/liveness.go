@@ -1,5 +1,9 @@
 package peer
 
+import (
+	"log"
+)
+
 
 type liveness struct {
 	timeout int64
@@ -17,6 +21,7 @@ func (lv *liveness) check(t int64) {
 		for addr, s := range lv.times {
 			if n > s && addr != lv.self {
 				lv.times[addr] = 0, false
+				log.Printf("shunning addr=%s", addr)
 				lv.shun <- addr
 			}
 		}
