@@ -25,6 +25,8 @@ type run struct {
 	out   chan<- Packet
 	ops   chan<- store.Op
 	bound int64
+	ntick int
+	prop  bool
 }
 
 
@@ -41,8 +43,11 @@ func (r *run) update(p packet, ticks heap.Interface) {
 	m, tick := r.c.update(p)
 	r.broadcast(m)
 	if tick {
+		r.ntick++
 		r.bound *= 2
-		schedTrigger(ticks, r.seqn, time.Nanoseconds(), rand.Int63n(r.bound))
+		t := rand.Int63n(r.bound)
+		log.Printf("sched tick=%d seqn=%d t=%d", r.ntick, r.seqn, t)
+		schedTrigger(ticks, r.seqn, time.Nanoseconds(), t)
 	}
 
 	m = r.a.update(&p.msg)

@@ -23,6 +23,11 @@ func (p packet) Less(y interface{}) bool {
 }
 
 
+func (p packet) String() string {
+	return "packet{" + p.Addr + ", " + p.msg.String() + "}"
+}
+
+
 type Packet struct {
 	Addr string
 	Data []byte
@@ -101,6 +106,7 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			if !ok {
 				return
 			}
+			log.Println("event", e)
 
 			runCh, err = m.cfg.Store.Wait(store.Any, e.Seqn+1)
 			if err != nil {
@@ -108,8 +114,14 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			}
 
 			m.run[e.Seqn] = nil, false
-			nextRun = m.addRun(e).seqn + 1
+			log.Printf("del run %d", e.Seqn)
+			r := m.addRun(e)
+			log.Printf("add run %d", r.seqn)
+			nextRun = r.seqn + 1
 			stats.TotalRuns++
+			log.Println("runs:", fmtRuns(m.run))
+			log.Println("avg tick delay:", avg(ticks))
+			log.Println("avg fill delay:", avg(&m.fill))
 		case p := <-m.cfg.In:
 			recvPacket(packets, p)
 		case statCh <- stats:
@@ -118,13 +130,20 @@ func (m *Manager) manage(statCh chan<- Stats) {
 		case t := <-m.cfg.Ticker:
 			n := applyTriggers(packets, &m.fill, t, fillTemplate)
 			stats.TotalFills += int64(n)
+			if n > 0 {
+				log.Println("applied fills", n)
+			}
 
 			n = applyTriggers(packets, ticks, t, tickTemplate)
 			stats.TotalTicks += int64(n)
+			if n > 0 {
+				log.Println("applied ticks", n)
+			}
 		}
 
 		for packets.Len() > 0 {
 			p := packets.At(0).(packet)
+			log.Printf("p.seqn=%d nextRun=%d", *p.Seqn, nextRun)
 			if *p.Seqn >= nextRun {
 				break
 			}
@@ -142,7 +161,7 @@ func (m *Manager) manage(statCh chan<- Stats) {
 
 
 func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
-	log.Printf("propose seqn=%d", pr.Seqn)
+	log.Println("prop", pr)
 	msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
 	heap.Push(q, packet{msg: msg})
 	for n := pr.Seqn - 1; ; n-- {
@@ -182,14 +201,29 @@ func recvPacket(q heap.Interface, P Packet) {
 
 	err := proto.Unmarshal(P.Data, &p.msg)
 	if err != nil {
+		log.Println(err)
 		return
 	}
 
 	if p.msg.Seqn == nil || p.msg.Cmd == nil {
+		log.Printf("discarding %#v", p)
 		return
 	}
 
+	log.Println("recv", p.String())
 	heap.Push(q, p)
+}
+
+
+func avg(v *vector.Vector) (n int64) {
+	t := time.Nanoseconds()
+	if v.Len() == 0 {
+		return -1
+	}
+	for _, x := range []interface{}(*v) {
+		n += x.(trigger).t - t
+	}
+	return n / int64(v.Len())
 }
 
 
@@ -209,6 +243,7 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 
 		p := packet{msg: *tpl}
 		p.msg.Seqn = &tt.n
+		log.Println("applying", p.msg.String())
 		heap.Push(packets, p)
 		n++
 	}
@@ -231,6 +266,7 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.l.init(int64(r.quorum()))
 	m.run[r.seqn] = r
 	if r.isLeader(m.cfg.Self) {
+		log.Printf("pseqn %d", r.seqn)
 		m.cfg.PSeqn <- r.seqn
 	}
 	return r
@@ -263,4 +299,24 @@ func getAddrs(g store.Getter, cals []string) (a []string) {
 		a[i] = store.GetString(g, "/ctl/node/"+id+"/addr")
 	}
 	return
+}
+
+
+func fmtRuns(rs map[int64]*run) (s string) {
+	var ns []int
+	for i := range rs {
+		ns = append(ns, int(i))
+	}
+	sort.SortInts(ns)
+	for _, i := range ns {
+		r := rs[int64(i)]
+		if r.l.done {
+			s += "X"
+		} else if r.prop {
+			s += "o"
+		} else {
+			s += "."
+		}
+	}
+	return s
 }
