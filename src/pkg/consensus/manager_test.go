@@ -13,6 +13,13 @@ import (
 )
 
 
+// The first element in a protobuf stream is always a varint.
+// The high bit of a varint byte indicates continuation;
+// This is a continuation bit without a subsequent byte.
+// http://code.google.com/apis/protocolbuffers/docs/encoding.html#varints.
+var invalidProtobuf = []byte{0x80}
+
+
 func mustMarshal(p interface{}) []byte {
 	buf, err := proto.Marshal(p)
 	if err != nil {
@@ -100,13 +107,7 @@ func TestRecvEmptyPacket(t *testing.T) {
 
 func TestRecvInvalidPacket(t *testing.T) {
 	q := new(vector.Vector)
-
-	// The first element in a protobuf stream is always a varint.
-	// The high bit of a varint byte indicates continuation;
-	// Here we're supplying a continuation bit without a
-	// subsequent byte. See also
-	// http://code.google.com/apis/protocolbuffers/docs/encoding.html#varints.
-	recvPacket(q, Packet{"x", []byte{0x80}})
+	recvPacket(q, Packet{"x", invalidProtobuf})
 	assert.Equal(t, 0, q.Len())
 }
 
