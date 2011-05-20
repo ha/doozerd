@@ -44,7 +44,6 @@ type Stats struct {
 	// Current queue sizes
 	Runs        int
 	WaitPackets int
-	WaitFills   int
 	WaitTicks   int
 
 	// Totals over all time
@@ -58,6 +57,7 @@ type Manager struct {
 	Stats <-chan Stats
 	cfg   Config
 	run   map[int64]*run
+	fill  vector.Vector
 }
 
 
@@ -83,9 +83,7 @@ func NewManager(c *Config) (m *Manager) {
 
 func (m *Manager) manage(statCh chan<- Stats) {
 	packets := new(vector.Vector)
-	fills := new(vector.Vector)
 	ticks := new(vector.Vector)
-	nextFill := m.cfg.DefRev + m.cfg.Alpha
 	var nextRun int64
 	var stats Stats
 	runCh, err := m.cfg.Store.Wait(store.Any, m.cfg.DefRev)
@@ -96,7 +94,6 @@ func (m *Manager) manage(statCh chan<- Stats) {
 	for {
 		stats.Runs = len(m.run)
 		stats.WaitPackets = packets.Len()
-		stats.WaitFills = fills.Len()
 		stats.WaitTicks = ticks.Len()
 
 		select {
@@ -117,17 +114,9 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			recvPacket(packets, p)
 		case statCh <- stats:
 		case pr := <-m.cfg.Props:
-			log.Printf("propose seqn=%d", pr.Seqn)
-			msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
-			heap.Push(packets, packet{msg: msg})
-
-			for nextFill < pr.Seqn {
-				schedTrigger(fills, nextFill, m.cfg.TFill)
-				nextFill++
-			}
-			nextFill++
+			m.propose(packets, pr, time.Nanoseconds())
 		case t := <-m.cfg.Ticker:
-			n := applyTriggers(packets, fills, t, fillTemplate)
+			n := applyTriggers(packets, &m.fill, t, fillTemplate)
 			stats.TotalFills += int64(n)
 
 			n = applyTriggers(packets, ticks, t, tickTemplate)
@@ -148,6 +137,21 @@ func (m *Manager) manage(statCh chan<- Stats) {
 					r.update(p, ticks)
 				}
 			}
+		}
+	}
+}
+
+
+func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
+	log.Printf("propose seqn=%d", pr.Seqn)
+	msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
+	heap.Push(q, packet{msg: msg})
+	for n := pr.Seqn - 1; ; n-- {
+		r := m.run[n]
+		if r == nil || r.isLeader(m.cfg.Self) {
+			break
+		} else {
+			schedTrigger(&m.fill, n, t, m.cfg.TFill)
 		}
 	}
 }
@@ -190,8 +194,8 @@ func recvPacket(q heap.Interface, P Packet) {
 }
 
 
-func schedTrigger(q heap.Interface, n, tfill int64) {
-	heap.Push(q, trigger{n: n, t: time.Nanoseconds() + tfill})
+func schedTrigger(q heap.Interface, n, t, tfill int64) {
+	heap.Push(q, trigger{n: n, t: t + tfill})
 }
 
 

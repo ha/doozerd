@@ -116,14 +116,15 @@ func TestSchedTrigger(t *testing.T) {
 	q := new(vector.Vector)
 	d := int64(15e8)
 
-	ts := time.Nanoseconds() + d
-	schedTrigger(q, 1, d)
+	t0 := time.Nanoseconds()
+	ts := t0 + d
+	schedTrigger(q, 1, t0, d)
 
 	assert.Equal(t, 1, q.Len())
 	f, ok := q.At(0).(trigger)
 	assert.Tf(t, ok, "expected a trigger, got a %T", q.At(0))
 	assert.Equal(t, int64(1), f.n)
-	assert.T(t, f.t >= ts)
+	assert.T(t, f.t == ts)
 }
 
 
@@ -264,26 +265,32 @@ func TestManagerProposalQueue(t *testing.T) {
 }
 
 
-func TestManagerFillQueue(t *testing.T) {
+func TestManagerProposeFill(t *testing.T) {
 	props := make(chan *Prop)
-	ticker := make(chan int64)
+	q := new(vector.Vector)
 
 	st := store.New()
 	out := make(chan Packet, 100)
 	cfg := &Config{
+		Self:   "a",
 		Store:  st,
 		Out:    out,
 		DefRev: 2,
 		Alpha:  1,
 		Props:  props,
-		Ticker: ticker,
 	}
 	m := NewManager(cfg)
-	props <- &Prop{Seqn: 9, Mut: []byte("foo")}
-	assert.Equal(t, 6, (<-m.Stats).WaitFills)
-
-	ticker <- time.Nanoseconds()
-	assert.Equal(t, 7, (<-m.Stats).WaitPackets)
+	m.run = map[int64]*run{
+		6: &run{seqn: 6, cals: []string{"a", "b", "c"}},
+		7: &run{seqn: 7, cals: []string{"a", "b", "c"}},
+		8: &run{seqn: 8, cals: []string{"a", "b", "c"}},
+	}
+	exp := vector.Vector{
+		trigger{123, 7},
+		trigger{123, 8},
+	}
+	m.propose(q, &Prop{Seqn: 9, Mut: []byte("foo")}, 123)
+	assert.Equal(t, exp, m.fill)
 }
 
 

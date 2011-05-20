@@ -4,8 +4,9 @@ import (
 	"container/heap"
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
-	"rand"
 	"log"
+	"rand"
+	"time"
 )
 
 const initialWaitBound = 1e6 // ns == 1ms
@@ -41,7 +42,7 @@ func (r *run) update(p packet, ticks heap.Interface) {
 	r.broadcast(m)
 	if tick {
 		r.bound *= 2
-		schedTrigger(ticks, r.seqn, rand.Int63n(r.bound))
+		schedTrigger(ticks, r.seqn, time.Nanoseconds(), rand.Int63n(r.bound))
 	}
 
 	m = r.a.update(&p.msg)
