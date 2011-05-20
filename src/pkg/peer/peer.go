@@ -17,6 +17,7 @@ import (
 const (
 	alpha     = 50
 	maxUDPLen = 3000
+	nhistory  = 360000
 )
 
 const calDir = "/ctl/cal"
@@ -61,7 +62,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 
 	calSrv := func(start int64) {
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
-		go gc.Clean(st, 360000, time.Tick(1e9))
+		go gc.Clean(st, nhistory, time.Tick(1e9))
 		cfg := &consensus.Config{
 			Self:   self,
 			DefRev: start,
