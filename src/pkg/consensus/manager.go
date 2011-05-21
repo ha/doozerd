@@ -130,12 +130,11 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			}
 			heap.Pop(packets)
 
-			if r := m.run[*p.Seqn]; r != nil {
-				if r.l.done {
-					go sendLearn(m.cfg.Out, p, m.cfg.Store)
-				} else {
-					r.update(p, ticks)
-				}
+			r := m.run[*p.Seqn]
+			if r == nil || r.l.done {
+				go sendLearn(m.cfg.Out, p, m.cfg.Store)
+			} else {
+				r.update(p, ticks)
 			}
 		}
 	}
