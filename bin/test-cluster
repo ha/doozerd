@@ -31,7 +31,7 @@ running=0
 i=1
 while test $i -le $n
 do
-    bin/light $i 2>&1 | sed "s/^/$i: /" &
+    bin/light $i $* 2>&1 | sed "s/^/$i: /" &
     running=$(expr $running + 1)
 
     sleep 1
