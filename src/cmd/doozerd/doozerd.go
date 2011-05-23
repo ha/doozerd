@@ -40,7 +40,7 @@ var (
 	pi          = flag.Float64("pulse", 1, "how often (in seconds) to set applied key")
 	fd          = flag.Float64("fill", .1, "delay (in seconds) to fill unowned seqns")
 	kt          = flag.Float64("timeout", 60, "timeout (in seconds) to kick inactive nodes")
-	lg          = flag.Int64("log", 2000, "length of history/revisions to keep")
+	hi          = flag.Int64("hist", 2000, "length of history/revisions to keep")
 	certFile    = flag.String("tlscert", "", "TLS public certificate")
 	keyFile     = flag.String("tlskey", "", "TLS private key")
 )
@@ -135,7 +135,7 @@ func main() {
 		cl = boot(*name, id, *laddr, *buri)
 	}
 
-	peer.Main(*name, id, *buri, rwsk, rosk, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt), *lg)
+	peer.Main(*name, id, *buri, rwsk, rosk, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt), *hi)
 	panic("main exit")
 }
 
