@@ -17,7 +17,6 @@ import (
 const (
 	alpha     = 50
 	maxUDPLen = 3000
-	nhistory  = 360000
 )
 
 const calDir = "/ctl/cal"
@@ -46,7 +45,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64) {
+func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64, his int64) {
 	listenAddr := listener.Addr().String()
 
 	canWrite := make(chan bool, 1)
@@ -62,7 +61,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 
 	calSrv := func(start int64) {
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
-		go gc.Clean(st, nhistory, time.Tick(1e9))
+		go gc.Clean(st, his, time.Tick(1e9))
 		cfg := &consensus.Config{
 			Self:   self,
 			DefRev: start,
