@@ -12,4 +12,4 @@ w=`expr 8080 + $n`
 
 test $n -ne 1 && args="-a 127.0.0.1:8041"
 
-exec doozerd -l 127.0.0.1:$p -w :$w -timeout 5 $args
+exec doozerd -l 127.0.0.1:$p -w :$w $args $*
