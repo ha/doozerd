@@ -58,11 +58,26 @@ type Stats struct {
 }
 
 
+// DefRev is the rev in which this manager was defined;
+// it will participate starting at DefRev+Alpha.
 type Manager struct {
-	Stats <-chan Stats
-	cfg   Config
-	run   map[int64]*run
-	fill  vector.Vector
+	Self   string
+	DefRev int64
+	Alpha  int64
+	In     <-chan Packet
+	Out    chan<- Packet
+	Ops    chan<- store.Op
+	PSeqn  chan<- int64
+	Props  <-chan *Prop
+	TFill  int64
+	Store  *store.Store
+	Ticker <-chan int64
+	Stats  Stats
+	run    map[int64]*run
+	next   int64 // unused seqn
+	fill   vector.Vector
+	packet vector.Vector
+	tick   vector.Vector
 }
 
 
@@ -75,31 +90,17 @@ var tickTemplate = &msg{Cmd: tick}
 var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
 
 
-func NewManager(c *Config) (m *Manager) {
-	m = new(Manager)
-	s := make(chan Stats)
-	m.Stats = s
-	m.cfg = *c
+func (m *Manager) Run() {
 	m.run = make(map[int64]*run)
-	go m.manage(s)
-	return m
-}
-
-
-func (m *Manager) manage(statCh chan<- Stats) {
-	packets := new(vector.Vector)
-	ticks := new(vector.Vector)
-	var nextRun int64
-	var stats Stats
-	runCh, err := m.cfg.Store.Wait(store.Any, m.cfg.DefRev)
+	runCh, err := m.Store.Wait(store.Any, m.DefRev)
 	if err != nil {
 		panic(err) // can't happen
 	}
 
 	for {
-		stats.Runs = len(m.run)
-		stats.WaitPackets = packets.Len()
-		stats.WaitTicks = ticks.Len()
+		m.Stats.Runs = len(m.run)
+		m.Stats.WaitPackets = m.packet.Len()
+		m.Stats.WaitTicks = m.tick.Len()
 
 		select {
 		case e, ok := <-runCh:
@@ -108,54 +109,59 @@ func (m *Manager) manage(statCh chan<- Stats) {
 			}
 			log.Println("event", e)
 
-			runCh, err = m.cfg.Store.Wait(store.Any, e.Seqn+1)
+			runCh, err = m.Store.Wait(store.Any, e.Seqn+1)
 			if err != nil {
 				panic(err) // can't happen
 			}
 
-			m.run[e.Seqn] = nil, false
-			log.Printf("del run %d", e.Seqn)
-			r := m.addRun(e)
-			log.Printf("add run %d", r.seqn)
-			nextRun = r.seqn + 1
-			stats.TotalRuns++
+			m.event(e)
+			m.Stats.TotalRuns++
 			log.Println("runs:", fmtRuns(m.run))
-			log.Println("avg tick delay:", avg(ticks))
+			log.Println("avg tick delay:", avg(&m.tick))
 			log.Println("avg fill delay:", avg(&m.fill))
-		case p := <-m.cfg.In:
-			recvPacket(packets, p)
-		case statCh <- stats:
-		case pr := <-m.cfg.Props:
-			m.propose(packets, pr, time.Nanoseconds())
-		case t := <-m.cfg.Ticker:
-			n := applyTriggers(packets, &m.fill, t, fillTemplate)
-			stats.TotalFills += int64(n)
-			if n > 0 {
-				log.Println("applied fills", n)
-			}
-
-			n = applyTriggers(packets, ticks, t, tickTemplate)
-			stats.TotalTicks += int64(n)
-			if n > 0 {
-				log.Println("applied ticks", n)
-			}
+		case p := <-m.In:
+			recvPacket(&m.packet, p)
+		case pr := <-m.Props:
+			m.propose(&m.packet, pr, time.Nanoseconds())
+		case t := <-m.Ticker:
+			m.doTick(t)
 		}
 
-		for packets.Len() > 0 {
-			p := packets.At(0).(packet)
-			log.Printf("p.seqn=%d nextRun=%d", *p.Seqn, nextRun)
-			if *p.Seqn >= nextRun {
-				break
-			}
-			heap.Pop(packets)
+		m.pump()
+	}
+}
 
-			r := m.run[*p.Seqn]
-			if r == nil || r.l.done {
-				go sendLearn(m.cfg.Out, p, m.cfg.Store)
-			} else {
-				r.update(p, ticks)
-			}
+
+func (m *Manager) pump() {
+	for m.packet.Len() > 0 {
+		p := m.packet.At(0).(packet)
+		log.Printf("p.seqn=%d m.next=%d", *p.Seqn, m.next)
+		if *p.Seqn >= m.next {
+			break
 		}
+		heap.Pop(&m.packet)
+
+		r := m.run[*p.Seqn]
+		if r == nil || r.l.done {
+			go sendLearn(m.Out, p, m.Store)
+		} else {
+			r.update(p, &m.tick)
+		}
+	}
+}
+
+
+func (m *Manager) doTick(t int64) {
+	n := applyTriggers(&m.packet, &m.fill, t, fillTemplate)
+	m.Stats.TotalFills += int64(n)
+	if n > 0 {
+		log.Println("applied fills", n)
+	}
+
+	n = applyTriggers(&m.packet, &m.tick, t, tickTemplate)
+	m.Stats.TotalTicks += int64(n)
+	if n > 0 {
+		log.Println("applied m.tick", n)
 	}
 }
 
@@ -166,10 +172,10 @@ func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
 	heap.Push(q, packet{msg: msg})
 	for n := pr.Seqn - 1; ; n-- {
 		r := m.run[n]
-		if r == nil || r.isLeader(m.cfg.Self) {
+		if r == nil || r.isLeader(m.Self) {
 			break
 		} else {
-			schedTrigger(&m.fill, n, t, m.cfg.TFill)
+			schedTrigger(&m.fill, n, t, m.TFill)
 		}
 	}
 }
@@ -251,13 +257,19 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 }
 
 
+func (m *Manager) event(e store.Event) {
+	m.run[e.Seqn] = nil, false
+	log.Printf("del run %d", e.Seqn)
+	m.addRun(e)
+}
+
 func (m *Manager) addRun(e store.Event) (r *run) {
 	r = new(run)
-	r.self = m.cfg.Self
-	r.out = m.cfg.Out
-	r.ops = m.cfg.Ops
+	r.self = m.Self
+	r.out = m.Out
+	r.ops = m.Ops
 	r.bound = initialWaitBound
-	r.seqn = e.Seqn + m.cfg.Alpha
+	r.seqn = e.Seqn + m.Alpha
 	r.cals = getCals(e)
 	r.addr = getAddrs(e, r.cals)
 	r.c.size = len(r.cals)
@@ -265,10 +277,12 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
 	r.l.init(int64(r.quorum()))
 	m.run[r.seqn] = r
-	if r.isLeader(m.cfg.Self) {
+	if r.isLeader(m.Self) {
 		log.Printf("pseqn %d", r.seqn)
-		m.cfg.PSeqn <- r.seqn
+		m.PSeqn <- r.seqn
 	}
+	log.Printf("add run %d", r.seqn)
+	m.next = r.seqn + 1
 	return r
 }
 

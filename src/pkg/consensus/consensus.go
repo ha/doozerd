@@ -5,23 +5,6 @@ import (
 )
 
 
-// DefRev is the rev in which this manager was defined;
-// it will participate starting at DefRev+Alpha.
-type Config struct {
-	Self   string
-	DefRev int64
-	Alpha  int64
-	In     <-chan Packet
-	Out    chan<- Packet
-	Ops    chan<- store.Op
-	PSeqn  chan<- int64
-	Props  <-chan *Prop
-	TFill  int64
-	Store  *store.Store
-	Ticker <-chan int64
-}
-
-
 type Proposer interface {
 	Propose(v []byte) store.Event
 }

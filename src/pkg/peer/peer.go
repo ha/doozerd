@@ -62,20 +62,19 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 	calSrv := func(start int64) {
 		go gc.Pulse(self, st.Seqns, pr, pulseInterval)
 		go gc.Clean(st, hi, time.Tick(1e9))
-		cfg := &consensus.Config{
-			Self:   self,
-			DefRev: start,
-			Alpha:  alpha,
-			In:     in,
-			Out:    out,
-			Ops:    st.Ops,
-			PSeqn:  pr.seqns,
-			Props:  pr.props,
-			TFill:  fillDelay,
-			Store:  st,
-			Ticker: time.Tick(10e6),
-		}
-		consensus.NewManager(cfg)
+		var m consensus.Manager
+		m.Self = self
+		m.DefRev = start
+		m.Alpha = alpha
+		m.In = in
+		m.Out = out
+		m.Ops = st.Ops
+		m.PSeqn = pr.seqns
+		m.Props = pr.props
+		m.TFill = fillDelay
+		m.Store = st
+		m.Ticker = time.Tick(10e6)
+		go m.Run()
 	}
 
 	if cl == nil { // we are the only node in a new cluster

@@ -23,20 +23,20 @@ func TestConsensusOne(t *testing.T) {
 	seqns := make(chan int64, alpha)
 	props := make(chan *Prop)
 
-	cfg := &Config{
-		self,
-		2,
-		alpha,
-		in,
-		out,
-		st.Ops,
-		seqns,
-		props,
-		10e9,
-		st,
-		time.Tick(10e6),
+	m := &Manager{
+		Self:   self,
+		DefRev: 2,
+		Alpha:  alpha,
+		In:     in,
+		Out:    out,
+		Ops:    st.Ops,
+		PSeqn:  seqns,
+		Props:  props,
+		TFill:  10e9,
+		Store:  st,
+		Ticker: time.Tick(10e6),
 	}
-	NewManager(cfg)
+	go m.Run()
 
 	go func() {
 		for o := range out {
@@ -82,39 +82,39 @@ func TestConsensusTwo(t *testing.T) {
 	aout := make(chan Packet)
 	aseqns := make(chan int64, alpha)
 	aprops := make(chan *Prop)
-	acfg := &Config{
-		a,
-		5,
-		alpha,
-		ain,
-		aout,
-		st.Ops,
-		aseqns,
-		aprops,
-		10e9,
-		st,
-		time.Tick(10e6),
+	am := &Manager{
+		Self:   a,
+		DefRev: 5,
+		Alpha:  alpha,
+		In:     ain,
+		Out:    aout,
+		Ops:    st.Ops,
+		PSeqn:  aseqns,
+		Props:  aprops,
+		TFill:  10e9,
+		Store:  st,
+		Ticker: time.Tick(10e6),
 	}
-	NewManager(acfg)
+	go am.Run()
 
 	bin := make(chan Packet)
 	bout := make(chan Packet)
 	bseqns := make(chan int64, alpha)
 	bprops := make(chan *Prop)
-	bcfg := &Config{
-		b,
-		5,
-		alpha,
-		bin,
-		bout,
-		st.Ops,
-		bseqns,
-		bprops,
-		10e9,
-		st,
-		time.Tick(10e6),
+	bm := &Manager{
+		Self:   b,
+		DefRev: 5,
+		Alpha:  alpha,
+		In:     bin,
+		Out:    bout,
+		Ops:    st.Ops,
+		PSeqn:  bseqns,
+		Props:  bprops,
+		TFill:  10e9,
+		Store:  st,
+		Ticker: time.Tick(10e6),
 	}
-	NewManager(bcfg)
+	go bm.Run()
 
 	go func() {
 		for o := range aout {
