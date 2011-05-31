@@ -237,6 +237,8 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 				continue
 			}
 			return seqn
+		} else if ev.IsSet() && ev.Body == self {
+			return ev.Seqn
 		}
 	}
 
