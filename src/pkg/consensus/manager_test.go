@@ -41,21 +41,15 @@ func mustWait(s *store.Store, n int64) <-chan store.Event {
 func TestManagerPumpDropsOldPackets(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
-	ch, err := st.Wait(store.Any, 1)
-	if err != nil {
-		panic(err)
-	}
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 
 	var m Manager
 	m.run = make(map[int64]*run)
-	m.event(<-ch)
-	m.next = 2
+	m.event(<-mustWait(st, 2))
 	m.pump()
 	recvPacket(&m.packet, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})})
+	m.pump()
 	assert.Equal(t, 0, m.Stats.WaitPackets)
 }
 
@@ -116,53 +110,42 @@ func TestManagerPacketProcessing(t *testing.T) {
 	defer close(st.Ops)
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
-	m := &Manager{
-		Alpha: 1,
-		Store: st,
-		In:    in,
-		Out:   out,
-		Ops:   st.Ops,
-	}
-	go m.Run()
+	var m Manager
+	m.run = make(map[int64]*run)
+	m.Alpha = 1
+	m.Store = st
+	m.In = in
+	m.Out = out
+	m.Ops = st.Ops
 
-	c1, err := st.Wait(store.Any, 1)
-	if err != nil {
-		panic(err)
-	}
-
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
-	m.event(<-c1)
-	m.next = 2
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
+	m.event(<-mustWait(st, 2))
 
 	recvPacket(&m.packet, Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
 		Addr: "127.0.0.1:9999",
 	})
 	m.pump()
-	assert.Equal(t, 0, m.Stats.WaitPackets)
+	assert.Equal(t, 0, m.packet.Len())
 }
 
 
 func TestManagerTickQueue(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
-	st.Ops <- store.Op{
-		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
-	}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 
 	var m Manager
 	m.run = make(map[int64]*run)
 	m.Alpha = 1
 	m.Store = st
 	m.Out = make(chan Packet, 100)
-	m.event(<-mustWait(st, 1))
+	m.event(<-mustWait(st, 2))
 
-	// get it to tick for seqn 2
-	recvPacket(&m.packet, Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: propose})})
+	// get it to tick for seqn 3
+	recvPacket(&m.packet, Packet{Data: mustMarshal(&msg{Seqn: proto.Int64(3), Cmd: propose})})
 	m.pump()
 	assert.Equal(t, 1, m.tick.Len())
 
@@ -319,6 +302,55 @@ func TestManagerEvent(t *testing.T) {
 	assert.Equal(t, 1, len(runs))
 	assert.Equal(t, exp, runs[exp.seqn])
 	assert.Equal(t, exp.seqn, <-pseqn)
+	assert.Equal(t, exp.seqn+1, m.next)
+}
+
+
+func TestManagerRemoveLastCal(t *testing.T) {
+	const alpha = 2
+	runs := make(map[int64]*run)
+	st := store.New()
+	defer close(st.Ops)
+
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet(cal+"/1", "a", 0)}
+	st.Ops <- store.Op{3, store.MustEncodeSet(cal+"/1", "", -1)}
+
+	pseqn := make(chan int64, 100)
+	m := &Manager{
+		Alpha: alpha,
+		Self:  "a",
+		PSeqn: pseqn,
+		Ops:   st.Ops,
+		Out:   make(chan Packet),
+		run:   runs,
+	}
+	m.event(<-mustWait(st, 2))
+	m.event(<-mustWait(st, 3))
+
+	exp := &run{
+		self:  "a",
+		seqn:  3 + alpha,
+		cals:  []string{"a"},
+		addr:  []string{"x"},
+		ops:   st.Ops,
+		out:   m.Out,
+		bound: initialWaitBound,
+	}
+	exp.c = coordinator{
+		crnd: 1,
+		size: 1,
+		quor: exp.quorum(),
+	}
+	exp.l = learner{
+		round:  1,
+		quorum: int64(exp.quorum()),
+		votes:  map[string]int64{},
+		voted:  map[string]bool{},
+	}
+
+	assert.Equal(t, 2, len(runs))
+	assert.Equal(t, exp, runs[exp.seqn])
 	assert.Equal(t, exp.seqn+1, m.next)
 }
 

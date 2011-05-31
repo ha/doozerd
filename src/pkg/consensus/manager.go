@@ -272,6 +272,10 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.seqn = e.Seqn + m.Alpha
 	r.cals = getCals(e)
 	r.addr = getAddrs(e, r.cals)
+	if len(r.cals) < 1 {
+		r.cals = m.run[r.seqn-1].cals
+		r.addr = m.run[r.seqn-1].addr
+	}
 	r.c.size = len(r.cals)
 	r.c.quor = r.quorum()
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
