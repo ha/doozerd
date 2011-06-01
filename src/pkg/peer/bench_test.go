@@ -4,7 +4,6 @@ import (
 	"doozer/store"
 	"github.com/ha/doozer"
 	"testing"
-	"time"
 )
 
 
@@ -144,14 +143,10 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 
 	const con = 2000
 	c := make(chan int, b.N)
-	times := make([]int64, b.N)
 	done := make(chan bool, con)
 	f := func() {
 		for i := range c {
-			a := time.Nanoseconds()
 			cls[i%len(cls)].Set("/test", store.Clobber, nil)
-			b := time.Nanoseconds()
-			times[i] = b - a
 		}
 		done <- true
 	}
@@ -159,7 +154,6 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 		go f()
 	}
 
-	println("---")
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		c <- i
@@ -169,9 +163,6 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 		<-done
 	}
 	b.StopTimer()
-	for _, t := range times {
-		println("el", t)
-	}
 }
 
 
