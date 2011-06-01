@@ -126,7 +126,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 			stop <- true
 			canWrite <- true
 			if buri != "" {
-				b, err := doozer.DialUri(buri)
+				b, err := doozer.DialUri(buri, "")
 				if err != nil {
 					panic(err)
 				}
