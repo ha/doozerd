@@ -20,6 +20,13 @@ There are three parameters:
    [TODO specify address discovery mechanisms, such as
    looking up addresses in another doozer cluster]
 
+ * *cn* ("cluster name"): an ASCII value representing the name of the cluster
+   given to `doozerd` with the `-c` flag.
+
+   Example:
+
+       cn=example
+
  * *ca* ("cluster address"): a host name or ip address,
    with an optional port suffix.
 
