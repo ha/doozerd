@@ -224,16 +224,6 @@ func TestApplyInOrder(t *testing.T) {
 	assert.Equal(t, []string{"b"}, v)
 }
 
-func BenchmarkApply(b *testing.B) {
-	st := New()
-	defer close(st.Ops)
-	mut := MustEncodeSet("/x", "a", Clobber)
-
-	n := b.N + 1
-	for i := 1; i < n; i++ {
-		st.Ops <- Op{int64(i), mut}
-	}
-}
 
 func TestGetSyncOne(t *testing.T) {
 	chV := make(chan []string)
