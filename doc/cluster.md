@@ -4,7 +4,7 @@
 
 **Cluster**
 	
-One or more members, connected over a network, that can achieve total ordering of writes to the data store through consensus.
+One or more members, connected over a network, that achieve total ordering of all writes to the data store through consensus.
 
 **Member**
 
