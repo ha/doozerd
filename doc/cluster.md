@@ -48,7 +48,7 @@ You can now open 127.0.0.X:8000 to see each member and the slaves web view and m
 
 ### With DzNS
 
-First, create a cluster without DzNS.  This new cluster will be the DzNS the next cluster will use to bootstap.
+First, create a cluster without DzNS.  This new cluster will be the DzNS the next cluster will use to bootstrap.
 
 Now create another cluster of three with the DzNS (these can be done in parellel):
 
