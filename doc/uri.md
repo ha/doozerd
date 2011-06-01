@@ -28,17 +28,8 @@ There are three parameters:
        cn=example
 
  * *ca* ("cluster address"): a host name or ip address,
-   with an optional port suffix.
-
-   [TODO reword this for clarity and specificity]
-
-   1. IP address with port: connect directly.
-   2. IP address without port: port is 46.
-   3. Host name with port: look up IP address in DNS.
-   4. Host name without port:
-      1. look up SRV record in DNS; if found, use that.
-      2. otherwise, look up IP address in DNS, and use
-         port 46.
+   with an optional port suffix. The default port 8046 will be used if no port
+   is specified.
 
    This parameter can appear more than once, to provide
    more than one address through which to access the
