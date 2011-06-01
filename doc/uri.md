@@ -20,14 +20,6 @@ There are three parameters:
    [TODO specify address discovery mechanisms, such as
    looking up addresses in another doozer cluster]
 
- * *dn* ("display name"): a human-readable description to
-   be used in UIs. This parameter is not guaranteed to
-   be unique, and shouldn't be used in place of un.
-
-   Example:
-
-       dn=Root+Lock+Service
-
  * *ca* ("cluster address"): a host name or ip address,
    with an optional port suffix.
 
