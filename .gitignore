@@ -12,5 +12,6 @@ _pb
 _test
 _testmain.go
 doc/*.html
+doc/*.[0-9]
 src/cmd/doozerd/doozerd
 src/pkg/peer/version.go

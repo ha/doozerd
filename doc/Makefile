@@ -1,0 +1,2 @@
+doc:
+	ronn *.ronn
