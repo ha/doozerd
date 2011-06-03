@@ -2,31 +2,12 @@ package peer
 
 import (
 	"doozer/store"
-	_ "doozer/quiet"
 	"github.com/ha/doozer"
 	"exec"
 	"github.com/bmizerany/assert"
-	"net"
 	"os"
 	"testing"
 )
-
-func mustListen() net.Listener {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		panic(err)
-	}
-	return l
-}
-
-
-func mustListenPacket(addr string) net.PacketConn {
-	c, err := net.ListenPacket("udp", addr)
-	if err != nil {
-		panic(err)
-	}
-	return c
-}
 
 
 func TestDoozerNop(t *testing.T) {

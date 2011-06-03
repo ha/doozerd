@@ -164,12 +164,3 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 	}
 	b.StopTimer()
 }
-
-
-func dial(addr string) *doozer.Conn {
-	c, err := doozer.Dial(addr)
-	if err != nil {
-		panic(err)
-	}
-	return c
-}
