@@ -90,6 +90,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 			st.Ops <- store.Op{1 + <-st.Seqns, store.Nop}
 		}
 		canWrite <- true
+		go setReady(pr, self)
 	} else {
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
@@ -125,6 +126,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 			advanceUntil(cl, st.Seqns, n+alpha)
 			stop <- true
 			canWrite <- true
+			go setReady(pr, self)
 			if buri != "" {
 				b, err := doozer.DialUri(buri, "")
 				if err != nil {
@@ -298,4 +300,14 @@ func (c cloner) VisitFile(path string, f *doozer.FileInfo) {
 	}
 	mut := store.MustEncodeSet(path, string(body), store.Clobber)
 	c.ch <- store.Op{f.Rev, mut}
+}
+
+
+func setReady(p consensus.Proposer, self string) {
+	m, err := store.EncodeSet("/ctl/node/"+self+"/writable", "true", 0)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	p.Propose([]byte(m))
 }
