@@ -51,10 +51,10 @@ The number of seconds to wait before filling in unknown sequence numbers.
 The length of history/revisions to keep in the store.
 
  * `-l`=<addr>:
-The address to bind to. An <addr> is formatted as "host:port". It is import
-that note that doozerd uses the address given to `-l` as an identifier. It is
-not sufficient to use `0.0.0.0`. The <addr> must be the address others will
-connect to it with.
+The address to bind to. An <addr> is formatted as "host:port". It is important
+to note that doozerd uses the address given to `-l` as an identifier. It is not
+sufficient to use `0.0.0.0`. The <addr> must be the address others will connect
+to it with.
 
 
  * `-pulse`=<seconds>:
