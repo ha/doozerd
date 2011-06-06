@@ -31,3 +31,18 @@ func dial(addr string) *doozer.Conn {
 	}
 	return c
 }
+
+
+func waitFor(cl *doozer.Conn, path string) {
+	var rev int64
+	for {
+		ev, err := cl.Wait(path, rev)
+		if err != nil {
+			panic(err)
+		}
+		if ev.IsSet() && len(ev.Body) > 0 {
+			break
+		}
+		rev = ev.Rev + 1
+	}
+}

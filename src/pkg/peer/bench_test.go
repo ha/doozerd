@@ -97,6 +97,10 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 
 
 func Benchmark5DoozerConClientSet(b *testing.B) {
+	if b.N < 5 {
+		return
+	}
+	const C = 20
 	b.StopTimer()
 	l := mustListen()
 	defer l.Close()
@@ -121,17 +125,23 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 	u4 := mustListenPacket(l4.Addr().String())
 	defer u4.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "Y", "", "", "", dial(a), u1, l1, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "Z", "", "", "", dial(a), u2, l2, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "V", "", "", "", dial(a), u3, l3, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "W", "", "", "", dial(a), u4, l4, nil, 1e9, 1e8, 3e9, 101)
+	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "Y", "", "", "", dial(a), u1, l1, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "Z", "", "", "", dial(a), u2, l2, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "V", "", "", "", dial(a), u3, l3, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "W", "", "", "", dial(a), u4, l4, nil, 1e9, 1e10, 3e12, 1e9)
 
 	cl := dial(l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)
 	cl.Set("/ctl/cal/2", store.Missing, nil)
 	cl.Set("/ctl/cal/3", store.Missing, nil)
 	cl.Set("/ctl/cal/4", store.Missing, nil)
+
+	waitFor(cl, "/ctl/node/X/writable")
+	waitFor(cl, "/ctl/node/Y/writable")
+	waitFor(cl, "/ctl/node/Z/writable")
+	waitFor(cl, "/ctl/node/V/writable")
+	waitFor(cl, "/ctl/node/W/writable")
 
 	cls := []*doozer.Conn{
 		cl,
@@ -141,26 +151,22 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 		dial(l4.Addr().String()),
 	}
 
-	const con = 2000
-	c := make(chan int, b.N)
-	done := make(chan bool, con)
-	f := func() {
-		for i := range c {
-			cls[i%len(cls)].Set("/test", store.Clobber, nil)
+	done := make(chan bool, C)
+	f := func(i int, cl *doozer.Conn) {
+		for ; i < b.N; i += C {
+			_, err := cl.Set("/test", store.Clobber, nil)
+			if e, ok := err.(*doozer.Error); ok && e.Err == doozer.ErrReadonly {
+			} else if err != nil {
+				panic(err)
+			}
 		}
 		done <- true
 	}
-	for i := 0; i < con; i++ {
-		go f()
-	}
-
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		c <- i
+	for i := 0; i < C; i++ {
+		go f(i, cls[i%len(cls)])
 	}
-	close(c)
-	for i := 0; i < con; i++ {
+	for i := 0; i < C; i++ {
 		<-done
 	}
-	b.StopTimer()
 }
