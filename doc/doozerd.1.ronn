@@ -84,7 +84,7 @@ for for web connections.
 ## ENVIRONMENT
 
  * `DOOZER_BOOT_URI`=<uri>:
-See `-b` in OPTIONS
+See CLUSTERING > With DzNS.
 
 ## CLUSTERING
 
