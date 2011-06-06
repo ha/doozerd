@@ -1,7 +1,5 @@
 package consensus
 
-import "strconv"
-
 var (
 	nop      = newMsg_Cmd(msg_NOP)
 	invite   = newMsg_Cmd(msg_INVITE)
@@ -16,24 +14,3 @@ var (
 var (
 	msgTick = &msg{Cmd: tick}
 )
-
-
-func (m msg) String() (s string) {
-	if m.Seqn == nil {
-		return "msg{}"
-	}
-	s = "msg{" + strconv.Itoa64(*m.Seqn)
-	if m.Cmd != nil {
-		s += " " + msg_Cmd_name[int32(*m.Cmd)]
-	}
-	if m.Crnd != nil {
-		s += ", Crnd:" + strconv.Itoa64(*m.Crnd)
-	}
-	if m.Vrnd != nil {
-		s += ", Vrnd:" + strconv.Itoa64(*m.Vrnd)
-	}
-	if len(m.Value) > 0 {
-		s += ", Value:" + string(m.Value)
-	}
-	return s + "}"
-}

@@ -23,11 +23,6 @@ func (p packet) Less(y interface{}) bool {
 }
 
 
-func (p packet) String() string {
-	return "packet{" + p.Addr + ", " + p.msg.String() + "}"
-}
-
-
 type Packet struct {
 	Addr string
 	Data []byte
@@ -216,7 +211,7 @@ func recvPacket(q heap.Interface, P Packet) {
 		return
 	}
 
-	log.Println("recv", p.String())
+	log.Println("recv", p.Addr, *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
 	heap.Push(q, p)
 }
 
@@ -249,7 +244,7 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 
 		p := packet{msg: *tpl}
 		p.msg.Seqn = &tt.n
-		log.Println("applying", p.msg.String())
+		log.Println("applying", *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
 		heap.Push(packets, p)
 		n++
 	}
