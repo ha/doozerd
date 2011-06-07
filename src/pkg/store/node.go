@@ -61,10 +61,6 @@ func (n node) get(parts []string) ([]string, int64) {
 }
 
 func (n node) Get(path string) ([]string, int64) {
-	if err := checkPath(path); err != nil {
-		return []string{""}, Missing
-	}
-
 	return n.get(split(path))
 }
 
