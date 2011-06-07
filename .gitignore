@@ -6,6 +6,7 @@
 *.js.go
 *.log
 *.out
+*.prof
 .roundup.*
 _obj
 _pb

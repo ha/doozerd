@@ -18,3 +18,18 @@ ifneq ($(VERS),$(GVERS))
 endif
 
 CLEANFILES+=version.go
+
+mem.prof:
+	make clean
+	GOGC=off gotest\
+		-file prof.go\
+		-file misc_test.go\
+		-memprofile $@\
+		-memprofilerate 1\
+
+cpu.prof:
+	make clean
+	GOGC=off gotest\
+		-file prof.go\
+		-file misc_test.go\
+		-cpuprofile $@\
