@@ -7,9 +7,9 @@ import (
 
 func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
 	var ln learner
-	ln.init(1)
+	ln.init(1, 1)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -19,16 +19,16 @@ func TestLearnsAValueWithAQuorumOfOne(t *testing.T) {
 
 func TestLearnsOkStickyInSameRound(t *testing.T) {
 	var ln learner
-	ln.init(1)
+	ln.init(1, 1)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, &msg{Cmd: learn, Value: []byte("foo")}, m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 1, "bar"))
+	m, v, ok = ln.update(newVoteFrom(1, 1, "bar"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte{}, v)
@@ -38,16 +38,16 @@ func TestLearnsOkStickyInSameRound(t *testing.T) {
 
 func TestLearnsOkStickyInNewRound(t *testing.T) {
 	var ln learner
-	ln.init(1)
+	ln.init(1, 1)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, &msg{Cmd: learn, Value: []byte("foo")}, m)
 
-	m, v, ok = ln.update(newVoteFrom("a", 2, "bar"))
+	m, v, ok = ln.update(newVoteFrom(0, 2, "bar"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte{}, v)
@@ -57,15 +57,15 @@ func TestLearnsOkStickyInNewRound(t *testing.T) {
 
 func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
 	var ln learner
-	ln.init(2)
+	ln.init(3, 2)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -75,15 +75,15 @@ func TestLearnsAValueWithAQuorumOfTwo(t *testing.T) {
 
 func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
 	var ln learner
-	ln.init(1)
+	ln.init(1, 1)
 
-	m, v, ok := ln.update(newVoteFrom("a", 0, "bar"))
+	m, v, ok := ln.update(newVoteFrom(0, 0, "bar"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -93,21 +93,21 @@ func TestIgnoresMalformedMessageBadRoundNumber(t *testing.T) {
 
 func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
 	var ln learner
-	ln.init(2)
+	ln.init(3, 2)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -117,21 +117,21 @@ func TestIgnoresMultipleMessagesFromSameSender(t *testing.T) {
 
 func TestIgnoresSenderInOldRound(t *testing.T) {
 	var ln learner
-	ln.init(2)
+	ln.init(3, 2)
 
-	m, v, ok := ln.update(newVoteFrom("a", 2, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 2, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 2, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 2, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -141,21 +141,21 @@ func TestIgnoresSenderInOldRound(t *testing.T) {
 
 func TestResetsVotedFlags(t *testing.T) {
 	var ln learner
-	ln.init(2)
+	ln.init(3, 2)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("a", 2, "foo"))
+	m, v, ok = ln.update(newVoteFrom(0, 2, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 2, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 2, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -165,33 +165,33 @@ func TestResetsVotedFlags(t *testing.T) {
 
 func TestResetsVoteCounts(t *testing.T) {
 	var ln learner
-	ln.init(3)
+	ln.init(5, 3)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("a", 2, "foo"))
+	m, v, ok = ln.update(newVoteFrom(0, 2, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 2, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 2, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("c", 2, "foo"))
+	m, v, ok = ln.update(newVoteFrom(2, 2, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -201,56 +201,56 @@ func TestResetsVoteCounts(t *testing.T) {
 
 func TestLearnsATheBestOfTwoValuesInSameRound(t *testing.T) {
 	var ln learner
-	ln.init(2)
+	ln.init(3, 2)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "foo"))
+	m, v, ok := ln.update(newVoteFrom(0, 1, "foo"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("c", 1, "bar"))
+	m, v, ok = ln.update(newVoteFrom(2, 1, "bar"))
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("b", 1, "foo"))
+	m, v, ok = ln.update(newVoteFrom(1, 1, "foo"))
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 }
 
 func TestBringsOrderOutOfChaos(t *testing.T) {
 	var ln learner
-	ln.init(2)
+	ln.init(3, 2)
 
-	m, v, ok := ln.update(newVoteFrom("a", 1, "bar")) //valid
+	m, v, ok := ln.update(newVoteFrom(0, 1, "bar")) //valid
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
-	m, v, ok = ln.update(newVoteFrom("c", 2, "funk")) //reset
+	m, v, ok = ln.update(newVoteFrom(2, 2, "funk")) //reset
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
-	m, v, ok = ln.update(newVoteFrom("b", 1, "bar")) //ignored
+	m, v, ok = ln.update(newVoteFrom(1, 1, "bar")) //ignored
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(newVoteFrom("c", 1, "foo")) //ignored
+	m, v, ok = ln.update(newVoteFrom(2, 1, "foo")) //ignored
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
-	m, v, ok = ln.update(newVoteFrom("b", 2, "foo")) //valid
+	m, v, ok = ln.update(newVoteFrom(1, 2, "foo")) //valid
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
-	m, v, ok = ln.update(newVoteFrom("a", 2, "foo")) //valid (at quorum)
+	m, v, ok = ln.update(newVoteFrom(0, 2, "foo")) //valid (at quorum)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -262,7 +262,7 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
 func TestLearnerIgnoresBadMessages(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{msg: msg{Cmd: vote}}) // missing Vrnd
+	m, v, ok := ln.update(packet{msg: msg{Cmd: vote}}, -1) // missing Vrnd
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
@@ -273,7 +273,7 @@ func TestLearnerIgnoresBadMessages(t *testing.T) {
 func TestSinkLearnsAValue(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{msg: *newLearn("foo")})
+	m, v, ok := ln.update(packet{msg: *newLearn("foo")}, -1)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -284,14 +284,14 @@ func TestSinkLearnsAValue(t *testing.T) {
 func TestSinkLearnsOkSticky(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{msg: *newLearn("foo")})
+	m, v, ok := ln.update(packet{msg: *newLearn("foo")}, -1)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(packet{msg: *newLearn("bar")})
+	m, v, ok = ln.update(packet{msg: *newLearn("bar")}, -1)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte{}, v)

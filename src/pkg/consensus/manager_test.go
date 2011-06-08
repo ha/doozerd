@@ -7,6 +7,7 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
+	"net"
 	"sort"
 	"testing"
 	"time"
@@ -41,14 +42,15 @@ func mustWait(s *store.Store, n int64) <-chan store.Event {
 func TestManagerPumpDropsOldPackets(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 
 	var m Manager
 	m.run = make(map[int64]*run)
 	m.event(<-mustWait(st, 2))
 	m.pump()
-	recvPacket(&m.packet, Packet{"x", mustMarshal(&msg{Seqn: proto.Int64(1)})})
+	recvPacket(&m.packet, Packet{x, mustMarshal(&msg{Seqn: proto.Int64(1)})})
 	m.pump()
 	assert.Equal(t, 0, m.Stats.WaitPackets)
 }
@@ -56,16 +58,17 @@ func TestManagerPumpDropsOldPackets(t *testing.T) {
 
 func TestRecvPacket(t *testing.T) {
 	q := new(vector.Vector)
+	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 
-	recvPacket(q, Packet{"x", mustMarshal(&msg{
+	recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(1),
 		Cmd:  invite,
 	})})
-	recvPacket(q, Packet{"x", mustMarshal(&msg{
+	recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(2),
 		Cmd:  invite,
 	})})
-	recvPacket(q, Packet{"x", mustMarshal(&msg{
+	recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(3),
 		Cmd:  invite,
 	})})
@@ -76,15 +79,17 @@ func TestRecvPacket(t *testing.T) {
 
 func TestRecvEmptyPacket(t *testing.T) {
 	q := new(vector.Vector)
+	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 
-	recvPacket(q, Packet{"x", []byte{}})
+	recvPacket(q, Packet{x, []byte{}})
 	assert.Equal(t, 0, q.Len())
 }
 
 
 func TestRecvInvalidPacket(t *testing.T) {
 	q := new(vector.Vector)
-	recvPacket(q, Packet{"x", invalidProtobuf})
+	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	recvPacket(q, Packet{x, invalidProtobuf})
 	assert.Equal(t, 0, q.Len())
 }
 
@@ -118,13 +123,13 @@ func TestManagerPacketProcessing(t *testing.T) {
 	m.Out = out
 	m.Ops = st.Ops
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	m.event(<-mustWait(st, 2))
 
 	recvPacket(&m.packet, Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
-		Addr: "127.0.0.1:9999",
+		Addr: &net.UDPAddr{net.IP{127, 0, 0, 1}, 9999},
 	})
 	m.pump()
 	assert.Equal(t, 0, m.packet.Len())
@@ -134,7 +139,7 @@ func TestManagerPacketProcessing(t *testing.T) {
 func TestManagerTickQueue(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 
 	var m Manager
@@ -254,7 +259,7 @@ func TestManagerEvent(t *testing.T) {
 
 	st.Ops <- store.Op{
 		Seqn: 1,
-		Mut:  store.MustEncodeSet(node+"/a/addr", "x", 0),
+		Mut:  store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0),
 	}
 
 	st.Ops <- store.Op{
@@ -267,6 +272,7 @@ func TestManagerEvent(t *testing.T) {
 		panic(err)
 	}
 
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	pseqn := make(chan int64, 1)
 	m := &Manager{
 		Alpha: alpha,
@@ -282,7 +288,7 @@ func TestManagerEvent(t *testing.T) {
 		self:  "a",
 		seqn:  2 + alpha,
 		cals:  []string{"a"},
-		addr:  []string{"x"},
+		addr:  []*net.UDPAddr{x},
 		ops:   st.Ops,
 		out:   m.Out,
 		bound: initialWaitBound,
@@ -294,9 +300,10 @@ func TestManagerEvent(t *testing.T) {
 	}
 	exp.l = learner{
 		round:  1,
+		size:   1,
 		quorum: int64(exp.quorum()),
 		votes:  map[string]int64{},
-		voted:  map[string]bool{},
+		voted:  []bool{false},
 	}
 
 	assert.Equal(t, 1, len(runs))
@@ -312,10 +319,11 @@ func TestManagerRemoveLastCal(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet(cal+"/1", "a", 0)}
 	st.Ops <- store.Op{3, store.MustEncodeSet(cal+"/1", "", -1)}
 
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	pseqn := make(chan int64, 100)
 	m := &Manager{
 		Alpha: alpha,
@@ -332,7 +340,7 @@ func TestManagerRemoveLastCal(t *testing.T) {
 		self:  "a",
 		seqn:  3 + alpha,
 		cals:  []string{"a"},
-		addr:  []string{"x"},
+		addr:  []*net.UDPAddr{x},
 		ops:   st.Ops,
 		out:   m.Out,
 		bound: initialWaitBound,
@@ -344,9 +352,10 @@ func TestManagerRemoveLastCal(t *testing.T) {
 	}
 	exp.l = learner{
 		round:  1,
+		size:   1,
 		quorum: int64(exp.quorum()),
 		votes:  map[string]int64{},
-		voted:  map[string]bool{},
+		voted:  []bool{false},
 	}
 
 	assert.Equal(t, 2, len(runs))
@@ -429,11 +438,14 @@ func TestGetAddrs(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "y", 0)}
-	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "z", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "1.2.3.4:5", 0)}
+	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "2.3.4.5:6", 0)}
+	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "3.4.5.6:7", 0)}
 	<-st.Seqns
 
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
+	y, _ := net.ResolveUDPAddr("udp", "2.3.4.5:6")
+	z, _ := net.ResolveUDPAddr("udp", "3.4.5.6:7")
 	addrs := getAddrs(st, []string{"1", "2", "3"})
-	assert.Equal(t, []string{"x", "y", "z"}, addrs)
+	assert.Equal(t, []*net.UDPAddr{x, y, z}, addrs)
 }

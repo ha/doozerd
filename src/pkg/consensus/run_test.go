@@ -5,6 +5,7 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
+	"net"
 	"testing"
 )
 
@@ -41,7 +42,7 @@ func TestRunVoteDelivered(t *testing.T) {
 	r := run{}
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
-	r.l.init(1)
+	r.l.init(1, 1)
 
 	p := packet{
 		msg: msg{
@@ -50,10 +51,10 @@ func TestRunVoteDelivered(t *testing.T) {
 			Vrnd:  proto.Int64(1),
 			Value: []byte("foo"),
 		},
-		Addr: "X",
+		Addr: &net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
 	}
 
-	r.update(p, new(vector.Vector))
+	r.update(p, 0, new(vector.Vector))
 
 	assert.Equal(t, true, r.l.done)
 	assert.Equal(t, "foo", r.l.v)
@@ -65,7 +66,7 @@ func TestRunInviteDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{msg: *newInviteSeqn1(1)}, new(vector.Vector))
+	r.update(packet{msg: *newInviteSeqn1(1)}, 0, new(vector.Vector))
 
 	assert.Equal(t, int64(1), r.a.rnd)
 }
@@ -76,17 +77,19 @@ func TestRunProposeDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{msg: msg{Cmd: propose}}, new(vector.Vector))
+	r.update(packet{msg: msg{Cmd: propose}}, -1, new(vector.Vector))
 	assert.Equal(t, true, r.c.begun)
 }
 
 
 func TestRunSendsCoordPacket(t *testing.T) {
 	c := make(chan Packet, 100)
+	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
 	var r run
 	r.c.crnd = 1
 	r.out = c
-	r.addr = []string{"x", "y"}
+	r.addr = []*net.UDPAddr{x, y}
 
 	var got msg
 	exp := msg{
@@ -95,7 +98,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	r.update(packet{msg: *newPropose("foo")}, new(vector.Vector))
+	r.update(packet{msg: *newPropose("foo")}, -1, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -111,7 +114,7 @@ func TestRunSchedulesTick(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	ticks := new(vector.Vector)
 
-	r.update(packet{msg: *newPropose("foo")}, ticks)
+	r.update(packet{msg: *newPropose("foo")}, -1, ticks)
 
 	assert.Equal(t, 1, ticks.Len())
 }
@@ -119,9 +122,11 @@ func TestRunSchedulesTick(t *testing.T) {
 
 func TestRunSendsAcceptorPacket(t *testing.T) {
 	c := make(chan Packet, 100)
+	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
 	var r run
 	r.out = c
-	r.addr = []string{"x", "y"}
+	r.addr = []*net.UDPAddr{x, y}
 
 	var got msg
 	exp := msg{
@@ -131,7 +136,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		Vrnd: proto.Int64(0),
 	}
 
-	r.update(packet{msg: *newInviteSeqn1(1)}, new(vector.Vector))
+	r.update(packet{msg: *newInviteSeqn1(1)}, 0, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -145,7 +150,8 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 	var r run
 	r.out = c
 	r.ops = make(chan store.Op, 100)
-	r.addr = []string{"x", "y"}
+	r.addr = []*net.UDPAddr{nil, nil}
+	r.l.init(1, 1)
 
 	var got msg
 	exp := msg{
@@ -154,7 +160,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		Value: []byte("foo"),
 	}
 
-	r.update(packet{msg: *newVote(1, "foo")}, new(vector.Vector))
+	r.update(packet{msg: *newVote(1, "foo")}, 0, new(vector.Vector))
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -168,23 +174,26 @@ func TestRunAppliesOp(t *testing.T) {
 	r.seqn = 1
 	r.out = make(chan Packet, 100)
 	r.ops = c
-	r.addr = []string{"x", "y"}
+	r.l.init(1, 1)
 
-	r.update(packet{msg: *newVote(1, "foo")}, new(vector.Vector))
+	r.update(packet{msg: *newVote(1, "foo")}, 0, new(vector.Vector))
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
 
 func TestRunBroadcastThree(t *testing.T) {
 	c := make(chan Packet, 100)
-	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.seqn = 1
 	r.out = c
-	r.addr = []string{"x", "y", "z"}
+	r.addr = []*net.UDPAddr{
+		&net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
+		&net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
+		&net.UDPAddr{net.IP{3, 4, 5, 6}, 7},
+	}
 
 	r.broadcast(newInvite(1))
-	c <- sentinel
+	c <- Packet{}
 
 	exp := msg{
 		Seqn: proto.Int64(1),
@@ -192,31 +201,36 @@ func TestRunBroadcastThree(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	addrs := make([]string, len(r.addr))
+	addr := make([]*net.UDPAddr, len(r.addr))
 	for i := 0; i < len(r.addr); i++ {
 		p := <-c
-		addrs[i] = p.Addr
+		addr[i] = p.Addr
 		var got msg
 		err := proto.Unmarshal(p.Data, &got)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
 	}
 
-	assert.Equal(t, sentinel, <-c)
-	assert.Equal(t, r.addr, addrs)
+	assert.Equal(t, Packet{}, <-c)
+	assert.Equal(t, r.addr, addr)
 }
 
 
 func TestRunBroadcastFive(t *testing.T) {
 	c := make(chan Packet, 100)
-	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.seqn = 1
 	r.out = c
-	r.addr = []string{"v", "w", "x", "y", "z"}
+	r.addr = []*net.UDPAddr{
+		&net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
+		&net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
+		&net.UDPAddr{net.IP{3, 4, 5, 6}, 7},
+		&net.UDPAddr{net.IP{4, 5, 6, 7}, 8},
+		&net.UDPAddr{net.IP{5, 6, 7, 8}, 9},
+	}
 
 	r.broadcast(newInvite(1))
-	c <- sentinel
+	c <- Packet{}
 
 	exp := msg{
 		Seqn: proto.Int64(1),
@@ -224,32 +238,34 @@ func TestRunBroadcastFive(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	addrs := make([]string, len(r.addr))
+	addr := make([]*net.UDPAddr, len(r.addr))
 	for i := 0; i < len(r.addr); i++ {
 		p := <-c
-		addrs[i] = p.Addr
+		addr[i] = p.Addr
 		var got msg
 		err := proto.Unmarshal(p.Data, &got)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, exp, got)
 	}
 
-	assert.Equal(t, sentinel, <-c)
-	assert.Equal(t, r.addr, addrs)
+	assert.Equal(t, Packet{}, <-c)
+	assert.Equal(t, r.addr, addr)
 }
 
 
 func TestRunBroadcastNil(t *testing.T) {
 	c := make(chan Packet, 100)
-	sentinel := Packet{Addr: "sentinel"}
 	var r run
 	r.out = c
-	r.addr = []string{"x", "y", "z"}
+	r.addr = []*net.UDPAddr{
+		&net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
+		&net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
+		&net.UDPAddr{net.IP{3, 4, 5, 6}, 7},
+	}
 
 	r.broadcast(nil)
-	c <- sentinel
-
-	assert.Equal(t, sentinel, <-c)
+	c <- Packet{}
+	assert.Equal(t, Packet{}, <-c)
 }
 
 
@@ -271,16 +287,13 @@ func TestRunReturnTrueIfLearned(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	p := packet{
-		msg: msg{
-			Seqn:  proto.Int64(1),
-			Cmd:   learn,
-			Value: []byte("foo"),
-		},
-		Addr: "X",
-	}
+	p := packet{msg: msg{
+		Seqn:  proto.Int64(1),
+		Cmd:   learn,
+		Value: []byte("foo"),
+	}}
 
-	r.update(p, new(vector.Vector))
+	r.update(p, 0, new(vector.Vector))
 	assert.T(t, r.l.done)
 }
 
@@ -290,15 +303,18 @@ func TestRunReturnFalseIfNotLearned(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	p := packet{
-		msg: msg{
-			Seqn:  proto.Int64(1),
-			Cmd:   invite,
-			Value: []byte("foo"),
-		},
-		Addr: "X",
-	}
+	p := packet{msg: msg{
+		Seqn:  proto.Int64(1),
+		Cmd:   invite,
+		Value: []byte("foo"),
+	}}
 
-	r.update(p, new(vector.Vector))
+	r.update(p, 0, new(vector.Vector))
 	assert.T(t, !r.l.done)
+}
+
+
+func TestRunIndexOfNilAddr(t *testing.T) {
+	r := run{addr: []*net.UDPAddr{new(net.UDPAddr)}}
+	assert.Equal(t, -1, r.indexOfAddr(nil))
 }

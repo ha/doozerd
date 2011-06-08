@@ -7,13 +7,15 @@ import (
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"log"
+	"net"
+	"os"
 	"sort"
 	"time"
 )
 
 
 type packet struct {
-	Addr string
+	Addr *net.UDPAddr
 	msg
 }
 
@@ -24,7 +26,7 @@ func (p packet) Less(y interface{}) bool {
 
 
 type Packet struct {
-	Addr string
+	Addr *net.UDPAddr
 	Data []byte
 }
 
@@ -140,7 +142,7 @@ func (m *Manager) pump() {
 		if r == nil || r.l.done {
 			go sendLearn(m.Out, p, m.Store)
 		} else {
-			r.update(p, &m.tick)
+			r.update(p, r.indexOfAddr(p.Addr), &m.tick)
 		}
 	}
 }
@@ -274,7 +276,7 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	r.c.size = len(r.cals)
 	r.c.quor = r.quorum()
 	r.c.crnd = r.indexOf(r.self) + int64(len(r.cals))
-	r.l.init(int64(r.quorum()))
+	r.l.init(len(r.cals), int64(r.quorum()))
 	m.run[r.seqn] = r
 	if r.isLeader(m.Self) {
 		log.Printf("pseqn %d", r.seqn)
@@ -306,12 +308,20 @@ func getCals(g store.Getter) []string {
 }
 
 
-func getAddrs(g store.Getter, cals []string) (a []string) {
-	a = make([]string, len(cals))
-	for i, id := range cals {
-		a[i] = store.GetString(g, "/ctl/node/"+id+"/addr")
+func getAddrs(g store.Getter, cals []string) (a []*net.UDPAddr) {
+	a = make([]*net.UDPAddr, len(cals))
+	var i int
+	var err os.Error
+	for _, id := range cals {
+		s := store.GetString(g, "/ctl/node/"+id+"/addr")
+		a[i], err = net.ResolveUDPAddr("udp", s)
+		if err != nil {
+			log.Println(err)
+		} else {
+			i++
+		}
 	}
-	return
+	return a[:i]
 }
 
 

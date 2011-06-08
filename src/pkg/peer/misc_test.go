@@ -15,8 +15,12 @@ func mustListen() net.Listener {
 }
 
 
-func mustListenPacket(addr string) net.PacketConn {
-	c, err := net.ListenPacket("udp", addr)
+func mustListenUDP(addr string) *net.UDPConn {
+	uaddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		panic(err)
+	}
+	c, err := net.ListenUDP("udp", uaddr)
 	if err != nil {
 		panic(err)
 	}

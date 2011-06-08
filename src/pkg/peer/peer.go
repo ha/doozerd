@@ -45,7 +45,7 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 }
 
 
-func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn net.PacketConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64, hi int64) {
+func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *net.UDPConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64, hi int64) {
 	listenAddr := listener.Addr().String()
 
 	canWrite := make(chan bool, 1)
@@ -154,12 +154,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 
 	go func() {
 		for p := range out {
-			addr, err := net.ResolveUDPAddr("udp", p.Addr)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			n, err := udpConn.WriteTo(p.Data, addr)
+			n, err := udpConn.WriteTo(p.Data, p.Addr)
 			if err != nil {
 				log.Println(err)
 				continue
@@ -171,18 +166,21 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 		}
 	}()
 
+	selfAddr, ok := udpConn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		panic("no UDP addr")
+	}
 	lv := liveness{
 		timeout: kickTimeout,
 		ival:    kickTimeout / 2,
-		times:   make(map[string]int64),
-		self:    self,
+		self:    selfAddr,
 		shun:    shun,
 	}
 	for {
 		t := time.Nanoseconds()
 
 		buf := make([]byte, maxUDPLen)
-		n, addr, err := udpConn.ReadFrom(buf)
+		n, addr, err := udpConn.ReadFromUDP(buf)
 		if err == os.EINVAL {
 			return
 		}
@@ -193,11 +191,10 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn n
 
 		buf = buf[:n]
 
-		// Update liveness time stamp for this addr
-		lv.times[addr.String()] = t
+		lv.mark(addr, t)
 		lv.check(t)
 
-		in <- consensus.Packet{addr.String(), buf}
+		in <- consensus.Packet{addr, buf}
 	}
 }
 

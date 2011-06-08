@@ -97,7 +97,12 @@ func main() {
 		tsock = tlsWrap(tsock, *certFile, *keyFile)
 	}
 
-	usock, err := net.ListenPacket("udp", *laddr)
+	uaddr, err := net.ResolveUDPAddr("udp", *laddr)
+	if err != nil {
+		panic(err)
+	}
+
+	usock, err := net.ListenUDP("udp", uaddr)
 	if err != nil {
 		panic(err)
 	}

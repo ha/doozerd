@@ -3,6 +3,7 @@ package consensus
 import (
 	"fmt"
 	"goprotobuf.googlecode.com/hg/proto"
+	"net"
 )
 
 func (x *msg_Cmd) Format(f fmt.State, c int) {
@@ -33,10 +34,10 @@ func newVote(i int64, vval string) *msg {
 }
 
 // For testing convenience
-func newVoteFrom(from string, i int64, vval string) packet {
+func newVoteFrom(from int, i int64, vval string) (packet, int) {
 	m := newVote(i, vval)
 	m.Seqn = proto.Int64(1)
-	return packet{from, *m}
+	return packet{&net.UDPAddr{Port: from}, *m}, from
 }
 
 // For testing convenience
@@ -62,10 +63,10 @@ func newRsvp(i, vrnd int64, vval string) *msg {
 }
 
 // For testing convenience
-func newRsvpFrom(from string, i, vrnd int64, vval string) packet {
+func newRsvpFrom(from int, i, vrnd int64, vval string) (packet, int) {
 	m := newRsvp(i, vrnd, vval)
 	m.Seqn = proto.Int64(1)
-	return packet{from, *m}
+	return packet{&net.UDPAddr{Port: from}, *m}, from
 }
 
 // For testing convenience

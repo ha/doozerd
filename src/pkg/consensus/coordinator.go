@@ -9,14 +9,15 @@ type coordinator struct {
 	target string
 	crnd   int64
 	cval   string
-	rsvps  map[string]bool
+	rsvp   []bool
+	nrsvp  int
 	vr     int64
 	vv     string
 
 	sched bool
 }
 
-func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
+func (co *coordinator) update(p packet, from int) (m *msg, wantTick bool) {
 	in := &p.msg
 	switch *in.Cmd {
 	case msg_PROPOSE:
@@ -28,7 +29,7 @@ func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
 		co.target = string(in.Value)
 		co.vr = 0
 		co.vv = ""
-		co.rsvps = make(map[string]bool)
+		co.rsvp = make([]bool, co.size)
 		co.cval = ""
 		return &msg{Cmd: invite, Crnd: &co.crnd}, true
 	case msg_RSVP:
@@ -55,8 +56,11 @@ func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
 			co.vv = string(vval)
 		}
 
-		co.rsvps[p.Addr] = true
-		if len(co.rsvps) >= co.quor {
+		if !co.rsvp[from] {
+			co.rsvp[from] = true
+			co.nrsvp++
+		}
+		if co.nrsvp >= co.quor {
 			var v string
 
 			if co.vr > 0 {
@@ -72,7 +76,8 @@ func (co *coordinator) update(p packet) (m *msg, wantTick bool) {
 		co.crnd += int64(co.size)
 		co.vr = 0
 		co.vv = ""
-		co.rsvps = make(map[string]bool)
+		co.rsvp = make([]bool, co.size)
+		co.nrsvp = 0
 		co.cval = ""
 		co.sched = false
 		return &msg{Cmd: invite, Crnd: &co.crnd}, true

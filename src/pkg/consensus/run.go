@@ -5,6 +5,7 @@ import (
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"log"
+	"net"
 	"rand"
 	"time"
 )
@@ -16,7 +17,7 @@ type run struct {
 	seqn int64
 	self string
 	cals []string
-	addr []string
+	addr []*net.UDPAddr
 
 	c coordinator
 	a acceptor
@@ -35,12 +36,12 @@ func (r *run) quorum() int {
 }
 
 
-func (r *run) update(p packet, ticks heap.Interface) {
+func (r *run) update(p packet, from int, ticks heap.Interface) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_TICK {
 		log.Printf("tick wasteful=%v", r.l.done)
 	}
 
-	m, tick := r.c.update(p)
+	m, tick := r.c.update(p, from)
 	r.broadcast(m)
 	if tick {
 		r.ntick++
@@ -53,7 +54,7 @@ func (r *run) update(p packet, ticks heap.Interface) {
 	m = r.a.update(&p.msg)
 	r.broadcast(m)
 
-	m, v, ok := r.l.update(p)
+	m, v, ok := r.l.update(p, from)
 	r.broadcast(m)
 	if ok {
 		log.Printf("learn seqn=%d", r.seqn)
@@ -77,6 +78,19 @@ func (r *run) indexOf(self string) int64 {
 	for i, id := range r.cals {
 		if id == self {
 			return int64(i)
+		}
+	}
+	return -1
+}
+
+
+func (r *run) indexOfAddr(a *net.UDPAddr) int {
+	if a == nil {
+		return -1
+	}
+	for i, b := range r.addr {
+		if a.Port == b.Port && a.IP.Equal(b.IP) {
+			return i
 		}
 	}
 	return -1

@@ -3,21 +3,23 @@ package consensus
 type learner struct {
 	round  int64
 	quorum int64
+	size   int
 	votes  map[string]int64 // maps values to number of votes
-	voted  map[string]bool  // maps nodes to vote status
+	voted  []bool           // maps nodes to vote status
 
 	v    string
 	done bool
 }
 
-func (ln *learner) init(quorum int64) {
+func (ln *learner) init(n int, quorum int64) {
 	ln.round = 1
 	ln.votes = make(map[string]int64)
-	ln.voted = make(map[string]bool)
+	ln.voted = make([]bool, n)
 	ln.quorum = quorum
+	ln.size = n
 }
 
-func (ln *learner) update(p packet) (m *msg, v []byte, ok bool) {
+func (ln *learner) update(p packet, from int) (m *msg, v []byte, ok bool) {
 	if ln.done {
 		return
 	}
@@ -40,16 +42,16 @@ func (ln *learner) update(p packet) (m *msg, v []byte, ok bool) {
 		case mRound > ln.round:
 			ln.round = mRound
 			ln.votes = make(map[string]int64)
-			ln.voted = make(map[string]bool)
+			ln.voted = make([]bool, ln.size)
 			fallthrough
 		case mRound == ln.round:
 			k := string(v)
 
-			if ln.voted[p.Addr] {
+			if ln.voted[from] {
 				break
 			}
 			ln.votes[k]++
-			ln.voted[p.Addr] = true
+			ln.voted[from] = true
 
 			if ln.votes[k] >= ln.quorum {
 				// winner!

@@ -13,7 +13,7 @@ import (
 func TestDoozerNop(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -27,7 +27,7 @@ func TestDoozerNop(t *testing.T) {
 func TestDoozerGet(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -57,7 +57,7 @@ func TestDoozerGet(t *testing.T) {
 func TestDoozerSet(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -77,7 +77,7 @@ func TestDoozerSet(t *testing.T) {
 func TestDoozerGetWithRev(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -110,7 +110,7 @@ func TestDoozerGetWithRev(t *testing.T) {
 func TestDoozerWaitSimple(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -145,7 +145,7 @@ func TestDoozerWaitSimple(t *testing.T) {
 func TestDoozerWaitWithRev(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -174,7 +174,7 @@ func TestDoozerWaitWithRev(t *testing.T) {
 func TestDoozerStat(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -198,7 +198,7 @@ func TestDoozerStat(t *testing.T) {
 func TestDoozerGetdirOnDir(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -222,7 +222,7 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 func TestDoozerGetdirOnFile(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -244,7 +244,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 func TestDoozerGetdirMissing(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
@@ -264,7 +264,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
-	u := mustListenPacket(l.Addr().String())
+	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
 	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
