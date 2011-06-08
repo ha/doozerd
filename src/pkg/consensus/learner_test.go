@@ -262,7 +262,7 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
 func TestLearnerIgnoresBadMessages(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{msg: msg{Cmd: vote}}, -1) // missing Vrnd
+	m, v, ok := ln.update(&packet{msg: msg{Cmd: vote}}, -1) // missing Vrnd
 	assert.Equal(t, false, ln.done)
 	assert.Equal(t, []byte{}, v)
 	assert.Equal(t, false, ok)
@@ -273,7 +273,7 @@ func TestLearnerIgnoresBadMessages(t *testing.T) {
 func TestSinkLearnsAValue(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{msg: *newLearn("foo")}, -1)
+	m, v, ok := ln.update(&packet{msg: *newLearn("foo")}, -1)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
@@ -284,14 +284,14 @@ func TestSinkLearnsAValue(t *testing.T) {
 func TestSinkLearnsOkSticky(t *testing.T) {
 	var ln learner
 
-	m, v, ok := ln.update(packet{msg: *newLearn("foo")}, -1)
+	m, v, ok := ln.update(&packet{msg: *newLearn("foo")}, -1)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte("foo"), v)
 	assert.Equal(t, true, ok)
 	assert.Equal(t, (*msg)(nil), m)
 
-	m, v, ok = ln.update(packet{msg: *newLearn("bar")}, -1)
+	m, v, ok = ln.update(&packet{msg: *newLearn("bar")}, -1)
 	assert.Equal(t, true, ln.done)
 	assert.Equal(t, "foo", ln.v)
 	assert.Equal(t, []byte{}, v)

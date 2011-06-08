@@ -54,7 +54,7 @@ func TestRunVoteDelivered(t *testing.T) {
 		Addr: &net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
 	}
 
-	r.update(p, 0, new(vector.Vector))
+	r.update(&p, 0, new(vector.Vector))
 
 	assert.Equal(t, true, r.l.done)
 	assert.Equal(t, "foo", r.l.v)
@@ -66,7 +66,7 @@ func TestRunInviteDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{msg: *newInviteSeqn1(1)}, 0, new(vector.Vector))
+	r.update(&packet{msg: *newInviteSeqn1(1)}, 0, new(vector.Vector))
 
 	assert.Equal(t, int64(1), r.a.rnd)
 }
@@ -77,7 +77,7 @@ func TestRunProposeDelivered(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
-	r.update(packet{msg: msg{Cmd: propose}}, -1, new(vector.Vector))
+	r.update(&packet{msg: msg{Cmd: propose}}, -1, new(vector.Vector))
 	assert.Equal(t, true, r.c.begun)
 }
 
@@ -98,7 +98,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 		Crnd: proto.Int64(1),
 	}
 
-	r.update(packet{msg: *newPropose("foo")}, -1, new(vector.Vector))
+	r.update(&packet{msg: *newPropose("foo")}, -1, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -114,7 +114,7 @@ func TestRunSchedulesTick(t *testing.T) {
 	r.out = make(chan Packet, 100)
 	ticks := new(vector.Vector)
 
-	r.update(packet{msg: *newPropose("foo")}, -1, ticks)
+	r.update(&packet{msg: *newPropose("foo")}, -1, ticks)
 
 	assert.Equal(t, 1, ticks.Len())
 }
@@ -136,7 +136,7 @@ func TestRunSendsAcceptorPacket(t *testing.T) {
 		Vrnd: proto.Int64(0),
 	}
 
-	r.update(packet{msg: *newInviteSeqn1(1)}, 0, new(vector.Vector))
+	r.update(&packet{msg: *newInviteSeqn1(1)}, 0, new(vector.Vector))
 	<-c
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -160,7 +160,7 @@ func TestRunSendsLearnerPacket(t *testing.T) {
 		Value: []byte("foo"),
 	}
 
-	r.update(packet{msg: *newVote(1, "foo")}, 0, new(vector.Vector))
+	r.update(&packet{msg: *newVote(1, "foo")}, 0, new(vector.Vector))
 	assert.Equal(t, 2, len(c))
 	err := proto.Unmarshal((<-c).Data, &got)
 	assert.Equal(t, nil, err)
@@ -176,7 +176,7 @@ func TestRunAppliesOp(t *testing.T) {
 	r.ops = c
 	r.l.init(1, 1)
 
-	r.update(packet{msg: *newVote(1, "foo")}, 0, new(vector.Vector))
+	r.update(&packet{msg: *newVote(1, "foo")}, 0, new(vector.Vector))
 	assert.Equal(t, store.Op{1, "foo"}, <-c)
 }
 
@@ -293,7 +293,7 @@ func TestRunReturnTrueIfLearned(t *testing.T) {
 		Value: []byte("foo"),
 	}}
 
-	r.update(p, 0, new(vector.Vector))
+	r.update(&p, 0, new(vector.Vector))
 	assert.T(t, r.l.done)
 }
 
@@ -309,7 +309,7 @@ func TestRunReturnFalseIfNotLearned(t *testing.T) {
 		Value: []byte("foo"),
 	}}
 
-	r.update(p, 0, new(vector.Vector))
+	r.update(&p, 0, new(vector.Vector))
 	assert.T(t, !r.l.done)
 }
 

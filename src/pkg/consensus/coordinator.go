@@ -17,7 +17,7 @@ type coordinator struct {
 	sched bool
 }
 
-func (co *coordinator) update(p packet, from int) (m *msg, wantTick bool) {
+func (co *coordinator) update(p *packet, from int) (m *msg, wantTick bool) {
 	in := &p.msg
 	switch *in.Cmd {
 	case msg_PROPOSE:

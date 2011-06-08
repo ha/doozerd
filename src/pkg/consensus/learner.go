@@ -19,7 +19,7 @@ func (ln *learner) init(n int, quorum int64) {
 	ln.size = n
 }
 
-func (ln *learner) update(p packet, from int) (m *msg, v []byte, ok bool) {
+func (ln *learner) update(p *packet, from int) (m *msg, v []byte, ok bool) {
 	if ln.done {
 		return
 	}

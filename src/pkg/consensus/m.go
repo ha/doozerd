@@ -11,6 +11,8 @@ var (
 	learn    = newMsg_Cmd(msg_LEARN)
 )
 
+const nmsg = 8
+
 var (
 	msgTick = &msg{Cmd: tick}
 )

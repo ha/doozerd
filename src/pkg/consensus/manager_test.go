@@ -60,19 +60,21 @@ func TestRecvPacket(t *testing.T) {
 	q := new(vector.Vector)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 
-	recvPacket(q, Packet{x, mustMarshal(&msg{
+	p := recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(1),
 		Cmd:  invite,
 	})})
-	recvPacket(q, Packet{x, mustMarshal(&msg{
+	assert.Equal(t, &packet{x, msg{Seqn: proto.Int64(1), Cmd: invite}}, p)
+	p = recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(2),
 		Cmd:  invite,
 	})})
-	recvPacket(q, Packet{x, mustMarshal(&msg{
+	assert.Equal(t, &packet{x, msg{Seqn: proto.Int64(2), Cmd: invite}}, p)
+	p = recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(3),
 		Cmd:  invite,
 	})})
-
+	assert.Equal(t, &packet{x, msg{Seqn: proto.Int64(3), Cmd: invite}}, p)
 	assert.Equal(t, 3, q.Len())
 }
 
@@ -81,7 +83,8 @@ func TestRecvEmptyPacket(t *testing.T) {
 	q := new(vector.Vector)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 
-	recvPacket(q, Packet{x, []byte{}})
+	p := recvPacket(q, Packet{x, []byte{}})
+	assert.Equal(t, (*packet)(nil), p)
 	assert.Equal(t, 0, q.Len())
 }
 
@@ -89,7 +92,8 @@ func TestRecvEmptyPacket(t *testing.T) {
 func TestRecvInvalidPacket(t *testing.T) {
 	q := new(vector.Vector)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
-	recvPacket(q, Packet{x, invalidProtobuf})
+	p := recvPacket(q, Packet{x, invalidProtobuf})
+	assert.Equal(t, (*packet)(nil), p)
 	assert.Equal(t, 0, q.Len())
 }
 
@@ -231,11 +235,11 @@ func TestApplyTriggers(t *testing.T) {
 
 	expTriggers := new(vector.Vector)
 	expPackets := new(vector.Vector)
-	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(1)}})
-	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(2)}})
-	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(3)}})
-	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(4)}})
-	heap.Push(expPackets, packet{msg: msg{Cmd: tick, Seqn: proto.Int64(5)}})
+	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(1)}})
+	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(2)}})
+	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(3)}})
+	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(4)}})
+	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(5)}})
 	heap.Push(expTriggers, trigger{t: 6, n: 6})
 	heap.Push(expTriggers, trigger{t: 7, n: 7})
 	heap.Push(expTriggers, trigger{t: 8, n: 8})

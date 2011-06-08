@@ -21,7 +21,7 @@ type packet struct {
 
 
 func (p packet) Less(y interface{}) bool {
-	return *p.Seqn < *y.(packet).Seqn
+	return *p.Seqn < *y.(*packet).Seqn
 }
 
 
@@ -52,6 +52,7 @@ type Stats struct {
 	TotalRuns  int64
 	TotalFills int64
 	TotalTicks int64
+	TotalRecv  [nmsg]int64
 }
 
 
@@ -117,7 +118,9 @@ func (m *Manager) Run() {
 			log.Println("avg tick delay:", avg(&m.tick))
 			log.Println("avg fill delay:", avg(&m.fill))
 		case p := <-m.In:
-			recvPacket(&m.packet, p)
+			if p1 := recvPacket(&m.packet, p); p1 != nil {
+				m.Stats.TotalRecv[*p1.msg.Cmd]++
+			}
 		case pr := <-m.Props:
 			m.propose(&m.packet, pr, time.Nanoseconds())
 		case t := <-m.Ticker:
@@ -131,7 +134,7 @@ func (m *Manager) Run() {
 
 func (m *Manager) pump() {
 	for m.packet.Len() > 0 {
-		p := m.packet.At(0).(packet)
+		p := m.packet.At(0).(*packet)
 		log.Printf("p.seqn=%d m.next=%d", *p.Seqn, m.next)
 		if *p.Seqn >= m.next {
 			break
@@ -165,8 +168,11 @@ func (m *Manager) doTick(t int64) {
 
 func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
 	log.Println("prop", pr)
-	msg := msg{Seqn: &pr.Seqn, Cmd: propose, Value: pr.Mut}
-	heap.Push(q, packet{msg: msg})
+	p := new(packet)
+	p.msg.Seqn = &pr.Seqn
+	p.msg.Cmd = propose
+	p.msg.Value = pr.Mut
+	heap.Push(q, p)
 	for n := pr.Seqn - 1; ; n-- {
 		r := m.run[n]
 		if r == nil || r.isLeader(m.Self) {
@@ -178,7 +184,7 @@ func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
 }
 
 
-func sendLearn(out chan<- Packet, p packet, st *store.Store) {
+func sendLearn(out chan<- Packet, p *packet, st *store.Store) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_INVITE {
 		ch, err := st.Wait(store.Any, *p.Seqn)
 
@@ -198,23 +204,23 @@ func sendLearn(out chan<- Packet, p packet, st *store.Store) {
 }
 
 
-func recvPacket(q heap.Interface, P Packet) {
-	var p packet
+func recvPacket(q heap.Interface, P Packet) (p *packet) {
+	p = new(packet)
 	p.Addr = P.Addr
 
 	err := proto.Unmarshal(P.Data, &p.msg)
 	if err != nil {
 		log.Println(err)
-		return
+		return nil
 	}
 
 	if p.msg.Seqn == nil || p.msg.Cmd == nil {
 		log.Printf("discarding %#v", p)
-		return
+		return nil
 	}
 
-	log.Println("recv", p.Addr, *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
 	heap.Push(q, p)
+	return p
 }
 
 
@@ -244,7 +250,8 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 
 		heap.Pop(ticks)
 
-		p := packet{msg: *tpl}
+		p := new(packet)
+		p.msg = *tpl
 		p.msg.Seqn = &tt.n
 		log.Println("applying", *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
 		heap.Push(packets, p)

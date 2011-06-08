@@ -36,7 +36,7 @@ func (r *run) quorum() int {
 }
 
 
-func (r *run) update(p packet, from int, ticks heap.Interface) {
+func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_TICK {
 		log.Printf("tick wasteful=%v", r.l.done)
 	}
