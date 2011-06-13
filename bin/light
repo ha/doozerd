@@ -10,6 +10,6 @@ test $# -eq 0 && n=1
 p=`expr 8040 + $n`
 w=`expr 8080 + $n`
 
-test $n -ne 1 && args="-a 127.0.0.1:8041"
+test $n -ne 1 && args="-b doozer:?ca=127.0.0.1:8041"
 
 exec doozerd -l 127.0.0.1:$p -w :$w $args $*

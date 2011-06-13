@@ -83,6 +83,9 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/ctl/cal/0", self, store.Missing)
+		if buri == "" {
+			set(st, "/ctl/ns/"+clusterName+"/"+self, listenAddr, store.Missing)
+		}
 		calSrv(<-st.Seqns)
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
