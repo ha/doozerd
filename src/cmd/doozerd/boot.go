@@ -159,7 +159,9 @@ func lookup(b *doozer.Conn, name string) (as []string) {
 
 	path := "/ctl/ns/" + name
 	names, err := b.Getdir(path, rev, 0, -1)
-	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
+	if err == doozer.ErrNoEnt {
+		return nil
+	} else if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
 		return nil
 	} else if err != nil {
 		panic(err)
