@@ -7,6 +7,29 @@ import (
 )
 
 
+func TestLivenessMark(t *testing.T) {
+	a1, err := net.ResolveUDPAddr("udp", "127.0.0.1:8046")
+	if err != nil {
+		panic(err)
+	}
+	a2, err := net.ResolveUDPAddr("udp", "127.0.0.2:8046")
+	if err != nil {
+		panic(err)
+	}
+	lv := liveness{
+		timeout: 10,
+		ival:    5,
+		self:    a1,
+		shun:    make(chan string, 100),
+	}
+
+	lv.mark(a1, 1)
+	assert.Equal(t, []liverec{{a1, 1}}, lv.times)
+	lv.mark(a2, 2)
+	assert.Equal(t, []liverec{{a1, 1}, {a2, 2}}, lv.times)
+}
+
+
 func TestLivenessStaysAlive(t *testing.T) {
 	shun := make(chan string, 1)
 	a := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}

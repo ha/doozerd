@@ -286,6 +286,54 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 }
 
 
+func TestPeerShun(t *testing.T) {
+	l0 := mustListen()
+	defer l0.Close()
+	a0 := l0.Addr().String()
+	u0 := mustListenUDP(a0)
+	defer u0.Close()
+
+	l1 := mustListen()
+	defer l1.Close()
+	u1 := mustListenUDP(l1.Addr().String())
+	defer u1.Close()
+	l2 := mustListen()
+	defer l2.Close()
+	u2 := mustListenUDP(l2.Addr().String())
+	defer u2.Close()
+
+	go Main("a", "X", "", "", "", nil, u0, l0, nil, 1e8, 1e7, 1e9, 1e9)
+	go Main("a", "Y", "", "", "", dial(a0), u1, l1, nil, 1e8, 1e7, 1e9, 1e9)
+	go Main("a", "Z", "", "", "", dial(a0), u2, l2, nil, 1e8, 1e7, 1e9, 1e9)
+
+	cl := dial(l0.Addr().String())
+	cl.Set("/ctl/cal/1", store.Missing, nil)
+	cl.Set("/ctl/cal/2", store.Missing, nil)
+
+	waitFor(cl, "/ctl/node/X/writable")
+	waitFor(cl, "/ctl/node/Y/writable")
+	waitFor(cl, "/ctl/node/Z/writable")
+
+	rev, err := cl.Set("/test", store.Clobber, nil)
+	if e, ok := err.(*doozer.Error); ok && e.Err == doozer.ErrReadonly {
+	} else if err != nil {
+		panic(err)
+	}
+
+	u1.Close()
+	for {
+		ev, err := cl.Wait("/ctl/cal/*", rev)
+		if err != nil {
+			panic(err)
+		}
+		if ev.IsSet() && len(ev.Body) == 0 {
+			break
+		}
+		rev = ev.Rev + 1
+	}
+}
+
+
 func assertDenied(t *testing.T, err os.Error) {
 	assert.NotEqual(t, nil, err)
 	assert.Equal(t, doozer.ErrOther, err.(*doozer.Error).Err)

@@ -28,7 +28,7 @@ func (lv *liveness) mark(a net.Addr, t int64) {
 		return
 	}
 	var i int
-	for i := 0; i < len(lv.times); i++ {
+	for i = 0; i < len(lv.times); i++ {
 		if eq(lv.times[i].addr, uaddr) {
 			lv.times[i].seen = t
 			break
