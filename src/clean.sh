@@ -24,6 +24,9 @@ rm -rf $GOROOT/pkg/${GOOS}_${GOARCH}/doozer
 rm -rf $GOROOT/pkg/${GOOS}_${GOARCH}/doozer.a
 rm -rf $GOBIN/doozerd
 
+# remove auto generated protobuffer files
+find . -name "*.pb.go" -exec rm {} \;
+
 for pkg in $PKGS
 do mk pkg/$pkg
 done
