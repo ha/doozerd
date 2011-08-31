@@ -110,7 +110,7 @@ func split(path string) []string {
 	if path == "/" {
 		return []string{}
 	}
-	return strings.Split(path[1:], "/", -1)
+	return strings.SplitN(path[1:], "/", -1)
 }
 
 func join(parts []string) string {
@@ -170,7 +170,7 @@ func MustEncodeDel(path string, rev int64) (mutation string) {
 }
 
 func decode(mutation string) (path, v string, rev int64, keep bool, err os.Error) {
-	cm := strings.Split(mutation, ":", 2)
+	cm := strings.SplitN(mutation, ":", 2)
 
 	if len(cm) != 2 {
 		err = ErrBadMutation
@@ -182,7 +182,7 @@ func decode(mutation string) (path, v string, rev int64, keep bool, err os.Error
 		return
 	}
 
-	kv := strings.Split(cm[1], "=", 2)
+	kv := strings.SplitN(cm[1], "=", 2)
 
 	if err = checkPath(kv[0]); err != nil {
 		return

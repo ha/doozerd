@@ -210,7 +210,7 @@ func (t *txn) getdir() {
 			return
 		}
 
-		sort.SortStrings(ents)
+		sort.Strings(ents)
 		offset := int(*t.req.Offset)
 		if offset < 0 || offset >= len(ents) {
 			t.respondErrCode(response_RANGE)

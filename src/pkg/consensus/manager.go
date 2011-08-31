@@ -309,7 +309,7 @@ func getCals(g store.Getter) []string {
 	}
 
 	cals = cals[0:i]
-	sort.SortStrings(cals)
+	sort.Strings(cals)
 
 	return cals
 }
@@ -337,7 +337,7 @@ func fmtRuns(rs map[int64]*run) (s string) {
 	for i := range rs {
 		ns = append(ns, int(i))
 	}
-	sort.SortInts(ns)
+	sort.Ints(ns)
 	for _, i := range ns {
 		r := rs[int64(i)]
 		if r.l.done {
