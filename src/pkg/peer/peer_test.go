@@ -2,7 +2,7 @@ package peer
 
 import (
 	"doozer/store"
-	"github.com/ha/doozer"
+	"github.com/nightmouse/doozer"
 	"exec"
 	"github.com/bmizerany/assert"
 	"os"

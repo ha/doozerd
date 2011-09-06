@@ -7,7 +7,7 @@ import (
 	"doozer/server"
 	"doozer/store"
 	"doozer/web"
-	"github.com/ha/doozer"
+	"github.com/nightmouse/doozer"
 	"net"
 	"os"
 	"time"
