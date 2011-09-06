@@ -396,7 +396,7 @@ func TestGetWithDir(t *testing.T) {
 	sync(st, 2)
 	dents, rev := st.Get("/")
 	assert.Equal(t, Dir, rev)
-	sort.SortStrings(dents)
+	sort.Strings(dents)
 	assert.Equal(t, []string{"x", "y"}, dents)
 }
 
