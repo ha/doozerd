@@ -54,7 +54,7 @@ and run tests.
 ## Try It Out
 
     $ doozerd >/dev/null 2>&1 &
-    $ open http://localhost:8080/
+    $ open http://localhost:8000/
 
 This will start up one doozer process and show a web view of its contents.
 
