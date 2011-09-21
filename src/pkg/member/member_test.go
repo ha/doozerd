@@ -50,6 +50,6 @@ func TestMemberSimple(t *testing.T) {
 	assert.T(t, ev.IsDel())
 	cs = append(cs, int(ev.Path[len(ev.Path)-1]))
 
-	sort.SortInts(cs)
+	sort.Ints(cs)
 	assert.Equal(t, []int{'x', 'y'}, cs)
 }

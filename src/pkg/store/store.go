@@ -32,7 +32,6 @@ var (
 	ErrBadPath     = os.NewError("bad path")
 )
 
-
 func mustBuildRe(p string) *regexp.Regexp {
 	return regexp.MustCompile(`^/$|^(/` + p + `+)+$`)
 }
@@ -62,12 +61,10 @@ type Op struct {
 	Mut  string
 }
 
-
 // Satisfies vector.LessInterface.
 func (x Op) Less(y interface{}) bool {
 	return x.Seqn < y.(Op).Seqn
 }
-
 
 type state struct {
 	ver  int64
@@ -79,7 +76,6 @@ type watch struct {
 	rev  int64
 	c    chan<- Event
 }
-
 
 // Creates a new, empty data store. Mutations will be applied in order,
 // starting at number 1 (number 0 can be thought of as the creation of the
@@ -110,7 +106,7 @@ func split(path string) []string {
 	if path == "/" {
 		return []string{}
 	}
-	return strings.Split(path[1:], "/", -1)
+	return strings.Split(path[1:], "/")
 }
 
 func join(parts []string) string {
@@ -170,7 +166,7 @@ func MustEncodeDel(path string, rev int64) (mutation string) {
 }
 
 func decode(mutation string) (path, v string, rev int64, keep bool, err os.Error) {
-	cm := strings.Split(mutation, ":", 2)
+	cm := strings.SplitN(mutation, ":", 2)
 
 	if len(cm) != 2 {
 		err = ErrBadMutation
@@ -182,7 +178,7 @@ func decode(mutation string) (path, v string, rev int64, keep bool, err os.Error
 		return
 	}
 
-	kv := strings.Split(cm[1], "=", 2)
+	kv := strings.SplitN(cm[1], "=", 2)
 
 	if err = checkPath(kv[0]); err != nil {
 		return
@@ -316,14 +312,12 @@ func (st *Store) Stat(path string) (int32, int64) {
 	return g.Stat(path)
 }
 
-
 // Apply all operations in the internal queue, even if there are gaps in the
 // sequence (gaps will be treated as no-ops). This is only useful for
 // bootstrapping a store from a point-in-time snapshot of another store.
 func (st *Store) Flush() {
 	st.flush <- true
 }
-
 
 // Returns a chan that will receive a single event representing the
 // first change made to any file matching glob on or after rev.
@@ -348,7 +342,6 @@ func (st *Store) Wait(glob *Glob, rev int64) (<-chan Event, os.Error) {
 	}
 	return ch, nil
 }
-
 
 func (st *Store) Clean(seqn int64) {
 	st.cleanCh <- seqn

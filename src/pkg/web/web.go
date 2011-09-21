@@ -17,8 +17,8 @@ var Store *store.Store
 var ClusterName string
 
 var (
-	mainTpl  = template.MustParse(main_html, nil)
-	statsTpl = template.MustParse(stats_html, nil)
+	mainTpl  = template.Must(template.New("main.html").Parse(main_html))
+	statsTpl = template.Must(template.New("stats.html").Parse(stats_html))
 )
 
 type info struct {

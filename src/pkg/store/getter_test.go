@@ -54,7 +54,7 @@ func TestWalk(t *testing.T) {
 	for p := range exp {
 		expPaths = append(expPaths, p)
 	}
-	sort.SortStrings(expPaths)
+	sort.Strings(expPaths)
 
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/d/x", "1", Clobber)}
@@ -76,7 +76,6 @@ func TestWalk(t *testing.T) {
 	assert.Equal(t, 3, c)
 }
 
-
 func TestWalkOneLevel(t *testing.T) {
 	exp := [][2]string{
 		{"/d/a/z", "3"},
@@ -95,7 +94,6 @@ func TestWalkOneLevel(t *testing.T) {
 	assert.Equal(t, exp, got)
 }
 
-
 func TestWalkStop(t *testing.T) {
 	exp := map[string]string{
 		"/d/x":   "1",
@@ -106,7 +104,7 @@ func TestWalkStop(t *testing.T) {
 	for p := range exp {
 		expPaths = append(expPaths, p)
 	}
-	sort.SortStrings(expPaths)
+	sort.Strings(expPaths)
 
 	st := New()
 	st.Ops <- Op{1, MustEncodeSet("/d/x", "1", Clobber)}
