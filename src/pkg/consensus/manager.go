@@ -1,6 +1,5 @@
 package consensus
 
-
 import (
 	"container/heap"
 	"container/vector"
@@ -13,34 +12,28 @@ import (
 	"time"
 )
 
-
 type packet struct {
 	Addr *net.UDPAddr
 	msg
 }
 
-
 func (p packet) Less(y interface{}) bool {
 	return *p.Seqn < *y.(*packet).Seqn
 }
-
 
 type Packet struct {
 	Addr *net.UDPAddr
 	Data []byte
 }
 
-
 type trigger struct {
 	t int64 // trigger time
 	n int64 // seqn
 }
 
-
 func (t trigger) Less(y interface{}) bool {
 	return t.t < y.(trigger).t
 }
-
 
 type Stats struct {
 	// Current queue sizes
@@ -54,7 +47,6 @@ type Stats struct {
 	TotalTicks int64
 	TotalRecv  [nmsg]int64
 }
-
 
 // DefRev is the rev in which this manager was defined;
 // it will participate starting at DefRev+Alpha.
@@ -78,7 +70,6 @@ type Manager struct {
 	tick   vector.Vector
 }
 
-
 type Prop struct {
 	Seqn int64
 	Mut  []byte
@@ -86,7 +77,6 @@ type Prop struct {
 
 var tickTemplate = &msg{Cmd: tick}
 var fillTemplate = &msg{Cmd: propose, Value: []byte(store.Nop)}
-
 
 func (m *Manager) Run() {
 	m.run = make(map[int64]*run)
@@ -131,7 +121,6 @@ func (m *Manager) Run() {
 	}
 }
 
-
 func (m *Manager) pump() {
 	for m.packet.Len() > 0 {
 		p := m.packet.At(0).(*packet)
@@ -150,7 +139,6 @@ func (m *Manager) pump() {
 	}
 }
 
-
 func (m *Manager) doTick(t int64) {
 	n := applyTriggers(&m.packet, &m.fill, t, fillTemplate)
 	m.Stats.TotalFills += int64(n)
@@ -164,7 +152,6 @@ func (m *Manager) doTick(t int64) {
 		log.Println("applied m.tick", n)
 	}
 }
-
 
 func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
 	log.Println("prop", pr)
@@ -182,7 +169,6 @@ func (m *Manager) propose(q heap.Interface, pr *Prop, t int64) {
 		}
 	}
 }
-
 
 func sendLearn(out chan<- Packet, p *packet, st *store.Store) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_INVITE {
@@ -203,7 +189,6 @@ func sendLearn(out chan<- Packet, p *packet, st *store.Store) {
 	}
 }
 
-
 func recvPacket(q heap.Interface, P Packet) (p *packet) {
 	p = new(packet)
 	p.Addr = P.Addr
@@ -223,7 +208,6 @@ func recvPacket(q heap.Interface, P Packet) (p *packet) {
 	return p
 }
 
-
 func avg(v *vector.Vector) (n int64) {
 	t := time.Nanoseconds()
 	if v.Len() == 0 {
@@ -235,11 +219,9 @@ func avg(v *vector.Vector) (n int64) {
 	return n / int64(v.Len())
 }
 
-
 func schedTrigger(q heap.Interface, n, t, tfill int64) {
 	heap.Push(q, trigger{n: n, t: t + tfill})
 }
-
 
 func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 	for ticks.Len() > 0 {
@@ -259,7 +241,6 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 	}
 	return
 }
-
 
 func (m *Manager) event(e store.Event) {
 	m.run[e.Seqn] = nil, false
@@ -294,7 +275,6 @@ func (m *Manager) addRun(e store.Event) (r *run) {
 	return r
 }
 
-
 func getCals(g store.Getter) []string {
 	ents := store.Getdir(g, "/ctl/cal")
 	cals := make([]string, len(ents))
@@ -309,11 +289,10 @@ func getCals(g store.Getter) []string {
 	}
 
 	cals = cals[0:i]
-	sort.SortStrings(cals)
+	sort.Strings(cals)
 
 	return cals
 }
-
 
 func getAddrs(g store.Getter, cals []string) (a []*net.UDPAddr) {
 	a = make([]*net.UDPAddr, len(cals))
@@ -331,13 +310,12 @@ func getAddrs(g store.Getter, cals []string) (a []*net.UDPAddr) {
 	return a[:i]
 }
 
-
 func fmtRuns(rs map[int64]*run) (s string) {
 	var ns []int
 	for i := range rs {
 		ns = append(ns, int(i))
 	}
-	sort.SortInts(ns)
+	sort.Ints(ns)
 	for _, i := range ns {
 		r := rs[int64(i)]
 		if r.l.done {

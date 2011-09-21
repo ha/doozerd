@@ -56,7 +56,7 @@ func walk(g Getter, path string, glob *Glob, f Visitor) (stopped bool) {
 		path = ""
 	}
 
-	sort.SortStrings(v)
+	sort.Strings(v)
 	for _, ent := range v {
 		stopped = walk(g, path+"/"+ent, glob, f)
 		if stopped {
