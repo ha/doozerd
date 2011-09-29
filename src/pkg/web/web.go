@@ -9,7 +9,7 @@ import (
 	"net"
 	"runtime"
 	"strings"
-	"template"
+	"old/template"
 	"websocket"
 )
 

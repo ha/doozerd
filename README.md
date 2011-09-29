@@ -31,7 +31,7 @@ other users and developers.
         $ doozer get /message
         hello, world
 
-5. Open <http://localhost:8080> and see your message
+5. Open <http://localhost:8000> and see your message
 
 ![doozer web view](/ha/doozerd/raw/master/doc/webview.png)
 

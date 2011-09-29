@@ -69,13 +69,11 @@ var Splits = [][]string{
 	{"/x/y/z", "x", "y", "z"},
 }
 
-
 func sync(s *Store, n int64) {
 	if ev, _ := s.Wait(Any, n); ev != nil {
 		<-ev
 	}
 }
-
 
 func clearGetter(ev Event) Event {
 	ev.Getter = nil
@@ -223,7 +221,6 @@ func TestApplyInOrder(t *testing.T) {
 	assert.Equal(t, int64(2), rev)
 	assert.Equal(t, []string{"b"}, v)
 }
-
 
 func TestGetSyncOne(t *testing.T) {
 	chV := make(chan []string)
@@ -396,7 +393,7 @@ func TestGetWithDir(t *testing.T) {
 	sync(st, 2)
 	dents, rev := st.Get("/")
 	assert.Equal(t, Dir, rev)
-	sort.SortStrings(dents)
+	sort.Strings(dents)
 	assert.Equal(t, []string{"x", "y"}, dents)
 }
 
@@ -561,7 +558,6 @@ func TestWaitGlobAfterPost(t *testing.T) {
 	assert.Equal(t, Event{2, "/x", "b", 2, mut2, nil, nil}, exp)
 }
 
-
 func TestStoreNopEvent(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
@@ -577,7 +573,6 @@ func TestStoreNopEvent(t *testing.T) {
 	assert.T(t, ev.IsNop())
 }
 
-
 func TestStoreFlush(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
@@ -591,7 +586,6 @@ func TestStoreFlush(t *testing.T) {
 	assert.Equal(t, int64(2), rev)
 	assert.Equal(t, []string{"b"}, v)
 }
-
 
 func TestStoreNoEventsOnFlush(t *testing.T) {
 	st := New()
@@ -608,7 +602,6 @@ func TestStoreNoEventsOnFlush(t *testing.T) {
 	assert.Equal(t, int64(3), (<-ch).Seqn)
 }
 
-
 func TestWaitClose(t *testing.T) {
 	st := New()
 	defer close(st.Ops)
@@ -620,7 +613,6 @@ func TestWaitClose(t *testing.T) {
 	st.Ops <- Op{2, Nop}
 	assert.Equal(t, 0, <-st.Waiting)
 }
-
 
 func TestStoreWaitWorks(t *testing.T) {
 	st := New()

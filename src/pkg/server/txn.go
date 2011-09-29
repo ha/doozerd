@@ -15,7 +15,6 @@ type txn struct {
 	resp response
 }
 
-
 var ops = map[int32]func(*txn){
 	request_DEL:    (*txn).del,
 	request_GET:    (*txn).get,
@@ -37,7 +36,6 @@ const (
 	del
 )
 
-
 func (t *txn) run() {
 	verb := proto.GetInt32((*int32)(t.req.Verb))
 	if f, ok := ops[verb]; ok {
@@ -46,7 +44,6 @@ func (t *txn) run() {
 		t.respondErrCode(response_UNKNOWN_VERB)
 	}
 }
-
 
 func (t *txn) get() {
 	if !t.c.raccess {
@@ -80,7 +77,6 @@ func (t *txn) get() {
 	}()
 }
 
-
 func (t *txn) set() {
 	if !t.c.waccess {
 		t.respondOsError(os.EACCES)
@@ -108,7 +104,6 @@ func (t *txn) set() {
 	}()
 }
 
-
 func (t *txn) del() {
 	if !t.c.waccess {
 		t.respondOsError(os.EACCES)
@@ -135,7 +130,6 @@ func (t *txn) del() {
 	}()
 }
 
-
 func (t *txn) nop() {
 	if !t.c.waccess {
 		t.respondOsError(os.EACCES)
@@ -153,13 +147,11 @@ func (t *txn) nop() {
 	}()
 }
 
-
 func (t *txn) rev() {
 	rev := <-t.c.st.Seqns
 	t.resp.Rev = &rev
 	t.respond()
 }
-
 
 func (t *txn) stat() {
 	if !t.c.raccess {
@@ -180,7 +172,6 @@ func (t *txn) stat() {
 		t.respond()
 	}()
 }
-
 
 func (t *txn) getdir() {
 	if !t.c.raccess {
@@ -210,7 +201,7 @@ func (t *txn) getdir() {
 			return
 		}
 
-		sort.SortStrings(ents)
+		sort.Strings(ents)
 		offset := int(*t.req.Offset)
 		if offset < 0 || offset >= len(ents) {
 			t.respondErrCode(response_RANGE)
@@ -221,7 +212,6 @@ func (t *txn) getdir() {
 		t.respond()
 	}()
 }
-
 
 func (t *txn) wait() {
 	if !t.c.raccess {
@@ -262,7 +252,6 @@ func (t *txn) wait() {
 		t.respond()
 	}()
 }
-
 
 func (t *txn) walk() {
 	if !t.c.raccess {
@@ -312,7 +301,6 @@ func (t *txn) walk() {
 	}()
 }
 
-
 func (t *txn) access() {
 	if t.c.grant(string(t.req.Value)) {
 		t.respond()
@@ -320,7 +308,6 @@ func (t *txn) access() {
 		t.respondOsError(os.EACCES)
 	}
 }
-
 
 func (t *txn) respondOsError(err os.Error) {
 	switch err {
@@ -340,12 +327,10 @@ func (t *txn) respondOsError(err os.Error) {
 	}
 }
 
-
 func (t *txn) respondErrCode(e response_Err) {
 	t.resp.ErrCode = &e
 	t.respond()
 }
-
 
 func (t *txn) respond() {
 	t.resp.Tag = t.req.Tag
@@ -354,7 +339,6 @@ func (t *txn) respond() {
 		log.Println(err)
 	}
 }
-
 
 func (t *txn) getter() (store.Getter, os.Error) {
 	if t.req.Rev == nil {
