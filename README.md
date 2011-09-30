@@ -21,9 +21,9 @@ other users and developers.
 
 1. Download [doozerd](https://github.com/ha/doozerd/downloads)
 2. Unpack the archive
-3. Start a doozerd
+3. Start a doozerd with a WebView listening on `:8080`
 
-        $ doozerd
+        $ doozerd -w ":8080"
 
 4. Set a key and read it back
 
