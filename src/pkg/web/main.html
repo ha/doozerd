@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>{ Name } { Path } doozer viewer</title>
+    <title>{{ .Name }} {{ .Path }} doozer viewer</title>
     <link rel=stylesheet href=/$main.css>
   </head>
 
@@ -15,7 +15,7 @@
     </div>
 
     <dl id=tree>
-      <dt>{ Path }</dt>
+      <dt>{{ .Path }}</dt>
       <dd id=root>
         <dl></dl>
         <table><tbody></table>
@@ -23,7 +23,7 @@
     </dl>
 
     <script>
-      var path = "{ Path }";
+      var path = "{{ .Path }}";
     </script>
     <script src=/$main.js></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" async defer onload=$(document).ready(dr) onerror=jerr()></script>
