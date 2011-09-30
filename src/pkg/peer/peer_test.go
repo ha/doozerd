@@ -343,17 +343,10 @@ func assertDenied(t *testing.T, err os.Error) {
 
 func runDoozer(a ...string) *exec.Cmd {
 	path := "/home/kr/src/go/bin/doozerd"
-	p, err := exec.Run(
-		path,
-		append([]string{path}, a...),
-		nil,
-		"/",
-		0,
-		0,
-		0,
-	)
-	if err != nil {
+	args := append([]string{path}, a...)
+	c := exec.Command(path, args...)
+	if err := c.Run(); err != nil {
 		panic(err)
 	}
-	return p
+	return c
 }
