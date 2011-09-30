@@ -16,16 +16,16 @@ type txn struct {
 }
 
 var ops = map[int32]func(*txn){
-	request_DEL:    (*txn).del,
-	request_GET:    (*txn).get,
-	request_GETDIR: (*txn).getdir,
-	request_NOP:    (*txn).nop,
-	request_REV:    (*txn).rev,
-	request_SET:    (*txn).set,
-	request_STAT:   (*txn).stat,
-	request_WAIT:   (*txn).wait,
-	request_WALK:   (*txn).walk,
-	request_ACCESS: (*txn).access,
+	int32(request_DEL):    (*txn).del,
+	int32(request_GET):    (*txn).get,
+	int32(request_GETDIR): (*txn).getdir,
+	int32(request_NOP):    (*txn).nop,
+	int32(request_REV):    (*txn).rev,
+	int32(request_SET):    (*txn).set,
+	int32(request_STAT):   (*txn).stat,
+	int32(request_WAIT):   (*txn).wait,
+	int32(request_WALK):   (*txn).walk,
+	int32(request_ACCESS): (*txn).access,
 }
 
 // response flags

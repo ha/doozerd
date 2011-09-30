@@ -12,20 +12,19 @@ var _ = proto.GetString
 var _ = math.Inf
 var _ os.Error
 
-
 type request_Verb int32
 
 const (
-	request_GET    = 1
-	request_SET    = 2
-	request_DEL    = 3
-	request_REV    = 5
-	request_WAIT   = 6
-	request_NOP    = 7
-	request_WALK   = 9
-	request_GETDIR = 14
-	request_STAT   = 16
-	request_ACCESS = 99
+	request_GET    request_Verb = 1
+	request_SET    request_Verb = 2
+	request_DEL    request_Verb = 3
+	request_REV    request_Verb = 5
+	request_WAIT   request_Verb = 6
+	request_NOP    request_Verb = 7
+	request_WALK   request_Verb = 9
+	request_GETDIR request_Verb = 14
+	request_STAT   request_Verb = 16
+	request_ACCESS request_Verb = 99
 )
 
 var request_Verb_name = map[int32]string{
@@ -53,26 +52,29 @@ var request_Verb_value = map[string]int32{
 	"ACCESS": 99,
 }
 
-func newRequest_Verb(x int32) *request_Verb {
+func newRequest_Verb(x request_Verb) *request_Verb {
 	e := request_Verb(x)
 	return &e
+}
+func (x request_Verb) String() string {
+	return proto.EnumName(request_Verb_name, int32(x))
 }
 
 type response_Err int32
 
 const (
-	response_OTHER        = 127
-	response_TAG_IN_USE   = 1
-	response_UNKNOWN_VERB = 2
-	response_READONLY     = 3
-	response_TOO_LATE     = 4
-	response_REV_MISMATCH = 5
-	response_BAD_PATH     = 6
-	response_MISSING_ARG  = 7
-	response_RANGE        = 8
-	response_NOTDIR       = 20
-	response_ISDIR        = 21
-	response_NOENT        = 22
+	response_OTHER        response_Err = 127
+	response_TAG_IN_USE   response_Err = 1
+	response_UNKNOWN_VERB response_Err = 2
+	response_READONLY     response_Err = 3
+	response_TOO_LATE     response_Err = 4
+	response_REV_MISMATCH response_Err = 5
+	response_BAD_PATH     response_Err = 6
+	response_MISSING_ARG  response_Err = 7
+	response_RANGE        response_Err = 8
+	response_NOTDIR       response_Err = 20
+	response_ISDIR        response_Err = 21
+	response_NOENT        response_Err = 22
 )
 
 var response_Err_name = map[int32]string{
@@ -104,41 +106,42 @@ var response_Err_value = map[string]int32{
 	"NOENT":        22,
 }
 
-func newResponse_Err(x int32) *response_Err {
+func newResponse_Err(x response_Err) *response_Err {
 	e := response_Err(x)
 	return &e
 }
+func (x response_Err) String() string {
+	return proto.EnumName(response_Err_name, int32(x))
+}
 
 type request struct {
-	Tag              *int32        "PB(varint,1,opt,name=tag)"
-	Verb             *request_Verb "PB(varint,2,opt,name=verb,enum=server.request_Verb)"
-	Path             *string       "PB(bytes,4,opt,name=path)"
-	Value            []byte        "PB(bytes,5,opt,name=value)"
-	OtherTag         *int32        "PB(varint,6,opt,name=other_tag)"
-	Offset           *int32        "PB(varint,7,opt,name=offset)"
-	Rev              *int64        "PB(varint,9,opt,name=rev)"
+	Tag              *int32        `protobuf:"varint,1,opt,name=tag" json:"tag"`
+	Verb             *request_Verb `protobuf:"varint,2,opt,name=verb,enum=server.request_Verb" json:"verb"`
+	Path             *string       `protobuf:"bytes,4,opt,name=path" json:"path"`
+	Value            []byte        `protobuf:"bytes,5,opt,name=value" json:"value"`
+	OtherTag         *int32        `protobuf:"varint,6,opt,name=other_tag" json:"other_tag"`
+	Offset           *int32        `protobuf:"varint,7,opt,name=offset" json:"offset"`
+	Rev              *int64        `protobuf:"varint,9,opt,name=rev" json:"rev"`
 	XXX_unrecognized []byte
 }
 
-func (this *request) Reset() {
-	*this = request{}
-}
+func (this *request) Reset()         { *this = request{} }
+func (this *request) String() string { return proto.CompactTextString(this) }
 
 type response struct {
-	Tag              *int32        "PB(varint,1,opt,name=tag)"
-	Flags            *int32        "PB(varint,2,opt,name=flags)"
-	Rev              *int64        "PB(varint,3,opt,name=rev)"
-	Path             *string       "PB(bytes,5,opt,name=path)"
-	Value            []byte        "PB(bytes,6,opt,name=value)"
-	Len              *int32        "PB(varint,8,opt,name=len)"
-	ErrCode          *response_Err "PB(varint,100,opt,name=err_code,enum=server.response_Err)"
-	ErrDetail        *string       "PB(bytes,101,opt,name=err_detail)"
+	Tag              *int32        `protobuf:"varint,1,opt,name=tag" json:"tag"`
+	Flags            *int32        `protobuf:"varint,2,opt,name=flags" json:"flags"`
+	Rev              *int64        `protobuf:"varint,3,opt,name=rev" json:"rev"`
+	Path             *string       `protobuf:"bytes,5,opt,name=path" json:"path"`
+	Value            []byte        `protobuf:"bytes,6,opt,name=value" json:"value"`
+	Len              *int32        `protobuf:"varint,8,opt,name=len" json:"len"`
+	ErrCode          *response_Err `protobuf:"varint,100,opt,name=err_code,enum=server.response_Err" json:"err_code"`
+	ErrDetail        *string       `protobuf:"bytes,101,opt,name=err_detail" json:"err_detail"`
 	XXX_unrecognized []byte
 }
 
-func (this *response) Reset() {
-	*this = response{}
-}
+func (this *response) Reset()         { *this = response{} }
+func (this *response) String() string { return proto.CompactTextString(this) }
 
 func init() {
 	proto.RegisterEnum("server.request_Verb", request_Verb_name, request_Verb_value)

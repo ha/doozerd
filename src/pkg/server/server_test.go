@@ -89,7 +89,7 @@ func TestServerNoAccess(t *testing.T) {
 	}
 
 	for i, op := range ops {
-		if i != request_ACCESS {
+		if i != int32(request_ACCESS) {
 			op(tx)
 			var exp response_Err = response_OTHER
 			assert.Equal(t, 4, len(<-b), request_Verb_name[i])
@@ -111,7 +111,7 @@ func TestServerRo(t *testing.T) {
 		req: request{Tag: proto.Int32(1)},
 	}
 
-	wops := []int32{request_DEL, request_NOP, request_SET}
+	wops := []int32{int32(request_DEL), int32(request_NOP), int32(request_SET)}
 
 	for _, i := range wops {
 		op := ops[i]
