@@ -20,18 +20,19 @@ other users and developers.
 ## Quick Start
 
 1. Download [doozerd](https://github.com/ha/doozerd/downloads)
-2. Unpack the archive
-3. Start a doozerd with a WebView listening on `:8080`
+2. Unpack the archive and put `doozerd` in your `PATH`
+3. Repeat for [doozer](https://github.com/ha/doozer/downloads)
+4. Start a doozerd with a WebView listening on `:8080`
 
         $ doozerd -w ":8080"
 
-4. Set a key and read it back
+5. Set a key and read it back
 
         $ echo "hello, world" | doozer add /message
         $ doozer get /message
         hello, world
 
-5. Open <http://localhost:8080> and see your message
+6. Open <http://localhost:8080> and see your message
 
 ![doozer web view](/ha/doozerd/raw/master/doc/webview.png)
 
