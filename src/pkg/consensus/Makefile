@@ -13,6 +13,7 @@ GOFILES=\
 
 include $(GOROOT)/src/Make.pkg
 
+.PHONY: m.pb.go
 m.pb.go: m.proto
 	mkdir -p _pb
 	protoc --go_out=_pb $<

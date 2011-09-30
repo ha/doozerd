@@ -12,18 +12,17 @@ var _ = proto.GetString
 var _ = math.Inf
 var _ os.Error
 
-
 type msg_Cmd int32
 
 const (
-	msg_NOP      = 0
-	msg_INVITE   = 1
-	msg_RSVP     = 2
-	msg_NOMINATE = 3
-	msg_VOTE     = 4
-	msg_TICK     = 5
-	msg_PROPOSE  = 6
-	msg_LEARN    = 7
+	msg_NOP      msg_Cmd = 0
+	msg_INVITE   msg_Cmd = 1
+	msg_RSVP     msg_Cmd = 2
+	msg_NOMINATE msg_Cmd = 3
+	msg_VOTE     msg_Cmd = 4
+	msg_TICK     msg_Cmd = 5
+	msg_PROPOSE  msg_Cmd = 6
+	msg_LEARN    msg_Cmd = 7
 )
 
 var msg_Cmd_name = map[int32]string{
@@ -47,23 +46,25 @@ var msg_Cmd_value = map[string]int32{
 	"LEARN":    7,
 }
 
-func newMsg_Cmd(x int32) *msg_Cmd {
+func newMsg_Cmd(x msg_Cmd) *msg_Cmd {
 	e := msg_Cmd(x)
 	return &e
 }
+func (x msg_Cmd) String() string {
+	return proto.EnumName(msg_Cmd_name, int32(x))
+}
 
 type msg struct {
-	Cmd              *msg_Cmd "PB(varint,1,opt,name=cmd,enum=consensus.msg_Cmd)"
-	Seqn             *int64   "PB(varint,2,opt,name=seqn)"
-	Crnd             *int64   "PB(varint,3,opt,name=crnd)"
-	Vrnd             *int64   "PB(varint,4,opt,name=vrnd)"
-	Value            []byte   "PB(bytes,5,opt,name=value)"
+	Cmd              *msg_Cmd `protobuf:"varint,1,opt,name=cmd,enum=consensus.msg_Cmd" json:"cmd"`
+	Seqn             *int64   `protobuf:"varint,2,opt,name=seqn" json:"seqn"`
+	Crnd             *int64   `protobuf:"varint,3,opt,name=crnd" json:"crnd"`
+	Vrnd             *int64   `protobuf:"varint,4,opt,name=vrnd" json:"vrnd"`
+	Value            []byte   `protobuf:"bytes,5,opt,name=value" json:"value"`
 	XXX_unrecognized []byte
 }
 
-func (this *msg) Reset() {
-	*this = msg{}
-}
+func (this *msg) Reset()         { *this = msg{} }
+func (this *msg) String() string { return proto.CompactTextString(this) }
 
 func init() {
 	proto.RegisterEnum("consensus.msg_Cmd", msg_Cmd_name, msg_Cmd_value)
