@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"github.com/ha/doozer"
-	"os"
 	"time"
 )
 
@@ -28,7 +27,6 @@ func boot(name, id, laddr, buri string) *doozer.Conn {
 
 	return cl
 }
-
 
 // Elect chooses a seed node, and returns a connection to a cal.
 // If this process is the seed, returns nil.
@@ -64,7 +62,6 @@ func elect(name, id, laddr string, b *doozer.Conn) *doozer.Conn {
 	return nil // we are the seed node -- don't attach
 }
 
-
 func lookupAndAttach(b *doozer.Conn, name string) *doozer.Conn {
 	as := lookup(b, name)
 	if len(as) > 0 {
@@ -75,7 +72,6 @@ func lookupAndAttach(b *doozer.Conn, name string) *doozer.Conn {
 	}
 	return nil
 }
-
 
 func attach(name string, addrs []string) *doozer.Conn {
 	ch := make(chan *doozer.Conn, 1)
@@ -96,10 +92,9 @@ func attach(name string, addrs []string) *doozer.Conn {
 	return <-ch
 }
 
-
 // IsCal checks if addr is a CAL in the cluster named name.
 // Returns a client if so, nil if not.
-func isCal(name, addr string) (*doozer.Conn, os.Error) {
+func isCal(name, addr string) (*doozer.Conn, error) {
 	c, err := doozer.Dial(addr)
 	if err != nil {
 		return nil, err
@@ -149,7 +144,6 @@ func isCal(name, addr string) (*doozer.Conn, os.Error) {
 	return nil, nil
 }
 
-
 // Find possible addresses for cluster named name.
 func lookup(b *doozer.Conn, name string) (as []string) {
 	rev, err := b.Rev()
@@ -177,7 +171,6 @@ func lookup(b *doozer.Conn, name string) (as []string) {
 	}
 	return as
 }
-
 
 func randId() string {
 	const bits = 80 // enough for 10**8 ids with p(collision) < 10**-8

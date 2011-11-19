@@ -2,12 +2,11 @@ package consensus
 
 import (
 	"container/heap"
-	"container/vector"
 	"doozer/store"
+	"doozer/vector"
 	"goprotobuf.googlecode.com/hg/proto"
 	"log"
 	"net"
-	"os"
 	"sort"
 	"time"
 )
@@ -243,7 +242,7 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 }
 
 func (m *Manager) event(e store.Event) {
-	m.run[e.Seqn] = nil, false
+	delete(m.run, e.Seqn)
 	log.Printf("del run %d", e.Seqn)
 	m.addRun(e)
 }
@@ -297,7 +296,7 @@ func getCals(g store.Getter) []string {
 func getAddrs(g store.Getter, cals []string) (a []*net.UDPAddr) {
 	a = make([]*net.UDPAddr, len(cals))
 	var i int
-	var err os.Error
+	var err error
 	for _, id := range cals {
 		s := store.GetString(g, "/ctl/node/"+id+"/addr")
 		a[i], err = net.ResolveUDPAddr("udp", s)

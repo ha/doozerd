@@ -2,13 +2,12 @@ package consensus
 
 import (
 	"doozer/store"
+	"errors"
 	"github.com/bmizerany/assert"
 	"net"
-	"os"
 	"testing"
 	"time"
 )
-
 
 func TestConsensusOne(t *testing.T) {
 	self := "test"
@@ -59,13 +58,12 @@ func TestConsensusOne(t *testing.T) {
 		Body: "bad mutation",
 		Rev:  3,
 		Mut:  "foo",
-		Err:  os.NewError("bad mutation"),
+		Err:  errors.New("bad mutation"),
 	}
 
 	e.Getter = nil
 	assert.Equal(t, exp, e)
 }
-
 
 func TestConsensusTwo(t *testing.T) {
 	a := "a"
@@ -159,7 +157,7 @@ func TestConsensusTwo(t *testing.T) {
 		Body: "bad mutation",
 		Rev:  6,
 		Mut:  "foo",
-		Err:  os.NewError("bad mutation"),
+		Err:  errors.New("bad mutation"),
 	}
 
 	e.Getter = nil

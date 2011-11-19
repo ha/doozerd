@@ -13,6 +13,7 @@ PKG_REQS="
 
 PKGS="
     quiet
+    vector
     store
     consensus
     server

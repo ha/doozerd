@@ -2,8 +2,8 @@ package store
 
 import (
 	"container/heap"
-	"container/vector"
-	"os"
+	"doozer/vector"
+	"errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,12 +24,12 @@ var pathRe = mustBuildRe(charPat)
 
 var Any = MustCompileGlob("/**")
 
-var ErrTooLate = os.NewError("too late")
+var ErrTooLate = errors.New("too late")
 
 var (
-	ErrBadMutation = os.NewError("bad mutation")
-	ErrRevMismatch = os.NewError("rev mismatch")
-	ErrBadPath     = os.NewError("bad path")
+	ErrBadMutation = errors.New("bad mutation")
+	ErrRevMismatch = errors.New("rev mismatch")
+	ErrBadPath     = errors.New("bad path")
 )
 
 func mustBuildRe(p string) *regexp.Regexp {
@@ -113,7 +113,7 @@ func join(parts []string) string {
 	return "/" + strings.Join(parts, "/")
 }
 
-func checkPath(k string) os.Error {
+func checkPath(k string) error {
 	if !pathRe.MatchString(k) {
 		return ErrBadPath
 	}
@@ -124,7 +124,7 @@ func checkPath(k string) os.Error {
 // the contents of the file at `path` to `body` iff `rev` is greater than
 // of equal to the file's revision at the time of application, with
 // one exception: if `rev` is Clobber, the file will be set unconditionally.
-func EncodeSet(path, body string, rev int64) (mutation string, err os.Error) {
+func EncodeSet(path, body string, rev int64) (mutation string, err error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
@@ -136,9 +136,9 @@ func EncodeSet(path, body string, rev int64) (mutation string, err os.Error) {
 // of equal to the file's revision at the time of application, with
 // one exception: if `rev` is Clobber, the file will be deleted
 // unconditionally.
-func EncodeDel(path string, rev int64) (mutation string, err os.Error) {
+func EncodeDel(path string, rev int64) (mutation string, err error) {
 	if err := checkPath(path); err != nil {
-		return
+		return "", err
 	}
 	return strconv.Itoa64(rev) + ":" + path, nil
 }
@@ -165,7 +165,7 @@ func MustEncodeDel(path string, rev int64) (mutation string) {
 	return m
 }
 
-func decode(mutation string) (path, v string, rev int64, keep bool, err os.Error) {
+func decode(mutation string) (path, v string, rev int64, keep bool, err error) {
 	cm := strings.SplitN(mutation, ":", 2)
 
 	if len(cm) != 2 {
@@ -240,7 +240,7 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			st.watches = append(st.watches, ws...)
 		case seqn := <-st.cleanCh:
 			for ; st.head <= seqn; st.head++ {
-				st.log[st.head] = Event{}, false
+				delete(st.log, st.head)
 			}
 		case seqns <- ver:
 			// nothing to do here
@@ -324,7 +324,7 @@ func (st *Store) Flush() {
 //
 // If rev is less than any value passed to st.Clean, Wait will return
 // ErrTooLate.
-func (st *Store) Wait(glob *Glob, rev int64) (<-chan Event, os.Error) {
+func (st *Store) Wait(glob *Glob, rev int64) (<-chan Event, error) {
 	if rev < 1 {
 		rev = 1
 	}

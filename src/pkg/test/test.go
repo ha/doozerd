@@ -2,7 +2,7 @@ package test
 
 import (
 	"doozer/store"
-	"os"
+	"io"
 	"sync/atomic"
 )
 
@@ -27,11 +27,11 @@ type ErrWriter struct {
 	N int
 }
 
-func (e *ErrWriter) Write(p []byte) (n int, err os.Error) {
+func (e *ErrWriter) Write(p []byte) (n int, err error) {
 	l := len(p)
 	e.N -= l
 	if e.N <= 0 {
-		return 0, os.EOF
+		return 0, io.EOF
 	}
 	return l, nil
 }

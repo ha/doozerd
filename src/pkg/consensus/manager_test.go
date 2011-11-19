@@ -3,8 +3,8 @@ package consensus
 
 import (
 	"container/heap"
-	"container/vector"
 	"doozer/store"
+	"doozer/vector"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
 	"net"

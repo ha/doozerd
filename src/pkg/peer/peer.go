@@ -8,10 +8,11 @@ import (
 	"doozer/store"
 	"doozer/web"
 	"github.com/ha/doozer"
+	"io"
+	"log"
 	"net"
 	"os"
 	"time"
-	"log"
 )
 
 const (
@@ -23,13 +24,11 @@ const calDir = "/ctl/cal"
 
 var calGlob = store.MustCompileGlob(calDir + "/*")
 
-
 type proposer struct {
 	seqns chan int64
 	props chan *consensus.Prop
 	st    *store.Store
 }
-
 
 func (p *proposer) Propose(v []byte) (e store.Event) {
 	for e.Mut != string(v) {
@@ -43,7 +42,6 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 	}
 	return
 }
-
 
 func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *net.UDPConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64, hi int64) {
 	listenAddr := listener.Addr().String()
@@ -107,7 +105,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 		stop := make(chan bool, 1)
 		go follow(st, cl, rev+1, stop)
 
-		errs := make(chan os.Error)
+		errs := make(chan error)
 		go func() {
 			e, ok := <-errs
 			if ok {
@@ -201,7 +199,6 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 	}
 }
 
-
 func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 	rev, _ := st.Snap()
 
@@ -226,7 +223,7 @@ func activate(st *store.Store, self string, c *doozer.Conn) int64 {
 		}
 		ev, ok := <-ch
 		if !ok {
-			panic(os.EOF)
+			panic(io.EOF)
 		}
 		rev = ev.Rev
 		// TODO ev.IsEmpty()
@@ -303,7 +300,6 @@ func (c cloner) VisitFile(path string, f *doozer.FileInfo) {
 	mut := store.MustEncodeSet(path, string(body), store.Clobber)
 	c.ch <- store.Op{f.Rev, mut}
 }
-
 
 func setReady(p consensus.Proposer, self string) {
 	m, err := store.EncodeSet("/ctl/node/"+self+"/writable", "true", 0)
