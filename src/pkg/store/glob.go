@@ -1,7 +1,6 @@
 package store
 
 import (
-	"os"
 	"regexp"
 	"strings"
 )
@@ -26,7 +25,7 @@ var globRe = mustBuildRe(`(` + charPat + `|[\*\?])`)
 //  - `?` matches a single char in a single path component
 //  - `*` matches zero or more chars in a single path component
 //  - `**` matches zero or more chars in zero or more components
-func translateGlob(pat string) (string, os.Error) {
+func translateGlob(pat string) (string, error) {
 	if !globRe.MatchString(pat) {
 		return "", GlobError(pat)
 	}
@@ -61,7 +60,7 @@ func translateGlob(pat string) (string, os.Error) {
 
 // CompileGlob translates pat into a form more convenient for
 // matching against paths in the store.
-func CompileGlob(pat string) (*Glob, os.Error) {
+func CompileGlob(pat string) (*Glob, error) {
 	s, err := translateGlob(pat)
 	if err != nil {
 		return nil, err
@@ -91,6 +90,6 @@ func (g *Glob) Match(path string) bool {
 
 type GlobError string
 
-func (e GlobError) String() string {
+func (e GlobError) Error() string {
 	return "invalid glob pattern: " + string(e)
 }

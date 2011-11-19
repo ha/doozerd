@@ -5,8 +5,8 @@ import (
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"log"
+	"math/rand"
 	"net"
-	"rand"
 	"time"
 )
 
@@ -30,11 +30,9 @@ type run struct {
 	prop  bool
 }
 
-
 func (r *run) quorum() int {
 	return len(r.cals)/2 + 1
 }
-
 
 func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	if p.msg.Cmd != nil && *p.msg.Cmd == msg_TICK {
@@ -62,7 +60,6 @@ func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	}
 }
 
-
 func (r *run) broadcast(m *msg) {
 	if m != nil {
 		m.Seqn = &r.seqn
@@ -73,7 +70,6 @@ func (r *run) broadcast(m *msg) {
 	}
 }
 
-
 func (r *run) indexOf(self string) int64 {
 	for i, id := range r.cals {
 		if id == self {
@@ -82,7 +78,6 @@ func (r *run) indexOf(self string) int64 {
 	}
 	return -1
 }
-
 
 func (r *run) indexOfAddr(a *net.UDPAddr) int {
 	if a == nil {
@@ -95,7 +90,6 @@ func (r *run) indexOfAddr(a *net.UDPAddr) int {
 	}
 	return -1
 }
-
 
 func (r *run) isLeader(self string) bool {
 	for i, id := range r.cals {

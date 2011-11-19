@@ -1,9 +1,5 @@
 package store
 
-import (
-	"os"
-)
-
 type Event struct {
 	Seqn int64
 	Path string
@@ -16,7 +12,7 @@ type Event struct {
 	// the mutation that caused this event
 	Mut string
 
-	Err os.Error
+	Err error
 
 	// retrieves values as defined at `Seqn`
 	Getter
