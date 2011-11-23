@@ -25,7 +25,7 @@ encoded in [Protocol Buffer][protobuf] format.
 
 Two Protocol Buffer structures, `Request` and
 `Response`, are used for *requests* and *responses*,
-respectively. See `src/pkg/proto/msg.proto` for their
+respectively. See `src/pkg/server/msg.proto` for their
 definitions.
 
 Each request contains at least a tag, described below,
