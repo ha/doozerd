@@ -4,13 +4,14 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"testing"
+	"time"
 )
 
 func TestGcClean(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
 
-	ticker := make(chan int64)
+	ticker := make(chan time.Time)
 	defer close(ticker)
 
 	go Clean(st, 3, ticker)
@@ -22,8 +23,8 @@ func TestGcClean(t *testing.T) {
 
 	_, err := st.Wait(store.Any, 1)
 	assert.Equal(t, nil, err)
-	ticker <- 1
-	ticker <- 1 // Extra tick to ensure the last st.Clean has completed
+	ticker <- time.Unix(0, 1)
+	ticker <- time.Unix(0, 1) // Extra tick to ensure the last st.Clean has completed
 	_, err = st.Wait(store.Any, 1)
 	assert.Equal(t, store.ErrTooLate, err)
 }

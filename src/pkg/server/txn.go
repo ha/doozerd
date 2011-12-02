@@ -4,6 +4,7 @@ import (
 	"doozer/consensus"
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
+	"io"
 	"log"
 	"os"
 	"sort"
@@ -309,7 +310,7 @@ func (t *txn) access() {
 	}
 }
 
-func (t *txn) respondOsError(err os.Error) {
+func (t *txn) respondOsError(err error) {
 	switch err {
 	case store.ErrBadPath:
 		t.respondErrCode(response_BAD_PATH)
@@ -322,7 +323,7 @@ func (t *txn) respondOsError(err os.Error) {
 	case os.ENOTDIR:
 		t.respondErrCode(response_NOTDIR)
 	default:
-		t.resp.ErrDetail = proto.String(err.String())
+		t.resp.ErrDetail = proto.String(err.Error())
 		t.respondErrCode(response_OTHER)
 	}
 }
@@ -335,12 +336,12 @@ func (t *txn) respondErrCode(e response_Err) {
 func (t *txn) respond() {
 	t.resp.Tag = t.req.Tag
 	err := t.c.write(&t.resp)
-	if err != nil && err != os.EOF {
+	if err != nil && err != io.EOF {
 		log.Println(err)
 	}
 }
 
-func (t *txn) getter() (store.Getter, os.Error) {
+func (t *txn) getter() (store.Getter, error) {
 	if t.req.Rev == nil {
 		_, g := t.c.st.Snap()
 		return g, nil

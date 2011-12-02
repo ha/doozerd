@@ -2,12 +2,10 @@ package consensus
 
 import (
 	"container/heap"
-	"container/vector"
 	"doozer/store"
 	"goprotobuf.googlecode.com/hg/proto"
 	"log"
 	"net"
-	"os"
 	"sort"
 	"time"
 )
@@ -17,8 +15,31 @@ type packet struct {
 	msg
 }
 
-func (p packet) Less(y interface{}) bool {
-	return *p.Seqn < *y.(*packet).Seqn
+type packets []*packet
+
+func (p *packets) Len() int {
+	return len(*p)
+}
+
+func (p *packets) Less(i, j int) bool {
+	a := *p
+	return *a[i].Seqn < *a[j].Seqn
+}
+
+func (p *packets) Push(x interface{}) {
+	*p = append(*p, x.(*packet))
+}
+
+func (p *packets) Pop() (x interface{}) {
+	a := *p
+	i := len(a) - 1
+	*p, x = a[:i], a[i]
+	return
+}
+
+func (p *packets) Swap(i, j int) {
+	a := *p
+	a[i], a[j] = a[j], a[i]
 }
 
 type Packet struct {
@@ -31,8 +52,31 @@ type trigger struct {
 	n int64 // seqn
 }
 
-func (t trigger) Less(y interface{}) bool {
-	return t.t < y.(trigger).t
+type triggers []trigger
+
+func (t *triggers) Len() int {
+	return len(*t)
+}
+
+func (t *triggers) Less(i, j int) bool {
+	a := *t
+	return a[i].t < a[j].t
+}
+
+func (t *triggers) Push(x interface{}) {
+	*t = append(*t, x.(trigger))
+}
+
+func (t *triggers) Pop() (x interface{}) {
+	a := *t
+	i := len(a) - 1
+	*t, x = a[:i], a[i]
+	return nil
+}
+
+func (t *triggers) Swap(i, j int) {
+	a := *t
+	a[i], a[j] = a[j], a[i]
 }
 
 type Stats struct {
@@ -61,13 +105,13 @@ type Manager struct {
 	Props  <-chan *Prop
 	TFill  int64
 	Store  *store.Store
-	Ticker <-chan int64
+	Ticker <-chan time.Time
 	Stats  Stats
 	run    map[int64]*run
 	next   int64 // unused seqn
-	fill   vector.Vector
-	packet vector.Vector
-	tick   vector.Vector
+	fill   triggers
+	packet packets
+	tick   triggers
 }
 
 type Prop struct {
@@ -87,8 +131,8 @@ func (m *Manager) Run() {
 
 	for {
 		m.Stats.Runs = len(m.run)
-		m.Stats.WaitPackets = m.packet.Len()
-		m.Stats.WaitTicks = m.tick.Len()
+		m.Stats.WaitPackets = len(m.packet)
+		m.Stats.WaitTicks = len(m.tick)
 
 		select {
 		case e, ok := <-runCh:
@@ -105,16 +149,16 @@ func (m *Manager) Run() {
 			m.event(e)
 			m.Stats.TotalRuns++
 			log.Println("runs:", fmtRuns(m.run))
-			log.Println("avg tick delay:", avg(&m.tick))
-			log.Println("avg fill delay:", avg(&m.fill))
+			log.Println("avg tick delay:", avg(m.tick))
+			log.Println("avg fill delay:", avg(m.fill))
 		case p := <-m.In:
 			if p1 := recvPacket(&m.packet, p); p1 != nil {
 				m.Stats.TotalRecv[*p1.msg.Cmd]++
 			}
 		case pr := <-m.Props:
-			m.propose(&m.packet, pr, time.Nanoseconds())
+			m.propose(&m.packet, pr, time.Now().UnixNano())
 		case t := <-m.Ticker:
-			m.doTick(t)
+			m.doTick(t.UnixNano())
 		}
 
 		m.pump()
@@ -122,8 +166,8 @@ func (m *Manager) Run() {
 }
 
 func (m *Manager) pump() {
-	for m.packet.Len() > 0 {
-		p := m.packet.At(0).(*packet)
+	for len(m.packet) > 0 {
+		p := m.packet[0]
 		log.Printf("p.seqn=%d m.next=%d", *p.Seqn, m.next)
 		if *p.Seqn >= m.next {
 			break
@@ -208,24 +252,24 @@ func recvPacket(q heap.Interface, P Packet) (p *packet) {
 	return p
 }
 
-func avg(v *vector.Vector) (n int64) {
-	t := time.Nanoseconds()
-	if v.Len() == 0 {
+func avg(v []trigger) (n int64) {
+	t := time.Now().UnixNano()
+	if len(v) == 0 {
 		return -1
 	}
-	for _, x := range []interface{}(*v) {
-		n += x.(trigger).t - t
+	for _, x := range v {
+		n += x.t - t
 	}
-	return n / int64(v.Len())
+	return n / int64(len(v))
 }
 
 func schedTrigger(q heap.Interface, n, t, tfill int64) {
 	heap.Push(q, trigger{n: n, t: t + tfill})
 }
 
-func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
+func applyTriggers(ps *packets, ticks *triggers, now int64, tpl *msg) (n int) {
 	for ticks.Len() > 0 {
-		tt := ticks.At(0).(trigger)
+		tt := (*ticks)[0]
 		if tt.t > now {
 			break
 		}
@@ -236,14 +280,14 @@ func applyTriggers(packets, ticks *vector.Vector, now int64, tpl *msg) (n int) {
 		p.msg = *tpl
 		p.msg.Seqn = &tt.n
 		log.Println("applying", *p.Seqn, msg_Cmd_name[int32(*p.Cmd)])
-		heap.Push(packets, p)
+		heap.Push(ps, p)
 		n++
 	}
 	return
 }
 
 func (m *Manager) event(e store.Event) {
-	m.run[e.Seqn] = nil, false
+	delete(m.run, e.Seqn)
 	log.Printf("del run %d", e.Seqn)
 	m.addRun(e)
 }
@@ -297,7 +341,7 @@ func getCals(g store.Getter) []string {
 func getAddrs(g store.Getter, cals []string) (a []*net.UDPAddr) {
 	a = make([]*net.UDPAddr, len(cals))
 	var i int
-	var err os.Error
+	var err error
 	for _, id := range cals {
 		s := store.GetString(g, "/ctl/node/"+id+"/addr")
 		a[i], err = net.ResolveUDPAddr("udp", s)

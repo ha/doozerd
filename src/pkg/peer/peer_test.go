@@ -2,13 +2,12 @@ package peer
 
 import (
 	"doozer/store"
-	"github.com/ha/doozer"
-	"exec"
 	"github.com/bmizerany/assert"
-	"os"
+	"github.com/ha/doozer"
+	"os/exec"
+
 	"testing"
 )
-
 
 func TestDoozerNop(t *testing.T) {
 	l := mustListen()
@@ -22,7 +21,6 @@ func TestDoozerNop(t *testing.T) {
 	err := cl.Nop()
 	assert.Equal(t, nil, err)
 }
-
 
 func TestDoozerGet(t *testing.T) {
 	l := mustListen()
@@ -53,7 +51,6 @@ func TestDoozerGet(t *testing.T) {
 	//assert.Equal(t, []string{"a", "b", "c"}, ents)
 }
 
-
 func TestDoozerSet(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
@@ -72,7 +69,6 @@ func TestDoozerSet(t *testing.T) {
 	_, err := cl.Set("/x", 0, []byte{'X'})
 	assert.Equal(t, &doozer.Error{doozer.ErrOldRev, ""}, err)
 }
-
 
 func TestDoozerGetWithRev(t *testing.T) {
 	l := mustListen()
@@ -105,7 +101,6 @@ func TestDoozerGetWithRev(t *testing.T) {
 	assert.Equal(t, rev1, rev)
 	assert.Equal(t, []byte{'a'}, v)
 }
-
 
 func TestDoozerWaitSimple(t *testing.T) {
 	l := mustListen()
@@ -141,7 +136,6 @@ func TestDoozerWaitSimple(t *testing.T) {
 	assert.T(t, ev.IsDel())
 }
 
-
 func TestDoozerWaitWithRev(t *testing.T) {
 	l := mustListen()
 	defer l.Close()
@@ -169,7 +163,6 @@ func TestDoozerWaitWithRev(t *testing.T) {
 	assert.Equal(t, []byte("house"), ev.Body)
 	assert.T(t, ev.IsSet())
 }
-
 
 func TestDoozerStat(t *testing.T) {
 	l := mustListen()
@@ -238,7 +231,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 
 	names, err := cl.Getdir("/test/a", rev, 0, -1)
 	assert.Equal(t, &doozer.Error{doozer.ErrNotDir, ""}, err)
-	assert.Equal(t, []string{}, names)
+	assert.Equal(t, []string(nil), names)
 }
 
 func TestDoozerGetdirMissing(t *testing.T) {
@@ -258,7 +251,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 
 	names, err := cl.Getdir("/not/here", rev, 0, -1)
 	assert.Equal(t, &doozer.Error{doozer.ErrNoEnt, ""}, err)
-	assert.Equal(t, []string{}, names)
+	assert.Equal(t, []string(nil), names)
 }
 
 func TestDoozerGetdirOffsetLimit(t *testing.T) {
@@ -284,7 +277,6 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, []string{"b", "c"}, names)
 }
-
 
 func TestPeerShun(t *testing.T) {
 	l0 := mustListen()
@@ -333,13 +325,11 @@ func TestPeerShun(t *testing.T) {
 	}
 }
 
-
-func assertDenied(t *testing.T, err os.Error) {
+func assertDenied(t *testing.T, err error) {
 	assert.NotEqual(t, nil, err)
 	assert.Equal(t, doozer.ErrOther, err.(*doozer.Error).Err)
 	assert.Equal(t, "permission denied", err.(*doozer.Error).Detail)
 }
-
 
 func runDoozer(a ...string) *exec.Cmd {
 	path := "/home/kr/src/go/bin/doozerd"

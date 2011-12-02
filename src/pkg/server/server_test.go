@@ -5,29 +5,25 @@ import (
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
-	"os"
+	"io"
+
 	"testing"
 )
-
 
 var (
 	fooPath = "/foo"
 )
 
-
 type bchan chan []byte
 
-
-func (b bchan) Write(buf []byte) (int, os.Error) {
+func (b bchan) Write(buf []byte) (int, error) {
 	b <- buf
 	return len(buf), nil
 }
 
-
-func (b bchan) Read(buf []byte) (int, os.Error) {
-	return 0, os.EOF // not implemented
+func (b bchan) Read(buf []byte) (int, error) {
+	return 0, io.EOF // not implemented
 }
-
 
 func mustUnmarshal(b []byte) (r *response) {
 	r = new(response)
@@ -38,13 +34,11 @@ func mustUnmarshal(b []byte) (r *response) {
 	return
 }
 
-
 func assertResponseErrCode(t *testing.T, exp response_Err, c *conn) {
 	b := c.c.(*bytes.Buffer).Bytes()
 	assert.T(t, len(b) > 4, b)
 	assert.Equal(t, &exp, mustUnmarshal(b[4:]).ErrCode)
 }
-
 
 func TestDelNilFields(t *testing.T) {
 	c := &conn{
@@ -60,7 +54,6 @@ func TestDelNilFields(t *testing.T) {
 	assertResponseErrCode(t, response_MISSING_ARG, c)
 }
 
-
 func TestSetNilFields(t *testing.T) {
 	c := &conn{
 		c:        &bytes.Buffer{},
@@ -74,7 +67,6 @@ func TestSetNilFields(t *testing.T) {
 	tx.set()
 	assertResponseErrCode(t, response_MISSING_ARG, c)
 }
-
 
 func TestServerNoAccess(t *testing.T) {
 	b := make(bchan, 2)
@@ -97,7 +89,6 @@ func TestServerNoAccess(t *testing.T) {
 		}
 	}
 }
-
 
 func TestServerRo(t *testing.T) {
 	b := make(bchan, 2)

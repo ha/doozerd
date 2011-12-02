@@ -1,9 +1,7 @@
 package consensus
 
-
 import (
 	"container/heap"
-	"container/vector"
 	"doozer/store"
 	"github.com/bmizerany/assert"
 	"goprotobuf.googlecode.com/hg/proto"
@@ -13,13 +11,11 @@ import (
 	"time"
 )
 
-
 // The first element in a protobuf stream is always a varint.
 // The high bit of a varint byte indicates continuation;
 // This is a continuation bit without a subsequent byte.
 // http://code.google.com/apis/protocolbuffers/docs/encoding.html#varints.
 var invalidProtobuf = []byte{0x80}
-
 
 func mustMarshal(p interface{}) []byte {
 	buf, err := proto.Marshal(p)
@@ -29,7 +25,6 @@ func mustMarshal(p interface{}) []byte {
 	return buf
 }
 
-
 func mustWait(s *store.Store, n int64) <-chan store.Event {
 	c, err := s.Wait(store.Any, n)
 	if err != nil {
@@ -37,7 +32,6 @@ func mustWait(s *store.Store, n int64) <-chan store.Event {
 	}
 	return c
 }
-
 
 func TestManagerPumpDropsOldPackets(t *testing.T) {
 	st := store.New()
@@ -55,9 +49,8 @@ func TestManagerPumpDropsOldPackets(t *testing.T) {
 	assert.Equal(t, 0, m.Stats.WaitPackets)
 }
 
-
 func TestRecvPacket(t *testing.T) {
-	q := new(vector.Vector)
+	q := new(packets)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 
 	p := recvPacket(q, Packet{x, mustMarshal(&msg{
@@ -78,9 +71,8 @@ func TestRecvPacket(t *testing.T) {
 	assert.Equal(t, 3, q.Len())
 }
 
-
 func TestRecvEmptyPacket(t *testing.T) {
-	q := new(vector.Vector)
+	q := new(packets)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 
 	p := recvPacket(q, Packet{x, []byte{}})
@@ -88,31 +80,27 @@ func TestRecvEmptyPacket(t *testing.T) {
 	assert.Equal(t, 0, q.Len())
 }
 
-
 func TestRecvInvalidPacket(t *testing.T) {
-	q := new(vector.Vector)
+	q := new(packets)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 	p := recvPacket(q, Packet{x, invalidProtobuf})
 	assert.Equal(t, (*packet)(nil), p)
 	assert.Equal(t, 0, q.Len())
 }
 
-
 func TestSchedTrigger(t *testing.T) {
-	q := new(vector.Vector)
+	var q triggers
 	d := int64(15e8)
 
-	t0 := time.Nanoseconds()
+	t0 := time.Now().UnixNano()
 	ts := t0 + d
-	schedTrigger(q, 1, t0, d)
+	schedTrigger(&q, 1, t0, d)
 
 	assert.Equal(t, 1, q.Len())
-	f, ok := q.At(0).(trigger)
-	assert.Tf(t, ok, "expected a trigger, got a %T", q.At(0))
+	f := q[0]
 	assert.Equal(t, int64(1), f.n)
 	assert.T(t, f.t == ts)
 }
-
 
 func TestManagerPacketProcessing(t *testing.T) {
 	st := store.New()
@@ -139,7 +127,6 @@ func TestManagerPacketProcessing(t *testing.T) {
 	assert.Equal(t, 0, m.packet.Len())
 }
 
-
 func TestManagerTickQueue(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
@@ -158,10 +145,9 @@ func TestManagerTickQueue(t *testing.T) {
 	m.pump()
 	assert.Equal(t, 1, m.tick.Len())
 
-	m.doTick(time.Nanoseconds() + initialWaitBound*2)
+	m.doTick(time.Now().UnixNano() + initialWaitBound*2)
 	assert.Equal(t, int64(1), m.Stats.TotalTicks)
 }
-
 
 func TestManagerFilterPropSeqn(t *testing.T) {
 	ps := make(chan int64, 100)
@@ -189,17 +175,15 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 	assert.Equal(t, int64(7), <-ps)
 }
 
-
 func TestManagerProposalQueue(t *testing.T) {
 	var m Manager
 	m.run = make(map[int64]*run)
-	m.propose(&m.packet, &Prop{Seqn: 1, Mut: []byte("foo")}, time.Nanoseconds())
+	m.propose(&m.packet, &Prop{Seqn: 1, Mut: []byte("foo")}, time.Now().UnixNano())
 	assert.Equal(t, 1, m.packet.Len())
 }
 
-
 func TestManagerProposeFill(t *testing.T) {
-	q := new(vector.Vector)
+	q := new(packets)
 	var m Manager
 	m.Self = "a"
 	m.run = map[int64]*run{
@@ -207,34 +191,33 @@ func TestManagerProposeFill(t *testing.T) {
 		7: &run{seqn: 7, cals: []string{"a", "b", "c"}},
 		8: &run{seqn: 8, cals: []string{"a", "b", "c"}},
 	}
-	exp := vector.Vector{
-		trigger{123, 7},
-		trigger{123, 8},
+	exp := triggers{
+		{123, 7},
+		{123, 8},
 	}
 	m.propose(q, &Prop{Seqn: 9, Mut: []byte("foo")}, 123)
 	assert.Equal(t, exp, m.fill)
 }
 
-
 func TestApplyTriggers(t *testing.T) {
-	packets := new(vector.Vector)
-	triggers := new(vector.Vector)
+	pkts := new(packets)
+	tgrs := new(triggers)
 
-	heap.Push(triggers, trigger{t: 1, n: 1})
-	heap.Push(triggers, trigger{t: 2, n: 2})
-	heap.Push(triggers, trigger{t: 3, n: 3})
-	heap.Push(triggers, trigger{t: 4, n: 4})
-	heap.Push(triggers, trigger{t: 5, n: 5})
-	heap.Push(triggers, trigger{t: 6, n: 6})
-	heap.Push(triggers, trigger{t: 7, n: 7})
-	heap.Push(triggers, trigger{t: 8, n: 8})
-	heap.Push(triggers, trigger{t: 9, n: 9})
+	heap.Push(tgrs, trigger{t: 1, n: 1})
+	heap.Push(tgrs, trigger{t: 2, n: 2})
+	heap.Push(tgrs, trigger{t: 3, n: 3})
+	heap.Push(tgrs, trigger{t: 4, n: 4})
+	heap.Push(tgrs, trigger{t: 5, n: 5})
+	heap.Push(tgrs, trigger{t: 6, n: 6})
+	heap.Push(tgrs, trigger{t: 7, n: 7})
+	heap.Push(tgrs, trigger{t: 8, n: 8})
+	heap.Push(tgrs, trigger{t: 9, n: 9})
 
-	n := applyTriggers(packets, triggers, 5, &msg{Cmd: tick})
+	n := applyTriggers(pkts, tgrs, 5, &msg{Cmd: tick})
 	assert.Equal(t, 5, n)
 
-	expTriggers := new(vector.Vector)
-	expPackets := new(vector.Vector)
+	expTriggers := new(triggers)
+	expPackets := new(packets)
 	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(1)}})
 	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(2)}})
 	heap.Push(expPackets, &packet{msg: msg{Cmd: tick, Seqn: proto.Int64(3)}})
@@ -245,15 +228,14 @@ func TestApplyTriggers(t *testing.T) {
 	heap.Push(expTriggers, trigger{t: 8, n: 8})
 	heap.Push(expTriggers, trigger{t: 9, n: 9})
 
-	sort.Sort(packets)
-	sort.Sort(triggers)
+	sort.Sort(pkts)
+	sort.Sort(tgrs)
 	sort.Sort(expPackets)
 	sort.Sort(expTriggers)
 
-	assert.Equal(t, expTriggers, triggers)
-	assert.Equal(t, expPackets, packets)
+	assert.Equal(t, expTriggers, tgrs)
+	assert.Equal(t, expPackets, pkts)
 }
-
 
 func TestManagerEvent(t *testing.T) {
 	const alpha = 2
@@ -316,7 +298,6 @@ func TestManagerEvent(t *testing.T) {
 	assert.Equal(t, exp.seqn+1, m.next)
 }
 
-
 func TestManagerRemoveLastCal(t *testing.T) {
 	const alpha = 2
 	runs := make(map[int64]*run)
@@ -367,7 +348,6 @@ func TestManagerRemoveLastCal(t *testing.T) {
 	assert.Equal(t, exp.seqn+1, m.next)
 }
 
-
 func TestDelRun(t *testing.T) {
 	const alpha = 2
 	runs := make(map[int64]*run)
@@ -411,7 +391,6 @@ func TestDelRun(t *testing.T) {
 	assert.Equal(t, 2, len(m.run))
 }
 
-
 func TestGetCalsFull(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
@@ -424,7 +403,6 @@ func TestGetCalsFull(t *testing.T) {
 	assert.Equal(t, []string{"a", "b", "c"}, getCals(st))
 }
 
-
 func TestGetCalsPartial(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
@@ -436,7 +414,6 @@ func TestGetCalsPartial(t *testing.T) {
 
 	assert.Equal(t, []string{"a"}, getCals(st))
 }
-
 
 func TestGetAddrs(t *testing.T) {
 	st := store.New()

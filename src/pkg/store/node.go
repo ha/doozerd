@@ -31,7 +31,7 @@ func (n node) readdir() []string {
 	return names
 }
 
-func (n node) at(parts []string) (node, os.Error) {
+func (n node) at(parts []string) (node, error) {
 	switch len(parts) {
 	case 0:
 		return n, nil
@@ -87,7 +87,6 @@ func (n node) Stat(path string) (int32, int64) {
 	return n.stat(split(path))
 }
 
-
 func copyMap(a map[string]node) map[string]node {
 	b := make(map[string]node)
 	for k, v := range a {
@@ -104,7 +103,11 @@ func (n node) set(parts []string, v string, rev int64, keep bool) (node, bool) {
 
 	n.Ds = copyMap(n.Ds)
 	p, ok := n.Ds[parts[0]].set(parts[1:], v, rev, keep)
-	n.Ds[parts[0]] = p, ok
+	if ok {
+		n.Ds[parts[0]] = p
+	} else {
+		delete(n.Ds, parts[0])
+	}
 	n.Rev = Dir
 	return n, len(n.Ds) > 0
 }
@@ -156,7 +159,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 	}
 
 	if ev.Err != nil {
-		ev.Path, ev.Body, rev, keep = ErrorPath, ev.Err.String(), Clobber, true
+		ev.Path, ev.Body, rev, keep = ErrorPath, ev.Err.Error(), Clobber, true
 	}
 
 	if !keep {

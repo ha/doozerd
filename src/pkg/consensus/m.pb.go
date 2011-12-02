@@ -5,12 +5,10 @@ package consensus
 
 import proto "goprotobuf.googlecode.com/hg/proto"
 import "math"
-import "os"
 
-// Reference proto, math & os imports to suppress error if they are not otherwise used.
+// Reference proto and math imports to suppress error if they are not otherwise used.
 var _ = proto.GetString
 var _ = math.Inf
-var _ os.Error
 
 type msg_Cmd int32
 
@@ -55,12 +53,12 @@ func (x msg_Cmd) String() string {
 }
 
 type msg struct {
-	Cmd              *msg_Cmd `protobuf:"varint,1,opt,name=cmd,enum=consensus.msg_Cmd" json:"cmd"`
-	Seqn             *int64   `protobuf:"varint,2,opt,name=seqn" json:"seqn"`
-	Crnd             *int64   `protobuf:"varint,3,opt,name=crnd" json:"crnd"`
-	Vrnd             *int64   `protobuf:"varint,4,opt,name=vrnd" json:"vrnd"`
-	Value            []byte   `protobuf:"bytes,5,opt,name=value" json:"value"`
-	XXX_unrecognized []byte
+	Cmd              *msg_Cmd `protobuf:"varint,1,opt,name=cmd,enum=consensus.msg_Cmd" json:"cmd,omitempty"`
+	Seqn             *int64   `protobuf:"varint,2,opt,name=seqn" json:"seqn,omitempty"`
+	Crnd             *int64   `protobuf:"varint,3,opt,name=crnd" json:"crnd,omitempty"`
+	Vrnd             *int64   `protobuf:"varint,4,opt,name=vrnd" json:"vrnd,omitempty"`
+	Value            []byte   `protobuf:"bytes,5,opt,name=value" json:"value,omitempty"`
+	XXX_unrecognized []byte   `json:",omitempty"`
 }
 
 func (this *msg) Reset()         { *this = msg{} }

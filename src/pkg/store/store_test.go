@@ -367,7 +367,7 @@ func TestApplyIgnoreDuplicate(t *testing.T) {
 	assert.Equal(t, []string{"a"}, v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, st.todo.Len())
+	assert.Equal(t, 0, len(st.todo))
 }
 
 func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
@@ -382,7 +382,7 @@ func TestApplyIgnoreDuplicateOutOfOrder(t *testing.T) {
 	assert.Equal(t, []string{"b"}, v)
 
 	// check that we aren't leaking memory
-	assert.Equal(t, 0, st.todo.Len())
+	assert.Equal(t, 0, len(st.todo))
 }
 
 func TestGetWithDir(t *testing.T) {
@@ -626,7 +626,7 @@ func TestStoreWaitWorks(t *testing.T) {
 	assert.Equal(t, int64(1), got.Seqn)
 	assert.Equal(t, nil, got.Err)
 	assert.Equal(t, mut, got.Mut)
-	assert.Equal(t, 0, st.todo.Len())
+	assert.Equal(t, 0, len(st.todo))
 	assert.Equal(t, 0, <-st.Waiting)
 }
 

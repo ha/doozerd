@@ -7,10 +7,8 @@ import (
 	"goprotobuf.googlecode.com/hg/proto"
 	"io"
 	"log"
-	"os"
 	"sync"
 )
-
 
 type conn struct {
 	c        io.ReadWriter
@@ -25,14 +23,13 @@ type conn struct {
 	raccess  bool
 }
 
-
 func (c *conn) serve() {
 	for {
 		var t txn
 		t.c = c
 		err := c.read(&t.req)
 		if err != nil {
-			if err != os.EOF {
+			if err != io.EOF {
 				log.Println(err)
 			}
 			return
@@ -41,8 +38,7 @@ func (c *conn) serve() {
 	}
 }
 
-
-func (c *conn) read(r *request) os.Error {
+func (c *conn) read(r *request) error {
 	var size int32
 	err := binary.Read(c.c, binary.BigEndian, &size)
 	if err != nil {
@@ -58,8 +54,7 @@ func (c *conn) read(r *request) os.Error {
 	return proto.Unmarshal(buf, r)
 }
 
-
-func (c *conn) write(r *response) os.Error {
+func (c *conn) write(r *response) error {
 	buf, err := proto.Marshal(r)
 	if err != nil {
 		return err
@@ -76,7 +71,6 @@ func (c *conn) write(r *response) os.Error {
 	_, err = c.c.Write(buf)
 	return err
 }
-
 
 // Grant compares sk against c.rwsk and c.rosk and
 // updates c.waccess and c.raccess as necessary.

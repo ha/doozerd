@@ -21,6 +21,6 @@ func Pulse(node string, seqns <-chan int64, p consensus.Proposer, sleep int64) {
 			log.Println(e.Err)
 		}
 
-		time.Sleep(sleep)
+		time.Sleep(time.Duration(sleep))
 	}
 }

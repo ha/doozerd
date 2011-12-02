@@ -2,14 +2,14 @@ package web
 
 import (
 	"doozer/store"
-	"http"
+	"encoding/json"
 	"io"
-	"json"
 	"log"
 	"net"
+	"net/http"
 	"runtime"
 	"strings"
-	"template"
+	"text/template"
 	"websocket"
 )
 
