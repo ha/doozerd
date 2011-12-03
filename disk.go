@@ -7,24 +7,25 @@ package logfs
 // superblock at offset 4K.
 type superBlock struct {
 	sum    uint64 // Check sum for offset
-	offset uint64 // File offset for the first record
+	offset uint64 // File offset for the first block
 }
 
-// A record is the fundamental unit for Read/Write/Delete.
-type record struct {
-	header recordHeader // Records information about data.
+// A block is the fundamental unit on disk.  Each Record translates
+// to a block on disk.
+type block struct {
+	header blockHeader // Records information about data.
 	data   []byte       // Passed by Write, returned to Read.
-	next   uint64       // File offset of the next record
+	next   uint64       // File offset of the next block
 }
 
-// recordHeader describes a record.  record is variable sized, so this
+// blockHeader describes a block.  A block is variable sized, so this
 // structure is fixed size to be read with a single read call before
 // reading the actual data.
-type recordHeader struct {
+type blockHeader struct {
 	headerSum  uint64 // Own checksum.
-	cookie     uint64 // To be matched with previous record.
-	nextCookie uint64 // Next record's cookie must match this.
-	dataSum    uint64 // record.data checksum.
-	dataLen    uint64 // record.data length.
+	cookie     uint64 // To be matched with previous block.
+	nextCookie uint64 // Next block's cookie must match this.
+	dataSum    uint64 // block.data checksum.
+	dataLen    uint64 // block.data length.
 	seqn       uint64 // Sequence number, must grow in the list.
 }
