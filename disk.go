@@ -2,14 +2,6 @@ package logfs
 
 // On disk format for logfs.
 
-// A superBlock describes where the stream of data begins. There is
-// a superblock at the start of the backing file and a backup
-// superblock at offset 4K.
-type superBlock struct {
-	sum    uint64 // Check sum for offset
-	offset uint64 // File offset for the first block
-}
-
 // A block is the fundamental unit on disk.  Each Record translates
 // to a block on disk.
 type block struct {
