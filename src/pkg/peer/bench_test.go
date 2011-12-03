@@ -89,6 +89,12 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 	cl.Set("/ctl/cal/3", store.Missing, nil)
 	cl.Set("/ctl/cal/4", store.Missing, nil)
 
+	// make sure all the peers have started up
+	dial(l1.Addr().String()).Set("/foo", store.Clobber, nil)
+	dial(l2.Addr().String()).Set("/foo", store.Clobber, nil)
+	dial(l3.Addr().String()).Set("/foo", store.Clobber, nil)
+	dial(l4.Addr().String()).Set("/foo", store.Clobber, nil)
+
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		cl.Set("/test", store.Clobber, nil)
