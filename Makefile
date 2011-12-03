@@ -4,6 +4,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=logfs
 GOFILES=\
+	disk.go\
 	logfs.go\
 
 include $(GOROOT)/src/Make.pkg
