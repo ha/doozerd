@@ -21,8 +21,10 @@ type record struct {
 // structure is fixed size to be read with a single read call before
 // reading the actual data.
 type recordHeader struct {
-	headerSum uint64 // Own checksum.
-	dataSum   uint64 // record.data checksum.
-	dataLen   uint64 // record.data length.
-	seqn      uint64 // Sequence number, must grow in the list.
+	headerSum  uint64 // Own checksum.
+	cookie     uint64 // To be matched with previous record.
+	nextCookie uint64 // Next record's cookie must match this.
+	dataSum    uint64 // record.data checksum.
+	dataLen    uint64 // record.data length.
+	seqn       uint64 // Sequence number, must grow in the list.
 }
