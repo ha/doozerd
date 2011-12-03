@@ -6,8 +6,8 @@ package logfs
 // to a block on disk.
 type block struct {
 	header blockHeader // Records information about data.
-	data   []byte       // Passed by Write, returned to Read.
-	next   uint64       // File offset of the next block
+	data   []byte      // Passed by Write, returned to Read.
+	next   uint64      // File offset of the next block
 }
 
 // blockHeader describes a block.  A block is variable sized, so this
