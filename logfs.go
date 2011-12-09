@@ -30,8 +30,8 @@ func (l *Logfs) CloseLogfs() os.Error {
 }
 
 // Read reads the next record from dis. Once a record had been read,
-// it will never be read again. Read returns an os.Error if some error
-// occurred.
+// it will never be read again. Read returns the record read and an
+// os.Error if some error occurred.
 func (l *Logfs) Read() (r Record, err os.Error) {
 	return Record{}, os.NewError("not implemented")
 }
