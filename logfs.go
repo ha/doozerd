@@ -25,6 +25,19 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 
 // CloseLogfs closes the Logfs, rendering it unusable for I/O.
 // It returns an os.Error, if any.
-func (l Logfs) CloseLogfs() os.Error {
+func (l *Logfs) CloseLogfs() os.Error {
 	return l.file.Close()
+}
+
+// Read reads the next record from dis. Once a record had been read,
+// it will never be read again. Read returns an os.Error if some error
+// occurred.
+func (l *Logfs) Read() (r Record, err os.Error) {
+	return Record{}, os.NewError("not implemented")
+}
+
+// Write writes the record and returns after the record was commited
+// to disk.  It returns an os.Error if some error occurred.
+func (l *Logfs) Write(r Record) os.Error {
+	return os.NewError("not implemented")
 }
