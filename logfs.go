@@ -22,6 +22,11 @@ type Logfs struct {
 // os.Error, if any.
 func NewLogfs(name string) (l *Logfs, err os.Error) {
 	panic("not implemented")
+	
+	l.w = make(chan iop)
+	l.q = make(chan bool)
+	go writer(l.w, l.q)
+	
 	l.file, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
 	return
 }
