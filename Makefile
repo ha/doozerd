@@ -6,5 +6,6 @@ TARG=logfs
 GOFILES=\
 	disk.go\
 	logfs.go\
+	io.go\
 
 include $(GOROOT)/src/Make.pkg
