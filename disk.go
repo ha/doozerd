@@ -1,5 +1,7 @@
 package logfs
 
+import "os"
+
 // On disk format for logfs.
 
 // A block is the fundamental unit on disk.  Each Record translates
@@ -19,4 +21,12 @@ type blockHeader struct {
 	dataLen    uint64 // block.data length.
 	dataSum    uint64 // block.data checksum.
 	seqn       uint64 // Sequence number, must grow in the list.
+}
+
+// physWrite issues a write to the writer, waits for the result
+// and returns it.
+func (l *Logfs)physWrite(b *block) os.Error {
+	c := make(chan os.Error)
+	l.w <- iop{b, c}
+	return <- c
 }

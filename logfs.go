@@ -12,6 +12,7 @@ type Record struct {
 // Logfs is used for issuing I/O to the backing file.
 type Logfs struct {
 	file *os.File  // the backing file
+	w    chan iop  // writes are issued here
 	quit chan bool // channel to send quit signal to workers
 }
 
