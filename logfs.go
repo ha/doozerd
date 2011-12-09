@@ -23,9 +23,9 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 	return
 }
 
-// CloseLogfs closes the Logfs, rendering it unusable for I/O.
+// Close closes the Logfs, rendering it unusable for I/O.
 // It returns an os.Error, if any.
-func (l *Logfs) CloseLogfs() os.Error {
+func (l *Logfs) Close() os.Error {
 	return l.file.Close()
 }
 
