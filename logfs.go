@@ -19,11 +19,11 @@ type Logfs struct {
 	quitw chan bool // channel to send quit signal to writer.
 }
 
-// NewLogfs creates a new Logfs backed by the named file.  The file is
+// New creates a new Logfs backed by the named file.  The file is
 // created if it does not exist.  If successful, methods on the returned
 // Logfs can be used for transactional I/O.  It returns the Logfs and an
 // os.Error, if any.
-func NewLogfs(name string) (l *Logfs, err error) {
+func New(name string) (l *Logfs, err error) {
 	panic("not implemented")
 
 	l.w = make(chan iop)
