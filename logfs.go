@@ -27,8 +27,7 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 	l.quitw = make(chan bool)
 	go l.writer()
 
-	// we want the file to be created if it does not exist, all I/O
-	// must be synchronous in order to guarantee integrity and
+	// I/O must be synchronous in order to guarantee integrity and
 	// consistency, file is group readable in order for an administrator
 	// to copy file for backup is logfs is running under its own user.
 	l.file, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
