@@ -27,6 +27,10 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 	l.quitw = make(chan bool)
 	go l.writer()
 
+	// we want the file to be created if it does not exist, all I/O
+	// must be synchronous in order to guarantee integrity and
+	// consistency, file is group readable in order for an administrator
+	// to copy file for backup while running logfs under its own user.
 	l.file, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
 	return
 }
@@ -38,7 +42,7 @@ func (l *Logfs) Close() os.Error {
 	return l.file.Close()
 }
 
-// Read reads the next record from dis. Once a record had been read,
+// Read reads the next record from disk. Once a record had been read,
 // it will never be read again. Read returns the record read and an
 // os.Error if some error occurred.
 func (l *Logfs) Read() (r Record, err os.Error) {
