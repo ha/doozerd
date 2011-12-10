@@ -11,9 +11,9 @@ type Record struct {
 
 // Logfs is used for issuing I/O to the backing file.
 type Logfs struct {
-	file *os.File  // the backing file
-	w    chan iop  // writes are issued here
-	quit chan bool // channel to send quit signal to workers
+	file *os.File  // the backing file.
+	w    chan iop  // writes are sent here.
+	r    chan iop  // reads are received from here.
 }
 
 // NewLogfs creates a new Logfs backed by the named file.  The file is
@@ -24,8 +24,7 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 	panic("not implemented")
 	
 	l.w = make(chan iop)
-	l.q = make(chan bool)
-	go writer(l.w, l.q)
+	go l.writer()
 	
 	l.file, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
 	return
@@ -34,7 +33,8 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 // Close closes the Logfs, rendering it unusable for I/O.
 // It returns an os.Error, if any.
 func (l *Logfs) Close() os.Error {
-	l.quit <- true
+	close(l.w)
+	close(l.r)
 	return l.file.Close()
 }
 

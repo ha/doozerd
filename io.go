@@ -8,16 +8,12 @@ type iop struct {
 	err chan<- os.Error // channel to return result to caller.
 }
 
-// writer receives iops from c, tries to write data to disk and
-// sends the result of the write back to the issuer.
-func (l *Logfs) writer(c <-chan iop, quit <-chan bool) {
-	for {
-		select {
-		case op := <-c:
-			_ = op
-			panic("not implemented")
-		case <-quit:
-			return
-		}
+// writer receives iops from l.w, tries to write data to disk and
+// sends the result of the write back to the sender.
+func (l *Logfs) writer() {
+	for op := range l.w {
+		_ = op
+		panic("not implemented")
 	}
+	return
 }
