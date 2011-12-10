@@ -1,7 +1,10 @@
 // Package logfs provides basic blocks to build streams of transactions.
 package logfs
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
 // A Record is the fundamental unit you read, write or delete.
 type Record struct {
@@ -20,7 +23,7 @@ type Logfs struct {
 // created if it does not exist.  If successful, methods on the returned
 // Logfs can be used for transactional I/O.  It returns the Logfs and an
 // os.Error, if any.
-func NewLogfs(name string) (l *Logfs, err os.Error) {
+func NewLogfs(name string) (l *Logfs, err error) {
 	panic("not implemented")
 
 	l.w = make(chan iop)
@@ -36,7 +39,7 @@ func NewLogfs(name string) (l *Logfs, err os.Error) {
 
 // Close closes the Logfs, rendering it unusable for I/O.
 // It returns an os.Error, if any.
-func (l *Logfs) Close() os.Error {
+func (l *Logfs) Close() error {
 	l.quitw <- true
 	return l.file.Close()
 }
@@ -44,12 +47,12 @@ func (l *Logfs) Close() os.Error {
 // Read reads the next record from disk. Once a record had been read,
 // it will never be read again. Read returns the record read and an
 // os.Error if some error occurred.
-func (l *Logfs) Read() (r Record, err os.Error) {
-	return Record{}, os.NewError("not implemented")
+func (l *Logfs) Read() (r Record, err error) {
+	return Record{}, errors.New("not implemented")
 }
 
 // Write writes the record and returns after the record was commited
 // to disk.  It returns an os.Error if some error occurred.
-func (l *Logfs) Write(r Record) os.Error {
-	return os.NewError("not implemented")
+func (l *Logfs) Write(r Record) error {
+	return errors.New("not implemented")
 }

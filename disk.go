@@ -1,7 +1,5 @@
 package logfs
 
-import "os"
-
 // On disk format for logfs.
 
 // A block is the fundamental unit on disk.  Each Record translates
@@ -25,8 +23,8 @@ type blockHeader struct {
 
 // physWrite issues a write to the writer, waits for the result
 // and returns it.
-func (l *Logfs)physWrite(b *block) os.Error {
-	c := make(chan os.Error)
+func (l *Logfs) physWrite(b *block) error {
+	c := make(chan error)
 	l.w <- iop{b, c}
-	return <- c
+	return <-c
 }

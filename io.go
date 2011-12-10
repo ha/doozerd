@@ -1,11 +1,9 @@
 package logfs
 
-import "os"
-
 // iop (I/O packet) encodes a physical I/O operation.
 type iop struct {
-	b   *block          // data, in on-disk format.
-	err chan<- os.Error // channel to return result to caller.
+	b   *block       // data, in on-disk format.
+	err chan<- error // channel to return result to caller.
 }
 
 // writer receives iops from l.w, tries to write data to disk and
