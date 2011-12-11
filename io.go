@@ -21,7 +21,7 @@ func (l *Logfs) writer() {
 }
 
 // reader receives iops from l.r, tries to read from the disk
-// in op.b and sends the result of the read back to the issuer.
+// in iop.b and sends the result of the read back to the issuer.
 func (l *Logfs) reader() {
 	for {
 		select {
