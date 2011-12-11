@@ -20,11 +20,13 @@ func (l *Logfs) writer() {
 	}
 }
 
-// reader reads iops from the disk and sends them to l.r.
+// reader receives iops from l.r, tries to read from the disk
+// in op.b and sends the result of the read back to the issuer.
 func (l *Logfs) reader() {
 	for {
 		select {
-		case l.r <- iop{}:
+		case op := <-l.r:
+			_ = op
 			panic("reader: not implemented.")
 		case <-l.quitr:
 			return
