@@ -13,7 +13,7 @@ func (l *Logfs) writer() {
 		select {
 		case op := <-l.w:
 			_ = op
-			panic("not implemented")
+			panic("writer: not implemented.")
 		case <-l.quitw:
 			return
 		}
@@ -25,7 +25,7 @@ func (l *Logfs) reader() {
 	for {
 		select {
 		case l.r <- iop{}:
-			panic("not implemented")
+			panic("reader: not implemented.")
 		case <-l.quitr:
 			return
 		}

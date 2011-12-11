@@ -26,7 +26,7 @@ type Logfs struct {
 // Logfs can be used for transactional I/O.  It returns the Logfs and an
 // os.Error, if any.
 func New(name string) (l *Logfs, err error) {
-	panic("not implemented")
+	panic("New: not implemented.")
 
 	l.w = make(chan iop)
 	l.quitw = make(chan bool)
