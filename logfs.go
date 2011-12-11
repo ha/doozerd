@@ -15,8 +15,10 @@ type Record struct {
 // Logfs is used for issuing I/O to the backing file.
 type Logfs struct {
 	file  *os.File  // the backing file.
-	w     chan iop  // writes are issued here.
+	w     chan iop  // write requests are sent here.
 	quitw chan bool // channel to send quit signal to writer.
+	r     chan iop  // read results are received from here.
+	quitr chan bool // channel to send quit signal to reader.
 }
 
 // New creates a new Logfs backed by the named file.  The file is
@@ -30,6 +32,10 @@ func New(name string) (l *Logfs, err error) {
 	l.quitw = make(chan bool)
 	go l.writer()
 
+	l.r = make(chan iop)
+	l.quitr = make(chan bool)
+	go l.reader()
+
 	// I/O must be synchronous in order to guarantee integrity and
 	// consistency, file is group readable in order for an administrator
 	// to copy file for backup is logfs is running under its own user.
@@ -41,11 +47,12 @@ func New(name string) (l *Logfs, err error) {
 // It returns an os.Error, if any.
 func (l *Logfs) Close() error {
 	l.quitw <- true
+	l.quitr <- true
 	return l.file.Close()
 }
 
-// Read reads the next record from disk. Once a record had been read,
-// it will never be read again. Read returns the record read and an
+// Read reads the next record from disk.  Once a record had been read,
+// it will never be read again.  Read returns the record read and an
 // os.Error if some error occurred.
 func (l *Logfs) Read() (r Record, err error) {
 	return Record{}, errors.New("not implemented")

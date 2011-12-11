@@ -19,3 +19,15 @@ func (l *Logfs) writer() {
 		}
 	}
 }
+
+// reader reads iops from the disk and sends them to l.r.
+func (l *Logfs) reader() {
+	for {
+		select {
+		case l.r <- iop{}:
+			panic("not implemented")
+		case <-l.quitr:
+			return
+		}
+	}
+}
