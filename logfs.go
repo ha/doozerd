@@ -16,7 +16,7 @@ type Record struct {
 type Logfs struct {
 	file  *os.File  // the backing file.
 	w     chan iop  // write requests are sent here.
-	r     chan iop  // read results are received from here.
+	r     chan iop  // read requests are sent here.
 	quitw chan bool // channel to send quit signal to writer.
 	quitr chan bool // channel to send quit signal to reader.
 }
@@ -32,7 +32,7 @@ func New(name string) (l *Logfs, err error) {
 	l.quitw = make(chan bool)
 	go l.writer()
 
-	l.r = make(chan iop) // BUG: l.r needs to be buffered.
+	l.r = make(chan iop)
 	l.quitr = make(chan bool)
 	go l.reader()
 

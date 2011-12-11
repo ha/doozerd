@@ -22,9 +22,18 @@ type blockHeader struct {
 }
 
 // physWrite issues a write to the writer, waits for the result
-// and returns it.
+// and returns it.  It multiplexes many clients to one writer.
 func (l *Logfs) physWrite(b *block) error {
 	c := make(chan error)
 	l.w <- iop{b, c}
 	return <-c
+}
+
+// physRead issues a read request to the reader, waits for
+// the result and returns it.  It multiplexes many clients
+// to one reader.
+func (l *Logfs) physRead() (b *block, err error) {
+	c := make(chan error)
+	l.r <- iop{b, c}
+	return b, <-c
 }
