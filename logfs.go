@@ -41,7 +41,7 @@ func New(name string) (l *Logfs, err error) {
 	// consistency, file is group readable in order for an administrator
 	// to copy file for backup if logfs is running under its own user.
 	l.wf, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
-	
+
 	// BUG: A race can occur between two open calls to the same name.
 	l.rf, err = os.Open(name)
 	return

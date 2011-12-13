@@ -1,20 +1,20 @@
 package logfs
 
-// Functions that perform the physical I/O for logfs.
+// Functions that perform physical I/O for logfs.
 
 import "encoding/binary"
 
 // physWriteLink writes the offset of the next block to disk.
 // It returns nil after the data has been commited to disk, or an
 // error otherwise.
-func (l *Logfs)physWriteLink(offset uint64) error {
+func (l *Logfs) physWriteLink(offset uint64) error {
 	return binary.Write(l.wf, binary.LittleEndian, offset)
 }
 
 // physWriteBlock writes b to the disk.  It assumes physWriteLink
 // has written the offset at the end of the last block.  It returns nil
 // after the data has been commited to disk, or an error otherwise.
-func (l *Logfs)physWriteBlock(b *block) error {
+func (l *Logfs) physWriteBlock(b *block) error {
 	err := binary.Write(l.wf, binary.LittleEndian, b.header)
 	if err != nil {
 		return err
@@ -27,14 +27,13 @@ func (l *Logfs)physWriteBlock(b *block) error {
 // in the last block, then writes b to the disk.
 // It returns nil after the data has been commited to disk, or an error
 // otherwise.
-func (l *Logfs)physWrite(b *block) error {
+func (l *Logfs) physWrite(b *block) error {
 	err := l.physWriteLink(0) // BUG: NOOP as delete is not implemented.
 	if err != nil {
 		return err
 	}
-	_, err = l.wf.Seek(0, 1)  // BUG: NOOP as delete is not implemented.
+	_, err = l.wf.Seek(0, 1) // BUG: NOOP as delete is not implemented.
 	return l.physWriteBlock(b)
-	
 }
 
 // physReadLink reads the next block's offset from the disk.
@@ -64,6 +63,6 @@ func (l *Logfs) physRead() (b *block, err error) {
 	if err != nil {
 		return
 	}
-	l.rf.Seek(0, 1) // BUG: NOOP as delete is not implemented.
+	_, err = l.rf.Seek(0, 1) // BUG: NOOP as delete is not implemented.
 	return l.physReadBlock()
 }
