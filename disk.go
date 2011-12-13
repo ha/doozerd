@@ -43,10 +43,20 @@ func (l *Logfs) blockRead() (b *block, err error) {
 // physWrite writes b to the disk.  It returns nil after the data
 // has been commited to disk, or an error otherwise.
 func (l *Logfs)physWrite(b *block) error {
-	err := binary.Write(l.file, binary.LittleEndian, b.header)
+	err := binary.Write(l.wf, binary.LittleEndian, b.header)
 	if err != nil {
 		return err
 	}
-	_, err = l.file.Write(b.data)
+	_, err = l.wf.Write(b.data)
 	return err
+}
+
+// physRead
+func (l *Logfs) physRead() (b *block, err error) {
+	err = binary.Read(l.rf, binary.LittleEndian, &b.header)
+	if err != nil {
+		return
+	}
+	_, err = l.rf.Read(b.data)
+	return
 }

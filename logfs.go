@@ -14,13 +14,12 @@ type Record struct {
 
 // Logfs is used for issuing I/O to the backing file.
 type Logfs struct {
-	file  *os.File  // the backing file.
+	rf    *os.File  // the backing file used for reads.
+	wf    *os.File  // the backing file used for writes.
 	w     chan iop  // write requests are sent here.
 	r     chan iop  // read requests are sent here.
 	quitw chan bool // channel to send quit signal to writer.
 	quitr chan bool // channel to send quit signal to reader.
-	rp    uint64    // disk offset for read operations.
-	wp    uint64    // disk offset for write operations.
 }
 
 // New creates a new Logfs backed by the named file.  The file is
@@ -41,7 +40,10 @@ func New(name string) (l *Logfs, err error) {
 	// I/O must be synchronous in order to guarantee integrity and
 	// consistency, file is group readable in order for an administrator
 	// to copy file for backup if logfs is running under its own user.
-	l.file, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
+	l.wf, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
+	
+	// BUGS: A race can occur between two open calls to the same name.
+	l.rf, err = os.Open(name)
 	return
 }
 
@@ -50,7 +52,8 @@ func New(name string) (l *Logfs, err error) {
 func (l *Logfs) Close() error {
 	l.quitw <- true
 	l.quitr <- true
-	return l.file.Close()
+	l.rf.Close()
+	return l.wf.Close()
 }
 
 // Read reads the next record from disk.  Once a record had been read,
