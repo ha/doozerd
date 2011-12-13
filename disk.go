@@ -51,7 +51,8 @@ func (l *Logfs)physWrite(b *block) error {
 	return err
 }
 
-// physRead
+// physRead reads a block from the disk.  If successful, It returns
+// the block read, if an error had occurred it returns the error.
 func (l *Logfs) physRead() (b *block, err error) {
 	err = binary.Read(l.rf, binary.LittleEndian, &b.header)
 	if err != nil {
