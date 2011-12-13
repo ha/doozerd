@@ -40,6 +40,13 @@ func (l *Logfs) blockRead() (b *block, err error) {
 	return b, <-c
 }
 
+// physWriteLink writes the offset of the next block to disk.
+// It returns nil after the data has been commited to disk, or an
+// error otherwise.
+func (l *Logfs)physWriteLink(b *block) error {
+	return binary.Write(l.wf, binary.LittleEndian, b.next)
+}
+
 // physWriteBlock writes b to the disk.  It returns nil after the data
 // has been commited to disk, or an error otherwise.
 func (l *Logfs)physWriteBlock(b *block) error {
@@ -49,6 +56,14 @@ func (l *Logfs)physWriteBlock(b *block) error {
 	}
 	_, err = l.wf.Write(b.data)
 	return err
+}
+
+// physReadLink reads the next block's offset from the disk.
+// If successful, it returns the offset, if an error had occurred
+// it returns the error.
+func (l *Logfs) physReadLink() (offset uint64, err error) {
+	err = binary.Read(l.rf, binary.LittleEndian, &offset)
+	return
 }
 
 // physReadBlock reads a block from the disk.  If successful, it returns
