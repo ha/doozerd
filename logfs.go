@@ -42,7 +42,7 @@ func New(name string) (l *Logfs, err error) {
 	// to copy file for backup if logfs is running under its own user.
 	l.wf, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
 	
-	// BUGS: A race can occur between two open calls to the same name.
+	// BUG: A race can occur between two open calls to the same name.
 	l.rf, err = os.Open(name)
 	return
 }
