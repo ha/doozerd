@@ -2,6 +2,11 @@ package logfs
 
 // On disk format for logfs.
 
+import (
+	"bufio"
+	"encoding/binary"
+)
+
 // A block is the fundamental unit on disk.  Each Record translates
 // to a block on disk.
 type block struct {
@@ -36,4 +41,23 @@ func (l *Logfs) blockRead() (b *block, err error) {
 	c := make(chan error)
 	l.r <- iop{b, c}
 	return b, <-c
+}
+
+// physWrite writes b to the disk.  It returns nil after the data
+// has been commited to disk, or an error otherwise.
+func (l *Logfs)physWrite(b *block) error {
+	bw := bufio.NewWriter(l.file)
+
+	err := binary.Write(bw, binary.LittleEndian, b.header)
+	if err != nil {
+		return err
+	}
+	for i := range(b.data) {
+		binary.Write(bw, binary.LittleEndian, i)
+		if err != nil {
+			return err
+		}
+	}
+	
+	return bw.Flush()
 }

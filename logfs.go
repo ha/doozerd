@@ -19,6 +19,8 @@ type Logfs struct {
 	r     chan iop  // read requests are sent here.
 	quitw chan bool // channel to send quit signal to writer.
 	quitr chan bool // channel to send quit signal to reader.
+	rp    uint64    // disk offset for read operations.
+	wp    uint64    // disk offset for write operations.
 }
 
 // New creates a new Logfs backed by the named file.  The file is
@@ -38,7 +40,7 @@ func New(name string) (l *Logfs, err error) {
 
 	// I/O must be synchronous in order to guarantee integrity and
 	// consistency, file is group readable in order for an administrator
-	// to copy file for backup is logfs is running under its own user.
+	// to copy file for backup if logfs is running under its own user.
 	l.file, err = os.OpenFile(name, os.O_CREATE|os.O_SYNC, 0640)
 	return
 }
