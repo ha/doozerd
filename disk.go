@@ -2,10 +2,7 @@ package logfs
 
 // On disk format for logfs.
 
-import (
-	"bufio"
-	"encoding/binary"
-)
+import "encoding/binary"
 
 // A block is the fundamental unit on disk.  Each Record translates
 // to a block on disk.
@@ -46,18 +43,10 @@ func (l *Logfs) blockRead() (b *block, err error) {
 // physWrite writes b to the disk.  It returns nil after the data
 // has been commited to disk, or an error otherwise.
 func (l *Logfs)physWrite(b *block) error {
-	bw := bufio.NewWriter(l.file)
-
-	err := binary.Write(bw, binary.LittleEndian, b.header)
+	err := binary.Write(l.file, binary.LittleEndian, b.header)
 	if err != nil {
 		return err
 	}
-	for i := range(b.data) {
-		binary.Write(bw, binary.LittleEndian, i)
-		if err != nil {
-			return err
-		}
-	}
-	
-	return bw.Flush()
+	_, err = l.file.Write(b.data)
+	return err
 }
