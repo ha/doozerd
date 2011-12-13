@@ -40,9 +40,9 @@ func (l *Logfs) blockRead() (b *block, err error) {
 	return b, <-c
 }
 
-// physWrite writes b to the disk.  It returns nil after the data
+// physWriteBlock writes b to the disk.  It returns nil after the data
 // has been commited to disk, or an error otherwise.
-func (l *Logfs)physWrite(b *block) error {
+func (l *Logfs)physWriteBlock(b *block) error {
 	err := binary.Write(l.wf, binary.LittleEndian, b.header)
 	if err != nil {
 		return err
@@ -51,9 +51,9 @@ func (l *Logfs)physWrite(b *block) error {
 	return err
 }
 
-// physRead reads a block from the disk.  If successful, It returns
+// physReadBlock reads a block from the disk.  If successful, it returns
 // the block read, if an error had occurred it returns the error.
-func (l *Logfs) physRead() (b *block, err error) {
+func (l *Logfs) physReadBlock() (b *block, err error) {
 	err = binary.Read(l.rf, binary.LittleEndian, &b.header)
 	if err != nil {
 		return
