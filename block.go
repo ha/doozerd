@@ -2,7 +2,7 @@ package logfs
 
 // On disk format for logfs.
 
-// A block is the fundamental unit on disk.  Each Record translates
+// A block is the fundamental unit on disk.  Each Write translates
 // to a block on disk.
 type block struct {
 	header blockHeader // Records information about data.

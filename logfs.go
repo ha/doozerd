@@ -6,12 +6,6 @@ import (
 	"os"
 )
 
-// A Record is the fundamental unit you read, write or delete.
-type Record struct {
-	Data []byte // data to set or retrieve.
-	Seqn uint64 // Sequence number, each I/O operation has one.
-}
-
 // Logfs is used for issuing I/O to the backing file.
 type Logfs struct {
 	rf    *os.File  // the backing file used for reads.
@@ -56,15 +50,16 @@ func (l *Logfs) Close() error {
 	return l.wf.Close()
 }
 
-// Read reads the next record from disk.  Once a record had been read,
-// it will never be read again.  Read returns the record read and an
-// os.Error if some error occurred.
-func (l *Logfs) Read() (r Record, err error) {
-	return Record{}, errors.New("not implemented")
+// Read reads up to len(b) bytes from the Logfs.  It returns the
+// number of bytes read and an error, if any.  EOF is signaled
+// by a zero count with err set to io.EOF.
+func (l *Logfs) Read(b []byte) (n int, err error) {
+	return 0, errors.New("not implemented")
 }
 
-// Write writes the record and returns after the record was commited
-// to disk.  It returns an os.Error if some error occurred.
-func (l *Logfs) Write(r Record) error {
-	return errors.New("not implemented")
+// Write writes len(b) bytes to the Logfs.  It returns the
+// number of bytes written and an error, if any.  Write returns a
+// non-nil error when n != len(b).
+func (l *Logfs) Write(b []byte) (n int, err error) {
+	return 0, errors.New("not implemented")
 }
