@@ -2,11 +2,10 @@
 GOROOT ?= $(shell printf 't:;@echo $$(GOROOT)\n' | gomake -f -)
 include $(GOROOT)/src/Make.inc
 
-TARG=logfs
+TARG=log
 GOFILES=\
-	block.go\
-	logfs.go\
-	mux.go\
-	physio.go\
+	arena.go\
+	io.go\
+	log.go\
 
 include $(GOROOT)/src/Make.pkg
