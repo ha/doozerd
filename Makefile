@@ -4,7 +4,6 @@ include $(GOROOT)/src/Make.inc
 
 TARG=log
 GOFILES=\
-	arena.go\
 	io.go\
 	log.go\
 
