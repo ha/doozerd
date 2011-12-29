@@ -1,6 +1,6 @@
 // Package log provides persistence for doozer using a circular log.
 // Doozer mutations are apended to the log.  Deletions are garbage collected
-// from the head of the log so the backing file does not grow indefinetly.
+// from the head of the log so the backing file does not grow indefinitely.
 
 package log
 
@@ -12,7 +12,8 @@ import (
 // Logger implements a journal using a file on disk. Doozer logs mutations
 // to it to save state across server restarts.
 type Logger struct {
-	rws io.ReadWriteSeeker
+	r io.ReadCloser
+	w io.WriteCloser
 }
 
 // BUG(aram): The Logger is connected directly to the file, and deleted
@@ -26,10 +27,13 @@ func New(name string) (l *Logger, err error) {
 	// File is created if it does not exist, file must be opened synchronously
 	// in order to guarantee consistency, file is group readable in order
 	// to be read by an administrator if doozer is ran by its own user.
-	file, err := os.OpenFile(name, os.O_RDWR | os.O_CREATE | os.O_SYNC, 0640)
+	l.w, err = os.OpenFile(name, os.O_WRONLY | os.O_CREATE | os.O_SYNC, 0640)
 	if err != nil {
 		return nil, err
 	}
-	l.rws = file
+	l.r, err = os.Open(name)
+	if err != nil {
+		return nil, err
+	}	
 	return
 }
