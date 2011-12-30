@@ -11,7 +11,7 @@ import (
 
 // Journal represents a file where doozer can save state.
 type Journal struct {
-	rw io.ReadWriter
+	rw io.ReadWriter // arena
 }
 
 // NewJournal opens the named file for synchronous I/O, creating it
