@@ -14,6 +14,11 @@ type Journal struct {
 	rw io.ReadWriter // arena
 }
 
+type iop struct {
+	mut string
+	c   chan error
+}
+
 // NewJournal opens the named file for synchronous I/O, creating it
 // with mode 0640 if it does not exist and prepares it for logging operation.
 // If successful, methods on the returned Journal can be used for I/O.
