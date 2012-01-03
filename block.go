@@ -20,13 +20,12 @@ type blockHdr struct {
 
 // newBlock returns a block created from a mutation.
 func newBlock(mutation string) (b block) {
-	b.Hdr.Size = int32(len(b.Data))
-
 	sha1 := sha1.New()
 	io.WriteString(sha1, mutation)
 	copy(b.Hdr.Score[:], sha1.Sum(nil))
 
 	b.Data = []byte(mutation)
+	b.Hdr.Size = int32(len(b.Data))
 
 	return
 }

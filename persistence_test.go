@@ -2,7 +2,7 @@ package persistence
 
 import (
 	"io/ioutil"
-	"os"
+//	"os"
 	"testing"
 )
 
@@ -13,14 +13,14 @@ func TestStore(t *testing.T) {
 	}
 	defer f.Close()
 	name := f.Name()
-	defer os.Remove(name)
+//	defer os.Remove(name)
 	
 	j, err := NewJournal(name)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < 10; i++ {
-		err = j.Store("Hello.")
+		err = j.Store("a")
 		if err != nil {
 			t.Fatal(err)
 		}
