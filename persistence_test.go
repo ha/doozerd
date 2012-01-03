@@ -9,7 +9,7 @@ import (
 func TestStore(t *testing.T) {
 	f, err := ioutil.TempFile("", "journal")
 	if err != nil {
-		t.Log(err)
+		t.Fatal(err)
 	}
 	defer f.Close()
 	name := f.Name()
@@ -17,7 +17,19 @@ func TestStore(t *testing.T) {
 	
 	j, err := NewJournal(name)
 	if err != nil {
-		t.Log(err)
+		t.Fatal(err)
+	}
+	for i := 0; i < 10; i++ {
+		err = j.Store("Hello.")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 10; i++ {
+		_, err := j.Retrieve()
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	j.Close()
 }

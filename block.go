@@ -8,25 +8,25 @@ import (
 
 // blocks are written to disk.
 type block struct {
-	hdr  blockHdr // header describing data.
-	data []byte   // payload.
+	Hdr  blockHdr // header describing data.
+	Data []byte   // payload.
 }
 
 // blockHdr describes a block.
 type blockHdr struct {
-	score [20]byte // SHA-1(block.data).
-	size  int      // len(block.data).
+	Score [20]byte // SHA-1(block.data).
+	Size  int32    // len(block.data).
 }
 
 // newBlock returns a block created from a mutation.
 func newBlock(mutation string) (b block) {
-	b.hdr.size = len(b.data)
+	b.Hdr.Size = int32(len(b.Data))
 
 	sha1 := sha1.New()
 	io.WriteString(sha1, mutation)
-	copy(b.hdr.score[:], sha1.Sum(nil))
+	copy(b.Hdr.Score[:], sha1.Sum(nil))
 
-	b.data = []byte(mutation)
+	b.Data = []byte(mutation)
 
 	return
 }
@@ -34,6 +34,6 @@ func newBlock(mutation string) (b block) {
 // isValid validates the checksum of a block.
 func (b block) isValid() bool {
 	sha1 := sha1.New()
-	sha1.Write(b.data[:b.hdr.size])
-	return bytes.Equal(b.hdr.score[:], sha1.Sum(nil))
+	sha1.Write(b.Data[:b.Hdr.Size])
+	return bytes.Equal(b.Hdr.Score[:], sha1.Sum(nil))
 }

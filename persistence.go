@@ -92,13 +92,13 @@ func decodedRead(r io.Reader) (mut string, err error) {
 	b := block{}
 
 	// Read the header so we know how much to read next.
-	err = binary.Read(r, binary.LittleEndian, &b.hdr)
+	err = binary.Read(r, binary.LittleEndian, &b.Hdr)
 	if err != nil {
 		return
 	}
 
 	// If everything went fine, we can read the data.
-	_, err = io.ReadAtLeast(r, b.data, b.hdr.size)
+	_, err = io.ReadAtLeast(r, b.Data, int(b.Hdr.Size))
 
 	// We need to make sure the checksum is valid.
 	if b.isValid() != true {
@@ -106,7 +106,7 @@ func decodedRead(r io.Reader) (mut string, err error) {
 		return
 	}
 
-	mut = string(b.data)
+	mut = string(b.Data)
 	return
 }
 
@@ -117,13 +117,13 @@ func encodedWrite(w io.Writer, mut string) (err error) {
 
 	// We use two write calls bacause we use encoding/binary
 	// to write the fixed length header.
-	err = binary.Write(w, binary.LittleEndian, b.hdr)
+	err = binary.Write(w, binary.LittleEndian, b.Hdr)
 	if err != nil {
 		return
 	}
 
 	// We'we written the header successfully, write the rest
 	// of the data.
-	_, err = w.Write(b.data)
+	_, err = w.Write(b.Data)
 	return
 }
