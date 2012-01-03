@@ -43,23 +43,22 @@ func NewJournal(name string) (j *Journal, err error) {
 }
 
 // Store writes the mutation to the Journal.
-func (j *Journal) Store(mutation string) error {
+func (j *Journal) Store(mutation string) (err error) {
 	req := iop{mutation, make(chan error)}
 	j.w <- req
-	err := <-req.err
-
-	return err
+	err = <-req.err
+	return
 }
 
 // Retrieve reads the next mutation from the Journal.  It returns
 // the mutation and an error, if any.  EOF is signaled by a nil
 // mutation with err set to io.EOF
-func (j *Journal) Retrieve() (mutation string, err error) {
+func (j *Journal) Retrieve() (mut string, err error) {
 	req := iop{err: make(chan error)}
 	j.r <- &req
 	err = <-req.err
-
-	return req.mut, err
+	mut = req.mut
+	return
 }
 
 // iops sits in a loop and processes requests sent by Store and Retrieve.
@@ -115,7 +114,6 @@ func encodedWrite(w io.Writer, mut string) (err error) {
 
 	// We use two write calls bacause we use encoding/binary
 	// to write the fixed length header.
-
 	err = binary.Write(w, binary.LittleEndian, b.hdr)
 	if err != nil {
 		return
