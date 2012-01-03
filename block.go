@@ -18,8 +18,8 @@ type blockHdr struct {
 	size  int      // len(block.data).
 }
 
-// newBlock returns a block created from mutation.
-func newBlock(mutation string) (b *block) {
+// newBlock returns a block created from a mutation.
+func newBlock(mutation string) (b block) {
 	b.hdr.size = len(b.data)
 
 	sha1 := sha1.New()

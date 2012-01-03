@@ -15,17 +15,17 @@ type arena struct {
 // with mode 0640 if it does not exist and creates a translation layer.
 // If successful, methods on the returned arena can be used for I/O.
 // It returns an arena and an error, if any.  It is called by NewJournal.
-func newArena(name string) (a *arena, err error) {
+func newArena(name string) (a arena, err error) {
 	// File is created if it does not exist, file must be opened synchronously
 	// in order to guarantee consistency, file is group readable in order
 	// to be read by an administrator if doozer is ran by its own user.
 	a.w, err = os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0640)
 	if err != nil {
-		return nil, err
+		return
 	}
 	a.r, err = os.Open(name)
 	if err != nil {
-		return nil, err
+		return
 	}
 	return
 }
@@ -38,7 +38,7 @@ func newArena(name string) (a *arena, err error) {
 // logical arena offset into a physical file offset. It returns the
 // number of bytes read and an error, if any. EOF is signaled by a
 // zero count with err set to io.EOF.
-func (a *arena) Read(p []byte) (n int, err error) {
+func (a arena) Read(p []byte) (n int, err error) {
 	return a.r.Read(p)
 }
 
@@ -46,13 +46,13 @@ func (a *arena) Read(p []byte) (n int, err error) {
 // arena offset into a physical file offset. It returns the number of bytes
 // written and an error, if any. Write returns a non-nil error
 // when n != len(b).
-func (a *arena) Write(p []byte) (n int, err error) {
+func (a arena) Write(p []byte) (n int, err error) {
 	return a.w.Write(p)
 }
 
 // Close closes the backing Files, rendering the arena unusable for I/O.
 // It returns an error, if any.
-func (a *arena) Close() (err error) {
+func (a arena) Close() (err error) {
 	err = a.r.Close()
 	if err != nil {
 		return

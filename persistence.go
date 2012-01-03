@@ -30,20 +30,18 @@ type iop struct {
 // with mode 0640 if it does not exist and prepares it for logging operation.
 // If successful, methods on the returned Journal can be used for I/O.
 // It returns a Journal and an error, if any.
-func NewJournal(name string) (j *Journal, err error) {
-	j.r = make(chan *iop)
-	j.w = make(chan iop)
-	j.q = make(chan bool)
+func NewJournal(name string) (j Journal, err error) {
+	j = Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
 	arena, err := newArena(name)
 	if err != nil {
-		return nil, err
+		return
 	}
 	go iops(arena, j)
 	return
 }
 
 // Store writes the mutation to the Journal.
-func (j *Journal) Store(mutation string) (err error) {
+func (j Journal) Store(mutation string) (err error) {
 	req := iop{mutation, make(chan error)}
 	j.w <- req
 	err = <-req.err
@@ -53,7 +51,7 @@ func (j *Journal) Store(mutation string) (err error) {
 // Retrieve reads the next mutation from the Journal.  It returns
 // the mutation and an error, if any.  EOF is signaled by a nil
 // mutation with err set to io.EOF
-func (j *Journal) Retrieve() (mut string, err error) {
+func (j Journal) Retrieve() (mut string, err error) {
 	req := iop{err: make(chan error)}
 	j.r <- &req
 	err = <-req.err
@@ -61,10 +59,15 @@ func (j *Journal) Retrieve() (mut string, err error) {
 	return
 }
 
+// Close shuts down the journal.
+func (j Journal) Close() {
+	j.q <- true
+}
+
 // iops sits in a loop and processes requests sent by Store and Retrieve.
 // Clients of this function specify a channel where it can send back
 // the result of the operation. 
-func iops(rw io.ReadWriteCloser, j *Journal) {
+func iops(rw io.ReadWriteCloser, j Journal) {
 	defer rw.Close()
 	for {
 		select {
@@ -107,7 +110,7 @@ func decodedRead(r io.Reader) (mut string, err error) {
 	return
 }
 
-// encodedRead encodes a mutation into a block and writes the
+// encodedWrite encodes a mutation into a block and writes the
 // block to the writer returning an error.
 func encodedWrite(w io.Writer, mut string) (err error) {
 	b := newBlock(mut)
