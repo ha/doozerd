@@ -75,9 +75,9 @@ func iops(rw io.ReadWriter, j *Journal) {
 			// Read the header so we know how much to read next.
 			err := binary.Read(rw, binary.LittleEndian, &b.hdr)
 
-			// If everything was fine, we can read the data.
+			// If everything went fine, we can read the data.
 			if err == nil {
-				_, err = rw.Read(b.data)
+				_, err = io.ReadAtLeast(rw, b.data, b.hdr.size)
 			}
 
 			// We need to make sure the checksum is valid.
@@ -115,3 +115,4 @@ func iops(rw io.ReadWriter, j *Journal) {
 	}
 	return
 }
+
