@@ -97,13 +97,13 @@ func decodedRead(r io.Reader) (mut string, err error) {
 
 	// If everything went fine, we can read the data.
 	_, err = io.ReadAtLeast(r, b.data, b.hdr.size)
-	
+
 	// We need to make sure the checksum is valid.
 	if !b.isValid() {
 		err = errors.New("read an invalid block")
 		return
 	}
-	
+
 	mut = b.String()
 	return
 }
