@@ -44,9 +44,9 @@ func NewJournal(name string) (j *Journal, err error) {
 
 // Store writes the mutation to the Journal.
 func (j *Journal) Store(mutation string) error {
-	wrq := iop{mutation, make(chan error)}
-	j.w <- wrq
-	err := <-wrq.err
+	req := iop{mutation, make(chan error)}
+	j.w <- req
+	err := <-req.err
 
 	return err
 }
@@ -55,11 +55,11 @@ func (j *Journal) Store(mutation string) error {
 // the mutation and an error, if any.  EOF is signaled by a nil
 // mutation with err set to io.EOF
 func (j *Journal) Retrieve() (mutation string, err error) {
-	rrq := iop{err: make(chan error)}
-	j.r <- &rrq
-	err = <-rrq.err
+	req := iop{err: make(chan error)}
+	j.r <- &req
+	err = <-req.err
 
-	return rrq.mut, err
+	return req.mut, err
 }
 
 // iops sits in a loop and processes requests sent by Store and Retrieve.
@@ -99,8 +99,8 @@ func decodedRead(r io.Reader) (mut string, err error) {
 	_, err = io.ReadAtLeast(r, b.data, b.hdr.size)
 
 	// We need to make sure the checksum is valid.
-	if !b.isValid() {
-		err = errors.New("read an invalid block")
+	if b.isValid() != true {
+		err = errors.New("checksum check failed")
 		return
 	}
 
