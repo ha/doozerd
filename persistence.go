@@ -98,7 +98,8 @@ func decodedRead(r io.Reader) (mut string, err error) {
 	}
 
 	// If everything went fine, we can read the data.
-	_, err = io.ReadAtLeast(r, b.Data, int(b.Hdr.Size))
+	b.Data = make([]byte, int(b.Hdr.Size))
+	_, err = io.ReadAtLeast(r, b.Data, len(b.Data))
 
 	// We need to make sure the checksum is valid.
 	if b.isValid() != true {
