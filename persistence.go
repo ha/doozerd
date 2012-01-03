@@ -65,7 +65,8 @@ func (j *Journal) Retrieve() (mutation string, err error) {
 // iops sits in a loop and processes requests sent by Store and Retrieve.
 // Clients of this function specify a channel where it can send back
 // the result of the operation. 
-func iops(rw io.ReadWriter, j *Journal) {
+func iops(rw io.ReadWriteCloser, j *Journal) {
+	defer rw.Close()
 	for {
 		select {
 		case rop := <-j.r:

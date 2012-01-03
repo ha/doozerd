@@ -49,3 +49,14 @@ func (a *arena) Read(p []byte) (n int, err error) {
 func (a *arena) Write(p []byte) (n int, err error) {
 	return a.w.Write(p)
 }
+
+// Close closes the backing Files, rendering the arena unusable for I/O.
+// It returns an error, if any.
+func (a *arena) Close() (err error) {
+	err = a.r.Close()
+	if err != nil {
+		return
+	}
+	err = a.w.Close()
+	return
+}
