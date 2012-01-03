@@ -104,7 +104,7 @@ func decodedRead(r io.Reader) (mut string, err error) {
 		return
 	}
 
-	mut = b.String()
+	mut = string(b.data)
 	return
 }
 

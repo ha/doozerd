@@ -31,10 +31,6 @@ func newBlock(mutation string) (b *block) {
 	return
 }
 
-func (b block) String() string {
-	return string(b.data)
-}
-
 // isValid validates the checksum of a block.
 func (b block) isValid() bool {
 	sha1 := sha1.New()
