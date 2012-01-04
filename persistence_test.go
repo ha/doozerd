@@ -52,37 +52,6 @@ func TestStoreRetrieve(t *testing.T) {
 	name := f.Name()
 	defer os.Remove(name)
 	
-	j, err := NewJournal(name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range(testData) {
-		err = j.Store(v)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	for _, v := range(testData) {
-		m, err := j.Retrieve()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if m != v {
-			t.Fatalf("read from store '%v', should be '%v'", m, v)
-		}
-	}
-	j.Close()
-}
-
-func TestRandom(t *testing.T) {
-	f, err := ioutil.TempFile("", "journal")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-	name := f.Name()
-	defer os.Remove(name)
-	
 	// Generate some random data.
 	randData := make([]string, 128)
 	r := rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
