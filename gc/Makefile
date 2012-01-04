@@ -1,7 +1,8 @@
 include ../../Make.inc
 
-TARG=github.com/ha/doozerd/test
+TARG=github.com/ha/doozerd/gc
 GOFILES=\
-	test.go\
+	clean.go\
+	pulse.go\
 
 include $(GOROOT)/src/Make.pkg
