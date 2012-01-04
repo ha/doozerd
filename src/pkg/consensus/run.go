@@ -1,9 +1,9 @@
 package consensus
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"container/heap"
 	"doozer/store"
-	"goprotobuf.googlecode.com/hg/proto"
 	"log"
 	"math/rand"
 	"net"
@@ -11,7 +11,6 @@ import (
 )
 
 const initialWaitBound = 1e6 // ns == 1ms
-
 
 type run struct {
 	seqn int64

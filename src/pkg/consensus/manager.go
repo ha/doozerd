@@ -1,9 +1,9 @@
 package consensus
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"container/heap"
 	"doozer/store"
-	"goprotobuf.googlecode.com/hg/proto"
 	"log"
 	"net"
 	"sort"

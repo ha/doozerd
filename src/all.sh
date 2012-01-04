@@ -7,6 +7,12 @@ else
     exit 1
 fi
 
+
+if [ "$GOPATH" != "" ]
+then
+  echo "You may need to unset GOPATH because this still uses Makefiles to build"
+fi
+
 xcd() {
     echo
     cd $1

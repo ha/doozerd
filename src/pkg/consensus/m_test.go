@@ -1,8 +1,8 @@
 package consensus
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"fmt"
-	"goprotobuf.googlecode.com/hg/proto"
 	"net"
 )
 

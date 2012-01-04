@@ -121,7 +121,7 @@ func EncodeSet(path, body string, rev int64) (mutation string, err error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
-	return strconv.Itoa64(rev) + ":" + path + "=" + body, nil
+	return strconv.FormatInt(rev, 10) + ":" + path + "=" + body, nil
 }
 
 // Returns a mutation that can be applied to a `Store`. The mutation will cause
@@ -133,7 +133,7 @@ func EncodeDel(path string, rev int64) (mutation string, err error) {
 	if err = checkPath(path); err != nil {
 		return
 	}
-	return strconv.Itoa64(rev) + ":" + path, nil
+	return strconv.FormatInt(rev, 10) + ":" + path, nil
 }
 
 // MustEncodeSet is like EncodeSet but panics if the mutation cannot be
@@ -166,7 +166,7 @@ func decode(mutation string) (path, v string, rev int64, keep bool, err error) {
 		return
 	}
 
-	rev, err = strconv.Atoi64(cm[0])
+	rev, err = strconv.ParseInt(cm[0], 10, 64)
 	if err != nil {
 		return
 	}

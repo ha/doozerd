@@ -2,9 +2,9 @@ package server
 
 import (
 	"bytes"
+	"code.google.com/p/goprotobuf/proto"
 	"doozer/store"
 	"github.com/bmizerany/assert"
-	"goprotobuf.googlecode.com/hg/proto"
 	"io"
 
 	"testing"

@@ -1,10 +1,10 @@
 package consensus
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"container/heap"
 	"doozer/store"
 	"github.com/bmizerany/assert"
-	"goprotobuf.googlecode.com/hg/proto"
 	"net"
 	"sort"
 	"testing"

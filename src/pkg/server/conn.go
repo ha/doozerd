@@ -1,10 +1,10 @@
 package server
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"doozer/consensus"
 	"doozer/store"
 	"encoding/binary"
-	"goprotobuf.googlecode.com/hg/proto"
 	"io"
 	"log"
 	"sync"

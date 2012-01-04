@@ -1,16 +1,15 @@
 package main
 
-
 import (
 	"crypto/tls"
 	"doozer/peer"
+	_ "expvar"
 	"flag"
 	"fmt"
 	"github.com/ha/doozer"
+	"log"
 	"net"
 	"os"
-	"log"
-	_ "expvar"
 	"strconv"
 )
 
@@ -18,17 +17,14 @@ const defWebPort = 8000
 
 type strings []string
 
-
 func (a *strings) Set(s string) bool {
 	*a = append(*a, s)
 	return true
 }
 
-
 func (a *strings) String() string {
 	return fmt.Sprint(*a)
 }
-
 
 var (
 	laddr       = flag.String("l", "127.0.0.1:8046", "The address to bind to.")
@@ -50,11 +46,9 @@ var (
 	rosk = os.Getenv("DOOZER_ROSECRET")
 )
 
-
 func init() {
 	flag.Var(&aaddrs, "a", "attach address (may be given multiple times)")
 }
-
 
 func Usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS]\n", os.Args[0])
@@ -66,7 +60,6 @@ and change the port to 8000. If you give "-w false",
 doozerd will not listen for for web connections.
 `)
 }
-
 
 func main() {
 	*buri = os.Getenv("DOOZER_BOOT_URI")
@@ -116,7 +109,7 @@ func main() {
 		wa.Port = defWebPort
 		*waddr = wa.String()
 	}
-	if b, err := strconv.Atob(*waddr); err != nil && !b {
+	if b, err := strconv.ParseBool(*waddr); err != nil && !b {
 		wsock, err = net.Listen("tcp", *waddr)
 		if err != nil {
 			panic(err)
@@ -147,7 +140,6 @@ func main() {
 func ns(x float64) int64 {
 	return int64(x * 1e9)
 }
-
 
 func tlsWrap(l net.Listener, cfile, kfile string) net.Listener {
 	if cfile == "" || kfile == "" {

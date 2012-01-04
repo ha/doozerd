@@ -1,9 +1,9 @@
 package consensus
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"doozer/store"
 	"github.com/bmizerany/assert"
-	"goprotobuf.googlecode.com/hg/proto"
 	"net"
 	"testing"
 )
