@@ -1,6 +1,8 @@
 package persistence
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -43,7 +45,43 @@ var testData = []string{
 	"How can you write a big system without C++?  -Paul Glick",
 }
 
-func TestStoreRetrieve(t *testing.T) {
+var testFileSha1 = "2c9e98acf63756007d3e3bbdcc4d80882e06a2aa"
+
+func TestStore(t *testing.T) {
+	f, err := ioutil.TempFile("", "journal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	name := f.Name()
+
+	j, err := NewJournal(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range testData {
+		err = j.Store(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	j.Close()
+	
+	b, err := ioutil.ReadFile(name)
+	if (err != nil) {
+		t.Fatal(err)
+	}
+	sha1 := sha1.New()
+	sha1.Write(b)
+	s := fmt.Sprintf("%x", sha1.Sum(nil))
+	if s != testFileSha1 {
+		t.Fatal("journal file has an unexpected SHA-1")
+	}
+	
+	os.Remove(name)
+}
+
+func TestRetrieve(t *testing.T) {
 	f, err := ioutil.TempFile("", "journal")
 	if err != nil {
 		t.Fatal(err)

@@ -106,7 +106,10 @@ func ReadMutation(r io.Reader) (mut string, err error) {
 
 	// If everything went fine, we can read the data.
 	b.Data = make([]byte, int(b.Hdr.Size))
-	_, err = io.ReadAtLeast(r, b.Data, len(b.Data))
+	_, err = io.ReadFull(r, b.Data)
+	if err != nil {
+		return
+	}
 
 	// We need to make sure the checksum is valid.
 	if b.isValid() != true {
