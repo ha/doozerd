@@ -43,7 +43,7 @@ func NewJournal(name string) (j *Journal, err error) {
 	if err != nil {
 		return
 	}
-	
+
 	j = &Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
 	go iops(j, r, w)
 	return
@@ -79,12 +79,12 @@ func iops(j *Journal, r io.ReadCloser, w io.WriteCloser) {
 	for {
 		select {
 		case rop := <-j.r:
-			mut, err := ReadMutation(r)
+			mut, err := readMutation(r)
 			rop.mut = mut
 			rop.err <- err
 
 		case wop := <-j.w:
-			wop.err <- WriteMutation(w, wop.mut)
+			wop.err <- writeMutation(w, wop.mut)
 
 		case <-j.q:
 			return
@@ -93,9 +93,9 @@ func iops(j *Journal, r io.ReadCloser, w io.WriteCloser) {
 	return
 }
 
-// ReadMutation reads a block from the reader, decodes it into a
+// readMutation reads a block from the reader, decodes it into a
 // mutation and returns it along with an error.
-func ReadMutation(r io.Reader) (mut string, err error) {
+func readMutation(r io.Reader) (mut string, err error) {
 	b := block{}
 
 	// Read the header so we know how much to read next.
@@ -121,9 +121,9 @@ func ReadMutation(r io.Reader) (mut string, err error) {
 	return
 }
 
-// WriteMutation encodes a mutation into a block and writes the
+// writeMutation encodes a mutation into a block and writes the
 // block to the writer returning an error.
-func WriteMutation(w io.Writer, mut string) (err error) {
+func writeMutation(w io.Writer, mut string) (err error) {
 	b := newBlock(mut)
 
 	// We use two write calls bacause we use encoding/binary

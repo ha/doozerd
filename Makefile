@@ -6,5 +6,6 @@ TARG=persistence
 GOFILES=\
 	block.go\
 	journal.go\
+	mux.go\
 
 include $(GOROOT)/src/Make.pkg
