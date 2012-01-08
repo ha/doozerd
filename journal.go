@@ -32,20 +32,20 @@ type iop struct {
 // If successful, methods on the returned Journal can be used for I/O.
 // It returns a Journal and an error, if any.
 func NewJournal(name string) (j *Journal, err error) {
-	j = &Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
-	
 	// File is created if it does not exist, file must be opened synchronously
 	// in order to guarantee consistency, file is group readable in order
 	// to be read by an administrator if doozer is ran by its own user.
 	w, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0640)
 	if err != nil {
-		return nil, err
+		return
 	}
 	r, err := os.Open(name)
 	if err != nil {
-		return nil, err
+		return
 	}
-	go iops(r, w, j)
+	
+	j = &Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
+	go iops(j, r, w)
 	return
 }
 
@@ -53,8 +53,7 @@ func NewJournal(name string) (j *Journal, err error) {
 func (j Journal) Store(mutation string) (err error) {
 	req := iop{mutation, make(chan error)}
 	j.w <- req
-	err = <-req.err
-	return
+	return <-req.err
 }
 
 // Retrieve reads the next mutation from the Journal.  It returns
@@ -63,9 +62,7 @@ func (j Journal) Store(mutation string) (err error) {
 func (j Journal) Retrieve() (mut string, err error) {
 	req := iop{err: make(chan error)}
 	j.r <- &req
-	err = <-req.err
-	mut = req.mut
-	return
+	return req.mut, <-req.err
 }
 
 // Close shuts down the journal.
@@ -76,18 +73,18 @@ func (j Journal) Close() {
 // iops sits in a loop and processes requests sent by Store and Retrieve.
 // Clients of this function specify a channel where it can send back
 // the result of the operation. 
-func iops(r io.ReadCloser, w io.WriteCloser, j *Journal) {
+func iops(j *Journal, r io.ReadCloser, w io.WriteCloser) {
 	defer r.Close()
 	defer w.Close()
 	for {
 		select {
 		case rop := <-j.r:
-			mut, err := decodedRead(r)
+			mut, err := ReadMutation(r)
 			rop.mut = mut
 			rop.err <- err
 
 		case wop := <-j.w:
-			wop.err <- encodedWrite(w, wop.mut)
+			wop.err <- WriteMutation(w, wop.mut)
 
 		case <-j.q:
 			return
@@ -96,9 +93,9 @@ func iops(r io.ReadCloser, w io.WriteCloser, j *Journal) {
 	return
 }
 
-// decodedRead reads a block from the reader, decodes it into a
+// ReadMutation reads a block from the reader, decodes it into a
 // mutation and returns it along with an error.
-func decodedRead(r io.Reader) (mut string, err error) {
+func ReadMutation(r io.Reader) (mut string, err error) {
 	b := block{}
 
 	// Read the header so we know how much to read next.
@@ -121,9 +118,9 @@ func decodedRead(r io.Reader) (mut string, err error) {
 	return
 }
 
-// encodedWrite encodes a mutation into a block and writes the
+// WriteMutation encodes a mutation into a block and writes the
 // block to the writer returning an error.
-func encodedWrite(w io.Writer, mut string) (err error) {
+func WriteMutation(w io.Writer, mut string) (err error) {
 	b := newBlock(mut)
 
 	// We use two write calls bacause we use encoding/binary
