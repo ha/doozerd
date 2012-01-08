@@ -66,18 +66,18 @@ func TestStore(t *testing.T) {
 		}
 	}
 	j.Close()
-	
+
 	b, err := ioutil.ReadFile(name)
-	if (err != nil) {
+	if err != nil {
 		t.Fatal(err)
 	}
 	sha1 := sha1.New()
 	sha1.Write(b)
 	s := fmt.Sprintf("%x", sha1.Sum(nil))
 	if s != testFileSha1 {
-		t.Fatal("journal file has an unexpected SHA-1")
+		t.Fatal("journal file has an unexpected SHA-1 hash")
 	}
-	
+
 	os.Remove(name)
 }
 
