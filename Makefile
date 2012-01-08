@@ -5,6 +5,6 @@ include $(GOROOT)/src/Make.inc
 TARG=persistence
 GOFILES=\
 	block.go\
-	persistence.go\
+	journal.go\
 
 include $(GOROOT)/src/Make.pkg
