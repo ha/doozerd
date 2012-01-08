@@ -51,31 +51,31 @@ func TestStoreRetrieve(t *testing.T) {
 	defer f.Close()
 	name := f.Name()
 	defer os.Remove(name)
-	
+
 	// Generate some random data.
 	randData := make([]string, 128)
 	r := rand.New(rand.NewSource(int64(time.Now().Nanosecond())))
-	for i, _ := range(randData) {
-		tmp := make([]byte, r.Intn(2 << 16))
-		for j := range(tmp) {
+	for i, _ := range randData {
+		tmp := make([]byte, r.Intn(2<<16))
+		for j := range tmp {
 			tmp[j] = byte(r.Intn(256))
 		}
 		randData[i] = string(tmp)
 	}
 	// Append it to the static data.
 	testData = append(testData, randData...)
-	
+
 	j, err := NewJournal(name)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range(testData) {
+	for _, v := range testData {
 		err = j.Store(v)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	for _, v := range(testData) {
+	for _, v := range testData {
 		m, err := j.Retrieve()
 		if err != nil {
 			t.Fatal(err)
