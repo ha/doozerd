@@ -1,7 +1,7 @@
 // Package persistence allows doozer to save state across server restarts.
-// Doozer mutations are apended to the file on disk.  Deletions are
-// garbage collected from the head of the log file so it does not
-// grow indefinitely.
+// Doozer mutations are apended to a file on disk.  When a file reaches
+// a maximul size a new file is used.  Old files are sometimes
+// rewritten to prune deleted mutation.
 
 package persistence
 
@@ -12,7 +12,8 @@ import (
 	"os"
 )
 
-// Journal represents a file where doozer can save state.
+// Journal represents a file where doozer can save state.  Doozer usally
+// uses a list of multiple journals.
 type Journal struct {
 	r chan *iop // reads are issued here, pointer b.c. user modifies it.
 	w chan iop  // writes are issued here.
@@ -20,8 +21,7 @@ type Journal struct {
 }
 
 // iop represents an I/O request.  err is used to signal the result back
-// to the client.  mut is filled by the client, in case of writes and
-// by the system in case of reads.
+// to the client.
 type iop struct {
 	mut string
 	err chan error
@@ -39,7 +39,7 @@ func NewJournal(name string) (j *Journal, err error) {
 	if err != nil {
 		return
 	}
-	r, err := os.Open(name)
+	r, err := os.Open(name) // same file as w.
 	if err != nil {
 		return
 	}
