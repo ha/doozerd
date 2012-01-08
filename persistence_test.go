@@ -52,8 +52,9 @@ func TestStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
 	name := f.Name()
+	f.Close()
+	defer os.Remove(name)
 
 	j, err := NewJournal(name)
 	if err != nil {
@@ -77,8 +78,6 @@ func TestStore(t *testing.T) {
 	if s != testFileSha1 {
 		t.Fatal("journal file has an unexpected SHA-1 hash")
 	}
-
-	os.Remove(name)
 }
 
 func TestRetrieve(t *testing.T) {
@@ -86,8 +85,8 @@ func TestRetrieve(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
 	name := f.Name()
+	f.Close()
 	defer os.Remove(name)
 
 	// Generate some random data.
