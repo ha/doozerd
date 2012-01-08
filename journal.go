@@ -1,6 +1,6 @@
 // Package persistence allows doozer to save state across server restarts.
 // Doozer mutations are apended to a file on disk.  When a file reaches
-// a maximul size a new file is used.  Old files are sometimes
+// a maximum size a new file is used.  Old files are sometimes
 // rewritten to prune deleted mutation.
 
 package persistence
