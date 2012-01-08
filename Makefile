@@ -4,7 +4,6 @@ include $(GOROOT)/src/Make.inc
 
 TARG=persistence
 GOFILES=\
-	arena.go\
 	block.go\
 	persistence.go\
 

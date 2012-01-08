@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"os"
 )
 
 // Journal represents a file where doozer can save state.
@@ -32,11 +33,19 @@ type iop struct {
 // It returns a Journal and an error, if any.
 func NewJournal(name string) (j Journal, err error) {
 	j = Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
-	arena, err := newArena(name)
+	
+	// File is created if it does not exist, file must be opened synchronously
+	// in order to guarantee consistency, file is group readable in order
+	// to be read by an administrator if doozer is ran by its own user.
+	w, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0640)
 	if err != nil {
 		return
 	}
-	go iops(arena, j)
+	r, err := os.Open(name)
+	if err != nil {
+		return
+	}
+	go iops(r, w, j)
 	return
 }
 
@@ -67,17 +76,18 @@ func (j Journal) Close() {
 // iops sits in a loop and processes requests sent by Store and Retrieve.
 // Clients of this function specify a channel where it can send back
 // the result of the operation. 
-func iops(rw io.ReadWriteCloser, j Journal) {
-	defer rw.Close()
+func iops(r io.ReadCloser, w io.WriteCloser, j Journal) {
+	defer r.Close()
+	defer w.Close()
 	for {
 		select {
 		case rop := <-j.r:
-			mut, err := decodedRead(rw)
+			mut, err := decodedRead(r)
 			rop.mut = mut
 			rop.err <- err
 
 		case wop := <-j.w:
-			wop.err <- encodedWrite(rw, wop.mut)
+			wop.err <- encodedWrite(w, wop.mut)
 
 		case <-j.q:
 			return
