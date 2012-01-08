@@ -31,19 +31,19 @@ type iop struct {
 // with mode 0640 if it does not exist and prepares it for logging operation.
 // If successful, methods on the returned Journal can be used for I/O.
 // It returns a Journal and an error, if any.
-func NewJournal(name string) (j Journal, err error) {
-	j = Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
+func NewJournal(name string) (j *Journal, err error) {
+	j = &Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
 	
 	// File is created if it does not exist, file must be opened synchronously
 	// in order to guarantee consistency, file is group readable in order
 	// to be read by an administrator if doozer is ran by its own user.
 	w, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0640)
 	if err != nil {
-		return
+		return nil, err
 	}
 	r, err := os.Open(name)
 	if err != nil {
-		return
+		return nil, err
 	}
 	go iops(r, w, j)
 	return
@@ -76,7 +76,7 @@ func (j Journal) Close() {
 // iops sits in a loop and processes requests sent by Store and Retrieve.
 // Clients of this function specify a channel where it can send back
 // the result of the operation. 
-func iops(r io.ReadCloser, w io.WriteCloser, j Journal) {
+func iops(r io.ReadCloser, w io.WriteCloser, j *Journal) {
 	defer r.Close()
 	defer w.Close()
 	for {
