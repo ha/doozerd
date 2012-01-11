@@ -75,10 +75,15 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 		go m.Run()
 	}
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
 	if cl == nil { // we are the only node in a new cluster
 		set(st, "/ctl/name", clusterName, store.Missing)
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
-		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
+		set(st, "/ctl/node/"+self+"/hostname", hostname, store.Missing)
 		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
 		set(st, "/ctl/cal/0", self, store.Missing)
 		if buri == "" {
@@ -94,7 +99,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 		go setReady(pr, self)
 	} else {
 		setC(cl, "/ctl/node/"+self+"/addr", listenAddr, store.Clobber)
-		setC(cl, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Clobber)
+		setC(cl, "/ctl/node/"+self+"/hostname", hostname, store.Clobber)
 		setC(cl, "/ctl/node/"+self+"/version", Version, store.Clobber)
 
 		rev, err := cl.Rev()
