@@ -16,9 +16,9 @@ import (
 // Journal represents a file where doozer can save state.  Doozer usally
 // uses a list of multiple journals.
 type Journal struct {
-	mutex sync.Mutex // each mutation must be read/written atomically
-	r    io.Reader
-	w    io.Writer 
+	mutex sync.Mutex // each mutation must be read/written atomically.
+	r     io.Reader  // mutations are read from here.
+	w     io.Writer  // mutations are written here.
 }
 
 // NewJournal opens the named file for synchronous I/O, creating it
