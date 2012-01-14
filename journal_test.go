@@ -47,7 +47,7 @@ var testData = []string{
 
 var testFileSha1 = "2c9e98acf63756007d3e3bbdcc4d80882e06a2aa"
 
-func TestStore(t *testing.T) {
+func TestWriteMutation(t *testing.T) {
 	f, err := ioutil.TempFile("", "journal")
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +61,7 @@ func TestStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, v := range testData {
-		err = j.Store(v)
+		err = j.WriteMutation(v)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -80,7 +80,7 @@ func TestStore(t *testing.T) {
 	}
 }
 
-func TestRetrieve(t *testing.T) {
+func TestReadMutation(t *testing.T) {
 	f, err := ioutil.TempFile("", "journal")
 	if err != nil {
 		t.Fatal(err)
@@ -107,13 +107,13 @@ func TestRetrieve(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, v := range testData {
-		err = j.Store(v)
+		err = j.WriteMutation(v)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 	for _, v := range testData {
-		m, err := j.Retrieve()
+		m, err := j.ReadMutation()
 		if err != nil {
 			t.Fatal(err)
 		}

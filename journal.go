@@ -43,16 +43,16 @@ func NewJournal(name string) (j *Journal, err error) {
 }
 
 // Store writes the mutation to the Journal.
-func (j Journal) Store(mutation string) (err error) {
+func (j Journal) WriteMutation(m string) error {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
-	return writeMutation(j.w, mutation)
+	return writeMutation(j.w, m)
 }
 
 // Retrieve reads the next mutation from the Journal.  It returns
 // the mutation and an error, if any.  EOF is signaled by a nil
 // mutation with err set to io.EOF
-func (j Journal) Retrieve() (mut string, err error) {
+func (j Journal) ReadMutation() (m string, err error) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
 	return readMutation(j.r)
