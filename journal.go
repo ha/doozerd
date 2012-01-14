@@ -29,7 +29,7 @@ func NewJournal(name string) (j *Journal, err error) {
 	// in order to guarantee consistency, file is group readable in order
 	// to be read by an administrator if doozer is ran by its own user, file
 	// is append-only because data is never overwritten.
-	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_SYNC|os.O_WRONLY, 0640)
+	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_RDWR|os.O_SYNC, 0640)
 	if err != nil {
 		return
 	}
