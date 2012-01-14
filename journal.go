@@ -10,21 +10,15 @@ import (
 	"errors"
 	"io"
 	"os"
+	"sync"
 )
 
 // Journal represents a file where doozer can save state.  Doozer usally
 // uses a list of multiple journals.
 type Journal struct {
-	r chan *iop // reads are issued here, pointer b.c. user modifies it.
-	w chan iop  // writes are issued here.
-	q chan bool // quit signal.
-}
-
-// iop represents an I/O request.  err is used to signal the result back
-// to the client.
-type iop struct {
-	mut string
-	err chan error
+	mutex sync.Mutex // each mutation must be read/written atomically
+	r    io.Reader
+	w    io.Writer 
 }
 
 // NewJournal opens the named file for synchronous I/O, creating it
@@ -44,53 +38,28 @@ func NewJournal(name string) (j *Journal, err error) {
 		return
 	}
 
-	j = &Journal{r: make(chan *iop), w: make(chan iop), q: make(chan bool)}
-	go iops(j, r, w)
+	j = &Journal{r: r, w: w}
 	return
 }
 
 // Store writes the mutation to the Journal.
 func (j Journal) Store(mutation string) (err error) {
-	req := iop{mutation, make(chan error)}
-	j.w <- req
-	return <-req.err
+	j.mutex.Lock()
+	defer j.mutex.Unlock()
+	return writeMutation(j.w, mutation)
 }
 
 // Retrieve reads the next mutation from the Journal.  It returns
 // the mutation and an error, if any.  EOF is signaled by a nil
 // mutation with err set to io.EOF
 func (j Journal) Retrieve() (mut string, err error) {
-	req := iop{err: make(chan error)}
-	j.r <- &req
-	return req.mut, <-req.err
+	j.mutex.Lock()
+	defer j.mutex.Unlock()
+	return readMutation(j.r)
 }
 
 // Close shuts down the journal.
 func (j Journal) Close() {
-	j.q <- true
-}
-
-// iops sits in a loop and processes requests sent by Store and Retrieve.
-// Clients of this function specify a channel where it can send back
-// the result of the operation. 
-func iops(j *Journal, r io.ReadCloser, w io.WriteCloser) {
-	defer r.Close()
-	defer w.Close()
-	for {
-		select {
-		case rop := <-j.r:
-			mut, err := readMutation(r)
-			rop.mut = mut
-			rop.err <- err
-
-		case wop := <-j.w:
-			wop.err <- writeMutation(w, wop.mut)
-
-		case <-j.q:
-			return
-		}
-	}
-	return
 }
 
 // readMutation reads a block from the reader, decodes it into a
