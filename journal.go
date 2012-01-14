@@ -16,9 +16,8 @@ import (
 // Journal represents a file where doozer can save state.  Doozer usally
 // uses a list of multiple journals.
 type Journal struct {
-	mutex sync.Mutex     // each mutation must be read/written atomically.
-	r     io.ReadCloser  // mutations are read from here.
-	w     io.WriteCloser // mutations are written here.
+	mutex sync.Mutex // each mutation must be read/written atomically.
+	rw    *os.File   // mutations are read/written from here.
 }
 
 // NewJournal opens the named file for synchronous I/O, creating it
@@ -28,25 +27,22 @@ type Journal struct {
 func NewJournal(name string) (j *Journal, err error) {
 	// File is created if it does not exist, file must be opened synchronously
 	// in order to guarantee consistency, file is group readable in order
-	// to be read by an administrator if doozer is ran by its own user.
-	w, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0640)
-	if err != nil {
-		return
-	}
-	r, err := os.Open(name) // same file as w.
+	// to be read by an administrator if doozer is ran by its own user, file
+	// is append-only because data is never overwritten.
+	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_SYNC|os.O_WRONLY, 0640)
 	if err != nil {
 		return
 	}
 
-	j = &Journal{r: r, w: w}
+	j = &Journal{rw: f}
 	return
 }
 
 // Store writes the mutation to the Journal.
-func (j Journal) WriteMutation(m string) error {
+func (j Journal) WriteMutation(m string) (err error) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
-	return writeMutation(j.w, m)
+	return writeMutation(j.rw, m)
 }
 
 // Retrieve reads the next mutation from the Journal.  It returns
@@ -55,15 +51,14 @@ func (j Journal) WriteMutation(m string) error {
 func (j Journal) ReadMutation() (m string, err error) {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
-	return readMutation(j.r)
+	return readMutation(j.rw)
 }
 
 // Close shuts down the journal.
 func (j Journal) Close() {
 	j.mutex.Lock()
 	defer j.mutex.Unlock()
-	j.r.Close()
-	j.w.Close()
+	j.rw.Close()
 }
 
 // readMutation reads a block from the reader, decodes it into a
@@ -96,9 +91,10 @@ func readMutation(r io.Reader) (mut string, err error) {
 
 // writeMutation encodes a mutation into a block and writes the
 // block to the writer returning an error.
-func writeMutation(w io.Writer, mut string) (err error) {
+func writeMutation(w io.WriteSeeker, mut string) (err error) {
 	b := newBlock(mut)
 
+	offset, _ := w.Seek(0, 1)
 	// We use two write calls bacause we use encoding/binary
 	// to write the fixed length header.
 	err = binary.Write(w, binary.LittleEndian, b.Hdr)
@@ -109,5 +105,6 @@ func writeMutation(w io.Writer, mut string) (err error) {
 	// We'we written the header successfully, write the rest
 	// of the data.
 	_, err = w.Write(b.Data)
+	w.Seek(offset, 0)
 	return
 }
