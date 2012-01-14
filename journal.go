@@ -60,6 +60,8 @@ func (j Journal) ReadMutation() (m string, err error) {
 
 // Close shuts down the journal.
 func (j Journal) Close() {
+	j.mutex.Lock()
+	defer j.mutex.Unlock()
 	j.r.Close()
 	j.w.Close()
 }
