@@ -89,12 +89,12 @@ func readMutation(r io.Reader) (mut string, err error) {
 	return
 }
 
-// writeMutation encodes a mutation into a block and writes the
-// block to the writer returning an error.
+// writeMutation encodes a mutation into a block and appends the
+// block to the writer returning an error. Seek offset is unmodified.
 func writeMutation(w io.WriteSeeker, mut string) (err error) {
 	b := newBlock(mut)
 
-	offset, _ := w.Seek(0, 1)
+	offset, _ := w.Seek(0, 1) // remember where we are.
 	// We use two write calls bacause we use encoding/binary
 	// to write the fixed length header.
 	err = binary.Write(w, binary.LittleEndian, b.Hdr)
@@ -105,6 +105,6 @@ func writeMutation(w io.WriteSeeker, mut string) (err error) {
 	// We'we written the header successfully, write the rest
 	// of the data.
 	_, err = w.Write(b.Data)
-	w.Seek(offset, 0)
+	w.Seek(offset, 0) // rewind so we don't break readMutation(). 
 	return
 }
