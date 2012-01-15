@@ -1,7 +1,7 @@
 package test
 
 import (
-	"doozer/client"
+	"github.com/ha/doozerd/client"
 	"exec"
 	"github.com/bmizerany/assert"
 	"syscall"

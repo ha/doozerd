@@ -2,7 +2,7 @@ package main
 
 import (
 	"crypto/tls"
-	"doozer/peer"
+	"github.com/ha/doozerd/peer"
 	_ "expvar"
 	"flag"
 	"fmt"

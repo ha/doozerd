@@ -1,7 +1,7 @@
 package gc
 
 import (
-	"doozer/store"
+	"github.com/ha/doozerd/store"
 	"github.com/bmizerany/assert"
 	"testing"
 	"time"

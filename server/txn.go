@@ -2,8 +2,8 @@ package server
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	"doozer/consensus"
-	"doozer/store"
+	"github.com/ha/doozerd/consensus"
+	"github.com/ha/doozerd/store"
 	"io"
 	"log"
 	"os"

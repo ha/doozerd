@@ -1,7 +1,7 @@
 package web
 
 import (
-	"doozer/store"
+	"github.com/ha/doozerd/store"
 	"encoding/json"
 	"io"
 	"log"

@@ -2,7 +2,7 @@ package consensus
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	"doozer/store"
+	"github.com/ha/doozerd/store"
 	"github.com/bmizerany/assert"
 	"net"
 	"testing"

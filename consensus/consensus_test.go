@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	"doozer/store"
+	"github.com/ha/doozerd/store"
 	"errors"
 	"github.com/bmizerany/assert"
 	"net"

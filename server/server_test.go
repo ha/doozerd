@@ -3,7 +3,7 @@ package server
 import (
 	"bytes"
 	"code.google.com/p/goprotobuf/proto"
-	"doozer/store"
+	"github.com/ha/doozerd/store"
 	"github.com/bmizerany/assert"
 	"io"
 
