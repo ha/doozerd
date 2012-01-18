@@ -1,17 +1,7 @@
-include ../../Make.inc
+.PHONY: install build test
 
-TARG=doozer/consensus
-GOFILES=\
-	consensus.go\
-	run.go\
-	coordinator.go\
-	acceptor.go\
-	learner.go\
-	m.go\
-	m.pb.go\
-	manager.go\
-
-include $(GOROOT)/src/Make.pkg
+build install test : m.pb.go
+	go $@
 
 m.pb.go: m.proto
 	mkdir -p _pb
@@ -21,5 +11,3 @@ m.pb.go: m.proto
 	|sed s/Newmsg/newMsg/g\
 	|gofmt >$@
 	rm -rf _pb
-
-CLEANFILES+=_pb

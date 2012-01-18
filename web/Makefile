@@ -1,6 +1,5 @@
-include ../../Make.inc
+TARG=web
 
-TARG=doozer/web
 GOFILES=\
 	main.css.go\
 	main.html.go\
@@ -8,7 +7,7 @@ GOFILES=\
 	main.js.go\
 	web.go\
 
-include $(GOROOT)/src/Make.pkg
+default: $(GOFILES)
 
 %.css.go: %.css file2gostring
 	./file2gostring $(TARG) $< < $< > $@.part
@@ -22,4 +21,5 @@ include $(GOROOT)/src/Make.pkg
 	./file2gostring $(TARG) $< < $< > $@.part
 	mv $@.part $@
 
-CLEANFILES+=*.css.go *.html.go *.js.go
+clean:
+	rm *.css.go *.html.go *.js.go

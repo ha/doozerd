@@ -23,6 +23,7 @@ const (
 const calDir = "/ctl/cal"
 
 var calGlob = store.MustCompileGlob(calDir + "/*")
+var Version = "unknown" // set in version.go, uses makefiles.
 
 type proposer struct {
 	seqns chan int64

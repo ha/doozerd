@@ -1,35 +1,12 @@
-include ../../Make.inc
+.PHONY: install build test
 
-TARG=doozer/peer
-GOFILES=\
-	peer.go\
-	liveness.go\
-	version.go\
-
-include $(GOROOT)/src/Make.pkg
+build install test clean: version.go
+	go $@
 
 VERS ?= $(shell ./version.sh)
 GVERS := $(shell sed 's/[^`]*`//' version.go 2>/dev/null | sed 's/`.*//')
 version.go:
-	printf 'package peer;const Version = `%s`\n' '$(VERS)' > $@
+	printf 'package peer;func init() { Version=`%s`; }\n' '$(VERS)' > $@
 
-ifneq ($(VERS),$(GVERS))
-.PHONY: version.go
-endif
-
-CLEANFILES+=version.go
-
-mem.prof:
-	make clean
-	GOGC=off gotest\
-		-file prof.go\
-		-file misc_test.go\
-		-memprofile $@\
-		-memprofilerate 1\
-
-cpu.prof:
-	make clean
-	GOGC=off gotest\
-		-file prof.go\
-		-file misc_test.go\
-		-cpuprofile $@\
+clean:
+	rm -f version.go

@@ -1,9 +1,6 @@
 *-test.sh
 *.DS_Store
 *.[568]
-*.css.go
-*.html.go
-*.js.go
 *.log
 *.out
 *.prof
@@ -15,4 +12,4 @@ _testmain.go
 doc/*.html
 doc/*.[0-9]
 src/cmd/doozerd/doozerd
-src/pkg/peer/version.go
+peer/version.go
