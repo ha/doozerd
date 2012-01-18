@@ -6,7 +6,7 @@ then
 fi
 
 PKG_REQS="
-    goprotobuf.googlecode.com/hg/proto
+    code.google.com/p/goprotobuf/proto
     github.com/bmizerany/assert
     github.com/ha/doozer
 "
