@@ -1,7 +1,4 @@
-syntax:glob
 .DS_Store
-.git
-.gitignore
 *.[568ao]
 *.ao
 *.so
@@ -25,6 +22,3 @@ build.out
 test.out
 y.tab.[ch]
 goinstall.log
-
-syntax:regexp
-^.*/core.[0-9]*$
