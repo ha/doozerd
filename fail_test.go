@@ -1,22 +1,20 @@
 package test
 
 import (
-	"github.com/ha/doozerd/client"
-	"exec"
 	"github.com/bmizerany/assert"
-	"syscall"
+	"github.com/ha/doozer"
+	"os/exec"
 	"testing"
 	"time"
 )
 
-func mustRunDoozer(listen, web, attach string) *exec.Cmd {
+func mustStartDoozer(listen, web, attach string) *exec.Cmd {
 	exe, err := exec.LookPath("doozerd")
 	if err != nil {
 		panic(err)
 	}
 
 	args := []string{
-		"doozerd",
 		"-l=127.0.0.1:" + listen,
 		"-w=127.0.0.1:" + web,
 	}
@@ -25,15 +23,8 @@ func mustRunDoozer(listen, web, attach string) *exec.Cmd {
 		args = append(args, "-a", "127.0.0.1:"+attach)
 	}
 
-	cmd, err := exec.Run(
-		exe,
-		args,
-		nil,
-		".",
-		exec.PassThrough,
-		exec.PassThrough,
-		exec.PassThrough,
-	)
+	cmd := exec.Command(exe, args...)
+	err = cmd.Start()
 	if err != nil {
 		panic(err)
 	}
@@ -42,83 +33,77 @@ func mustRunDoozer(listen, web, attach string) *exec.Cmd {
 }
 
 func TestDoozerNodeFailure(t *testing.T) {
-	d1 := mustRunDoozer("8046", "8080", "")
-	defer syscall.Kill(d1.Pid, 9)
+	d1 := mustStartDoozer("8146", "8180", "")
+	defer d1.Process.Kill()
 
 	time.Sleep(1e9)
 
-	d2 := mustRunDoozer("8047", "8081", "8046")
-	defer syscall.Kill(d2.Pid, 9)
-	d3 := mustRunDoozer("8048", "8082", "8046")
-	defer syscall.Kill(d3.Pid, 9)
+	d2 := mustStartDoozer("8147", "8181", "8146")
+	defer d2.Process.Kill()
+	d3 := mustStartDoozer("8148", "8182", "8146")
+	defer d3.Process.Kill()
 
-	cl, err := client.Dial("127.0.0.1:8046")
+	cl, err := doozer.Dial("127.0.0.1:8146")
 	assert.Equal(t, nil, err)
 
-	ch, err := cl.Watch("/ctl/cal/*")
-	assert.Equal(t, nil, err)
-
-	cl.Set("/ctl/cal/2", "", "")
-	<-ch
-	<-ch
-	cl.Set("/ctl/cal/3", "", "")
-	<-ch
-	<-ch
+	cl.Set("/ctl/cal/2", 0, nil)
+	cl.Set("/ctl/cal/3", 0, nil)
 
 	// Give doozer time to get through initial Nops
-	time.Sleep(1e9 * 60)
+	time.Sleep(1e9 * 10)
 
 	// Kill an attached doozer
-	syscall.Kill(d2.Pid, 9)
+	d2.Process.Kill()
 
 	// We should get something here
-	ev := <-ch
-	assert.NotEqual(t, nil, ev)
-
-	for i := 0; i < 1000; i++ {
-		cl.Noop()
+	b, _, err := cl.Get("/ctl/cal/2", nil)
+	if err != nil {
+		panic(err)
 	}
+	assert.NotEqual(t, nil, b)
+	b, _, err = cl.Get("/ctl/cal/3", nil)
+	if err != nil {
+		panic(err)
+	}
+	assert.NotEqual(t, nil, b)
 }
 
 func TestDoozerFiveNodeFailure(t *testing.T) {
-	d0 := mustRunDoozer("8040", "8080", "")
-	defer syscall.Kill(d0.Pid, 9)
+	d0 := mustStartDoozer("8040", "8880", "")
+	defer d0.Process.Kill()
 
 	time.Sleep(1e9)
 
-	d1 := mustRunDoozer("8041", "8081", "8040")
-	defer syscall.Kill(d1.Pid, 9)
-	d2 := mustRunDoozer("8042", "8082", "8040")
-	defer syscall.Kill(d2.Pid, 9)
-	d3 := mustRunDoozer("8043", "8083", "8040")
-	defer syscall.Kill(d3.Pid, 9)
-	d4 := mustRunDoozer("8044", "8084", "8040")
-	defer syscall.Kill(d4.Pid, 9)
+	d1 := mustStartDoozer("8041", "8881", "8040")
+	defer d1.Process.Kill()
+	d2 := mustStartDoozer("8042", "8882", "8040")
+	defer d2.Process.Kill()
+	d3 := mustStartDoozer("8043", "8883", "8040")
+	defer d3.Process.Kill()
+	d4 := mustStartDoozer("8044", "8884", "8040")
+	defer d4.Process.Kill()
 
-	cl, err := client.Dial("127.0.0.1:8040")
+	cl, err := doozer.Dial("127.0.0.1:8040")
 	assert.Equal(t, nil, err)
 
-	ch, err := cl.Watch("/ctl/cal/*")
-	assert.Equal(t, nil, err)
-
-	cl.Set("/ctl/cal/2", "", "")
-	<-ch
-	<-ch
-	cl.Set("/ctl/cal/3", "", "")
-	<-ch
-	<-ch
+	cl.Set("/ctl/cal/2", 0, nil)
+	cl.Set("/ctl/cal/3", 0, nil)
 
 	// Give doozer time to get through initial Nops
-	time.Sleep(1e9 * 60)
+	time.Sleep(1e9 * 10)
 
 	// Kill an attached doozer
-	syscall.Kill(d1.Pid, 9)
+	d1.Process.Kill()
 
 	// We should get something here
-	ev := <-ch
-	assert.NotEqual(t, nil, ev)
-
-	for i := 0; i < 1000; i++ {
-		cl.Noop()
+	b, _, err := cl.Get("/ctl/cal/2", nil)
+	if err != nil {
+		panic(err)
 	}
+	assert.NotEqual(t, nil, b)
+	b, _, err = cl.Get("/ctl/cal/3", nil)
+	if err != nil {
+		panic(err)
+	}
+	assert.NotEqual(t, nil, b)
 }

@@ -14,7 +14,7 @@ Go. It's better to install straight from source.
 Abridged version:
 
     $ GOROOT=$HOME/src/go # adjust this as you wish
-    $ hg clone -r release.r57.1 https://go.googlecode.com/hg/ $GOROOT
+    $ hg clone -r weekly https://go.googlecode.com/hg/ $GOROOT
     $ cd $GOROOT/src
     $ ./all.bash
     (put the value of $GOROOT/bin in your path)
@@ -23,33 +23,28 @@ For full details, see <http://golang.org/doc/install.html>.
 
 ## Installing Dependencies
 
-If you want to change .proto files, you need two things:
+If you want to change .proto files, you need to nstall the `protoc`
+command (from <http://code.google.com/p/protobuf/>):
 
-1. Install the `protoc` command (from <http://code.google.com/p/protobuf/>):
-
-        $ sudo apt-get install protobuf-compiler
-        (or)
-        $ brew install protobuf
-
-2. Install the Go protobuf compiler plugin (from <http://code.google.com/p/goprotobuf/>):
-
-        $ goinstall goprotobuf.googlecode.com/hg/proto
-        $ cd $GOROOT/src/pkg/goprotobuf.googlecode.com/hg/compiler
-        $ gomake install
+    $ sudo apt-get install protobuf-compiler
+    (or)
+    $ brew install protobuf
 
 If you want to run doozer's tests, install
 <http://bmizerany.github.com/roundup/>.
 
 ## Building Doozer
 
+    (make sure you have set $GOPATH)
+    $ mkdir -p $GOPATH/src/github.com/ha/
     $ git clone https://github.com/ha/doozerd.git
-    $ cd doozerd/src
-    $ ./all.sh
+    $ cd doozerd
+    $ go install
 
 This will build the rest of the dependencies and
 all doozer packages and commands,
-copy the commands into `$GOROOT/bin`,
-and run tests.
+and copy the commands into `$GOPATH/bin`. You can test indiviadual doozer
+components by running `go test` in that sub-package directory.
 
 ## Try It Out
 
