@@ -43,7 +43,7 @@ If you want to run doozer's tests, install
 
 This will build the rest of the dependencies and
 all doozer packages and commands,
-and copy the commands into `$GOPATH/bin`. You can test indiviadual doozer
+and copy the commands into `$GOPATH/bin`. You can test individual doozer
 components by running `go test` in that sub-package directory.
 
 ## Try It Out
