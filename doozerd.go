@@ -39,6 +39,7 @@ var (
 	hi          = flag.Int64("hist", 2000, "length of history/revisions to keep")
 	certFile    = flag.String("tlscert", "", "TLS public certificate")
 	keyFile     = flag.String("tlskey", "", "TLS private key")
+	journalFile = flag.String("j", "", "file where persistent history is kept")
 )
 
 var (
