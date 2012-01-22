@@ -81,7 +81,7 @@ func Main(clusterName, self, buri, rwsk, rosk, journal string, cl *doozer.Conn, 
 		if st.Journal != nil {
 			for {
 				m, err := st.Journal.ReadMutation()
-				if err == io.EOF {
+				if err == io.EOF || err == io.ErrUnexpectedEOF  {
 					break
 				}
 				if err != nil {
