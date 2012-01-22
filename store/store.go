@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"github.com/ha/doozerd/persistence"
 	"math"
 	"regexp"
 	"strconv"
@@ -50,6 +51,7 @@ type Store struct {
 	log     map[int64]Event
 	cleanCh chan int64
 	flush   chan bool
+	journal *persistence.Journal
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -71,10 +73,10 @@ type watch struct {
 	c    chan<- Event
 }
 
-// Creates a new, empty data store. Mutations will be applied in order,
-// starting at number 1 (number 0 can be thought of as the creation of the
-// store).
-func New() *Store {
+// Creates a new, empty data store, optionally backed by the journal file.
+// Mutations will be applied in order, starting at number 1
+// (number 0 can be thought of as the creation of the store).
+func New(journal *string) *Store {
 	ops := make(chan Op)
 	seqns := make(chan int64)
 	watches := make(chan int)

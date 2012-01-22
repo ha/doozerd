@@ -51,7 +51,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 	in := make(chan consensus.Packet, 50)
 	out := make(chan consensus.Packet, 50)
 
-	st := store.New()
+	st := store.New(nil)
 	pr := &proposer{
 		seqns: make(chan int64, alpha),
 		props: make(chan *consensus.Prop),
