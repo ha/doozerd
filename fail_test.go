@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/bmizerany/assert"
 	"github.com/ha/doozer"
+	_ "github.com/ha/doozer"
 	"os/exec"
 	"testing"
 	"time"
