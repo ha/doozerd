@@ -76,7 +76,7 @@ type watch struct {
 // Creates a new, empty data store, optionally backed by the journal file.
 // Mutations will be applied in order, starting at number 1
 // (number 0 can be thought of as the creation of the store).
-func New(journal *string) *Store {
+func New(journalFile string) *Store {
 	ops := make(chan Op)
 	seqns := make(chan int64)
 	watches := make(chan int)
@@ -91,6 +91,10 @@ func New(journal *string) *Store {
 		log:     map[int64]Event{},
 		cleanCh: make(chan int64),
 		flush:   make(chan bool),
+	}
+	
+	if journalFile != "" {
+		st.journal, _ = persistence.NewJournal(journalFile)
 	}
 
 	go st.process(ops, seqns, watches)

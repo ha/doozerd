@@ -44,14 +44,15 @@ func (p *proposer) Propose(v []byte) (e store.Event) {
 	return
 }
 
-func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *net.UDPConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64, hi int64) {
+// BUG: too many parameters.
+func Main(clusterName, self, buri, rwsk, rosk, journal string, cl *doozer.Conn, udpConn *net.UDPConn, listener, webListener net.Listener, pulseInterval, fillDelay, kickTimeout int64, hi int64) {
 	listenAddr := listener.Addr().String()
 
 	canWrite := make(chan bool, 1)
 	in := make(chan consensus.Packet, 50)
 	out := make(chan consensus.Packet, 50)
 
-	st := store.New(nil)
+	st := store.New(journal)
 	pr := &proposer{
 		seqns: make(chan int64, alpha),
 		props: make(chan *consensus.Prop),

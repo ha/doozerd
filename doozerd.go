@@ -134,7 +134,7 @@ func main() {
 		cl = boot(*name, id, *laddr, *buri)
 	}
 
-	peer.Main(*name, id, *buri, rwsk, rosk, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt), *hi)
+	peer.Main(*name, id, *buri, rwsk, rosk, *journalFile, cl, usock, tsock, wsock, ns(*pi), ns(*fd), ns(*kt), *hi)
 	panic("main exit")
 }
 
