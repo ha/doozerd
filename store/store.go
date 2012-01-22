@@ -270,6 +270,13 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 				continue
 			}
 
+			// write the mutation to disk first.
+			if st.journal != nil {
+				err := st.journal.WriteMutation(t.Mut)
+				if err != nil {
+					panic(err) // BUG(aram): how to handle error?
+				}
+			}
 			values, ev = values.apply(t.Seqn, t.Mut)
 			st.state = &state{ev.Seqn, values}
 			ver = ev.Seqn
