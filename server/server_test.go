@@ -73,7 +73,7 @@ func TestServerNoAccess(t *testing.T) {
 	c := &conn{
 		c:        b,
 		canWrite: true,
-		st:       store.New(),
+		st:       store.New(""),
 	}
 	tx := &txn{
 		c:   c,
@@ -95,7 +95,7 @@ func TestServerRo(t *testing.T) {
 	c := &conn{
 		c:        b,
 		canWrite: true,
-		st:       store.New(),
+		st:       store.New(""),
 	}
 	tx := &txn{
 		c:   c,

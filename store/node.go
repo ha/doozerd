@@ -133,7 +133,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 
 	var rev int64
 	var keep bool
-	ev.Path, ev.Body, rev, keep, ev.Err = decode(mut)
+	ev.Path, ev.Body, rev, keep, ev.Err = Decode(mut)
 
 	if ev.Err == nil && keep {
 		components := split(ev.Path)

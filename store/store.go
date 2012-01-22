@@ -51,7 +51,7 @@ type Store struct {
 	log     map[int64]Event
 	cleanCh chan int64
 	flush   chan bool
-	journal *persistence.Journal
+	Journal *persistence.Journal
 }
 
 // Represents an operation to apply to the store at position Seqn.
@@ -95,7 +95,7 @@ func New(journalFile string) *Store {
 	
 	if journalFile != "" {
 		var err error
-		st.journal, err = persistence.NewJournal(journalFile)
+		st.Journal, err = persistence.NewJournal(journalFile)
 		if err != nil {
 			panic(err) // BUG(aram): how to handle error?
 		}
@@ -168,7 +168,7 @@ func MustEncodeDel(path string, rev int64) (mutation string) {
 	return m
 }
 
-func decode(mutation string) (path, v string, rev int64, keep bool, err error) {
+func Decode(mutation string) (path, v string, rev int64, keep bool, err error) {
 	cm := strings.SplitN(mutation, ":", 2)
 
 	if len(cm) != 2 {
@@ -271,8 +271,8 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 
 			// write the mutation to disk first.
-			if st.journal != nil {
-				err := st.journal.WriteMutation(t.Mut)
+			if st.Journal != nil {
+				err := st.Journal.WriteMutation(t.Mut)
 				if err != nil {
 					panic(err) // BUG(aram): how to handle error?
 				}
