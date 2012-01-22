@@ -15,7 +15,7 @@ func Benchmark1DoozerClientSet(b *testing.B) {
 	u := mustListenUDP(a)
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -34,7 +34,7 @@ func Benchmark1DoozerConClientSet(b *testing.B) {
 	u := mustListenUDP(a)
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -77,11 +77,11 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 	u4 := mustListenUDP(l4.Addr().String())
 	defer u4.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "Y", "", "", "", dial(a), u1, l1, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "Z", "", "", "", dial(a), u2, l2, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "V", "", "", "", dial(a), u3, l3, nil, 1e9, 1e8, 3e9, 101)
-	go Main("a", "W", "", "", "", dial(a), u4, l4, nil, 1e9, 1e8, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 1e8, 3e9, 101)
+	go Main("a", "Y", "", "", "", "", dial(a), u1, l1, nil, 1e9, 1e8, 3e9, 101)
+	go Main("a", "Z", "", "", "", "", dial(a), u2, l2, nil, 1e9, 1e8, 3e9, 101)
+	go Main("a", "V", "", "", "", "", dial(a), u3, l3, nil, 1e9, 1e8, 3e9, 101)
+	go Main("a", "W", "", "", "", "", dial(a), u4, l4, nil, 1e9, 1e8, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)
@@ -131,11 +131,11 @@ func Benchmark5DoozerConClientSet(b *testing.B) {
 	u4 := mustListenUDP(l4.Addr().String())
 	defer u4.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 1e10, 3e12, 1e9)
-	go Main("a", "Y", "", "", "", dial(a), u1, l1, nil, 1e9, 1e10, 3e12, 1e9)
-	go Main("a", "Z", "", "", "", dial(a), u2, l2, nil, 1e9, 1e10, 3e12, 1e9)
-	go Main("a", "V", "", "", "", dial(a), u3, l3, nil, 1e9, 1e10, 3e12, 1e9)
-	go Main("a", "W", "", "", "", dial(a), u4, l4, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "Y", "", "", "", "", dial(a), u1, l1, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "Z", "", "", "", "", dial(a), u2, l2, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "V", "", "", "", "", dial(a), u3, l3, nil, 1e9, 1e10, 3e12, 1e9)
+	go Main("a", "W", "", "", "", "", dial(a), u4, l4, nil, 1e9, 1e10, 3e12, 1e9)
 
 	cl := dial(l.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)

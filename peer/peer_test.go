@@ -15,7 +15,7 @@ func TestDoozerNop(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 	err := cl.Nop()
@@ -28,7 +28,7 @@ func TestDoozerGet(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -57,7 +57,7 @@ func TestDoozerSet(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -76,7 +76,7 @@ func TestDoozerGetWithRev(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -108,7 +108,7 @@ func TestDoozerWaitSimple(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 	var rev int64 = 1
@@ -142,7 +142,7 @@ func TestDoozerWaitWithRev(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -170,7 +170,7 @@ func TestDoozerStat(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -194,7 +194,7 @@ func TestDoozerGetdirOnDir(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -218,7 +218,7 @@ func TestDoozerGetdirOnFile(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -240,7 +240,7 @@ func TestDoozerGetdirMissing(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 
@@ -260,7 +260,7 @@ func TestDoozerGetdirOffsetLimit(t *testing.T) {
 	u := mustListenUDP(l.Addr().String())
 	defer u.Close()
 
-	go Main("a", "X", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
+	go Main("a", "X", "", "", "", "", nil, u, l, nil, 1e9, 2e9, 3e9, 101)
 
 	cl := dial(l.Addr().String())
 	cl.Set("/test/a", store.Clobber, []byte("1"))
@@ -294,9 +294,9 @@ func TestPeerShun(t *testing.T) {
 	u2 := mustListenUDP(l2.Addr().String())
 	defer u2.Close()
 
-	go Main("a", "X", "", "", "", nil, u0, l0, nil, 1e8, 1e7, 1e9, 1e9)
-	go Main("a", "Y", "", "", "", dial(a0), u1, l1, nil, 1e8, 1e7, 1e9, 1e9)
-	go Main("a", "Z", "", "", "", dial(a0), u2, l2, nil, 1e8, 1e7, 1e9, 1e9)
+	go Main("a", "X", "", "", "", "", nil, u0, l0, nil, 1e8, 1e7, 1e9, 1e9)
+	go Main("a", "Y", "", "", "", "", dial(a0), u1, l1, nil, 1e8, 1e7, 1e9, 1e9)
+	go Main("a", "Z", "", "", "", "", dial(a0), u2, l2, nil, 1e8, 1e7, 1e9, 1e9)
 
 	cl := dial(l0.Addr().String())
 	cl.Set("/ctl/cal/1", store.Missing, nil)

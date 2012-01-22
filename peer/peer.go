@@ -78,6 +78,23 @@ func Main(clusterName, self, buri, rwsk, rosk, journal string, cl *doozer.Conn, 
 	}
 
 	if cl == nil { // we are the only node in a new cluster
+		if st.Journal != nil {
+			for {
+				m, err := st.Journal.ReadMutation()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					panic(err) // BUG(aram): how to handle error?
+				}
+				path, v, _, _, err := store.Decode(m)
+				if err != nil {
+					panic(err)
+				}
+				set(st, path, v, store.Missing)
+			}
+		}
+
 		set(st, "/ctl/name", clusterName, store.Missing)
 		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
 		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
