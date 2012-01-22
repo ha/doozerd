@@ -94,7 +94,11 @@ func New(journalFile string) *Store {
 	}
 	
 	if journalFile != "" {
-		st.journal, _ = persistence.NewJournal(journalFile)
+		var err error
+		st.journal, err = persistence.NewJournal(journalFile)
+		if err != nil {
+			panic(err) // BUG(aram): how to handle error?
+		}
 	}
 
 	go st.process(ops, seqns, watches)
