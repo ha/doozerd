@@ -71,7 +71,7 @@ func readMutation(r io.Reader) (mut string, err error) {
 	if err != nil {
 		return
 	}
-	if b.Hdr.Size > 2<<20 {
+	if b.Hdr.Size < 0 && b.Hdr.Size > 2<<20 {
 		err = errors.New("mutation too long")
 		return
 	}
