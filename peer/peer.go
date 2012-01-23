@@ -85,13 +85,16 @@ func Main(clusterName, self, buri, rwsk, rosk, journal string, cl *doozer.Conn, 
 					break
 				}
 				if err != nil {
-					panic(err) // BUG(aram): how to handle error?
+					// BUG(aram): need to clean journal, so
+					// subsequent writes will be read. Maybe fix
+					// in ReadMutation instead?
+					break
 				}
-				path, v, _, _, err := store.Decode(m)
+				path, v, rev, _, err := store.Decode(m)
 				if err != nil {
 					panic(err)
 				}
-				set(st, path, v, store.Missing)
+				set(st, path, v, rev)
 			}
 		}
 
