@@ -57,9 +57,11 @@ type Store struct {
 // Represents an operation to apply to the store at position Seqn.
 //
 // If Mut is Nop, no change will be made, but an event will still be sent.
+// If Volatile is true, change will occur in memory, but not on disk.
 type Op struct {
-	Seqn int64
-	Mut  string
+	Seqn     int64
+	Mut      string
+	Volatile bool
 }
 
 type state struct {
@@ -271,7 +273,9 @@ func (st *Store) process(ops <-chan Op, seqns chan<- int64, watches chan<- int) 
 			}
 
 			// write the mutation to disk first.
-			if st.Journal != nil {
+			_, _, rev, _, _ := Decode(t.Mut) // BUG(aram): find a better way.
+			if st.Journal != nil && t.Volatile == false && rev > 0 {
+
 				err := st.Journal.WriteMutation(t.Mut)
 				if err != nil {
 					panic(err) // BUG(aram): how to handle error?
