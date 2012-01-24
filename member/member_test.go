@@ -9,7 +9,7 @@ import (
 )
 
 func TestMemberSimple(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 	fp := &test.FakeProposer{Store: st}
 	c := make(chan string)

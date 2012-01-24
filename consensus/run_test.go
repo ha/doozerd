@@ -165,7 +165,7 @@ func TestRunAppliesOp(t *testing.T) {
 	r.l.init(1, 1)
 
 	r.update(&packet{msg: *newVote(1, "foo")}, 0, new(triggers))
-	assert.Equal(t, store.Op{1, "foo"}, <-c)
+	assert.Equal(t, store.Op{1, "foo", false}, <-c)
 }
 
 func TestRunBroadcastThree(t *testing.T) {

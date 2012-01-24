@@ -8,7 +8,7 @@ import (
 )
 
 func TestGcClean(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
 	ticker := make(chan time.Time)
@@ -16,10 +16,10 @@ func TestGcClean(t *testing.T) {
 
 	go Clean(st, 3, ticker)
 
-	st.Ops <- store.Op{1, store.Nop}
-	st.Ops <- store.Op{2, store.Nop}
-	st.Ops <- store.Op{3, store.Nop}
-	st.Ops <- store.Op{4, store.Nop}
+	st.Ops <- store.Op{1, store.Nop, false}
+	st.Ops <- store.Op{2, store.Nop, false}
+	st.Ops <- store.Op{3, store.Nop, false}
+	st.Ops <- store.Op{4, store.Nop, false}
 
 	_, err := st.Wait(store.Any, 1)
 	assert.Equal(t, nil, err)

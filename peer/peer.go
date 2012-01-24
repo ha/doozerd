@@ -94,23 +94,23 @@ func Main(clusterName, self, buri, rwsk, rosk, journal string, cl *doozer.Conn, 
 				if err != nil {
 					panic(err)
 				}
-				set(st, path, v, rev)
+				set(st, path, v, rev, true)
 			}
 		}
 
-		set(st, "/ctl/name", clusterName, store.Missing)
-		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing)
-		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing)
-		set(st, "/ctl/node/"+self+"/version", Version, store.Missing)
-		set(st, "/ctl/cal/0", self, store.Missing)
+		set(st, "/ctl/name", clusterName, store.Missing, true)
+		set(st, "/ctl/node/"+self+"/addr", listenAddr, store.Missing, true)
+		set(st, "/ctl/node/"+self+"/hostname", os.Getenv("HOSTNAME"), store.Missing, true)
+		set(st, "/ctl/node/"+self+"/version", Version, store.Missing, true)
+		set(st, "/ctl/cal/0", self, store.Missing, true)
 		if buri == "" {
-			set(st, "/ctl/ns/"+clusterName+"/"+self, listenAddr, store.Missing)
+			set(st, "/ctl/ns/"+clusterName+"/"+self, listenAddr, store.Missing, true)
 		}
 		calSrv(<-st.Seqns)
 		// Skip ahead alpha steps so that the registrar can provide a
 		// meaningful cluster.
 		for i := 0; i < alpha; i++ {
-			st.Ops <- store.Op{1 + <-st.Seqns, store.Nop}
+			st.Ops <- store.Op{1 + <-st.Seqns, store.Nop, true}
 		}
 		canWrite <- true
 		go setReady(pr, self)
@@ -270,9 +270,9 @@ func advanceUntil(cl *doozer.Conn, ver <-chan int64, done int64) {
 	}
 }
 
-func set(st *store.Store, path, body string, rev int64) {
+func set(st *store.Store, path, body string, rev int64, volatile bool) {
 	mut := store.MustEncodeSet(path, body, rev)
-	st.Ops <- store.Op{1 + <-st.Seqns, mut}
+	st.Ops <- store.Op{1 + <-st.Seqns, mut, volatile}
 }
 
 func setC(cl *doozer.Conn, path, body string, rev int64) {
@@ -292,7 +292,7 @@ func follow(st *store.Store, cl *doozer.Conn, rev int64, stop chan bool) {
 		// store.Clobber is okay here because the event
 		// has already passed through another store
 		mut := store.MustEncodeSet(ev.Path, string(ev.Body), store.Clobber)
-		st.Ops <- store.Op{ev.Rev, mut}
+		st.Ops <- store.Op{ev.Rev, mut, false}
 		rev = ev.Rev + 1
 
 		select {
@@ -320,7 +320,7 @@ func (c cloner) VisitFile(path string, f *doozer.FileInfo) {
 		panic(err)
 	}
 	mut := store.MustEncodeSet(path, string(body), store.Clobber)
-	c.ch <- store.Op{f.Rev, mut}
+	c.ch <- store.Op{f.Rev, mut, false}
 }
 
 func setReady(p consensus.Proposer, self string) {

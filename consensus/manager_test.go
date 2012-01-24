@@ -34,11 +34,11 @@ func mustWait(s *store.Store, n int64) <-chan store.Event {
 }
 
 func TestManagerPumpDropsOldPackets(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0), false}
 
 	var m Manager
 	m.run = make(map[int64]*run)
@@ -103,7 +103,7 @@ func TestSchedTrigger(t *testing.T) {
 }
 
 func TestManagerPacketProcessing(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 	in := make(chan Packet)
 	out := make(chan Packet, 100)
@@ -115,8 +115,8 @@ func TestManagerPacketProcessing(t *testing.T) {
 	m.Out = out
 	m.Ops = st.Ops
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0), false}
 	m.event(<-mustWait(st, 2))
 
 	recvPacket(&m.packet, Packet{
@@ -128,10 +128,10 @@ func TestManagerPacketProcessing(t *testing.T) {
 }
 
 func TestManagerTickQueue(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0), false}
 
 	var m Manager
 	m.run = make(map[int64]*run)
@@ -151,7 +151,7 @@ func TestManagerTickQueue(t *testing.T) {
 
 func TestManagerFilterPropSeqn(t *testing.T) {
 	ps := make(chan int64, 100)
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
 	m := &Manager{
@@ -163,15 +163,15 @@ func TestManagerFilterPropSeqn(t *testing.T) {
 	}
 	go m.Run()
 
-	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", "b", 0)}
-	st.Ops <- store.Op{3, store.Nop}
-	st.Ops <- store.Op{4, store.Nop}
+	st.Ops <- store.Op{1, store.MustEncodeSet("/ctl/cal/0", "a", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/1", "b", 0), false}
+	st.Ops <- store.Op{3, store.Nop, false}
+	st.Ops <- store.Op{4, store.Nop, false}
 	assert.Equal(t, int64(3), <-ps)
 	assert.Equal(t, int64(5), <-ps)
 
-	st.Ops <- store.Op{5, store.Nop}
-	st.Ops <- store.Op{6, store.Nop}
+	st.Ops <- store.Op{5, store.Nop, false}
+	st.Ops <- store.Op{6, store.Nop, false}
 	assert.Equal(t, int64(7), <-ps)
 }
 
@@ -240,7 +240,7 @@ func TestApplyTriggers(t *testing.T) {
 func TestManagerEvent(t *testing.T) {
 	const alpha = 2
 	runs := make(map[int64]*run)
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
 	st.Ops <- store.Op{
@@ -301,12 +301,12 @@ func TestManagerEvent(t *testing.T) {
 func TestManagerRemoveLastCal(t *testing.T) {
 	const alpha = 2
 	runs := make(map[int64]*run)
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet(cal+"/1", "a", 0)}
-	st.Ops <- store.Op{3, store.MustEncodeSet(cal+"/1", "", -1)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet(cal+"/1", "a", 0), false}
+	st.Ops <- store.Op{3, store.MustEncodeSet(cal+"/1", "", -1), false}
 
 	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	pseqn := make(chan int64, 100)
@@ -351,13 +351,13 @@ func TestManagerRemoveLastCal(t *testing.T) {
 func TestDelRun(t *testing.T) {
 	const alpha = 2
 	runs := make(map[int64]*run)
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet(cal+"/1", "a", 0)}
-	st.Ops <- store.Op{3, store.Nop}
-	st.Ops <- store.Op{4, store.Nop}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "x", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet(cal+"/1", "a", 0), false}
+	st.Ops <- store.Op{3, store.Nop, false}
+	st.Ops <- store.Op{4, store.Nop, false}
 
 	c2, err := st.Wait(store.Any, 2)
 	if err != nil {
@@ -392,7 +392,7 @@ func TestDelRun(t *testing.T) {
 }
 
 func TestGetCalsFull(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
 	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
@@ -404,7 +404,7 @@ func TestGetCalsFull(t *testing.T) {
 }
 
 func TestGetCalsPartial(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
 	st.Ops <- store.Op{Seqn: 1, Mut: store.MustEncodeSet(cal+"/1", "a", 0)}
@@ -416,12 +416,12 @@ func TestGetCalsPartial(t *testing.T) {
 }
 
 func TestGetAddrs(t *testing.T) {
-	st := store.New()
+	st := store.New("")
 	defer close(st.Ops)
 
-	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "1.2.3.4:5", 0)}
-	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "2.3.4.5:6", 0)}
-	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "3.4.5.6:7", 0)}
+	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/1/addr", "1.2.3.4:5", 0), false}
+	st.Ops <- store.Op{2, store.MustEncodeSet(node+"/2/addr", "2.3.4.5:6", 0), false}
+	st.Ops <- store.Op{3, store.MustEncodeSet(node+"/3/addr", "3.4.5.6:7", 0), false}
 	<-st.Seqns
 
 	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")

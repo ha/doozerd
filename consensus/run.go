@@ -55,7 +55,7 @@ func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	r.broadcast(m)
 	if ok {
 		log.Printf("learn seqn=%d", r.seqn)
-		r.ops <- store.Op{r.seqn, string(v)}
+		r.ops <- store.Op{r.seqn, string(v), false}
 	}
 }
 

@@ -18,7 +18,7 @@ func (fp *FakeProposer) Propose(v []byte) store.Event {
 	if err != nil {
 		panic(err)
 	}
-	fp.Ops <- store.Op{n, string(v)}
+	fp.Ops <- store.Op{n, string(v), false}
 	return <-ch
 }
 
