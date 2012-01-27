@@ -17,9 +17,9 @@ const defWebPort = 8000
 
 type strings []string
 
-func (a *strings) Set(s string) bool {
+func (a *strings) Set(s string) error {
 	*a = append(*a, s)
-	return true
+	return nil
 }
 
 func (a *strings) String() string {
