@@ -11,7 +11,7 @@ GOFILES="
 "
 
 for f in $GOFILES
-do 
+do
   b="web/$(basename $f .go)"
   ./web/file2gostring $PKG $b < $b > web/$f.part
   mv web/$f.part web/$f
