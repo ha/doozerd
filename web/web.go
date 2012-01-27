@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
-	"websocket"
+	"code.google.com/p/go.net/websocket"
 )
 
 var Store *store.Store
