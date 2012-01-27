@@ -258,7 +258,6 @@ func TestBringsOrderOutOfChaos(t *testing.T) {
 	assert.Equal(t, &msg{Cmd: learn, Value: []byte("foo")}, m)
 }
 
-
 func TestLearnerIgnoresBadMessages(t *testing.T) {
 	var ln learner
 
@@ -268,7 +267,6 @@ func TestLearnerIgnoresBadMessages(t *testing.T) {
 	assert.Equal(t, false, ok)
 	assert.Equal(t, (*msg)(nil), m)
 }
-
 
 func TestSinkLearnsAValue(t *testing.T) {
 	var ln learner

@@ -31,7 +31,6 @@ var grantTests = []grantTest{
 	{&conn{rosk: "", rwsk: "b"}, "b", true, true, true},
 }
 
-
 func TestConnGrant(t *testing.T) {
 	for _, tst := range grantTests {
 		ok := tst.c.grant(tst.sk)

@@ -1,16 +1,14 @@
 package peer
 
 import (
-	"net"
 	"log"
+	"net"
 )
-
 
 type liverec struct {
 	addr *net.UDPAddr
 	seen int64
 }
-
 
 type liveness struct {
 	timeout int64
@@ -20,7 +18,6 @@ type liveness struct {
 	self    *net.UDPAddr
 	shun    chan<- string
 }
-
 
 func (lv *liveness) mark(a net.Addr, t int64) {
 	uaddr, ok := a.(*net.UDPAddr)
@@ -38,7 +35,6 @@ func (lv *liveness) mark(a net.Addr, t int64) {
 		lv.times = append(lv.times, liverec{uaddr, t})
 	}
 }
-
 
 func (lv *liveness) check(t int64) {
 	if t > lv.prev+lv.ival {
@@ -58,7 +54,6 @@ func (lv *liveness) check(t int64) {
 		lv.prev = t
 	}
 }
-
 
 func eq(a, b *net.UDPAddr) bool {
 	return a.Port == b.Port && a.IP.Equal(b.IP)

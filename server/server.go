@@ -8,7 +8,6 @@ import (
 	"os"
 )
 
-
 // ListenAndServe listens on l, accepts network connections, and
 // handles requests according to the doozer protocol.
 func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p consensus.Proposer, rwsk, rosk string) {
@@ -36,7 +35,6 @@ func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p conse
 		go serve(c, st, p, w, rwsk, rosk)
 	}
 }
-
 
 func serve(nc net.Conn, st *store.Store, p consensus.Proposer, w bool, rwsk, rosk string) {
 	c := &conn{

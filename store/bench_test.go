@@ -4,31 +4,25 @@ import (
 	"testing"
 )
 
-
 func BenchmarkHist10(b *testing.B) {
 	benchmarkNHist(10, b)
 }
-
 
 func BenchmarkHist1e3(b *testing.B) {
 	benchmarkNHist(1e3, b)
 }
 
-
 func BenchmarkHist1e4(b *testing.B) {
 	benchmarkNHist(1e4, b)
 }
-
 
 func BenchmarkHist1e5(b *testing.B) {
 	benchmarkNHist(1e5, b)
 }
 
-
 func BenchmarkHist1e6(b *testing.B) {
 	benchmarkNHist(1e6, b)
 }
-
 
 func benchmarkNHist(n int, b *testing.B) {
 	b.StopTimer()

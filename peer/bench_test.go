@@ -1,11 +1,10 @@
 package peer
 
 import (
-	"github.com/ha/doozerd/store"
 	"github.com/ha/doozer"
+	"github.com/ha/doozerd/store"
 	"testing"
 )
-
 
 func Benchmark1DoozerClientSet(b *testing.B) {
 	b.StopTimer()
@@ -24,7 +23,6 @@ func Benchmark1DoozerClientSet(b *testing.B) {
 		cl.Set("/test", store.Clobber, nil)
 	}
 }
-
 
 func Benchmark1DoozerConClientSet(b *testing.B) {
 	b.StopTimer()
@@ -50,7 +48,6 @@ func Benchmark1DoozerConClientSet(b *testing.B) {
 		<-c
 	}
 }
-
 
 func Benchmark5DoozerClientSet(b *testing.B) {
 	b.StopTimer()
@@ -100,7 +97,6 @@ func Benchmark5DoozerClientSet(b *testing.B) {
 		cl.Set("/test", store.Clobber, nil)
 	}
 }
-
 
 func Benchmark5DoozerConClientSet(b *testing.B) {
 	if b.N < 5 {

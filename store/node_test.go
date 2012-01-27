@@ -67,7 +67,6 @@ func TestNodeApplyRevMismatch(t *testing.T) {
 	assert.Equal(t, Event{seqn, ErrorPath, err.Error(), rev, m, err, n}, e)
 }
 
-
 func TestNodeNotADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y", "b", Clobber)

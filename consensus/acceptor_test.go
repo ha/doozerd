@@ -1,8 +1,8 @@
 package consensus
 
 import (
-	_ "github.com/ha/doozerd/quiet"
 	"github.com/bmizerany/assert"
+	_ "github.com/ha/doozerd/quiet"
 	"testing"
 )
 
@@ -79,7 +79,6 @@ func TestVotesOnlyOncePerRound(t *testing.T) {
 	got = ac.update(newNominateSeqn1(1, "v"))
 	assert.Equal(t, (*msg)(nil), got)
 }
-
 
 func TestAcceptorIgnoresBadMessages(t *testing.T) {
 	ac := acceptor{}

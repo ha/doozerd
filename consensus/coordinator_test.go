@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-
 func TestCoordIgnoreOldMessages(t *testing.T) {
 	var co coordinator
 	co.size = 10
@@ -39,7 +38,6 @@ func TestCoordIgnoreOldMessages(t *testing.T) {
 	assert.Equal(t, false, tick)
 }
 
-
 func TestCoordStart(t *testing.T) {
 	co := coordinator{crnd: 1}
 
@@ -47,7 +45,6 @@ func TestCoordStart(t *testing.T) {
 	assert.Equal(t, newInvite(1), got)
 	assert.Equal(t, true, tick)
 }
-
 
 func TestCoordQuorum(t *testing.T) {
 	co := coordinator{
@@ -151,7 +148,6 @@ func TestCoordRetry(t *testing.T) {
 	assert.Equal(t, newInvite(11), got)
 	assert.Equal(t, true, tick)
 }
-
 
 func TestCoordNonTargetNomination(t *testing.T) {
 	co := coordinator{
@@ -304,7 +300,6 @@ func TestCoordDuel(t *testing.T) {
 	assert.Equal(t, (*msg)(nil), got)
 	assert.Equal(t, false, tick)
 }
-
 
 func TestCoordinatorIgnoresBadMessages(t *testing.T) {
 	co := coordinator{begun: true}

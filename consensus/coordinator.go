@@ -1,6 +1,5 @@
 package consensus
 
-
 type coordinator struct {
 	size int
 	quor int

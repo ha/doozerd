@@ -1,8 +1,8 @@
 package peer
 
 import (
-	_ "github.com/ha/doozerd/quiet"
 	"github.com/ha/doozer"
+	_ "github.com/ha/doozerd/quiet"
 	"net"
 )
 
@@ -13,7 +13,6 @@ func mustListen() net.Listener {
 	}
 	return l
 }
-
 
 func mustListenUDP(addr string) *net.UDPConn {
 	uaddr, err := net.ResolveUDPAddr("udp", addr)
@@ -27,7 +26,6 @@ func mustListenUDP(addr string) *net.UDPConn {
 	return c
 }
 
-
 func dial(addr string) *doozer.Conn {
 	c, err := doozer.Dial(addr)
 	if err != nil {
@@ -35,7 +33,6 @@ func dial(addr string) *doozer.Conn {
 	}
 	return c
 }
-
 
 func waitFor(cl *doozer.Conn, path string) {
 	var rev int64

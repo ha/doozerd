@@ -1,8 +1,9 @@
 package web
 
 import (
-	"github.com/ha/doozerd/store"
+	"code.google.com/p/go.net/websocket"
 	"encoding/json"
+	"github.com/ha/doozerd/store"
 	"io"
 	"log"
 	"net"
@@ -10,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
-	"code.google.com/p/go.net/websocket"
 )
 
 var Store *store.Store

@@ -1,9 +1,9 @@
 package consensus
 
 import (
-	"github.com/ha/doozerd/store"
 	"errors"
 	"github.com/bmizerany/assert"
+	"github.com/ha/doozerd/store"
 	"net"
 	"testing"
 	"time"
