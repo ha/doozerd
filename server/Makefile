@@ -1,13 +1,7 @@
-include ../../Make.inc
+.PHONY: install build test
 
-TARG=github.com/ha/doozerd/server
-GOFILES=\
-	conn.go\
-	msg.pb.go\
-	server.go\
-	txn.go\
-
-include $(GOROOT)/src/Make.pkg
+build install test : msg.pb.go
+	go $@
 
 msg.pb.go: msg.proto
 	mkdir -p _pb
@@ -19,5 +13,3 @@ msg.pb.go: msg.proto
 	|sed s/Newresponse/newResponse/g\
 	|gofmt >$@
 	rm -rf _pb
-
-CLEANFILES+=_pb

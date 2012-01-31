@@ -1,22 +1,21 @@
 #!/bin/sh
 set -e
 
-PKG=web
+if [ ! -x all.sh ]; then
+	echo 'make.sh must be run from the root of the doozerd source tree.' 1>&2
+	exit 1
+fi
 
-GOFILES="
-	main.css.go
-	main.html.go
-	stats.html.go
-	main.js.go
+PKGS="
+	web
+	consensus
+	peer
+	server
 "
 
-for f in $GOFILES
+for pkg in $PKGS
 do
-  b="web/$(basename $f .go)"
-  ./web/file2gostring $PKG $b < $b > web/$f.part
-  mv web/$f.part web/$f
+	make -C $pkg install
 done
 
-ver=$(./version.sh)
-printf "package peer;const Version = \`%s\`\n" "$ver" > peer/version.go
 go install
