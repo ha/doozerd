@@ -7,7 +7,7 @@ GOFILES=\
 	main.js.go\
 	web.go\
 
-default: $(GOFILES)
+default install: $(GOFILES)
 
 %.css.go: %.css file2gostring
 	./file2gostring $(TARG) $< < $< > $@.part
