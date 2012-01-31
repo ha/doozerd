@@ -1,11 +1,10 @@
 package peer
 
 import (
-	"github.com/ha/doozerd/store"
 	"github.com/ha/doozer"
+	"github.com/ha/doozerd/store"
 	"testing"
 )
-
 
 func TestProfile5DoozerConClientSet(t *testing.T) {
 	const N = 10e2
