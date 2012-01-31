@@ -1,7 +1,0 @@
-include ../../Make.inc
-
-TARG=github.com/ha/doozerd/test
-GOFILES=\
-	test.go\
-
-include $(GOROOT)/src/Make.pkg
