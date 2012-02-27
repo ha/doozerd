@@ -88,7 +88,7 @@ func evServer(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			wevs <- ev
-			rev = ev.Rev
+			rev = ev.Seqn
 		}
 		close(wevs)
 	}()
