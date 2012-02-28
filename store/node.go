@@ -1,7 +1,7 @@
 package store
 
 import (
-	"os"
+	"syscall"
 )
 
 var emptyDir = node{V: "", Ds: make(map[string]node), Rev: Dir}
@@ -41,14 +41,14 @@ func (n node) at(parts []string) (node, error) {
 				return m.at(parts[1:])
 			}
 		}
-		return node{}, os.ENOENT
+		return node{}, syscall.ENOENT
 	}
 	panic("unreachable")
 }
 
 func (n node) get(parts []string) ([]string, int64) {
 	switch m, err := n.at(parts); err {
-	case os.ENOENT:
+	case syscall.ENOENT:
 		return []string{""}, Missing
 	default:
 		if len(m.Ds) > 0 {
@@ -66,7 +66,7 @@ func (n node) Get(path string) ([]string, int64) {
 
 func (n node) stat(parts []string) (int32, int64) {
 	switch m, err := n.at(parts); err {
-	case os.ENOENT:
+	case syscall.ENOENT:
 		return 0, Missing
 	default:
 		l := len(m.Ds)
@@ -143,7 +143,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 				break
 			}
 			if dirRev != Dir {
-				ev.Err = os.ENOTDIR
+				ev.Err = syscall.ENOTDIR
 				break
 			}
 		}
@@ -154,7 +154,7 @@ func (n node) apply(seqn int64, mut string) (rep node, ev Event) {
 		if rev != Clobber && rev < curRev {
 			ev.Err = ErrRevMismatch
 		} else if curRev == Dir {
-			ev.Err = os.EISDIR
+			ev.Err = syscall.EISDIR
 		}
 	}
 
