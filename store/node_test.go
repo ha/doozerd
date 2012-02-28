@@ -2,7 +2,7 @@ package store
 
 import (
 	"github.com/bmizerany/assert"
-	"os"
+	"syscall"
 	"testing"
 )
 
@@ -71,7 +71,7 @@ func TestNodeNotADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y", "b", Clobber)
 	n, e := r.apply(2, m)
-	err := os.ENOTDIR
+	err := syscall.ENOTDIR
 	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", err.Error(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, err.Error(), 2, m, err, n}, e)
@@ -81,7 +81,7 @@ func TestNodeNotADirectoryDeeper(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x", "a", Clobber))
 	m := MustEncodeSet("/x/y/z/w", "b", Clobber)
 	n, e := r.apply(2, m)
-	err := os.ENOTDIR
+	err := syscall.ENOTDIR
 	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", err.Error(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, err.Error(), 2, m, err, n}, e)
@@ -91,7 +91,7 @@ func TestNodeIsADirectory(t *testing.T) {
 	r, _ := emptyDir.apply(1, MustEncodeSet("/x/y", "a", Clobber))
 	m := MustEncodeSet("/x", "b", Clobber)
 	n, e := r.apply(2, m)
-	err := os.EISDIR
+	err := syscall.EISDIR
 	exp, _ := r.apply(2, MustEncodeSet("/ctl/err", err.Error(), Clobber))
 	assert.Equal(t, exp, n)
 	assert.Equal(t, Event{2, ErrorPath, err.Error(), 2, m, err, n}, e)
