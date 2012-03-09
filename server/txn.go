@@ -24,6 +24,7 @@ var ops = map[int32]func(*txn){
 	int32(request_REV):    (*txn).rev,
 	int32(request_SET):    (*txn).set,
 	int32(request_STAT):   (*txn).stat,
+	int32(request_SELF):   (*txn).self,
 	int32(request_WAIT):   (*txn).wait,
 	int32(request_WALK):   (*txn).walk,
 	int32(request_ACCESS): (*txn).access,
@@ -151,6 +152,11 @@ func (t *txn) nop() {
 func (t *txn) rev() {
 	rev := <-t.c.st.Seqns
 	t.resp.Rev = &rev
+	t.respond()
+}
+
+func (t *txn) self() {
+	t.resp.Value = []byte(t.c.self)
 	t.respond()
 }
 

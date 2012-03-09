@@ -25,6 +25,7 @@ const (
 	request_WALK   request_Verb = 9
 	request_GETDIR request_Verb = 14
 	request_STAT   request_Verb = 16
+	request_SELF   request_Verb = 20
 	request_ACCESS request_Verb = 99
 )
 
@@ -38,6 +39,7 @@ var request_Verb_name = map[int32]string{
 	9:  "WALK",
 	14: "GETDIR",
 	16: "STAT",
+	20: "SELF",
 	99: "ACCESS",
 }
 var request_Verb_value = map[string]int32{
@@ -50,6 +52,7 @@ var request_Verb_value = map[string]int32{
 	"WALK":   9,
 	"GETDIR": 14,
 	"STAT":   16,
+	"SELF":   20,
 	"ACCESS": 99,
 }
 
