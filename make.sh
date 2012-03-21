@@ -19,4 +19,5 @@ done
 
 ver=$(./version.sh)
 printf "package peer;const Version = \`%s\`\n" "$ver" > peer/version.go
+go get -d ./...
 go install
