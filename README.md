@@ -113,7 +113,7 @@ drills][firedrill].
 Doozer is similar to the following pieces of software:
 
  * Apache Zookeeper <http://zookeeper.apache.org/>
- * Google Chubby <http://labs.google.com/papers/chubby.html>
+ * Google Chubby <http://research.google.com/archive/chubby.html>
 
 ## Hacking on Doozer
 
