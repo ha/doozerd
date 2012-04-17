@@ -66,6 +66,7 @@ func TestRunInviteDelivered(t *testing.T) {
 
 func TestRunProposeDelivered(t *testing.T) {
 	var r run
+	r.bound = initialWaitBound
 	r.out = make(chan Packet, 100)
 	r.ops = make(chan store.Op, 100)
 
@@ -78,6 +79,7 @@ func TestRunSendsCoordPacket(t *testing.T) {
 	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
 	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
 	var r run
+	r.bound = initialWaitBound
 	r.c.crnd = 1
 	r.out = c
 	r.addr = []*net.UDPAddr{x, y}

@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/bmizerany/assert"
-	"github.com/kr/pretty.go"
+	"github.com/kr/pretty"
 	"testing"
 )
 

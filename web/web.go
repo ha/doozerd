@@ -113,7 +113,9 @@ func viewHtml(w http.ResponseWriter, r *http.Request) {
 
 func statsHtml(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "text/html")
-	statsTpl.Execute(w, runtime.MemStats)
+	stats := new(runtime.MemStats)
+	runtime.ReadMemStats(stats)
+	statsTpl.Execute(w, stats)
 }
 
 func walk(path string, st *store.Store, ch chan store.Event) {
