@@ -2,7 +2,7 @@ package store
 
 import (
 	"github.com/bmizerany/assert"
-	"os"
+	"syscall"
 	"testing"
 )
 
