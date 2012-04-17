@@ -22,7 +22,7 @@ func (fp *FakeProposer) Propose(v []byte) store.Event {
 	return <-ch
 }
 
-// An io.Writer that will return os.EOF on the `n`th byte written
+// An io.Writer that will return syscall.EOF on the `n`th byte written
 type ErrWriter struct {
 	N int
 }

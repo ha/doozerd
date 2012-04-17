@@ -187,7 +187,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 
 		buf := make([]byte, maxUDPLen)
 		n, addr, err := udpConn.ReadFromUDP(buf)
-		if err == os.EINVAL {
+		if err == syscall.EINVAL {
 			return
 		}
 		if err != nil {
