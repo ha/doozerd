@@ -5,7 +5,7 @@ import (
 	"github.com/ha/doozerd/store"
 	"log"
 	"net"
-	"os"
+	"syscall"
 )
 
 // ListenAndServe listens on l, accepts network connections, and
@@ -15,10 +15,10 @@ func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p conse
 	for {
 		c, err := l.Accept()
 		if err != nil {
-			if err == os.EINVAL {
+			if err == syscall.EINVAL {
 				break
 			}
-			if e, ok := err.(*net.OpError); ok && e.Err == os.EINVAL {
+			if e, ok := err.(*net.OpError); ok && e.Err == syscall.EINVAL {
 				break
 			}
 			log.Println(err)

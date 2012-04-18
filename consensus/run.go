@@ -43,7 +43,7 @@ func (r *run) update(p *packet, from int, ticks heap.Interface) {
 	if tick {
 		r.ntick++
 		r.bound *= 2
-		t := rand.Int63n(r.bound)
+		t := rand.Int63n(r.bound + 1) // +1 because it panics if bound is 0.
 		log.Printf("sched tick=%d seqn=%d t=%d", r.ntick, r.seqn, t)
 		schedTrigger(ticks, r.seqn, time.Now().UnixNano(), t)
 	}

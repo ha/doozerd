@@ -6,8 +6,8 @@ import (
 	"github.com/ha/doozerd/store"
 	"io"
 	"log"
-	"os"
 	"sort"
+	"syscall"
 )
 
 type txn struct {
@@ -48,7 +48,7 @@ func (t *txn) run() {
 
 func (t *txn) get() {
 	if !t.c.raccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -80,7 +80,7 @@ func (t *txn) get() {
 
 func (t *txn) set() {
 	if !t.c.waccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (t *txn) set() {
 
 func (t *txn) del() {
 	if !t.c.waccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -133,7 +133,7 @@ func (t *txn) del() {
 
 func (t *txn) nop() {
 	if !t.c.waccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (t *txn) rev() {
 
 func (t *txn) stat() {
 	if !t.c.raccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -176,7 +176,7 @@ func (t *txn) stat() {
 
 func (t *txn) getdir() {
 	if !t.c.raccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (t *txn) getdir() {
 
 func (t *txn) wait() {
 	if !t.c.raccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -256,7 +256,7 @@ func (t *txn) wait() {
 
 func (t *txn) walk() {
 	if !t.c.raccess {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 		return
 	}
 
@@ -306,7 +306,7 @@ func (t *txn) access() {
 	if t.c.grant(string(t.req.Value)) {
 		t.respond()
 	} else {
-		t.respondOsError(os.EACCES)
+		t.respondOsError(syscall.EACCES)
 	}
 }
 
@@ -318,9 +318,9 @@ func (t *txn) respondOsError(err error) {
 		t.respondErrCode(response_REV_MISMATCH)
 	case store.ErrTooLate:
 		t.respondErrCode(response_TOO_LATE)
-	case os.EISDIR:
+	case syscall.EISDIR:
 		t.respondErrCode(response_ISDIR)
-	case os.ENOTDIR:
+	case syscall.ENOTDIR:
 		t.respondErrCode(response_NOTDIR)
 	default:
 		t.resp.ErrDetail = proto.String(err.Error())
