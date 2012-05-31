@@ -9,17 +9,8 @@ Here are some instructions for building doozer from source:
 ## Installing Go
 
 I recommend not using apt, homebrew, or any other packaging system to install
-Go. It's better to install straight from source.
-
-Abridged version:
-
-    $ GOROOT=$HOME/src/go # adjust this as you wish
-    $ hg clone -r weekly https://go.googlecode.com/hg/ $GOROOT
-    $ cd $GOROOT/src
-    $ ./all.bash
-    (put the value of $GOROOT/bin in your path)
-
-For full details, see <http://golang.org/doc/install.html>.
+Go. It's better to install straight from the official Go packages.
+Easy-to-follow instructions are at <http://golang.org/doc/install>.
 
 ## Installing Dependencies
 
