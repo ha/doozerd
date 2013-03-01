@@ -34,7 +34,7 @@ other users and developers.
 
 6. Open <http://localhost:8080> and see your message
 
-![doozer web view](/ha/doozerd/raw/master/doc/webview.png)
+![doozer web view](doc/webview.png)
 
 ## How Does It Work?
 
