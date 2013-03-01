@@ -101,12 +101,11 @@ Here are some example scenarios:
 
 ## What can I do with it?
 
-We have a detailed description of the [data model](https://github.com/ha/doozerd/blob/master/doc/data-model.md).
+We have a detailed description of the [data model](doc/data-model.md).
 
-For ways to manipulate or read the data, see the [protocol spec](https://github.com/ha/doozerd/blob/master/doc/proto.md).
+For ways to manipulate or read the data, see the [protocol spec](doc/proto.md).
 
-Try out doozer's fault-tolerance with some [fire
-drills][firedrill].
+Try out doozer's fault-tolerance with some [fire drills](doc/firedrill.md).
 
 ## Similar Projects
 
@@ -117,17 +116,15 @@ Doozer is similar to the following pieces of software:
 
 ## Hacking on Doozer
 
- * [hacking on doozer](/ha/doozerd/blob/master/doc/hacking.md)
+ * [hacking on doozer](doc/hacking.md)
  * [mailing list][mail]
 
 ## License and Authors
 
 Doozer is distributed under the terms of the MIT
-License. See [LICENSE][] for details.
+License. See [LICENSE](LICENSE) for details.
 
 Doozer was created by Blake Mizerany and Keith Rarick.
 Type `git shortlog -s` for a full list of contributors.
 
 [mail]: https://groups.google.com/group/doozer
-[LICENSE]: /ha/doozerd/blob/master/LICENSE
-[firedrill]: /ha/doozerd/blob/master/doc/firedrill.md
