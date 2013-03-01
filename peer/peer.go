@@ -12,7 +12,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"syscall"
+	"strings"
 	"time"
 )
 
@@ -188,7 +188,8 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 
 		buf := make([]byte, maxUDPLen)
 		n, addr, err := udpConn.ReadFromUDP(buf)
-		if err == syscall.EINVAL {
+		if err != nil && strings.Contains(err.Error(), "use of closed network connection") {
+			log.Printf("<<<< EXITING >>>>")
 			return
 		}
 		if err != nil {
