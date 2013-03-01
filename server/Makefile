@@ -6,5 +6,5 @@ msg.pb.go: msg.proto
 	|sed s/Response/response/g\
 	|sed s/Newrequest/newRequest/g\
 	|sed s/Newresponse/newResponse/g\
-	|gofmt >$@
+	>$@
 	rm -rf _pb

@@ -38,7 +38,7 @@ const (
 )
 
 func (t *txn) run() {
-	verb := proto.GetInt32((*int32)(t.req.Verb))
+	verb := int32(t.req.GetVerb())
 	if f, ok := ops[verb]; ok {
 		f(t)
 	} else {
@@ -167,7 +167,7 @@ func (t *txn) stat() {
 			return
 		}
 
-		len, rev := g.Stat(proto.GetString(t.req.Path))
+		len, rev := g.Stat(t.req.GetPath())
 		t.resp.Len = &len
 		t.resp.Rev = &rev
 		t.respond()

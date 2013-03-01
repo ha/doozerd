@@ -17,7 +17,7 @@ import (
 // http://code.google.com/apis/protocolbuffers/docs/encoding.html#varints.
 var invalidProtobuf = []byte{0x80}
 
-func mustMarshal(p interface{}) []byte {
+func mustMarshal(p proto.Message) []byte {
 	buf, err := proto.Marshal(p)
 	if err != nil {
 		panic(err)
