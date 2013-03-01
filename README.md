@@ -1,6 +1,6 @@
 # Doozer
 
-![logo](/ha/doozerd/raw/master/doc/doozer.png)
+![logo](doc/doozer.png)
 
 ## What Is It?
 
