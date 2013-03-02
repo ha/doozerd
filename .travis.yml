@@ -1,0 +1,10 @@
+language: go
+install:
+  - go get github.com/kr/pretty
+  - go get github.com/bmizerany/assert
+  - go get code.google.com/p/go.net/websocket
+  - go get code.google.com/p/goprotobuf/proto
+  - go get github.com/ha/doozer
+script: cd .. && mv doozerd $GOPATH/src/github.com/ha/doozerd && cd $GOPATH/src/github.com/ha/doozerd && ./all.sh
+notifications:
+  email: false
