@@ -2,6 +2,8 @@
 
 ![logo](doc/doozer.png)
 
+[![Build Status](https://secure.travis-ci.org/ha/doozerd.png)](http://travis-ci.org/ha/doozerd)
+
 ## What Is It?
 
 Doozer is a highly-available, completely consistent
