@@ -7,6 +7,7 @@ import (
 	"os/exec"
 
 	"testing"
+	"time"
 )
 
 func TestDoozerNop(t *testing.T) {
@@ -319,6 +320,42 @@ func TestPeerShun(t *testing.T) {
 			panic(err)
 		}
 		if ev.IsSet() && len(ev.Body) == 0 {
+			break
+		}
+		rev = ev.Rev + 1
+	}
+}
+
+func TestPeerLateJoin(t *testing.T) {
+	l0 := mustListen()
+	defer l0.Close()
+	a0 := l0.Addr().String()
+	u0 := mustListenUDP(a0)
+	defer u0.Close()
+
+	l1 := mustListen()
+	defer l1.Close()
+	u1 := mustListenUDP(l1.Addr().String())
+	defer u1.Close()
+
+	go Main("a", "X", "", "", "", nil, u0, l0, nil, 1e8, 1e7, 1e9, 60)
+
+	cl := dial(l0.Addr().String())
+	waitFor(cl, "/ctl/node/X/writable")
+
+	// TODO: this is set slightly higher than the hardcoded interval
+	// at which a store is cleaned.  Refactor that to be configurable
+	// so we can drop this down to something reasonable
+	time.Sleep(1100 * time.Millisecond)
+
+	go Main("a", "Y", "", "", "", dial(a0), u1, l1, nil, 1e8, 1e7, 1e9, 60)
+	rev, _ := cl.Set("/ctl/cal/1", store.Missing, nil)
+	for {
+		ev, err := cl.Wait("/ctl/node/Y/writable", rev)
+		if err != nil {
+			panic(err)
+		}
+		if ev.IsSet() && len(ev.Body) == 4 {
 			break
 		}
 		rev = ev.Rev + 1
