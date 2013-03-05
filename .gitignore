@@ -7,4 +7,3 @@
 .roundup.*
 doc/*.html
 doc/*.[0-9]
-peer/version.go
