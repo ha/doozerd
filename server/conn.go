@@ -21,6 +21,7 @@ type conn struct {
 	rosk     string
 	waccess  bool
 	raccess  bool
+	self     string
 }
 
 func (c *conn) serve() {

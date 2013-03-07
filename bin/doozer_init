@@ -1,0 +1,119 @@
+#!/bin/bash
+set -o pipefail
+
+function log() {
+    echo "[`date +'%Y%m%d %H:%M:%S'`] $@"
+}
+
+# doozer cluster initialization script
+
+DOOZERCLI="/usr/local/bin/doozer"
+DOOZERD_NODES=""
+HOST="127.0.0.1"
+PORT="9200"
+
+while [ "$1" != "" ]; do
+    PARAM=`echo $1 | awk -F= '{print $1}'`
+    VALUE=`echo $1 | awk -F= '{print $2}'`
+    case $PARAM in
+        --doozer-cli)
+            DOOZERCLI="$VALUE"
+            ;;
+        --doozerd-nodes)
+            DOOZERD_NODES="$VALUE"
+            ;;
+        --port)
+            PORT="$VALUE"
+            ;;
+        --host)
+            HOST="$VALUE"
+            ;;
+    esac
+    shift
+done
+
+if [ -z $PORT ]; then
+    log "ERROR: --port cannot be empty"
+    exit 1
+fi
+
+if [ -z $HOST ]; then
+    log "ERROR: --host cannot be empty"
+    exit 1
+fi
+
+if [ -z $DOOZERD_NODES ]; then
+    log "ERROR: --doozerd-nodes cannot be empty"
+    exit 1
+fi
+
+log "DOOZERD_NODES: $DOOZERD_NODES"
+
+# first identify which node to bind to (ie. the root node)
+bind_node=""
+for doozerd_node in $DOOZERD_NODES; do
+    doozerd_node_hostname=`echo $doozerd_node | awk -F: '{print $1}'`
+    doozerd_node_port=`echo $doozerd_node | awk -F: '{print $2}'`
+    
+    # resolve the ip (doozerd needs the exact ip to bind to, does not work with 0.0.0.0)
+    doozerd_node_ip=`host $doozerd_node_hostname 2>/dev/null | tail -1 | awk '{print $NF}'`
+    if $DOOZERCLI -a="doozer:?ca=$doozerd_node_ip:$doozerd_node_port" nop; then
+        bind_node="$doozerd_node_ip:$doozerd_node_port"
+        break
+    fi
+done
+
+if [ -z $bind_node ]; then
+    log "ERROR: could not find node to bind to"
+    exit 1
+fi
+
+log "bind_node: $bind_node"
+
+this_node_ip=`host $FQ_HOSTNAME 2>/dev/null | tail -1 | awk '{print $NF}'`
+host_node="$this_node_ip:$PORT"
+
+log "host_node: $host_node"
+
+my_self=`$DOOZERCLI -a="doozer:?ca=$host_node" self`
+if [ -z $my_self ]; then
+    log "ERROR: could not identify self"
+    exit 1
+fi
+
+log "my_self: $my_self"
+
+my_cal=$(printf %d $(expr $(echo $FQ_HOSTNAME | awk -F. '{print $1}' | tail -c -3) - 1))
+if [ -z $my_cal ]; then
+    log "ERROR: could not identify cal"
+    exit 1
+fi
+
+log "my_cal: $my_cal"
+
+log "checking /ctl/cal/$my_cal"
+stat_output=`$DOOZERCLI -a="doozer:?ca=$bind_node" stat /ctl/cal/$my_cal 2>/dev/null`
+if [ "$?" == "0" ]; then
+    log "/ctl/cal/$my_cal exists"
+    cal_self=`$DOOZERCLI -a="doozer:?ca=$bind_node" get /ctl/cal/$my_cal 2>/dev/null`
+    if [ "$cal_self" == "$my_self" ]; then
+        log "NOTICE: nothing to do (we're already active in the cluster)"
+        exit 0
+    fi
+    rev=`echo $stat_output | awk '{print $1}'`
+    log "deleting /ctl/cal/$my_cal @ $rev"
+    $DOOZERCLI -a="doozer:?ca=$bind_node" del /ctl/cal/$my_cal $rev >/dev/null 2>&1
+    if [ "$?" != "0" ]; then
+        log "ERROR: failed to delete /ctl/cal/$my_cal"
+        exit 1
+    fi
+fi
+
+log "adding /ctl/cal/$my_cal"
+echo -n | $DOOZERCLI -a="doozer:?ca=$bind_node" add /ctl/cal/$my_cal
+if [ "$?" != "0" ]; then
+    log "ERROR: failed to add /ctl/cal/$my_cal"
+    exit 1
+fi
+
+log "SUCCESS"
