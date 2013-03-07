@@ -151,7 +151,7 @@ func Main(clusterName, self, buri, rwsk, rosk string, cl *doozer.Conn, udpConn *
 
 	shun := make(chan string, 3) // sufficient for a cluster of 7
 	go member.Clean(shun, st, pr)
-	go server.ListenAndServe(listener, canWrite, st, pr, rwsk, rosk)
+	go server.ListenAndServe(listener, canWrite, st, pr, rwsk, rosk, self)
 
 	if rwsk == "" && rosk == "" && webListener != nil {
 		web.Store = st
