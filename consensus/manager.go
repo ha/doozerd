@@ -60,6 +60,9 @@ func (t *triggers) Len() int {
 
 func (t *triggers) Less(i, j int) bool {
 	a := *t
+	if a[i].t == a[j].t {
+		return a[i].n < a[j].n
+	}
 	return a[i].t < a[j].t
 }
 
