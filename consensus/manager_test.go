@@ -36,7 +36,7 @@ func mustWait(s *store.Store, n int64) <-chan store.Event {
 func TestManagerPumpDropsOldPackets(t *testing.T) {
 	st := store.New()
 	defer close(st.Ops)
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	st.Ops <- store.Op{1, store.MustEncodeSet(node+"/a/addr", "1.2.3.4:5", 0)}
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 
@@ -51,7 +51,7 @@ func TestManagerPumpDropsOldPackets(t *testing.T) {
 
 func TestRecvPacket(t *testing.T) {
 	q := new(packets)
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 
 	p := recvPacket(q, Packet{x, mustMarshal(&msg{
 		Seqn: proto.Int64(1),
@@ -73,7 +73,7 @@ func TestRecvPacket(t *testing.T) {
 
 func TestRecvEmptyPacket(t *testing.T) {
 	q := new(packets)
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 
 	p := recvPacket(q, Packet{x, []byte{}})
 	assert.Equal(t, (*packet)(nil), p)
@@ -82,7 +82,7 @@ func TestRecvEmptyPacket(t *testing.T) {
 
 func TestRecvInvalidPacket(t *testing.T) {
 	q := new(packets)
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	p := recvPacket(q, Packet{x, invalidProtobuf})
 	assert.Equal(t, (*packet)(nil), p)
 	assert.Equal(t, 0, q.Len())
@@ -119,9 +119,10 @@ func TestManagerPacketProcessing(t *testing.T) {
 	st.Ops <- store.Op{2, store.MustEncodeSet("/ctl/cal/0", "a", 0)}
 	m.event(<-mustWait(st, 2))
 
+	addr, _ := net.ResolveUDPAddr("udp", "127.0.0.1:9999")
 	recvPacket(&m.packet, Packet{
 		Data: mustMarshal(&msg{Seqn: proto.Int64(2), Cmd: learn, Value: []byte("foo")}),
-		Addr: &net.UDPAddr{net.IP{127, 0, 0, 1}, 9999},
+		Addr: addr,
 	})
 	m.pump()
 	assert.Equal(t, 0, m.packet.Len())

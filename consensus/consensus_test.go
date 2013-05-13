@@ -68,9 +68,9 @@ func TestConsensusOne(t *testing.T) {
 func TestConsensusTwo(t *testing.T) {
 	a := "a"
 	b := "b"
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	xs := "1.2.3.4:5"
-	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
+	y, _ := net.ResolveUDPAddr("udp", "2.3.4.5:6")
 	ys := "2.3.4.5:6"
 	const alpha = 1
 	st := store.New()
@@ -121,12 +121,11 @@ func TestConsensusTwo(t *testing.T) {
 
 	go func() {
 		for o := range aout {
-			o := o
 			if o.Addr.Port == x.Port && o.Addr.IP.Equal(x.IP) {
-				go func() { ain <- o }()
+				go func(o Packet) { ain <- o }(o)
 			} else {
 				o.Addr = x
-				go func() { bin <- o }()
+				go func(o Packet) { bin <- o }(o)
 			}
 		}
 	}()
@@ -134,10 +133,10 @@ func TestConsensusTwo(t *testing.T) {
 	go func() {
 		for o := range bout {
 			if o.Addr.Port == y.Port && o.Addr.IP.Equal(y.IP) {
-				go func() { bin <- o }()
+				go func(o Packet) { bin <- o }(o)
 			} else {
 				o.Addr = y
-				go func() { ain <- o }()
+				go func(o Packet) { ain <- o }(o)
 			}
 		}
 	}()
