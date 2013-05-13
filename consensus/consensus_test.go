@@ -68,9 +68,9 @@ func TestConsensusOne(t *testing.T) {
 func TestConsensusTwo(t *testing.T) {
 	a := "a"
 	b := "b"
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	x, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	xs := "1.2.3.4:5"
-	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
+	y, _ := net.ResolveUDPAddr("udp", "2.3.4.5:6")
 	ys := "2.3.4.5:6"
 	const alpha = 1
 	st := store.New()
