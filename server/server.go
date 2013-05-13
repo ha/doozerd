@@ -18,7 +18,7 @@ func ListenAndServe(l net.Listener, canWrite chan bool, st *store.Store, p conse
 			if err == syscall.EINVAL {
 				break
 			}
-			if e, ok := err.(*net.OpError); ok && e.Err == syscall.EINVAL {
+			if e, ok := err.(*net.OpError); ok && !e.Temporary() {
 				break
 			}
 			log.Println(err)
