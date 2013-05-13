@@ -121,12 +121,11 @@ func TestConsensusTwo(t *testing.T) {
 
 	go func() {
 		for o := range aout {
-			o := o
 			if o.Addr.Port == x.Port && o.Addr.IP.Equal(x.IP) {
-				go func() { ain <- o }()
+				go func(o Packet) { ain <- o }(o)
 			} else {
 				o.Addr = x
-				go func() { bin <- o }()
+				go func(o Packet) { bin <- o }(o)
 			}
 		}
 	}()
@@ -134,10 +133,10 @@ func TestConsensusTwo(t *testing.T) {
 	go func() {
 		for o := range bout {
 			if o.Addr.Port == y.Port && o.Addr.IP.Equal(y.IP) {
-				go func() { bin <- o }()
+				go func(o Packet) { bin <- o }(o)
 			} else {
 				o.Addr = y
-				go func() { ain <- o }()
+				go func(o Packet) { ain <- o }(o)
 			}
 		}
 	}()
