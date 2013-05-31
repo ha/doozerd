@@ -30,7 +30,7 @@ func TestLivenessMark(t *testing.T) {
 
 func TestLivenessStaysAlive(t *testing.T) {
 	shun := make(chan string, 1)
-	a := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	a, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	lv := liveness{
 		prev:    0,
 		ival:    1,
@@ -46,14 +46,15 @@ func TestLivenessStaysAlive(t *testing.T) {
 
 func TestLivenessTimesOut(t *testing.T) {
 	shun := make(chan string, 1)
-	a := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	a, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
+	b, _ := net.ResolveUDPAddr("udp", "2.3.4.5:6")
 	lv := liveness{
 		prev:    0,
 		ival:    1,
 		timeout: 3,
 		times:   []liverec{{a, 5}},
 		shun:    shun,
-		self:    &net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
+		self:    b,
 	}
 	lv.check(9)
 	assert.Equal(t, int64(9), lv.prev)
@@ -64,7 +65,7 @@ func TestLivenessTimesOut(t *testing.T) {
 
 func TestLivenessSelfStaysAlive(t *testing.T) {
 	shun := make(chan string, 1)
-	a := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	a, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	lv := liveness{
 		prev:    0,
 		ival:    1,
@@ -80,7 +81,7 @@ func TestLivenessSelfStaysAlive(t *testing.T) {
 }
 
 func TestLivenessNoCheck(t *testing.T) {
-	a := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
+	a, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5")
 	lv := liveness{
 		prev:  5,
 		ival:  3,

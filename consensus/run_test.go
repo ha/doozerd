@@ -13,6 +13,15 @@ const (
 	cal  = "/ctl/cal"
 )
 
+func MustResolveUDPAddr(n, addr string) *net.UDPAddr {
+	udp, err := net.ResolveUDPAddr(n, addr)
+	if err != nil {
+		panic(err)
+	}
+
+	return udp
+}
+
 type msgSlot struct {
 	*msg
 }
@@ -45,7 +54,7 @@ func TestRunVoteDelivered(t *testing.T) {
 			Vrnd:  proto.Int64(1),
 			Value: []byte("foo"),
 		},
-		Addr: &net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
+		Addr: MustResolveUDPAddr("udp", "1.2.3.4:5"),
 	}
 
 	r.update(&p, 0, new(triggers))
@@ -75,8 +84,8 @@ func TestRunProposeDelivered(t *testing.T) {
 
 func TestRunSendsCoordPacket(t *testing.T) {
 	c := make(chan Packet, 100)
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
-	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
+	x := MustResolveUDPAddr("udp", "1.2.3.4:5")
+	y := MustResolveUDPAddr("udp", "2.3.4.5:6")
 	var r run
 	r.c.crnd = 1
 	r.out = c
@@ -111,8 +120,8 @@ func TestRunSchedulesTick(t *testing.T) {
 
 func TestRunSendsAcceptorPacket(t *testing.T) {
 	c := make(chan Packet, 100)
-	x := &net.UDPAddr{net.IP{1, 2, 3, 4}, 5}
-	y := &net.UDPAddr{net.IP{2, 3, 4, 5}, 6}
+	x := MustResolveUDPAddr("udp", "1.2.3.4:5")
+	y := MustResolveUDPAddr("udp", "2.3.4.5:6")
 	var r run
 	r.out = c
 	r.addr = []*net.UDPAddr{x, y}
@@ -174,9 +183,9 @@ func TestRunBroadcastThree(t *testing.T) {
 	r.seqn = 1
 	r.out = c
 	r.addr = []*net.UDPAddr{
-		&net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
-		&net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
-		&net.UDPAddr{net.IP{3, 4, 5, 6}, 7},
+		MustResolveUDPAddr("udp", "1.2.3.4:5"),
+		MustResolveUDPAddr("udp", "2.3.4.5:6"),
+		MustResolveUDPAddr("udp", "3.4.5.6:7"),
 	}
 
 	r.broadcast(newInvite(1))
@@ -208,11 +217,11 @@ func TestRunBroadcastFive(t *testing.T) {
 	r.seqn = 1
 	r.out = c
 	r.addr = []*net.UDPAddr{
-		&net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
-		&net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
-		&net.UDPAddr{net.IP{3, 4, 5, 6}, 7},
-		&net.UDPAddr{net.IP{4, 5, 6, 7}, 8},
-		&net.UDPAddr{net.IP{5, 6, 7, 8}, 9},
+		MustResolveUDPAddr("udp", "1.2.3.4:5"),
+		MustResolveUDPAddr("udp", "2.3.4.5:6"),
+		MustResolveUDPAddr("udp", "3.4.5.6:7"),
+		MustResolveUDPAddr("udp", "4.5.6.7:8"),
+		MustResolveUDPAddr("udp", "5.6.7.8:9"),
 	}
 
 	r.broadcast(newInvite(1))
@@ -243,9 +252,9 @@ func TestRunBroadcastNil(t *testing.T) {
 	var r run
 	r.out = c
 	r.addr = []*net.UDPAddr{
-		&net.UDPAddr{net.IP{1, 2, 3, 4}, 5},
-		&net.UDPAddr{net.IP{2, 3, 4, 5}, 6},
-		&net.UDPAddr{net.IP{3, 4, 5, 6}, 7},
+		MustResolveUDPAddr("udp", "1.2.3.4:5"),
+		MustResolveUDPAddr("udp", "2.3.4.5:6"),
+		MustResolveUDPAddr("udp", "3.4.5.6:7"),
 	}
 
 	r.broadcast(nil)
