@@ -1,12 +1,21 @@
 #!/bin/bash
+
+# doozer cluster initialization script
+#
+# this works by identifying a /ctl/cal/<id> for an instance of doozer
+# on a host and performing an idempotent set of operations to ensure 
+# that each note participating in a cluster is correctly bootstrapped.
+
 set -o pipefail
 
 function log() {
     echo "[`date +'%Y%m%d %H:%M:%S'`] $@"
 }
 
-# doozer cluster initialization script
-
+if [ -z $HOSTNAME ]; then
+    HOSTNAME=`hostname`
+fi
+CALID=""
 DOOZERCLI="/usr/local/bin/doozer"
 DOOZERD_NODES=""
 HOST="127.0.0.1"
@@ -16,6 +25,9 @@ while [ "$1" != "" ]; do
     PARAM=`echo $1 | awk -F= '{print $1}'`
     VALUE=`echo $1 | awk -F= '{print $2}'`
     case $PARAM in
+        --cal-id)
+            CALID="$VALUE"
+            ;;
         --doozer-cli)
             DOOZERCLI="$VALUE"
             ;;
@@ -70,7 +82,7 @@ fi
 
 log "bind_node: $bind_node"
 
-this_node_ip=`host $FQ_HOSTNAME 2>/dev/null | tail -1 | awk '{print $NF}'`
+this_node_ip=`host $HOSTNAME 2>/dev/null | tail -1 | awk '{print $NF}'`
 host_node="$this_node_ip:$PORT"
 
 log "host_node: $host_node"
@@ -83,36 +95,40 @@ fi
 
 log "my_self: $my_self"
 
-my_cal=$(printf %d $(expr $(echo $FQ_HOSTNAME | awk -F. '{print $1}' | tail -c -3) - 1))
-if [ -z $my_cal ]; then
+if [ -z $CALID ]; then
+    # calculate the CALID if the HOSTNAME is in the format name##.hostname.org
+    CALID=$(printf %d $(expr $(echo $HOSTNAME | awk -F. '{print $1}' | tail -c -3) - 1))
+fi
+
+if [ -z $CALID ]; then
     log "ERROR: could not identify cal"
     exit 1
 fi
 
-log "my_cal: $my_cal"
+log "CALID: $CALID"
 
-log "checking /ctl/cal/$my_cal"
-stat_output=`$DOOZERCLI -a="doozer:?ca=$bind_node" stat /ctl/cal/$my_cal 2>/dev/null`
+log "checking /ctl/cal/$CALID"
+stat_output=`$DOOZERCLI -a="doozer:?ca=$bind_node" stat /ctl/cal/$CALID 2>/dev/null`
 if [ "$?" == "0" ]; then
-    log "/ctl/cal/$my_cal exists"
-    cal_self=`$DOOZERCLI -a="doozer:?ca=$bind_node" get /ctl/cal/$my_cal 2>/dev/null`
+    log "/ctl/cal/$CALID exists"
+    cal_self=`$DOOZERCLI -a="doozer:?ca=$bind_node" get /ctl/cal/$CALID 2>/dev/null`
     if [ "$cal_self" == "$my_self" ]; then
         log "NOTICE: nothing to do (we're already active in the cluster)"
         exit 0
     fi
     rev=`echo $stat_output | awk '{print $1}'`
-    log "deleting /ctl/cal/$my_cal @ $rev"
-    $DOOZERCLI -a="doozer:?ca=$bind_node" del /ctl/cal/$my_cal $rev >/dev/null 2>&1
+    log "deleting /ctl/cal/$CALID @ $rev"
+    $DOOZERCLI -a="doozer:?ca=$bind_node" del /ctl/cal/$CALID $rev >/dev/null 2>&1
     if [ "$?" != "0" ]; then
-        log "ERROR: failed to delete /ctl/cal/$my_cal"
+        log "ERROR: failed to delete /ctl/cal/$CALID"
         exit 1
     fi
 fi
 
-log "adding /ctl/cal/$my_cal"
-echo -n | $DOOZERCLI -a="doozer:?ca=$bind_node" add /ctl/cal/$my_cal
+log "adding /ctl/cal/$CALID"
+echo -n | $DOOZERCLI -a="doozer:?ca=$bind_node" add /ctl/cal/$CALID
 if [ "$?" != "0" ]; then
-    log "ERROR: failed to add /ctl/cal/$my_cal"
+    log "ERROR: failed to add /ctl/cal/$CALID"
     exit 1
 fi
 
