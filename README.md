@@ -113,6 +113,7 @@ Doozer is similar to the following pieces of software:
 
  * Apache Zookeeper <http://zookeeper.apache.org/>
  * Google Chubby <http://labs.google.com/papers/chubby.html>
+ * etcd <https://github.com/coreos/etcd>
 
 ## Hacking on Doozer
 
