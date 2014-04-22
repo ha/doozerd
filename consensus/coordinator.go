@@ -55,7 +55,7 @@ func (co *coordinator) update(p *packet, from int) (m *msg, wantTick bool) {
 			co.vv = string(vval)
 		}
 
-		if !co.rsvp[from] {
+		if from>-1 && !co.rsvp[from] {
 			co.rsvp[from] = true
 			co.nrsvp++
 		}
