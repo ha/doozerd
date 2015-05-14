@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"container/heap"
 	"github.com/bmizerany/assert"
 	"github.com/ha/doozerd/store"
@@ -14,7 +14,7 @@ import (
 // The first element in a protobuf stream is always a varint.
 // The high bit of a varint byte indicates continuation;
 // This is a continuation bit without a subsequent byte.
-// http://code.google.com/apis/protocolbuffers/docs/encoding.html#varints.
+// http://developers.google.com/protocol-buffers/docs/encoding.html#varints.
 var invalidProtobuf = []byte{0x80}
 
 func mustMarshal(p proto.Message) []byte {

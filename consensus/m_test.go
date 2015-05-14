@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	"code.google.com/p/goprotobuf/proto"
+	proto "github.com/golang/protobuf/proto"
 	"fmt"
 	"net"
 )

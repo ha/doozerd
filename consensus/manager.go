@@ -1,7 +1,7 @@
 package consensus
 
 import (
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"container/heap"
 	"github.com/ha/doozerd/store"
 	"log"

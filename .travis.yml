@@ -2,8 +2,8 @@ language: go
 install:
   - go get github.com/kr/pretty
   - go get github.com/bmizerany/assert
-  - go get code.google.com/p/go.net/websocket
-  - go get code.google.com/p/goprotobuf/proto
+  - go get github.com/gorilla/websocket
+  - go get github.com/golang/protobuf
   - go get github.com/ha/doozer
 script:
     - pushd $TRAVIS_BUILD_DIR
