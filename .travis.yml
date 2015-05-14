@@ -3,7 +3,7 @@ install:
   - go get github.com/kr/pretty
   - go get github.com/bmizerany/assert
   - go get golang.org/x/net/websocket
-  - go get github.com/golang/protobuf
+  - go get github.com/golang/protobuf/proto
   - go get github.com/ha/doozer
 script:
     - pushd $TRAVIS_BUILD_DIR
