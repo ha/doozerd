@@ -1,9 +1,9 @@
 package web
 
 import (
-	"code.google.com/p/go.net/websocket"
 	"encoding/json"
 	"github.com/ha/doozerd/store"
+	"golang.org/x/net/websocket"
 	"io"
 	"log"
 	"net"

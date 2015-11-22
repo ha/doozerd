@@ -15,7 +15,7 @@ Easy-to-follow instructions are at <http://golang.org/doc/install>.
 ## Installing Dependencies
 
 If you want to change .proto files, you need to nstall the `protoc`
-command (from <http://code.google.com/p/protobuf/>):
+command (from <https://github.com/golang/protobuf/proto/>):
 
     $ sudo apt-get install protobuf-compiler
     (or)
