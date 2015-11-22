@@ -2,7 +2,7 @@ language: go
 install:
   - go get github.com/kr/pretty
   - go get github.com/bmizerany/assert
-  - go get github.com/golang/net/websocket
+  - go get golang.org/x/net/websocket
   - go get github.com/golang/protobuf/proto
   - go get github.com/ha/doozer
 script:

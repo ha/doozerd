@@ -2,8 +2,8 @@ package web
 
 import (
 	"encoding/json"
-	"github.com/golang/net/websocket"
 	"github.com/ha/doozerd/store"
+	"golang.org/x/net/websocket"
 	"io"
 	"log"
 	"net"
