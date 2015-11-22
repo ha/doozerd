@@ -211,6 +211,6 @@ Error codes are defined with the following meanings:
 
 Error value 0 is reserved.
 
-[protobuf]: http://code.google.com/p/protobuf/
+[protobuf]: https://github.com/google/protobuf
 [9P]: http://plan9.bell-labs.com/magic/man2html/5/intro
 [data]: data-model.md

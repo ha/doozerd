@@ -1,8 +1,8 @@
 package server
 
 import (
-	"code.google.com/p/goprotobuf/proto"
 	"encoding/binary"
+	"github.com/golang/protobuf/proto"
 	"github.com/ha/doozerd/consensus"
 	"github.com/ha/doozerd/store"
 	"io"
