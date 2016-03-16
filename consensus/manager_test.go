@@ -1,9 +1,9 @@
 package consensus
 
 import (
-	"code.google.com/p/goprotobuf/proto"
 	"container/heap"
 	"github.com/bmizerany/assert"
+	"github.com/golang/protobuf/proto"
 	"github.com/ha/doozerd/store"
 	"net"
 	"sort"
